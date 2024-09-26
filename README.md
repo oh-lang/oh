@@ -1,2 +1,2 @@
 # oh
-oh language tooling
+oh language toolling
