@@ -11,6 +11,49 @@ const std = @import("std");
 // This makes easy tests fail last, and they are easier to debug
 // if they are at the end of the input.
 
+test "parser each is an operator" {
+    var parser: Parser = .{};
+    defer parser.deinit();
+    errdefer parser.debug();
+    const file_slice = [_][]const u8{
+        "My_lot[Lot_key] each(Index, Value;) {Value += Index}",
+    };
+    try parser.tokenizer.file.appendSlice(&file_slice);
+
+    try parser.complete(DoNothing{});
+
+    try parser.nodes.expectEqualsSlice(&[_]Node{
+        // [0]:
+        Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
+        Node{ .statement = .{ .node = 13, .next = 0 } }, // statement ... each ...
+        Node{ .atomic_token = 1 }, // My_lot
+        Node{ .enclosed = .{ .open = .bracket, .tab = 0, .start = 4 } }, // [...] at tab 0
+        Node{ .statement = .{ .node = 5, .next = 0 } }, // statement Lot_key
+        // [5]:
+        Node{ .atomic_token = 5 }, // Lot_key
+        Node{ .binary = .{ .operator = .op_access, .left = 2, .right = 3 } }, // My_lot   [...]
+        Node{ .enclosed = .{ .open = .paren, .tab = 0, .start = 8 } }, // (...) at tab 0
+        Node{ .statement = .{ .node = 9, .next = 10 } }, // statement Index
+        Node{ .atomic_token = 13 }, // Index
+        // [10]:
+        Node{ .statement = .{ .node = 12, .next = 0 } }, // statement Value ;
+        Node{ .atomic_token = 17 }, // Value
+        Node{ .postfix = .{ .operator = .op_declare_writable, .node = 11 } }, // Value ;
+        Node{ .binary = .{ .operator = .op_each, .left = 6, .right = 19 } }, // ... each ...
+        Node{ .enclosed = .{ .open = .brace, .tab = 0, .start = 15 } }, // {...} at tab 0
+        // [15]:
+        Node{ .statement = .{ .node = 18, .next = 0 } }, // statement Value += Index
+        Node{ .atomic_token = 25 }, // Value
+        Node{ .atomic_token = 29 }, // Index
+        Node{ .binary = .{ .operator = .op_plus_assign, .left = 16, .right = 17 } }, // Value += Index
+        Node{ .binary = .{ .operator = .op_indent, .left = 7, .right = 14 } }, // (...) 	 {...}
+        // [20]:
+        .end, // end
+    });
+    // No tampering done with the file, i.e., no errors.
+    try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+}
+
 test "parser return is an operator" {
     var parser: Parser = .{};
     defer parser.deinit();
