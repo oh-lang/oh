@@ -356,7 +356,6 @@ pub const Parser = struct {
                         self.addTokenizerError("need `if` before `else` or `elif`");
                         return ParserError.syntax_panic;
                     },
-                    else => return ParserError.unimplemented,
                 };
                 hierarchy.append(node_index) catch return ParserError.out_of_memory;
                 break :blk node_index;

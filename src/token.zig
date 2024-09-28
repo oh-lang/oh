@@ -483,16 +483,12 @@ const TokenKeyword = enum {
     kw_if,
     kw_elif,
     kw_else,
-    // TODO: `return` and `each` might actually work better as operators (prefix/infix).
-    // TODO: add `break` and `pass` as well, but possibly as operators.
-    kw_each,
     kw_what,
     kw_while,
 
     pub const if64 = SmallString.as64("if");
     pub const elif64 = SmallString.as64("elif");
     pub const else64 = SmallString.as64("else");
-    pub const each64 = SmallString.as64("each");
     pub const what64 = SmallString.as64("what");
     pub const while64 = SmallString.as64("while");
 
@@ -501,7 +497,6 @@ const TokenKeyword = enum {
             if64 => .kw_if,
             elif64 => .kw_elif,
             else64 => .kw_else,
-            each64 => .kw_each,
             what64 => .kw_what,
             while64 => .kw_while,
             else => null,
@@ -513,7 +508,6 @@ const TokenKeyword = enum {
             .kw_if => "kw_if",
             .kw_elif => "kw_elif",
             .kw_else => "kw_else",
-            .kw_each => "kw_each",
             .kw_what => "kw_what",
             .kw_while => "kw_while",
         };
@@ -524,7 +518,6 @@ const TokenKeyword = enum {
             .kw_if => "if",
             .kw_elif => "elif",
             .kw_else => "else",
-            .kw_each => "each",
             .kw_what => "what",
             .kw_while => "while",
         };

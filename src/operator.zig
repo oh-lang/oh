@@ -4,7 +4,9 @@ const std = @import("std");
 
 pub const Operator = enum {
     op_none,
+    // TODO: add `break` and `pass` as well, but possibly as operators.
     op_return,
+    op_each,
     op_new_generic,
     op_increment,
     op_decrement,
@@ -98,6 +100,7 @@ pub const Operator = enum {
     pub fn init64(value: u64) Self {
         return switch (value) {
             SmallString.as64("return") => .op_return,
+            SmallString.as64("each") => .op_each,
             SmallString.as64("~") => .op_new_generic,
             SmallString.as64("++") => .op_increment,
             SmallString.as64("--") => .op_decrement,
@@ -192,6 +195,7 @@ pub const Operator = enum {
         return try switch (self) {
             .op_none => writer.print("op_none", .{}),
             .op_return => writer.print("op_return", .{}),
+            .op_each => writer.print("op_each", .{}),
             .op_new_generic => writer.print("op_new_generic", .{}),
             .op_increment => writer.print("op_increment", .{}),
             .op_decrement => writer.print("op_decrement", .{}),
@@ -276,6 +280,7 @@ pub const Operator = enum {
     pub fn string(self: Self) SmallString {
         return switch (self) {
             .op_return => SmallString.noAlloc("return"),
+            .op_each => SmallString.noAlloc("each"),
             .op_new_generic => SmallString.noAlloc("~"),
             .op_increment => SmallString.noAlloc("++"),
             .op_decrement => SmallString.noAlloc("--"),
@@ -361,6 +366,7 @@ pub const Operator = enum {
     pub fn isPrefixable(self: Self) bool {
         return switch (self) {
             .op_return,
+            .op_each, // for method declarations `::each(...):`
             .op_new_generic,
             .op_not,
             .op_not_not,
@@ -427,6 +433,7 @@ pub const Operator = enum {
 
     pub fn isInfixable(self: Self) bool {
         return switch (self) {
+            .op_each,
             .op_assign,
             .op_equals,
             .op_less_than,
@@ -563,9 +570,8 @@ const OperatorOperation = struct {
         const rtl: u8 = @intFromEnum(compare);
         return switch (self.operator) {
             .op_none => 254,
-            // TODO: decide if this should be higher than comma.
-            // `return 3, 4` should be what?
             .op_return => 1,
+            .op_each => 1,
             .op_new_generic => 250,
             .op_increment, .op_decrement => 220,
             .op_equals,

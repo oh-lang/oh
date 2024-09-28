@@ -1052,7 +1052,7 @@ test "tokenizer keywords" {
         // [15]:
         Token{ .starts_lower = try SmallString.init("retrun") },
         Token{ .spacing = .{ .absolute = 0, .relative = 0, .line = 4 } },
-        Token{ .keyword = .kw_each },
+        Token{ .operator = .op_each },
         Token{ .spacing = .{ .absolute = 5, .relative = 1, .line = 4 } },
         Token{ .starts_lower = try SmallString.init("each3") },
         // [20]:
