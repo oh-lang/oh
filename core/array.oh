@@ -1,0 +1,153 @@
+er: one_of
+[   # TODO: this might be hard to do correctly since each `er` indexes from 0.
+    #       and any values of `indexable er` need to be increased to come after `allocation`
+    #       we could get around some of the downsides here by ensuring we always
+    #       compare to real values and not just `X == 0`.
+    #       could borrow from Zig that each error (token/tag) is unique (and non-zero).
+    # TODO: maybe ideally we do `indexable: { er: one_of[Index_too_negative] }` and then
+    #       `array: { er: extend(indexable er)[ Array_er1, Array_er2 ] }`.
+    #       but the following notation is pretty clear (no extra `extend` keyword necessary)
+    # TODO: ideally there is an easy way to say that a `one_of` extends another `one_of`,
+    #       even if the number offsets would be different.
+    #       maybe `contains`.  e.g., `some_er: contains(my_other_er)`
+    ...\/allocation er
+    ...\/indexable er
+]
+hm[ok]: hm[ok, er]
+
+array[of]: indexable
+[   @private
+    Allocation; allocation
+
+    # TODO: convert this into a deque, add `Start: count`
+    #       however, this will make resizing more complicated.
+
+    @private
+    Count; count = 0
+]
+{   ;;enscope(Arguments[of].):
+        Allocation count(Arguments count()) or_panic()
+        while My Count < Arguments count()
+            Allocation move_construct(In_bounds: Arguments[My Count++]!)
+
+    ::count(): My Count
+
+    ;;count(New Count): hm[count]
+        Old Count: My Count
+        if New Count == Old Count
+            return ok(Old Count)
+        if New Count > Old Count
+            I allocate(At_least: Count) assert()
+            while My Count < New Count
+                Allocation default_construct(In_bounds: My Count++)
+        else
+            assert(New Count >= 0, er Invalid_count)
+            while My Count > New Count
+                Allocation deconstruct(In_bounds: --My Count)
+        ok(Old Count)
+
+    ;;append(Of): hm[null]
+        debug assert(My Count < count::Max)
+        I allocate(At_least: My Count + 1) assert()
+        Allocation copy_construct(My Count++, Of)
+
+    ;;append(Of.): hm[null]
+        debug assert(My Count < count::Max)
+        I allocate(At_least: My Count + 1) assert()
+        Allocation move_construct(My Count++, Of!)
+
+    ::[Index.]?: (Of)
+        In_bounds: My in_bounds(@hide Index) ?? return Null
+        My[In_bounds]
+
+    # getter; resizes the array if necessary to get a default value.
+    ;;[Index.]: (Of;)
+        In_bounds: My in_bounds(@hide Index) ?? panic()
+        My[In_bounds]
+   
+    # in-bounds getter (makes a copy), which is unsafe to call unless `In_bounds` is 
+    # within the range `[0, My count())`.
+    :;[In_bounds.]: (Of:;)
+        debug assert(In_bounds >= 0 and In_bounds < My count())
+        Allocation[In_bounds_and_constructed. In_bounds]
+
+    # returns a value of the array element at the specified index,
+    # or the end of the array if not specified.  returns null if the element
+    # would be out of bounds (e.g., `Index >= My count()` or no elements present).
+    ;;pop(Index. -1)?: of
+        # don't resize the array in case `Index >= My Count`.
+        what My in_bounds(Index)
+            # TODO: shouldn't this be `Ok. in_bounds` if we're going to be pedantic
+            #       with naming?  otherwise we shouldn't use `@Named Ok` in the definition
+            #       of `hm`, and it would just be `In_bounds.`
+            Ok.
+                I pop(Ok)
+            Er.
+                @ignore Er
+                Null
+        # alternatively: `My in_bounds(Index) map((Ok.): I pop(Ok), (@Unused Er.): Null)`
+
+    ;;pop(In_bounds.): of
+        debug assert(In_bounds >= 0 and In_bounds < My count())
+        Result: My[In_bounds]!
+        I erase(In_bounds)
+        Result
+
+    ;;erase(Index.): null
+        if My in_bounds(Index) is Ok.
+            I erase(Ok)
+
+    ;;erase(In_bounds.): null
+        debug assert(In_bounds >= 0 and In_bounds < My count())
+        for Destination_index: In_bounds, Destination_index < My count() - 1
+            My[Destination_index] = My[In_bounds: Destination_index + 1]!
+        My count(My count() - 1)
+
+    !!(Me): bool
+        count(Me) > 0
+
+    # returns a copy of this array, but sorted:
+    ::sort(): this
+
+    # sorts this array in place:
+    ;;sort(): null
+
+    @private
+    ::in_bounds(Index.): hm[in_bounds]
+        I ensure_non_negative(Index;) assert()
+        assert(Index < count(), Er: Invalid_index)
+        ok(in_bounds(Index))
+
+    @private
+    ;;in_bounds(Index.): hm[in_bounds]
+        I ensure_non_negative(Index;) assert()
+        if Index >= count()
+            count(Index + 1) assert()
+        ok(in_bounds(Index))
+
+    @private
+    ;;allocate(At_least: count): hm[null]
+        debug assert(At_least >= 0)
+        if At_least <= My Allocation Count
+            return ok()
+
+        # we should at least try to double the storage
+        Try_to_allocate; I roughly_double_allocation()
+        while Try_to_allocate > At_least
+            if My Allocation count(Try_to_allocate) is_ok()
+                return ok()
+            # in case we can't allocate that much, we can back down.
+            Try_to_allocate = (Try_to_allocate + At_least) // 2
+
+        My Allocation count(At_least)
+
+    @private
+    ::roughly_double_allocation(): count
+        if My Allocation Count == 0
+            return 4
+        Doubled: 2 * My Allocation Count
+        if Doubled >= 0
+            return Doubled
+        # if we're at this point, we're in insane territory
+        # TODO
+}
