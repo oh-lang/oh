@@ -4,6 +4,8 @@ const Node = @import("node.zig").Node;
 const Parser = @import("parser.zig").Parser;
 
 const std = @import("std");
+// TODO: if/elif/else
+// TODO: one-line if/else with complicated expressions (e.g., `if What * Is This {...}`)
 
 // TODO
 // we could introduce a new capture operator (|> or &> or ?>):
@@ -17,6 +19,118 @@ const std = @import("std");
 // maybe use `?>` if the thing is nullable (or an error), and `|>` for `Then` blocks
 //&|if Nullable ?> Non_null:
 //&|    doStuff
+// i think i'd prefer to use `if Nullable is Non_null:` for the casting case
+// and `if Some_condition |> Then` for the block case.  this will also let us
+// define functions like `my_fn(X: int) |> Do[return_type]: {...}`
+
+test "parsing one-line if/elif/else statements" {
+    var parser: Parser = .{};
+    defer parser.deinit();
+    errdefer parser.debug();
+    const file_slice = [_][]const u8{
+        "100 * if Ski { Quo } elif Fee { Buo } else { Nuo } ^ 775",
+    };
+    try parser.tokenizer.file.appendSlice(&file_slice);
+
+    try parser.complete(DoNothing{});
+
+    try parser.nodes.expectEqualsSlice(&[_]Node{
+        // [0]:
+        Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
+        Node{ .statement = .{ .node = 16, .next = 0 } }, // statement 100 * ...
+        Node{ .atomic_token = 1 }, // 100
+        Node{ .atomic_token = 7 }, // Ski
+        Node{ .enclosed = .{ .open = .brace, .tab = 0, .start = 5 } }, // {...} at tab 0
+        // [5]:
+        Node{ .statement = .{ .node = 6, .next = 0 } }, // statement Quo
+        Node{ .atomic_token = 11 }, // Quo
+        Node{ .conditional = .{ .condition = 3, .if_node = 4, .else_node = 12 } }, // if Ski {...} elif ...
+        Node{ .atomic_token = 17 }, // Fee
+        Node{ .enclosed = .{ .open = .brace, .tab = 0, .start = 10 } }, // {...} at tab 0
+        // [10]:
+        Node{ .statement = .{ .node = 11, .next = 0 } }, // statement Buo
+        Node{ .atomic_token = 21 }, // Buo
+        Node{ .conditional = .{ .condition = 8, .if_node = 9, .else_node = 13 } }, // elif Fee {...} else {...}
+        Node{ .enclosed = .{ .open = .brace, .tab = 0, .start = 14 } }, // {...} at tab 0
+        Node{ .statement = .{ .node = 15, .next = 0 } }, // statement Nuo
+        // [15]:
+        Node{ .atomic_token = 29 }, // Nuo
+        Node{ .binary = .{ .operator = .op_multiply, .left = 2, .right = 18 } }, // 100 * ...
+        Node{ .atomic_token = 35 }, // 775
+        Node{ .binary = .{ .operator = .op_exponentiate, .left = 7, .right = 17 } }, // if ... ^ 775
+        .end, // end
+    });
+    // No tampering done with the file, i.e., no errors.
+    try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+}
+
+test "parsing one-line if/else statements" {
+    var parser: Parser = .{};
+    defer parser.deinit();
+    errdefer parser.debug();
+    const file_slice = [_][]const u8{
+        "10 + if Splet { Shpet } else { Gorbs } * 25",
+    };
+    try parser.tokenizer.file.appendSlice(&file_slice);
+
+    try parser.complete(DoNothing{});
+
+    try parser.nodes.expectEqualsSlice(&[_]Node{
+        // [0]:
+        Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
+        Node{ .statement = .{ .node = 11, .next = 0 } }, // statement 10 + ...
+        Node{ .atomic_token = 1 }, // 10
+        Node{ .atomic_token = 7 }, // Splet
+        Node{ .enclosed = .{ .open = .brace, .tab = 0, .start = 5 } }, // {...} at tab 0
+        // [5]:
+        Node{ .statement = .{ .node = 6, .next = 0 } }, // statement Shpet
+        Node{ .atomic_token = 11 }, // Shpet
+        Node{ .conditional = .{ .condition = 3, .if_node = 4, .else_node = 8 } }, // if {...} {...}
+        Node{ .enclosed = .{ .open = .brace, .tab = 0, .start = 9 } }, // {...} at tab 0
+        Node{ .statement = .{ .node = 10, .next = 0 } }, // statement Gorbs
+        // [10]:
+        Node{ .atomic_token = 19 }, // Gorbs
+        Node{ .binary = .{ .operator = .op_plus, .left = 2, .right = 13 } }, // 10 + ...
+        Node{ .atomic_token = 25 }, // 25
+        Node{ .binary = .{ .operator = .op_multiply, .left = 7, .right = 12 } }, // if ... * 25
+        .end, // end
+    });
+    // No tampering done with the file, i.e., no errors.
+    try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+}
+
+test "parsing one-line if statements" {
+    var parser: Parser = .{};
+    defer parser.deinit();
+    errdefer parser.debug();
+    const file_slice = [_][]const u8{
+        "1 + if Sprank { Grank } * 17",
+    };
+    try parser.tokenizer.file.appendSlice(&file_slice);
+
+    try parser.complete(DoNothing{});
+
+    try parser.nodes.expectEqualsSlice(&[_]Node{
+        // [0]:
+        Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
+        Node{ .statement = .{ .node = 8, .next = 0 } }, // statement 1 + ...
+        Node{ .atomic_token = 1 }, // 1
+        Node{ .atomic_token = 7 }, // Sprank
+        Node{ .enclosed = .{ .open = .brace, .tab = 0, .start = 5 } }, // {...} at tab 0
+        // [5]:
+        Node{ .statement = .{ .node = 6, .next = 0 } }, // statement Grank
+        Node{ .atomic_token = 11 }, // Grank
+        Node{ .conditional = .{ .condition = 3, .if_node = 4, .else_node = 0 } }, // if {...}
+        Node{ .binary = .{ .operator = .op_plus, .left = 2, .right = 10 } }, // 1 + ...
+        Node{ .atomic_token = 17 }, // 17
+        // [10]:
+        Node{ .binary = .{ .operator = .op_multiply, .left = 7, .right = 9 } }, // if ... * 17
+        .end, // end
+    });
+    // No tampering done with the file, i.e., no errors.
+    try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+}
+
 test "parsing nested if statements" {
     const expected_nodes = [_]Node{
         // [0]:
@@ -311,7 +425,6 @@ test "parsing else without a block error" {
     }
 }
 
-// TODO: if/elif/else
 test "parsing if/else statements as part of an expression " {
     const expected_nodes = [_]Node{
         // [0]:
