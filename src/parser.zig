@@ -893,6 +893,8 @@ pub const Parser = struct {
             },
             .conditional => |conditional| {
                 common.debugPrint("if ", .{});
+                self.debugNodeShort(conditional.condition);
+                common.debugPrint(" ", .{});
                 self.debugNodeShort(conditional.if_node);
                 if (conditional.else_node != 0) {
                     common.debugPrint(" ", .{});
