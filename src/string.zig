@@ -26,7 +26,7 @@ pub const Small = extern struct {
     }
 
     // TODO: rename to `getNoAllocSize()`
-    fn get_medium_size() comptime_int {
+    fn getMediumSize() comptime_int {
         const small: Small = .{};
         const smallest_size = @sizeOf(@TypeOf(small.short));
         return smallest_size + @sizeOf(@TypeOf(small.remaining.if_small));
@@ -40,7 +40,7 @@ pub const Small = extern struct {
     } = undefined,
 
     pub fn deinit(self: *Small) void {
-        if (self.size > get_medium_size()) {
+        if (self.size > getMediumSize()) {
             common.allocator.free(self.buffer());
         }
         self.size = 0;
@@ -78,9 +78,9 @@ pub const Small = extern struct {
     /// For compile-time-known `chars` only.  For anything else, prefer `init` and
     /// just defer `deinit` to be safe.
     pub inline fn noAlloc(chars: anytype) Small {
-        // We're expecting `chars` to be `*const [n:0]u8` with n <= get_medium_size()
-        if (chars.len > comptime get_medium_size()) {
-            @compileError(std.fmt.comptimePrint("Small.noAlloc must have {d} characters or less", .{get_medium_size()}));
+        // We're expecting `chars` to be `*const [n:0]u8` with n <= getMediumSize()
+        if (chars.len > comptime getMediumSize()) {
+            @compileError(std.fmt.comptimePrint("Small.noAlloc must have {d} characters or less", .{getMediumSize()}));
         }
         return Small.init(chars) catch unreachable;
     }
@@ -119,7 +119,7 @@ pub const Small = extern struct {
             return StringError.string_too_long;
         }
         var string: Small = .{ .size = @intCast(new_size) };
-        if (new_size > comptime get_medium_size()) {
+        if (new_size > comptime getMediumSize()) {
             const heap = common.allocator.alloc(u8, new_size) catch {
                 std.debug.print("couldn't allocate {d}-character string...\n", .{new_size});
                 return StringError.out_of_memory;
@@ -131,7 +131,7 @@ pub const Small = extern struct {
 
     /// Signing is only useful for "large" strings.
     pub fn sign(self: *Small) void {
-        if (self.size > comptime get_medium_size()) {
+        if (self.size > comptime getMediumSize()) {
             const chars = self.slice();
             common.sign(&self.short, chars) catch {
                 std.debug.print("shouldn't have had a problem signing {d} characters\n", .{chars.len});
@@ -140,7 +140,7 @@ pub const Small = extern struct {
     }
 
     pub fn signature(self: *const Small) []const u8 {
-        if (self.size <= comptime get_medium_size()) {
+        if (self.size <= comptime getMediumSize()) {
             return self.slice();
         }
         return &self.short;
@@ -179,7 +179,7 @@ pub const Small = extern struct {
     /// Only use at start of string creation.  It won't be automatically signed;
     /// so you can't rely on that.
     pub fn buffer(self: *Small) []u8 {
-        const medium_size = comptime get_medium_size();
+        const medium_size = comptime getMediumSize();
         if (self.size <= medium_size) {
             const full_small_buffer: *[medium_size]u8 = @ptrCast(&self.short[0]);
             return full_small_buffer[0..self.size];
@@ -198,7 +198,7 @@ pub const Small = extern struct {
     }
 
     pub fn slice(self: *const Small) []const u8 {
-        const medium_size = comptime get_medium_size();
+        const medium_size = comptime getMediumSize();
 
         if (self.size <= medium_size) {
             const full_small_buffer: *const [medium_size]u8 = @ptrCast(&self.short[0]);
@@ -275,7 +275,7 @@ test "Small size is correct" {
     try std.testing.expectEqual(2, @sizeOf(@TypeOf(small_string.size)));
     try std.testing.expectEqual(6, @sizeOf(@TypeOf(small_string.short)));
     try std.testing.expectEqual(8, @sizeOf(@TypeOf(small_string.remaining.if_small)));
-    try std.testing.expectEqual(14, Small.get_medium_size());
+    try std.testing.expectEqual(14, Small.getMediumSize());
     // TODO: check for `small_string.remaining.pointer` being at +8 from start of small_string
     // try std.testing.expectEqual(8, @typeInfo(@TypeOf(small_string.remaining.pointer)).Pointer.alignment);
 }
