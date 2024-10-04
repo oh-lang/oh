@@ -176,6 +176,20 @@ pub const Small = extern struct {
         return self.size;
     }
 
+    pub fn toPascalCase(self: *const Small) StringError!Self {
+        var work_buffer: [65535]u8 = undefined;
+        var capitalize_next = true;
+        var index: usize = 0;
+        for (self.slice()) |char| if (char == '_') {
+            capitalize_next = true;
+        } else {
+            work_buffer[index] = if (capitalize_next) capitalize(char) else char;
+            index += 1;
+            capitalize_next = false;
+        };
+        return Self.init(work_buffer[0..index]);
+    }
+
     /// Only use at start of string creation.  It won't be automatically signed;
     /// so you can't rely on that.
     pub fn buffer(self: *Small) []u8 {
@@ -251,8 +265,20 @@ pub const Small = extern struct {
         try std.testing.expect(!equal);
     }
 
+    // DEPRECATED: use expectEqualsSlice
     pub fn expectEqualsString(self: Small, string: []const u8) !void {
         try std.testing.expectEqualStrings(string, self.slice());
+    }
+
+    pub fn expectEqualsSlice(self: Small, other_slice: []const u8) !void {
+        try std.testing.expectEqualStrings(other_slice, self.slice());
+    }
+
+    pub fn capitalize(char: u8) u8 {
+        return if (char >= 'a' and char <= 'z')
+            char - 32
+        else
+            char;
     }
 
     // TODO: use this everywhere
@@ -405,6 +431,14 @@ test "at/inBounds works for small strings" {
     // OOBs works for `at`
     try std.testing.expectEqual(null, string.at(-count - 1));
     try std.testing.expectEqual(null, string.at(count));
+}
+
+test "non-allocked String.toPascalCase works" {
+    try (try Small.noAlloc("_hi_you__a!@").toPascalCase()).expectEqualsSlice("HiYouA!@");
+    try (try Small.noAlloc("hey_jamboree_").toPascalCase()).expectEqualsSlice("HeyJamboree");
+    try (try Small.noAlloc("___ohNo").toPascalCase()).expectEqualsSlice("OhNo");
+    try (try Small.noAlloc("!$eleven#:").toPascalCase()).expectEqualsSlice("!$eleven#:");
+    try (try Small.noAlloc("a_b_c___d___e").toPascalCase()).expectEqualsSlice("ABCDE");
 }
 
 test "does not sign short strings" {
