@@ -176,17 +176,71 @@ pub const Small = extern struct {
         return self.size;
     }
 
-    pub fn toPascalCase(self: *const Small) StringError!Self {
+    pub const Case = enum {
+        start_lower,
+        start_upper,
+        keep_starting_case,
+    };
+
+    pub fn toPascalCase(self: *const Small, case: Case) StringError!Self {
+        if (self.count() == 0) {
+            return Self{};
+        }
         var work_buffer: [65535]u8 = undefined;
-        var capitalize_next = true;
-        var index: usize = 0;
-        for (self.slice()) |char| if (char == '_') {
+        var work_index: usize = 0;
+        var slice_index: usize = 0;
+        var capitalize_next = if (case == .keep_starting_case)
+            false
+        else blk: {
+            // Essentially we need to find the first non '_' char.
+            while (slice_index < self.count()) {
+                const starting_char = self.inBounds(slice_index);
+                if (starting_char != '_') {
+                    work_buffer[work_index] = makeCase(starting_char, case);
+                    work_index += 1;
+                    slice_index += 1;
+                    break :blk false;
+                }
+                slice_index += 1;
+            }
+            // Nothing but underscores, my lord.
+            return Self{};
+        };
+        for (self.slice()[slice_index..]) |char| if (char == '_') {
             capitalize_next = true;
         } else {
-            work_buffer[index] = if (capitalize_next) capitalize(char) else char;
-            index += 1;
+            work_buffer[work_index] = if (capitalize_next) capitalize(char) else char;
+            work_index += 1;
             capitalize_next = false;
         };
+        return Self.init(work_buffer[0..work_index]);
+    }
+
+    // TODO: we probably need a `capitalize_start` option.  maybe just reuse `Pascal.start_upper/lower`
+    pub const Snake = enum {
+        ignore_start,
+        underscore_always,
+    };
+
+    pub fn toSnakeCase(self: *const Small, snake: Snake) StringError!Self {
+        var work_buffer: [65535]u8 = undefined;
+        var index: usize = 0;
+        var ignore_next = snake == .ignore_start;
+        for (self.slice()) |char| {
+            if (!ignore_next and isCapital(char)) {
+                if (index >= work_buffer.len) {
+                    return StringError.string_too_long;
+                }
+                work_buffer[index] = '_';
+                index += 1;
+            }
+            if (index >= work_buffer.len) {
+                return StringError.string_too_long;
+            }
+            work_buffer[index] = uncapitalize(char);
+            index += 1;
+            ignore_next = false;
+        }
         return Self.init(work_buffer[0..index]);
     }
 
@@ -274,11 +328,34 @@ pub const Small = extern struct {
         try std.testing.expectEqualStrings(other_slice, self.slice());
     }
 
-    pub fn capitalize(char: u8) u8 {
-        return if (char >= 'a' and char <= 'z')
+    pub inline fn isUncapital(char: u8) bool {
+        return char >= 'a' and char <= 'z';
+    }
+
+    pub inline fn capitalize(char: u8) u8 {
+        return if (isUncapital(char))
             char - 32
         else
             char;
+    }
+
+    pub inline fn isCapital(char: u8) bool {
+        return char >= 'A' and char <= 'Z';
+    }
+
+    pub inline fn uncapitalize(char: u8) u8 {
+        return if (isCapital(char))
+            char + 32
+        else
+            char;
+    }
+
+    inline fn makeCase(char: u8, case: Case) u8 {
+        return switch (case) {
+            .start_lower => uncapitalize(char),
+            .start_upper => capitalize(char),
+            .keep_starting_case => char,
+        };
     }
 
     // TODO: use this everywhere
@@ -433,12 +510,46 @@ test "at/inBounds works for small strings" {
     try std.testing.expectEqual(null, string.at(count));
 }
 
-test "non-allocked String.toPascalCase works" {
-    try (try Small.noAlloc("_hi_you__a!@").toPascalCase()).expectEqualsSlice("HiYouA!@");
-    try (try Small.noAlloc("hey_jamboree_").toPascalCase()).expectEqualsSlice("HeyJamboree");
-    try (try Small.noAlloc("___ohNo").toPascalCase()).expectEqualsSlice("OhNo");
-    try (try Small.noAlloc("!$eleven#:").toPascalCase()).expectEqualsSlice("!$eleven#:");
-    try (try Small.noAlloc("a_b_c___d___e").toPascalCase()).expectEqualsSlice("ABCDE");
+test "non-allocked String.toPascalCase start_upper works" {
+    try (try Small.noAlloc("_hi_you__a!@").toPascalCase(.start_upper)).expectEqualsSlice("HiYouA!@");
+    try (try Small.noAlloc("hey_jamboree_").toPascalCase(.start_upper)).expectEqualsSlice("HeyJamboree");
+    try (try Small.noAlloc("___ohNo").toPascalCase(.start_upper)).expectEqualsSlice("OhNo");
+    try (try Small.noAlloc("!$eleven#:").toPascalCase(.start_upper)).expectEqualsSlice("!$eleven#:");
+    try (try Small.noAlloc("a_b_c___d___e").toPascalCase(.start_upper)).expectEqualsSlice("ABCDE");
+    try (try Small.noAlloc("_____").toPascalCase(.start_upper)).expectEqualsSlice("");
+    try (try Small.noAlloc("AlreadyCased").toPascalCase(.start_upper)).expectEqualsSlice("AlreadyCased");
+    try (try Small.noAlloc("almostCased").toPascalCase(.start_upper)).expectEqualsSlice("AlmostCased");
+}
+
+test "non-allocked String.toPascalCase start_lower works" {
+    try (try Small.noAlloc("_hi_you__a!@").toPascalCase(.start_lower)).expectEqualsSlice("hiYouA!@");
+    try (try Small.noAlloc("hey_jamboree_").toPascalCase(.start_lower)).expectEqualsSlice("heyJamboree");
+    try (try Small.noAlloc("___ohNo").toPascalCase(.start_lower)).expectEqualsSlice("ohNo");
+    try (try Small.noAlloc("!$eleven#:").toPascalCase(.start_lower)).expectEqualsSlice("!$eleven#:");
+    try (try Small.noAlloc("a_b_c___d___e").toPascalCase(.start_lower)).expectEqualsSlice("aBCDE");
+    try (try Small.noAlloc("_____").toPascalCase(.start_upper)).expectEqualsSlice("");
+    try (try Small.noAlloc("alreadyCased").toPascalCase(.start_lower)).expectEqualsSlice("alreadyCased");
+    try (try Small.noAlloc("AlmostCased").toPascalCase(.start_lower)).expectEqualsSlice("almostCased");
+}
+
+test "non-allocked String.toPascalCase keep_starting_case works" {
+    try (try Small.noAlloc("_hi_you__a!@").toPascalCase(.keep_starting_case)).expectEqualsSlice("HiYouA!@");
+    try (try Small.noAlloc("hey_jamboree_").toPascalCase(.keep_starting_case)).expectEqualsSlice("heyJamboree");
+    try (try Small.noAlloc("___ohNo").toPascalCase(.keep_starting_case)).expectEqualsSlice("OhNo");
+    try (try Small.noAlloc("!$eleven#:").toPascalCase(.keep_starting_case)).expectEqualsSlice("!$eleven#:");
+    try (try Small.noAlloc("a_b_c___d___e").toPascalCase(.keep_starting_case)).expectEqualsSlice("aBCDE");
+    try (try Small.noAlloc("alreadyCased").toPascalCase(.keep_starting_case)).expectEqualsSlice("alreadyCased");
+    try (try Small.noAlloc("AlsoCased").toPascalCase(.keep_starting_case)).expectEqualsSlice("AlsoCased");
+}
+
+test "non-allocked String.toSnakeCase underscore_always works" {
+    try (try Small.noAlloc("HiYouA!@").toSnakeCase(.underscore_always)).expectEqualsSlice("_hi_you_a!@");
+    try (try Small.noAlloc("HeyJamboree").toSnakeCase(.underscore_always)).expectEqualsSlice("_hey_jamboree");
+    try (try Small.noAlloc("OhNo").toSnakeCase(.underscore_always)).expectEqualsSlice("_oh_no");
+    try (try Small.noAlloc("!$eleven#:").toSnakeCase(.underscore_always)).expectEqualsSlice("!$eleven#:");
+    try (try Small.noAlloc("aBCDE").toSnakeCase(.underscore_always)).expectEqualsSlice("a_b_c_d_e");
+    try (try Small.noAlloc("already_cased").toSnakeCase(.underscore_always)).expectEqualsSlice("already_cased");
+    try (try Small.noAlloc("_also_cased").toSnakeCase(.underscore_always)).expectEqualsSlice("_also_cased");
 }
 
 test "does not sign short strings" {
