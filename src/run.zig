@@ -1,11 +1,14 @@
-const SmallString = @import("string.zig").Small;
 const Number = @import("number.zig").Number;
+const RunContext = @import("run_context.zig").RunContext;
+const SmallString = @import("string.zig").Small;
 
 const RunError = error{
     unknown,
 };
 
 pub const Run = struct {
+    id_next: Id = 0,
+
     pub const Error = RunError;
     pub const Value = RunValue;
     pub const Declare = RunDeclare;
@@ -18,6 +21,19 @@ pub const Run = struct {
         falsey,
         unevaluated,
     };
+
+    pub fn next_statement(self: *Self) RunContext {
+        return RunContext{ .statement = self.next_id() };
+    }
+
+    fn next_id(self: *Self) Id {
+        const id = self.id_next;
+        self.id_next += 1;
+        return id;
+    }
+
+    pub const Id = u64;
+    const Self = @This();
 };
 
 const RunDeclare = enum {
