@@ -176,70 +176,134 @@ pub const Small = extern struct {
         return self.size;
     }
 
-    pub const Case = enum {
-        start_lower,
-        start_upper,
-        keep_starting_case,
+    pub const PascalCase = enum {
+        keep_starting_case, // lower_case -> lowerCase, Upper_case -> UpperCase
+        start_lower, // Upper_case -> upperCase, lower_case -> lowerCase
+        start_upper, // Upper_case -> UpperCase, lower_case -> LowerCase
+
+        fn transform(self: PascalCase, char: u8, at_start: bool) u8 {
+            if (!at_start) return char;
+
+            return switch (self) {
+                .keep_starting_case => char,
+                .start_lower => uncapitalize(char),
+                .start_upper => capitalize(char),
+            };
+        }
     };
 
-    pub fn toPascalCase(self: *const Small, case: Case) StringError!Self {
+    pub fn toPascalCase(self: *const Small, case: PascalCase) StringError!Self {
         if (self.count() == 0) {
             return Self{};
         }
         var work_buffer: [65535]u8 = undefined;
-        var work_index: usize = 0;
-        var slice_index: usize = 0;
-        var capitalize_next = if (case == .keep_starting_case)
-            false
-        else blk: {
-            // Essentially we need to find the first non '_' char.
-            while (slice_index < self.count()) {
-                const starting_char = self.inBounds(slice_index);
-                if (starting_char != '_') {
-                    work_buffer[work_index] = makeCase(starting_char, case);
-                    work_index += 1;
-                    slice_index += 1;
-                    break :blk false;
-                }
-                slice_index += 1;
-            }
-            // Nothing but underscores, my lord.
-            return Self{};
-        };
-        for (self.slice()[slice_index..]) |char| if (char == '_') {
+        var index: usize = 0;
+        var capitalize_next = false;
+        var at_start = true;
+        for (self.slice()) |char| if (char == '_') {
             capitalize_next = true;
         } else {
-            work_buffer[work_index] = if (capitalize_next) capitalize(char) else char;
-            work_index += 1;
+            const modified_char = if (capitalize_next) capitalize(char) else char;
             capitalize_next = false;
+            work_buffer[index] = case.transform(modified_char, at_start);
+            at_start = false;
+            index += 1;
         };
-        return Self.init(work_buffer[0..work_index]);
+        return Self.init(work_buffer[0..index]);
     }
 
-    // TODO: we probably need a `capitalize_start` option.  maybe just reuse `Pascal.start_upper/lower`
-    pub const Snake = enum {
-        ignore_start,
-        underscore_always,
+    pub const SnakeCase = enum {
+        start_lower, // LowerSnakeCase -> lower_snake_case
+        start_upper, // initialUpperSnakeCase -> Initial_upper_snake_case
+        /// Like `keep_starting_case`, this case doesn't force the initial char to be
+        /// "capitalized" or "uncapitalized".
+        no_uppers, // Upper_case -> _upper_case
+        keep_starting_case, // keepLower -> keep_lower or KeepUpper -> Keep_upper, _prefix_ok -> _prefix_ok
+
+        // Since SnakeCase can add chars (e.g., myPascal -> my_pascal), return
+        // up to two chars in a u16, little-endian style.  (First char is (result & 255)
+        // and second char is (result >> 8).)
+        fn transform(self: SnakeCase, char: u8, at_start: bool) u16 {
+            return switch (self) {
+                .start_lower => transformStartLower(char, at_start),
+                .start_upper => transformStartUpper(char, at_start),
+                .no_uppers => transformNoUppers(char, at_start),
+                .keep_starting_case => transformKeepStartingCase(char, at_start),
+            };
+        }
+
+        inline fn transformStartLower(char: u8, at_start: bool) u16 {
+            if (!isCapital(char)) {
+                return char;
+            } else if (at_start) {
+                return uncapitalize(char);
+            } else {
+                return underscoreChar(char);
+            }
+        }
+
+        inline fn transformStartUpper(char: u8, at_start: bool) u16 {
+            if (at_start) {
+                return capitalize(char);
+            } else if (!isCapital(char)) {
+                return char;
+            } else {
+                return underscoreChar(char);
+            }
+        }
+
+        inline fn transformNoUppers(char: u8, at_start: bool) u16 {
+            _ = at_start;
+            if (!isCapital(char)) {
+                return char;
+            } else {
+                return underscoreChar(char);
+            }
+        }
+
+        inline fn transformKeepStartingCase(char: u8, at_start: bool) u16 {
+            if (at_start or !isCapital(char)) {
+                return char;
+            } else {
+                return underscoreChar(char);
+            }
+        }
+
+        inline fn underscoreChar(char: u8) u16 {
+            const char16: u16 = uncapitalize(char);
+            return '_' | (char16 << 8);
+        }
     };
 
-    pub fn toSnakeCase(self: *const Small, snake: Snake) StringError!Self {
+    pub fn toSnakeCase(self: *const Small, case: SnakeCase) StringError!Self {
         var work_buffer: [65535]u8 = undefined;
         var index: usize = 0;
-        var ignore_next = snake == .ignore_start;
+        // If the string looks like we're supposed to capitalize.
+        var capitalize_next = false;
+        var at_start = true; // until we see a non-underscore character.
         for (self.slice()) |char| {
-            if (!ignore_next and isCapital(char)) {
-                if (index >= work_buffer.len) {
-                    return StringError.string_too_long;
-                }
-                work_buffer[index] = '_';
-                index += 1;
+            if (char == '_') {
+                capitalize_next = true;
+                continue;
             }
+            const modified_char = if (capitalize_next) capitalize(char) else char;
+            capitalize_next = false;
+            const sequence16 = case.transform(modified_char, at_start);
+            at_start = false;
             if (index >= work_buffer.len) {
                 return StringError.string_too_long;
             }
-            work_buffer[index] = uncapitalize(char);
+            work_buffer[index] = @intCast(sequence16 & 255);
+            const next_char: u8 = @intCast(sequence16 >> 8);
             index += 1;
-            ignore_next = false;
+
+            if (next_char == 0) continue;
+
+            if (index >= work_buffer.len) {
+                return StringError.string_too_long;
+            }
+            work_buffer[index] = uncapitalize(next_char);
+            index += 1;
         }
         return Self.init(work_buffer[0..index]);
     }
@@ -348,14 +412,6 @@ pub const Small = extern struct {
             char + 32
         else
             char;
-    }
-
-    inline fn makeCase(char: u8, case: Case) u8 {
-        return switch (case) {
-            .start_lower => uncapitalize(char),
-            .start_upper => capitalize(char),
-            .keep_starting_case => char,
-        };
     }
 
     // TODO: use this everywhere
@@ -538,18 +594,62 @@ test "non-allocked String.toPascalCase keep_starting_case works" {
     try (try Small.noAlloc("___ohNo").toPascalCase(.keep_starting_case)).expectEqualsSlice("OhNo");
     try (try Small.noAlloc("!$eleven#:").toPascalCase(.keep_starting_case)).expectEqualsSlice("!$eleven#:");
     try (try Small.noAlloc("a_b_c___d___e").toPascalCase(.keep_starting_case)).expectEqualsSlice("aBCDE");
+    try (try Small.noAlloc("_____").toPascalCase(.keep_starting_case)).expectEqualsSlice("");
     try (try Small.noAlloc("alreadyCased").toPascalCase(.keep_starting_case)).expectEqualsSlice("alreadyCased");
     try (try Small.noAlloc("AlsoCased").toPascalCase(.keep_starting_case)).expectEqualsSlice("AlsoCased");
 }
 
-test "non-allocked String.toSnakeCase underscore_always works" {
-    try (try Small.noAlloc("HiYouA!@").toSnakeCase(.underscore_always)).expectEqualsSlice("_hi_you_a!@");
-    try (try Small.noAlloc("HeyJamboree").toSnakeCase(.underscore_always)).expectEqualsSlice("_hey_jamboree");
-    try (try Small.noAlloc("OhNo").toSnakeCase(.underscore_always)).expectEqualsSlice("_oh_no");
-    try (try Small.noAlloc("!$eleven#:").toSnakeCase(.underscore_always)).expectEqualsSlice("!$eleven#:");
-    try (try Small.noAlloc("aBCDE").toSnakeCase(.underscore_always)).expectEqualsSlice("a_b_c_d_e");
-    try (try Small.noAlloc("already_cased").toSnakeCase(.underscore_always)).expectEqualsSlice("already_cased");
-    try (try Small.noAlloc("_also_cased").toSnakeCase(.underscore_always)).expectEqualsSlice("_also_cased");
+test "non-allocked String.toSnakeCase start_lower works" {
+    try (try Small.noAlloc("HiYouA!@").toSnakeCase(.start_lower)).expectEqualsSlice("hi_you_a!@");
+    try (try Small.noAlloc("HeyJamboree").toSnakeCase(.start_lower)).expectEqualsSlice("hey_jamboree");
+    try (try Small.noAlloc("OhNo").toSnakeCase(.start_lower)).expectEqualsSlice("oh_no");
+    try (try Small.noAlloc("!$eleven#:").toSnakeCase(.start_lower)).expectEqualsSlice("!$eleven#:");
+    try (try Small.noAlloc("aBCDE").toSnakeCase(.start_lower)).expectEqualsSlice("a_b_c_d_e");
+    try (try Small.noAlloc("_____").toSnakeCase(.start_lower)).expectEqualsSlice("");
+    try (try Small.noAlloc("lower_cased").toSnakeCase(.start_lower)).expectEqualsSlice("lower_cased");
+    try (try Small.noAlloc("Upper_cased").toSnakeCase(.start_lower)).expectEqualsSlice("upper_cased");
+    try (try Small.noAlloc("_prefix_cased").toSnakeCase(.start_lower)).expectEqualsSlice("prefix_cased");
+    try (try Small.noAlloc("___super_pix").toSnakeCase(.start_lower)).expectEqualsSlice("super_pix");
+}
+
+test "non-allocked String.toSnakeCase start_upper works" {
+    try (try Small.noAlloc("HiYouA!@").toSnakeCase(.start_upper)).expectEqualsSlice("Hi_you_a!@");
+    try (try Small.noAlloc("HeyJamboree").toSnakeCase(.start_upper)).expectEqualsSlice("Hey_jamboree");
+    try (try Small.noAlloc("OhNo").toSnakeCase(.start_upper)).expectEqualsSlice("Oh_no");
+    try (try Small.noAlloc("!$eleven#:").toSnakeCase(.start_upper)).expectEqualsSlice("!$eleven#:");
+    try (try Small.noAlloc("aBCDE").toSnakeCase(.start_upper)).expectEqualsSlice("A_b_c_d_e");
+    try (try Small.noAlloc("_____").toSnakeCase(.start_upper)).expectEqualsSlice("");
+    try (try Small.noAlloc("lower_cased").toSnakeCase(.start_upper)).expectEqualsSlice("Lower_cased");
+    try (try Small.noAlloc("Upper_cased").toSnakeCase(.start_upper)).expectEqualsSlice("Upper_cased");
+    try (try Small.noAlloc("_prefix_cased").toSnakeCase(.start_upper)).expectEqualsSlice("Prefix_cased");
+    try (try Small.noAlloc("___super_pix").toSnakeCase(.start_upper)).expectEqualsSlice("Super_pix");
+}
+
+test "non-allocked String.toSnakeCase no_uppers works" {
+    try (try Small.noAlloc("HiYouA!@").toSnakeCase(.no_uppers)).expectEqualsSlice("_hi_you_a!@");
+    try (try Small.noAlloc("HeyJamboree").toSnakeCase(.no_uppers)).expectEqualsSlice("_hey_jamboree");
+    try (try Small.noAlloc("OhNo").toSnakeCase(.no_uppers)).expectEqualsSlice("_oh_no");
+    try (try Small.noAlloc("!$eleven#:").toSnakeCase(.no_uppers)).expectEqualsSlice("!$eleven#:");
+    try (try Small.noAlloc("aBCDE").toSnakeCase(.no_uppers)).expectEqualsSlice("a_b_c_d_e");
+    try (try Small.noAlloc("_____").toSnakeCase(.no_uppers)).expectEqualsSlice("");
+    try (try Small.noAlloc("lower_cased").toSnakeCase(.no_uppers)).expectEqualsSlice("lower_cased");
+    try (try Small.noAlloc("Upper_cased").toSnakeCase(.no_uppers)).expectEqualsSlice("_upper_cased");
+    try (try Small.noAlloc("_prefix_cased").toSnakeCase(.no_uppers)).expectEqualsSlice("_prefix_cased");
+    try (try Small.noAlloc("___super_pix").toSnakeCase(.no_uppers)).expectEqualsSlice("_super_pix");
+}
+
+test "non-allocked String.toSnakeCase keep_starting_case works" {
+    try (try Small.noAlloc("HiYouA!@").toSnakeCase(.keep_starting_case)).expectEqualsSlice("Hi_you_a!@");
+    try (try Small.noAlloc("HeyJamboree").toSnakeCase(.keep_starting_case)).expectEqualsSlice("Hey_jamboree");
+    try (try Small.noAlloc("OhNo").toSnakeCase(.keep_starting_case)).expectEqualsSlice("Oh_no");
+    try (try Small.noAlloc("!$eleven#:").toSnakeCase(.keep_starting_case)).expectEqualsSlice("!$eleven#:");
+    try (try Small.noAlloc("aBCDE").toSnakeCase(.keep_starting_case)).expectEqualsSlice("a_b_c_d_e");
+    try (try Small.noAlloc("_____").toSnakeCase(.keep_starting_case)).expectEqualsSlice("");
+    try (try Small.noAlloc("lower_cased").toSnakeCase(.keep_starting_case)).expectEqualsSlice("lower_cased");
+    try (try Small.noAlloc("Upper_cased").toSnakeCase(.keep_starting_case)).expectEqualsSlice("Upper_cased");
+    // TODO: i think this is probably ok, but we should consider retaining the prefix underscore.
+    try (try Small.noAlloc("_prefix_cased").toSnakeCase(.keep_starting_case)).expectEqualsSlice("Prefix_cased");
+    try (try Small.noAlloc("___super_pix").toSnakeCase(.keep_starting_case)).expectEqualsSlice("Super_pix");
 }
 
 test "does not sign short strings" {
