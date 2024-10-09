@@ -26,25 +26,25 @@ array[of]: indexable
     Count; count = 0
 ]
 {   ;;enscope(Arguments[of].):
-        Allocation count(Arguments count()) or_panic()
+        Allocation count(Arguments count()) ?? panic()
         while My Count < Arguments count()
             Allocation move_construct(In_bounds: Arguments[My Count++]!)
 
     ::count(): My Count
 
-    ;;count(New Count): hm[count]
-        Old Count: My Count
-        if New Count == Old Count
-            return ok(Old Count)
-        if New Count > Old Count
+    ;;count(@New Count): hm[count]
+        @Old Count: My Count
+        if @New Count == @Old Count
+            return ok(@Old Count)
+        if @New Count > @Old Count
             I allocate(At_least: Count) assert()
-            while My Count < New Count
+            while My Count < @New Count
                 Allocation default_construct(In_bounds: My Count++)
         else
-            assert(New Count >= 0, er Invalid_count)
-            while My Count > New Count
+            assert(@New Count >= 0, er Invalid_count)
+            while My Count > @New Count
                 Allocation deconstruct(In_bounds: --My Count)
-        ok(Old Count)
+        ok(@Old Count)
 
     ;;append(Of): hm[null]
         debug assert(My Count < count::Max)
@@ -56,16 +56,51 @@ array[of]: indexable
         I allocate(At_least: My Count + 1) assert()
         Allocation move_construct(My Count++, Of!)
 
-    ::[Index.]?: (Of)
-        In_bounds: My in_bounds(@hide Index) ?? return Null
-        My[In_bounds]
+    # nullable getter; returns null if `Index` is outside the bounds of the array.
+    ::[@Input Index.]: (Of?) = refer
+    (   Me
+        At. @hide @Input Index
+        # TODO: maybe allow shadowing if you specifically `@hide` the
+        #       previous instance before you declare the next one.
+        get(You, Index.)?: (Of)
+            In_bounds: Your in_bounds(@hide Index) ?? return Null
+            Your[In_bounds]
+    )
 
-    # getter; resizes the array if necessary to get a default value.
-    ;;[Index.]: (Of;)
-        In_bounds: My in_bounds(@hide Index) ?? panic()
-        My[In_bounds]
+    # nullable getter/setter; resizes the array if necessary when setting.
+    ;;[Index.]: (Of?;) = refer
+    (   Me
+        At. @hide @Input Index
+        # TODO: maybe allow shadowing if you specifically `@hide` the
+        #       previous instance before you declare the next one.
+        get(You, Index.)?: (Of;)
+            In_bounds: Your in_bounds(@hide Index) ?? return Null
+            Your[In_bounds]
+        set(You;, Index., Of?.): null
+            In_bounds: Your in_bounds(@hide Index) ?? panic()
+            # TODO: consider requiring `Name?: ...` always as referred to as `Name?`
+            #       then we can do things like this:
+            if Of? is Of.
+                Your[In_bounds] = Of!
+            else
+                You pop(In_bounds)
+    )
+
+    # non-nullable getter/setter; resizes the array if necessary when getting or setting.
+    ;;[Index.]: (Of;) = refer
+    (   Me
+        At. @hide @Input Index
+        # TODO: maybe allow shadowing if you specifically `@hide` the
+        #       previous instance before you declare the next one.
+        get(You;, Index.): (Of;)
+            In_bounds: Your in_bounds(@hide Index) ?? panic()
+            Your[In_bounds]
+        set(You;, Index., Of.): null
+            In_bounds: Your in_bounds(@hide Index) ?? panic()
+            Your[In_bounds] = Of!
+    )
    
-    # in-bounds getter (makes a copy), which is unsafe to call unless `In_bounds` is 
+    # in-bounds reference, which is unsafe to call unless `In_bounds` is 
     # within the range `[0, My count())`.
     :;[In_bounds.]: (Of:;)
         debug assert(In_bounds >= 0 and In_bounds < My count())
@@ -118,6 +153,8 @@ array[of]: indexable
         assert(Index < count(), Er: Invalid_index)
         ok(in_bounds(Index))
 
+    # Resizes the array to make `Index` in bounds, as long as it's positive.
+    # Can error out if `Index` is too negative or array expansion failed.
     @private
     ;;in_bounds(Index.): hm[in_bounds]
         I ensure_non_negative(Index;) assert()
