@@ -78,10 +78,8 @@ array[of]: indexable
             Your[In_bounds]
         set(You;, Index., Of?.): null
             In_bounds: Your in_bounds(@hide Index) ?? panic()
-            # TODO: consider requiring `Name?: ...` always as referred to as `Name?`
-            #       then we can do things like this:
-            if Of? is Of.
-                Your[In_bounds] = Of!
+            if Of is NonNull.
+                Your[In_bounds] = NonNull!
             else
                 You pop(In_bounds)
     )
@@ -108,7 +106,7 @@ array[of]: indexable
 
     # returns a value of the array element at the specified index,
     # or the end of the array if not specified.  returns null if the element
-    # would be out of bounds (e.g., `Index >= My count()` or no elements present).
+    # would be out of bounds (e.g., `Index >= My count()`).
     ;;pop(Index. -1)?: of
         # don't resize the array in case `Index >= My Count`.
         what My in_bounds(Index)
@@ -142,10 +140,29 @@ array[of]: indexable
         count(Me) > 0
 
     # returns a copy of this array, but sorted:
-    ::sort(): this
+    ::sort(): you
 
     # sorts this array in place:
     ;;sort(): null
+
+    # returns a sorted copy with a custom comparator that acts on a single element at a time.
+    # `by` should be easy to calculate on the fly, otherwise you should run
+    # it once for every element of the array and sort that array.
+    # the `by` result type `t` should be easily comparable via `<`, `<=`, etc.
+    # examples:
+    #   Array; ["abc", "de", "f", "ghij"]
+    #   Array::sort(by: $Str count())   # ["f", "de", "abc", "ghij"]
+    #   Array::sort(by(Str): $Str count())
+    ::sort(by(Of): ~t): you
+
+    # sorts in place with a custom comparator that acts on a single element at a time.
+    # `by` should be easy to calculate on the fly, otherwise you should run
+    # it once for every element of the array and sort that array.
+    # the `by` result type `t` should be easily comparable via `<`, `<=`, etc.
+    ;;sort(by(Of): ~t): null
+
+    # TODO: doc
+    ::sort(comparing(Left: of, Right: of): comparison): you
 
     @private
     ::in_bounds(Index.): hm[in_bounds]
