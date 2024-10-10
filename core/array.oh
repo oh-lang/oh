@@ -132,17 +132,33 @@ array[of]: indexable
 
     ;;erase(In_bounds.): null
         debug assert(In_bounds >= 0 and In_bounds < My count())
-        for Destination_index: In_bounds, Destination_index < My count() - 1
+        range(In_bounds, My count() - 1) each Destination_index:
             My[Destination_index] = My[In_bounds: Destination_index + 1]!
         My count(My count() - 1)
 
     !!(Me): bool
         count(Me) > 0
 
-    # returns a copy of this array, but sorted:
-    ::sort(): you
+    # returns a copy of this array, but sorted.
+    # only makes sense if `of` is orderable.
+    # TODO: do we want to make this like C++ with a `[Require: True/False]` template?
+    ::sort[Require: of is orderable](): you
+    # TODO: or do we want to make this more like compiler/macro driven?
+    @if of is orderable
+        ::sort(): you
+    # TODO: i'm not a big fan of the indent for the macro, but `[Require]` is a new
+    #       concept and would potentially require unboxing things deep within.
+    #       we could use macros like this:
+    #   @if
+    #   ::do_stuff():
+    #   @ese
+    #   ::do_other_stuff():
+    #   @fi
+    #       OR we could use a macro like `@enable_if(of is orderable) ::sort(): you`
+    #       but i don't like the idea of introducing more macros.
 
-    # sorts this array in place:
+    # sorts this array in place.
+    # only makes sense if `of` is orderable.
     ;;sort(): null
 
     # returns a sorted copy with a custom comparator that acts on a single element at a time.
