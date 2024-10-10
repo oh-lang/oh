@@ -146,31 +146,28 @@ array[of]: indexable
     ;;sort(): null
 
     # returns a sorted copy with a custom comparator that acts on a single element at a time.
-    # `by` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
-    # the `by` result type `t` should be easily comparable via `<`, `<=`, etc.
+    # `fn(By)` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
+    # the result type `t` should be easily comparable via `<`, `<=`, etc.
     # examples:
-    #   Array: ["abc", "de", "f", "ghij"]
-    #   Array::sort(by: $Str count())       # results in ["f", "de", "abc", "ghij"]
-    #   Array sort(by(Str): Str count())    # same, but without the lambda $
-    # TODO: should this be `sort(fn(By: of): ~t): you` instead?
-    #   Array sort((By): By count())
-    #   Array::sort($By count())
-    ::sort(by(Of): ~t): you
+    #   Array sort((By): By count())    # results in ["f", "de", "abc", "ghij"]
+    #   Array::sort($By count())        # same, but without the lambda $
+    ::sort(fn(By: of): ~t): you
 
     # sorts in place with a custom comparator that acts on a single element at a time.
-    # `by` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
-    # the `by` result type `t` should be easily comparable via `<`, `<=`, etc.
+    # `fn(By)` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
+    # the result type `t` should be easily comparable via `<`, `<=`, etc.
     # examples:
     #   Array; ["abc", "de", "f", "ghij"]
-    #   Array sort(by: $Str count())        # `Array` becomes ["f", "de", "abc", "ghij"]
-    #   Array;;sort(by(Str): Str count())   # same, but without the lambda $
-    ;;sort(by(Of): ~t): null
+    #   Array sort($By count())         # `Array` becomes ["f", "de", "abc", "ghij"]
+    #   Array;;sort((By): By count())   # same, but without the lambda $
+    ;;sort(fn(By: of): ~t): null
 
-    # sorts using a tabulated work array (`+O(N * size_of(t))` memory cost).
-    # should be called in the case that `by` is expensive to compute.
-    :;sort(by(Of): ~t, Tabulated: one_of[Tabulated]): respectively[you, null]
+    # sorts using a tabulated work array (additional `O(N * size_of(t))` memory cost).
+    # should be called in the case `fn(By)` is expensive to compute.
+    :;sort(fn(By: of): ~t, Tabulated. one_of[Tabulated]): respectively[you, null]
 
-    # TODO: doc
+    # sorts with a custom comparator that acts on two elements at a time.
+    # without certain transitive properties, the result's order may not make sense.
     :;sort(fn(Left: of, Right: of): comparison): respectively[you, null]
 
     @private
