@@ -141,25 +141,11 @@ array[of]: indexable
 
     # returns a copy of this array, but sorted.
     # only makes sense if `of` is orderable.
-    # TODO: do we want to make this like C++ with a `[Require: True/False]` template?
     ::sort[Require: of is orderable](): you
-    # TODO: or do we want to make this more like compiler/macro driven?
-    @if of is orderable
-        ::sort(): you
-    # TODO: i'm not a big fan of the indent for the macro, but `[Require]` is a new
-    #       concept and would potentially require unboxing things deep within.
-    #       we could use macros like this:
-    #   @if
-    #   ::do_stuff():
-    #   @ese
-    #   ::do_other_stuff():
-    #   @fi
-    #       OR we could use a macro like `@enable_if(of is orderable) ::sort(): you`
-    #       but i don't like the idea of introducing more macros.
 
     # sorts this array in place.
     # only makes sense if `of` is orderable.
-    ;;sort(): null
+    ;;sort[Require: of is orderable](): null
 
     # returns a sorted copy with a custom comparator that acts on a single element at a time.
     # `fn(By)` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
@@ -167,7 +153,7 @@ array[of]: indexable
     # examples:
     #   Array sort((By): By count())    # results in ["f", "de", "abc", "ghij"]
     #   Array::sort($By count())        # same, but without the lambda $
-    ::sort(fn(By: of): ~t): you
+    ::sort[Require: ~t is orderable](fn(By: of): t): you
 
     # sorts in place with a custom comparator that acts on a single element at a time.
     # `fn(By)` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
@@ -176,11 +162,11 @@ array[of]: indexable
     #   Array; ["abc", "de", "f", "ghij"]
     #   Array sort($By count())         # `Array` becomes ["f", "de", "abc", "ghij"]
     #   Array;;sort((By): By count())   # same, but without the lambda $
-    ;;sort(fn(By: of): ~t): null
+    ;;sort[Require: ~t is orderable](fn(By: of): t): null
 
     # sorts using a tabulated work array (additional `O(N * size_of(t))` memory cost).
     # should be called in the case `fn(By)` is expensive to compute.
-    :;sort(fn(By: of): ~t, Tabulated. one_of[Tabulated]): respectively[you, null]
+    :;sort[Require: ~t is orderable](fn(By: of): t, Tabulated. one_of[Tabulated]): respectively[you, null]
 
     # sorts with a custom comparator that acts on two elements at a time.
     # without certain transitive properties, the result's order may not make sense.
