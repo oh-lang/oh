@@ -146,23 +146,32 @@ array[of]: indexable
     ;;sort(): null
 
     # returns a sorted copy with a custom comparator that acts on a single element at a time.
-    # `by` should be easy to calculate on the fly, otherwise you should run
-    # it once for every element of the array and sort that array.
+    # `by` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
     # the `by` result type `t` should be easily comparable via `<`, `<=`, etc.
     # examples:
-    #   Array; ["abc", "de", "f", "ghij"]
-    #   Array::sort(by: $Str count())   # ["f", "de", "abc", "ghij"]
-    #   Array::sort(by(Str): $Str count())
+    #   Array: ["abc", "de", "f", "ghij"]
+    #   Array::sort(by: $Str count())       # results in ["f", "de", "abc", "ghij"]
+    #   Array sort(by(Str): Str count())    # same, but without the lambda $
+    # TODO: should this be `sort(fn(By: of): ~t): you` instead?
+    #   Array sort((By): By count())
+    #   Array::sort($By count())
     ::sort(by(Of): ~t): you
 
     # sorts in place with a custom comparator that acts on a single element at a time.
-    # `by` should be easy to calculate on the fly, otherwise you should run
-    # it once for every element of the array and sort that array.
+    # `by` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
     # the `by` result type `t` should be easily comparable via `<`, `<=`, etc.
+    # examples:
+    #   Array; ["abc", "de", "f", "ghij"]
+    #   Array sort(by: $Str count())        # `Array` becomes ["f", "de", "abc", "ghij"]
+    #   Array;;sort(by(Str): Str count())   # same, but without the lambda $
     ;;sort(by(Of): ~t): null
 
+    # sorts using a tabulated work array (`+O(N * size_of(t))` memory cost).
+    # should be called in the case that `by` is expensive to compute.
+    :;sort(by(Of): ~t, Tabulated: one_of[Tabulated]): respectively[you, null]
+
     # TODO: doc
-    ::sort(comparing(Left: of, Right: of): comparison): you
+    :;sort(fn(Left: of, Right: of): comparison): respectively[you, null]
 
     @private
     ::in_bounds(Index.): hm[in_bounds]
