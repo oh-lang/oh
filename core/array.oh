@@ -175,14 +175,12 @@ array[of]: indexable
     :;sort(fn(Left: of, Right: of): comparison): respectively[you, null]
 
     @hashable
-    # not the biggest fan of `Builder@ (newline) {...}`, should we do
-    # Builder (newline) @{ ... @} ??  that would make it very clear from both sides
-    # that a sequence builder is being used.
-    ::hash(~Builder;): Builder@
-    {   hash(of)    # make array hashes distinct based on type.
-        My each Of:
+    ::hash(~Builder;): Builder
+    @{  hash(of)    # make array hashes distinct based on type.
+        My each (Index., Of:)
+            hash(Index)
             hash(Of)
-    }
+    @}
 
     @private
     ::in_bounds(Index.): hm[in_bounds]
