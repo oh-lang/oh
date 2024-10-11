@@ -153,7 +153,7 @@ array[of]: indexable
     # examples:
     #   Array sort((By): By count())    # results in ["f", "de", "abc", "ghij"]
     #   Array::sort($By count())        # same, but without the lambda $
-    ::sort[Require: ~t is orderable](fn(By: of): t): you
+    ::sort[Require: t is orderable](fn(By: of): ~t): you
 
     # sorts in place with a custom comparator that acts on a single element at a time.
     # `fn(By)` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
@@ -162,15 +162,27 @@ array[of]: indexable
     #   Array; ["abc", "de", "f", "ghij"]
     #   Array sort($By count())         # `Array` becomes ["f", "de", "abc", "ghij"]
     #   Array;;sort((By): By count())   # same, but without the lambda $
-    ;;sort[Require: ~t is orderable](fn(By: of): t): null
+    ;;sort[Require: t is orderable](fn(By: of): ~t): null
 
     # sorts using a tabulated work array (additional `O(N * size_of(t))` memory cost).
     # should be called in the case `fn(By)` is expensive to compute.
-    :;sort[Require: ~t is orderable](fn(By: of): t, Tabulated. one_of[Tabulated]): respectively[you, null]
+    :;sort[Require: t is orderable]
+    (   fn(By: of): ~t, Tabulated. one_of[Tabulated]
+    ):  respectively[you, null]
 
     # sorts with a custom comparator that acts on two elements at a time.
     # without certain transitive properties, the result's order may not make sense.
     :;sort(fn(Left: of, Right: of): comparison): respectively[you, null]
+
+    @hashable
+    # not the biggest fan of `Builder@ (newline) {...}`, should we do
+    # Builder (newline) @{ ... @} ??  that would make it very clear from both sides
+    # that a sequence builder is being used.
+    ::hash(~Builder;): Builder@
+    {   hash(of)    # make array hashes distinct based on type.
+        My each Of:
+            hash(Of)
+    }
 
     @private
     ::in_bounds(Index.): hm[in_bounds]
