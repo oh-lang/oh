@@ -176,11 +176,11 @@ array[of]: indexable
 
     @hashable
     ::hash(~Builder;): Builder
-    @{  hash(of)    # make array hashes distinct based on type.
+    {   _ hash(of)  # make array hashes distinct based on type.
         My each (Index., Of:)
-            hash(Index)
-            hash(Of)
-    @}
+            _ hash(Index)
+            _ hash(Of)
+    }
 
     @private
     ::in_bounds(Index.): hm[in_bounds]
