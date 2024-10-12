@@ -1,0 +1,68 @@
+[in_bounds]: oh("./allocation.oh")
+
+indexable_sequence[of: not[null]]: container[of, at: index]
+{   ;;count(@Resize_to Count): null 
+
+    # in-bounds reference, which is unsafe to call unless `In_bounds` is 
+    # within the range `[0, My count())`.
+    :;[In_bounds.]: (Of:;)
+
+    # nullable getter; returns null if `Index` is outside the bounds of the array.
+    ::[@Input Index.]: (Of?) = refer
+    (   Me
+        At. @hide @Input Index
+        # TODO: maybe allow shadowing if you specifically `@hide` the
+        #       previous instance before you declare the next one.
+        get(You, Index.)?: (Of)
+            In_bounds: Your in_bounds(@hide Index) ?? return Null
+            Your[In_bounds]
+    )
+
+    # nullable getter/setter; resizes the array if necessary when setting.
+    ;;[Index.]: (Of?;) = refer
+    (   Me
+        At. @hide @Input Index
+        # TODO: maybe allow shadowing if you specifically `@hide` the
+        #       previous instance before you declare the next one.
+        get(You, Index.)?: (Of;)
+            In_bounds: Your in_bounds(@hide Index) ?? return Null
+            Your[In_bounds]
+        set(You;, Index., Of?.): null
+            In_bounds: Your in_bounds(@hide Index) ?? panic()
+            if Of is NonNull.
+                Your[In_bounds] = NonNull!
+            else
+                You pop(In_bounds)
+    )
+
+    # non-nullable getter/setter; resizes the array if necessary when getting or setting.
+    ;;[Index.]: (Of;) = refer
+    (   Me
+        At. @hide @Input Index
+        # TODO: maybe allow shadowing if you specifically `@hide` the
+        #       previous instance before you declare the next one.
+        get(You;, Index.): (Of;)
+            In_bounds: Your in_bounds(@hide Index) ?? panic()
+            Your[In_bounds]
+        set(You;, Index., Of.): null
+            In_bounds: Your in_bounds(@hide Index) ?? panic()
+            Your[In_bounds] = Of!
+    )
+
+    @protected
+    ::in_bounds(Index.): hm[in_bounds]
+        I ensure_non_negative(Index;) assert()
+        assert(Index < count(), Er: Invalid_index)
+        ok(in_bounds(Index))
+
+    # Resizes the array to make `Index` in bounds, as long as it's positive.
+    # Can error out if `Index` is too negative or array expansion failed.
+    @protected
+    ;;in_bounds(Index.): hm[in_bounds]
+        I ensure_non_negative(Index;) assert()
+        if Index >= count()
+            count(Index + 1) assert()
+        ok(in_bounds(Index))
+
+    # TODO: `ensure_non_negative`
+}

@@ -15,22 +15,24 @@ er: one_of
 ]
 hm[ok]: hm[ok, er]
 
-array[of]: indexable
-[   @private
-    Allocation; allocation
-
-    # TODO: convert this into a deque, add `Start: count`
-    #       however, this will make resizing more complicated.
-
+array[of]: all_of
+[   indexable_sequence[of]
     @private
-    Count; count = 0
+    [   Allocation; allocation
+
+        # TODO: convert this into a deque, add `Start: count`
+        #       however, this will make resizing more complicated.
+
+        @private
+        Count; count = 0
+    ]
 ]
 {   ;;enscope(Arguments[of].):
         Allocation count(Arguments count()) ?? panic()
-        while My Count < Arguments count()
-            Allocation move_construct(In_bounds: Arguments[My Count++]!)
+        while Count < Arguments count()
+            Allocation move_construct(In_bounds: Arguments[Count++]!)
 
-    ::count(): My Count
+    ::count(): Count
 
     ;;count(@New Count): hm[count]
         @Old Count: My Count
@@ -55,48 +57,6 @@ array[of]: indexable
         debug assert(My Count < count::Max)
         I allocate(At_least: My Count + 1) assert()
         Allocation move_construct(My Count++, Of!)
-
-    # nullable getter; returns null if `Index` is outside the bounds of the array.
-    ::[@Input Index.]: (Of?) = refer
-    (   Me
-        At. @hide @Input Index
-        # TODO: maybe allow shadowing if you specifically `@hide` the
-        #       previous instance before you declare the next one.
-        get(You, Index.)?: (Of)
-            In_bounds: Your in_bounds(@hide Index) ?? return Null
-            Your[In_bounds]
-    )
-
-    # nullable getter/setter; resizes the array if necessary when setting.
-    ;;[Index.]: (Of?;) = refer
-    (   Me
-        At. @hide @Input Index
-        # TODO: maybe allow shadowing if you specifically `@hide` the
-        #       previous instance before you declare the next one.
-        get(You, Index.)?: (Of;)
-            In_bounds: Your in_bounds(@hide Index) ?? return Null
-            Your[In_bounds]
-        set(You;, Index., Of?.): null
-            In_bounds: Your in_bounds(@hide Index) ?? panic()
-            if Of is NonNull.
-                Your[In_bounds] = NonNull!
-            else
-                You pop(In_bounds)
-    )
-
-    # non-nullable getter/setter; resizes the array if necessary when getting or setting.
-    ;;[Index.]: (Of;) = refer
-    (   Me
-        At. @hide @Input Index
-        # TODO: maybe allow shadowing if you specifically `@hide` the
-        #       previous instance before you declare the next one.
-        get(You;, Index.): (Of;)
-            In_bounds: Your in_bounds(@hide Index) ?? panic()
-            Your[In_bounds]
-        set(You;, Index., Of.): null
-            In_bounds: Your in_bounds(@hide Index) ?? panic()
-            Your[In_bounds] = Of!
-    )
    
     # in-bounds reference, which is unsafe to call unless `In_bounds` is 
     # within the range `[0, My count())`.
@@ -181,21 +141,6 @@ array[of]: indexable
             _ hash(Index)
             _ hash(Of)
     }
-
-    @private
-    ::in_bounds(Index.): hm[in_bounds]
-        I ensure_non_negative(Index;) assert()
-        assert(Index < count(), Er: Invalid_index)
-        ok(in_bounds(Index))
-
-    # Resizes the array to make `Index` in bounds, as long as it's positive.
-    # Can error out if `Index` is too negative or array expansion failed.
-    @private
-    ;;in_bounds(Index.): hm[in_bounds]
-        I ensure_non_negative(Index;) assert()
-        if Index >= count()
-            count(Index + 1) assert()
-        ok(in_bounds(Index))
 
     @private
     ;;allocate(At_least: count): hm[null]
