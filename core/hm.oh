@@ -1,0 +1,104 @@
+hm[ok, er]: one_of[ok, er]
+{   # The API is `Ok: Hm assert()`, which will bubble up this `er`
+    # if the result was an error.  Note that we use the `block` API
+    # which normally is implicit but can be used explicitly if needed.
+    #   ```
+    #   do_something(Dbl): hm[ok: dbl, er: str]
+    #       if Dbl < 0
+    #           er("Invalid Dbl: $(Dbl)")
+    #       else
+    #           ok(Dbl sqrt())
+    #
+    #   # example with implicit `block` (like a guard/control flow):
+    #   implicit_block(): hm[ok: null, er: str]
+    #       # will return early if an invalid type.
+    #       Result: do_something(1.234) assert()
+    #       print(Result)
+    #
+    #   # example with explicit `block` that does the same thing as implicit:
+    #   explicit_block(): hm[ok: null, er: str]
+    #       indent
+    #       (   (Block[hm[ok: null, er: str]]):
+    #               Result: do_something(1.234) assert(Block)
+    #               print(Result)
+    #               Block exit(null)
+    #       )
+    #   ```
+    ..assert[block_return: contains[er]](Block[~block_return]): ok
+        what Me
+            Ok: $(Ok)
+            Er: $(debug error(Er), Block exit(Er))
+
+    # The API is `Ok: Hm assert(Er: "custom error if not `ok`")`.
+    # This will moot `Me` and shortcircuit a failure (i.e., if `Hm`
+    # is `er`) to the calling block.  For example,
+    #   ```
+    #   do_something(Dbl): hm[ok: dbl, er: str]
+    #       if Dbl < 0
+    #           er("Invalid Dbl: $(Dbl)")
+    #       else
+    #           ok(Dbl sqrt())
+    #
+    #   # example with implicit `block` (like a guard/control flow):
+    #   implicit_block(): hm[ok: null, er: one_of[Invalid_do_something, Other_error]]
+    #       # will return early if an invalid type.
+    #       Result: do_something(1.234) assert(Er: Invalid_do_something)
+    #       print(Result)
+    #
+    #   # example with explicit `block` that does the same thing as implicit:
+    #   explicit_block(): hm[ok: null, er: one_of[Invalid_do_something, Other_error]]
+    #       indent
+    #       (   (Block[hm[ok: null, er: str]]):
+    #               Result: do_something(1.234) assert(Block, Er: Invalid_do_something)
+    #               print(Result)
+    #               Block exit(null)
+    #       )
+    #   ```
+    ..assert[block_return: contains[new_er]](@New Er: ~new_er, Block[~block_return]): ok
+        what Me
+            Ok: $(Ok)
+            Er:
+                debug error(Er)
+                Block exit(@New Er)
+
+    # maps an `Ok` result to a different type of `ok`, consuming `Me`.
+    # since this is a `@Named` namespace, we need to use `My_hm map((Ok.): Ok + 3)`
+    # instead of whatever type `ok` is, e.g., `My_hm map((Int.): Int + 3)` would not work.
+    # TODO: maybe use `@As` instead of `@Named`.
+    # TODO: it's probably ambiguous to pass a function by name without specifying the overload.
+    #       e.g., if i have a function `my_fn(Ok.): int` and overload `my_fn(Er.): int`,
+    #       then `Hm! map(my_fn)` should do what?  do we need to require `Hm! map(my_fn($$Ok))`?
+    #       things get worse if we allow output-type overloading; then we need `Hm! map(my_fn($$Ok) Int)`.
+    ..map(fn(@Named Ok.): @A~ok): hm[@A ok, er]
+
+    # maps an `Ok` result to a different type of `ok`, with possibly an error, consuming `Me`.
+    # TODO: namespaces are kinda annoying.  can we do `a_ok` and just match the suffix for `hm[a_ok, er]`?  
+    #       there's some ambiguity, however, if our type name has `_` inside, e.g., `fixed_array`.
+    ..map(fn(@Named Ok.): hm[@A~ok, er]): hm[@A ok, er]
+
+    # passes through any `Ok` result, but maps an `Er` to the desired `ok` result
+    # via the passed-in function.
+    ..map(fn(@Named Er.): ok): ok
+
+    # maps an `Er` result to a different type of `er`.
+    ..map(fn(@Named Er.): @New~er): hm[ok, @New er]
+
+    # maps `ok` and `er` separately.
+    ..map(@Ok fn(@Named Ok.): ~t, @Er fn(@Named Er.): t): t
+
+    # runs a callback if OK but returns self
+    ..check(fn(@Named Ok): null): me
+
+    # runs a callback if not OK but returns self
+    ..check(fn(@Named Er): null): me
+
+    # runs different callbacks based on OK/not-OK but returns self
+    # TODO: namespaces are kinda annoying.  can we do `ok_fn` and `er_fn` and just
+    #       match the suffix for an existing type?  
+    ..check(@Ok fn(@Named Ok): null, @Er fn(@Named Er): null): me
+
+    # TODO: should we use `to` here or is there a better way to indicate casting?
+    # it's technically something like `one_of[ok, null](Result: hm[ok, er]): one_of[ok, null]`
+    # which is pretty verbose.  could use `(Me.): one_of[ok, null]` for implicit conversion
+    ..to(): one_of[ok, null]
+}

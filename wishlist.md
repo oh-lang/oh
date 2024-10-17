@@ -5259,8 +5259,7 @@ E.g., `my_function(String_argument?: My_hm)` to pass in `My_hm` if it's ok or nu
 and `String?: My_hm` to grab it as a local variable.  This of course only works
 if `ok` is not already nullable, otherwise it is a compile error.
 
-TODO: use an oh-lang version.
-See [the hm definition](https://github.com/hm-lang/core/blob/main/core/hm.hm)
+See [the hm definition](https://github.com/oh-lang/oh/blob/main/core/hm.oh)
 for methods built on top of the `one_of[ok, er]` type.
 
 ```
