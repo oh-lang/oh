@@ -1,0 +1,357 @@
+#(#
+WISHLIST
+* very similar API between terminal UI and graphical UI
+* upgrading the program to a GUI should be as easy as starting
+    the window in GUI mode.
+* downgrading the program to a terminal should similarly work,
+    ideally without sacrificing too many features.
+* probably should upgrade coordinates to pairs of `f32`s.
+    well, we're using pixel coordinates, so maybe `i32`s are still ok.
+#)#
+
+
+Window uh: one_of
+[   Invalid_argument
+    # TODO...
+]
+hm[of]: hm[ok: of, Window uh]
+
+window: []
+{   terminal(): terminal_window
+    graphics(): graphics_window
+
+    # Returns the actual window size, i.e., the real-estate available for drawing.
+    ::size(): size2
+    # Sets the window size, returning the old value if the attempt was successful.
+    ;;size(Size2): hm[size2]
+    # TODO: add these eventually when we think we have a consistent API:
+    #(#
+    # Sets the minimum window size, i.e., for a resizable window.
+    ;;min_size(Size2): hm[size2]
+    # Sets the maximum window size, i.e., for a resizable window.
+    ;;max_size(Size2): hm[size2]
+    #)#
+
+    # Returns the current data in the clipboard,
+    # i.e., for the "pasting" part of copy-paste.
+    ::clipboard(): string
+    # Sets the current data in the clipboard,
+    # i.e., for the "copying" part of copy-paste.
+    # returns what was in the clipboard.
+    ;;clipboard(String): string
+
+    # Awaits the next window event, returning it.
+    ;;poll(): window_event
+    # Awaits the next window event, with a timeout in case no events occur.
+    ;;poll(Timeout: duration): window_event
+
+    # Accumulates window events over a frame.
+    # The `Duration` returned is that since the last `poll` or `frame` call.
+    ;;frame(Desired_fps: f32): [Events: window_event[], Duration]
+}
+
+terminal_window: all_of[window, l2]
+{   
+}
+
+graphics_window: all_of[window, l3]
+{   # Returns true iff the window is fullscreen.
+    ::fullscreen(): bool
+    # Sets fullscreen if the passed-in `Bool` is true,
+    # otherwise sets windowed mode.  Returns the previous result if successful.
+    ;;fullscreen(Bool): hm[bool]
+
+    ::resolution(): L3 Pixels size()
+    ;;resolution(Size2): L3 Pixels size(Size2)
+}
+
+l2: [@private Pixels;]
+{   # Writes some text to the l2.
+    ;;draw(Caret;, String): null
+}
+
+l3: [@private Pixels;]
+{   # Function to get pixels to draw to.
+    ;;draw[of: one_of[cpu_pixels, qpu_pixels]](fn(Of;): ~t): fn(My Pixels;)
+}
+
+window_event: one_of
+[   # A resize event, with the new interior size.
+    resize: size2
+    # A sequence of runes (e.g., layout and locale included).
+    text: string
+    # A physical, named key.
+    key: [Key, Modifiers, State: one_of[Pressed, Released, Repeated]]
+    # Mouse button, e.g., left mouse button or right mouse button.
+    mouse_button: [Position: vector2i, Button: u8, Modifiers, State: one_of[Pressed, Released]]
+    # The mouse moving.  The position is relative to the top-left of the shown pixels
+    # (i.e., in case of letterboxing, coordinates can be < 0 or >= the Window Resolution).
+    mouse_move: [Delta: vector2i, Position: vector2i, Modifiers]
+    # The mouse is scrolling.
+    mouse_wheel: [Delta: i32, Modifiers]
+    # Polling for events timed out.
+    Timeout
+]
+
+modifiers[of]:
+[   Control: of
+    Shift: of
+    Meta: of
+    Alt: of
+]
+modifiers: modifiers[bool]
+
+@referenceable_as(cpu_pixels, gpu_pixels)
+pixels: []
+{   @hide_from(cpu_pixels, gpu_pixels)
+    ;;renew(File_path): I load(File_path)
+
+    # Saves the image.
+    ::save(File_path): null
+
+    # Loads an image from a file.
+    @hide_from(cpu_pixels, gpu_pixels)
+    ;;load(File_path): null
+
+    # Current size of the image.
+    ::size(): size2
+
+    # Tries to resize the image.  Can fail if the new size is too large (OOM)
+    # or if the size is invalid (e.g., negative values).  If successful,
+    # returns the old size.
+    @hide_from(cpu_pixels, gpu_pixels)
+    ;;size(New Size2): hm[size2]
+
+    # Color getter via coordinates.  Can fail if the coordinates are out of bounds (OOB).
+    # Can also be expensive if the pixels aren't up-to-date on the CPU.
+    @hide_from(gpu_pixels)
+    ::[Coordinates2i, fn(Color): ~t]: hm[ok: t, uh]
+
+    # Color check+setter via coordinates.
+    @hide_from(gpu_pixels)
+    ;;[Coordinates2i, fn(Color;): ~t]: hm[ok: t, uh]
+
+    # Color setter (doesn't check the color first).
+    ;;draw(Coordinates2i, Color): hm[null]
+
+    # Draws some text to these pixels.
+    @hide_from(cpu_pixels) # TODO: maybe support CPU font drawing eventually
+    ;;draw(String, Caret;, Font;, Font_options: font_options()): null
+
+    # TODO: `;;draw(..., Mask)` for scissor operations
+
+    # Draws a rectangle of a solid color.
+    # If the rectangle is outside of the pixels coordinates, does nothing;
+    # only the overlap of the pixels' rectangle with `Rectangle2` will matter.
+    ;;draw(Rectangle2, Color): null
+
+    # Draws a rectangle of a solid color.
+    # If any of the rectangle's area is outside the `Wrap` rectangle,
+    # the rectangle will be split into pieces and wrapped before drawing.
+    ;;draw(Rectangle2, Color, Wrap: rectangle2): null
+
+    # Draws some fragments (triangles) to these pixels, setting the GPU version
+    # of these pixels ahead of the CPU version (if present).
+    # WARNING: Will also send `Vertices` to the GPU if not already there.
+    @hide_from(cpu_pixels)
+    ;;draw(Shading[vertex_data, fragment_data];, Vertex Array[vertex_data];, Fragment Array[fragment]): null
+
+    # TODO: line-drawing API.  e.g., `;;draw(Line, Color): null`
+    #       probably want a pixel-perfect one, plus a thickness based one.
+
+    # Moves the data to the GPU, if it's not already there and up-to-date.
+    # This can be expensive as we upload the entire image from CPU to GPU, if it has changed.
+    @hide_from(cpu_pixels, gpu_pixels)
+    ;;push(): null
+
+    # Moves the data from the GPU to the CPU, if the CPU is behind the GPU.
+    # This can be expensive as we download the entire image from GPU to CPU, if it has changed.
+    @hide_from(cpu_pixels, gpu_pixels)
+    ;;pull(): null
+
+    @private @
+    {   State; state[pixels_id] Cpu_only
+
+        # The current image size.
+        Size; size2
+
+        # Row-major order, with rows being rows of pixels across the screen left->right,
+        # with `Pixels[0]` being the top row and `Pixels[Height - 1]` the bottom row.
+        # Invariant: if `State != Gpu_only`,
+        # `Pixels[Y] size() == My Size Width` for all `Y` in bounds
+        # and `Pixels size() == My Size Height`.
+        Pixels; array[array[color]]
+    }
+}
+
+# Copies from one set of pixels to another.
+# Note that the source pixels `From` must be modifiable in case they
+# need to be moved from/to the GPU, based on `To` being CPU/GPU pixels.
+# Because of the nested `From`/`To` fields, you can call this like
+# `draw(From Pixels; Source_pixels, From Rectangle: rectangle(...), ...)`
+draw(From: (Pixels;, Rectangle), To: (Pixels;, Rectangle)): null
+
+# Copies from one set of pixels to another, with wrapping.
+# E.g., if `From Rectangle` is outside `From Wrap_within`,
+# then the remainder will get wrapped around,
+# so that we copy from the other side of `From Pixels`.
+# similarly for `To` pixels.
+# Using `R` for Rectangle and `W` for `Wrap_within`:
+#   *---------------*   *---------------*                   *---------------*
+#   |               |   |               |                   |               |
+#   | R-----R       |   | DDDCCC        |                   |               |
+#   | |  W--+---W   | = | BBBAAA        |       W------W    |    AAA*BBB    |
+#   | R--+--R   |   |   |               | into  |      | =  |    *******    |
+#   |    |      |   |   |               |       |      |    |    CCC*DDD    |
+#   |    W------W   |   |               |       W------W    |               |
+#   *---------------*   *---------------*                   *---------------*
+draw
+(   From: (Pixels; Rectangle, Wrap_within: rectangle)
+    To: (Pixels; Rectangle, Wrap_within: rectangle)
+):  null
+
+vertices[of]:
+[   @private @
+    {   State; state[vertices_id] Cpu_only
+
+        Array[vertex];
+    }
+]
+{   vertex: all_of[[Position: vector3f], of]
+
+    ;;renew(File_path): I load(File_path)
+
+    # Saves the vertices to a file.
+    ::save(File_path): null
+
+    # Loads vertices from a file.
+    ;;load(File_path): null
+
+    ;;[fn(Array[vertex];): ~t]: t
+        assert(!My State gpu_is_ahead_of_cpu()) orPanic()
+
+        Result: fn(My Array;)
+
+        My State is
+        (   (Synced.):
+                My State = needs_commit(Previous_id: Synced Id)
+        )
+
+        Result
+
+    # Moves the data to the GPU, if it's not already there and up-to-date.
+    # This can be expensive as we upload all the vertices from CPU to GPU, if they have changed.
+    ;;push(): null
+
+    # NOTE: there is no `;;pull()` method like with `pixels`; we don't modify
+    # vertices on the GPU like we do with textures.
+
+    # TODO: `..transfer(): of` to become `Gpu_only`
+}
+
+@private state[of]: one_of
+[   # This object is not represented on the GPU at all.
+    Cpu_only
+    # This object is not represented on the CPU at all.
+    Gpu_only: [Id: of]
+    # The CPU version of this object is ahead of the GPU version.
+    # The CPU version should send an update to the GPU (may be expensive).
+    Needs_gpu_update: [Previous_id: of]
+    # The GPU version of this object is ahead of the CPU version.
+    # The CPU version should request the data from the GPU (may be expensive).
+    Needs_cpu_update: [Id: of]
+    # The GPU version of this object is in sync with the CPU version.
+    Synced: [Id: of]
+]
+{   ::gpu_is_ahead_of_cpu(): bool
+        what Me
+            Cpu_only: $(False)
+            Gpu_only: $(True)
+            Needs_gpu_update: $(False)
+            Needs_cpu_update: $(True)
+            Synced: $(False)
+}
+
+fragment:
+[   Vertex_indices[3]; u32
+]
+
+# Warning!  Ensure that any fields to `vertex_data` or `fragment_data`
+# don't use a `builtin` like `Vertex_index`, unless you actually want to use that built-in.
+shader
+[   global_data: gpu_data = []
+    vertex_data: gpu_data = []
+    fragment_data: gpu_data = []
+]:
+[   # Vertex shader, which returns the position of the vertex
+    # plus any fragment data (for the fragment shader).
+    # TODO: needs to be a pure function.
+    # TODO: needs to have super-reflection so that we can parse this into shader language.
+    vertex(Global_data, Vertex_input_data): vertex_output_data
+
+    # Fragment shader, which returns the color to use for this pixel,
+    # based on Global_data and Fragment_data from the fragment's vertices.
+    # If returning null, the result is equivalent to a `discard`,
+    # and can be used for 100% transparency.
+    fragment(Global_data, Vertex_output_data)?: color4f
+]
+{   vertex_input_data: all_of[[Position: vector3f], vertex_data]
+    vertex_output_data: all_of[[Position: vector4f], fragment_data]
+
+    # Actually use this shader to draw to some GPU pixels.
+    # E.g.,
+    #   Shader shade
+    #   (   Global_data:
+    #       [   My: 12.3
+    #           Global: vector2f(X: 5.0)
+    #           Data: matrix4f(Translation: vector3f(X: 4.0, Y: 1.0, Z: 7.5))
+    #       ]
+    #       draw(Shading;):
+    #           Pixels draw(Shading;, My_vertices, My_triangles)
+    #   )
+    ::shade(Global_data, draw(Shading;): null): null
+}
+
+# GPU data is any struct of fields that include these types.
+gpu_data: fields_of[u32, f32, vector2f, vector3f, vector4f, matrix3f, matrix4f]
+
+font:
+[   @private @
+    {   Vertices[[Opacity: f32]];
+        Glyph_size: size2
+        Glyphs: lot[of: array[fragment], at: rune]
+    }
+]
+
+# Where the next bit of text will be added.
+caret:
+[   Top; vector2i
+    Height; i32
+]
+{   ;;move_up(): null
+    ;;move_down(): null
+}
+
+font_options:
+[   Foreground; color
+    Background; color
+    Style; font_style
+]
+{   @alias Foreground_color: Foreground
+    @alias Background_color: Background
+}
+
+font_style: any_or_none_of
+[   Bold
+    Italic
+    Underlined
+    Inverted # foreground/background color is inverted
+    Chaos # add pseudorandom jitter to drawn runes
+]
+
+vector2[of]: [X; of, Y; of]
+vector2i: vector2[i32]
+vector2f: vector2[f32]
+
+size2: [Width; i32, Height; i32]
+index2: [Column; i32, Row; i32]
