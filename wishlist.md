@@ -92,9 +92,9 @@ functions are defined, and to avoid needing to do something like `tmp_function(.
 When defining a function, variable arguments that use the default name for a type can
 elide the type name; e.g., `my_function(Int): str` will declare a function that takes 
 an instance of `int`.  See [default-named arguments](#default-name-arguments-in-functions).
-This is also true if namespaces are used, e.g., `my_function(Named Int): str`.  We can also
-avoid the readonly declaration (`:`) since it is the default, but you can use
-`my_function(Int;): str` for a function which can mutate the passed-in integer
+This is also true if namespaces are used, e.g., `my_function(@My_namespace Int): str`.
+We can also omit the readonly-reference declaration (`:`) since it is the default, or
+you can use `my_function(Int;): str` for a function which can mutate the passed-in integer
 or `my_function(Int.): str` for a function which takes a temporary integer.
 This also works for generic classes like `my_generic[of]` where `of` is a template type;
 `my_function(My_generic[int];)` is short for `my_function(My_generic; my_generic[int])`.
@@ -126,9 +126,10 @@ Class getters/setters do not use `::get_x(): dbl` or `;;set_x(Dbl): null`, but r
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
 of the benefits of using `function_case` for functions/methods and `Variable_case`
 for variables; we can easily distinguish intent without additional verbs.
+Of course, overloads are also required here to make this possible.
 
 Because we use `::` for readonly methods and `;;` for writable methods, we can
-easily define "const template" `:;` to define a method that works in either case `:` or `;`.
+easily define "const template" methods via `:;` which work in either case `:` or `;`.
 This is mostly useful when you can call a few other methods internally that have specific
 `::` and `;;` overloads, since there's usually some distinct logic for readonly vs. writable.
 E.g., `;:my_method(X;: str): I check(X;:)` where `check` has distinct overloads for `::` and `;;`.
@@ -140,6 +141,7 @@ type of a valid result, and `er` being the type of an error result.  You can spe
 the types via `hm[ok: int, er: str]` for `ok` being `int` and `er` being a `str`.
 If the `ok` and `er` types are distinct, you don't need to wrap a return value in
 `ok(Valid_result)` and `er(Error_result)`; you can just return `Valid_result` or `Error_result`.
+See [the `hm` section](#hm) for more details.
 
 ## coolness
 
@@ -5246,10 +5248,9 @@ be an error string.
 To make it easy to handle errors being returned from other functions, oh-lang uses
 the `assert` method on a result class.  E.g., `Ok: My_hm assert()` which will convert
 the `My_hm` result into the `ok` value or it will return the `er` error in `My_hm` from
-the current function block, e.g., `Ok: what My_hm { Ok: {Ok}, Er: {return Er}}`.
-It is something of a macro like `?` in Rust.  Note that `assert` doesn't panic.
-There are a few helpful overloads for the `assert()` method, including changing the
-error type `er` by including it, e.g., `My_hm assert(Er: new_er_type("Bad"))`.
+the current function block, e.g., `Ok: what My_hm { Ok: {Ok}, Er: {return Er} }`.
+It is something of a macro like `?` in Rust.  Note that `assert` doesn't panic,
+and it *always runs*, not just in debug mode.  See [its section](#assert) for more details.
 
 Note that we can automatically convert a result type into a nullable version
 of the `ok` type, e.g., `hm[ok: string, er: error_code]` can be converted into
@@ -5272,7 +5273,7 @@ Result is((Ok): print("Ok: ", Ok))
 Result is((Er): print("Er: ", Er))
 
 # or if you're sure it's that thing, or want the program to terminate if not:
-Ok: Result ?? panic("for sure")
+Ok: Result ?? panic("expected `Result` to be non-null!!")
 ```
 
 A few keywords, such as `is`, are actually operators, so we can overload
@@ -5327,9 +5328,7 @@ and note that asserts can be called like `My_value assert()` or `Positive assert
 Note that `assert` logic is always run, even in non-debug code.  To only check statements
 in the debug binary, use `debug assert`, which has the same signature as `assert`.  Using
 `debug assert` is not recommended, except to enforce the caller contract of private/protected
-methods.  For public methods, `assert` should always be used to check arguments.  Note also
-that `assert` will return the correct `er` subclass for the module that it is in;
-`debug assert` will return a `debug er` to help indicate that it is not a production error.
+methods.  For public methods, `assert` should always be used to check arguments.
 
 ## automatically converting errors to null
 
