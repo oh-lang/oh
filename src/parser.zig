@@ -378,8 +378,22 @@ pub const Parser = struct {
         self.debugTokens();
 
         var operation_tabbed = self.getSameStatementNextTabbed(tab) orelse {
-            common.debugPrint("wanted next operation but got deindent\n", .{});
+            common.debugPrint("\n\nwanted next operation at tab {d} but got deindent\n", .{tab});
             self.debugTokens();
+            // Check and see if we have a Horstmann indent to `tab`, which we interpret as a comma.
+            if (tab >= 4 and self.isHorstmannTabbedGoingForward(self.farthest_token_index, tab - 4)) {
+                if ((self.peekToken() catch unreachable).isSpacing()) {
+                    self.farthest_token_index += 1;
+                }
+                common.debugPrint("was Horstmann deindent->indent\n", .{});
+                // This was a deindent that indented back to this tab.
+                return OperationResult{
+                    .operation = .{ .operator = .op_comma },
+                    .tab = tab,
+                    .until_triggered = false,
+                };
+            }
+            common.debugPrint("was NOT Horstmann deindent->indent, normal deindent\n", .{});
             return OperationResult{
                 .operation = .{ .operator = .op_none },
                 .tab = tab,
@@ -431,7 +445,13 @@ pub const Parser = struct {
             },
             .open => |open| blk: {
                 self.farthest_token_index -= 1;
-                break :blk .{ .operator = if (open == .brace) .op_indent else .op_access, .type = .infix };
+                common.debugPrint("hello we're at open {s} and tab {d}\n", .{ open.slice(), tab });
+                self.debugTokens();
+                const operator: Operator = if (open == .brace)
+                    .op_indent
+                else
+                    .op_access;
+                break :blk .{ .operator = operator, .type = .infix };
             },
             else => blk: {
                 // We encountered another realizable token, back up so that
@@ -748,6 +768,13 @@ pub const Parser = struct {
 
     fn isHorstmannTabbedGoingForward(self: *Self, starting_token_index: usize, tab: u16) bool {
         var token_index = starting_token_index;
+        const starting_token = self.tokenAt(token_index) catch return false;
+        if (starting_token.getSpacing()) |starting_spacing| {
+            if (!starting_spacing.isNewlineTab(tab)) {
+                return false;
+            }
+            token_index += 1;
+        }
         // TODO: we probably can relax the 3 parentheses limit but we need to bump the tab.
         //&|my_function():
         //&|    return

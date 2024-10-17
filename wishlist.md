@@ -653,6 +653,19 @@ my_function(Str): int
         ]
 ```
 
+TODO: alternatively, can we do an unindent indent?
+this might not look the best if we use `{}`, but it's not awful.
+```
+my_function(Str): int
+    Results: if Str == "hello":
+        do_something(Str)
+    [   X: Str + ", world!"
+        Y: Str count()
+    ]
+    else
+        do_something_else()
+```
+
 The keyword `pass` is useful in blocks where you don't want to return
 from the function just yet.
 

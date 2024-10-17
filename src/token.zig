@@ -101,6 +101,13 @@ pub const Token = union(TokenTag) {
         };
     }
 
+    pub fn getSpacing(self: Self) ?SpacingToken {
+        return switch (self) {
+            .spacing => |spacing| spacing,
+            else => null,
+        };
+    }
+
     pub fn isNewline(self: Self) bool {
         return switch (self) {
             .spacing => |spacing| spacing.isNewline(),
@@ -111,10 +118,7 @@ pub const Token = union(TokenTag) {
 
     pub fn isNewlineTab(self: Self, tab: u16) bool {
         return switch (self) {
-            .spacing => |spacing| if (spacing.getNewlineTab()) |actual_tab|
-                actual_tab == tab
-            else
-                false,
+            .spacing => |spacing| spacing.isNewlineTab(tab),
             .file_end => false,
             else => false,
         };
@@ -607,6 +611,10 @@ pub const SpacingToken = struct {
 
     pub inline fn isNewline(self: Self) bool {
         return self.absolute == self.relative;
+    }
+
+    pub inline fn isNewlineTab(self: Self, tab: u16) bool {
+        return if (self.getNewlineTab()) |actual_tab| actual_tab == tab else false;
     }
 
     pub fn getNewlineIndex(self: Self) ?u32 {

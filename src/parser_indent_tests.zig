@@ -11,6 +11,120 @@ const std = @import("std");
 // This makes easy tests fail last, and they are easier to debug
 // if they are at the end of the input.
 
+test "parser deindent indents" {
+    const expected_nodes = [_]Node{
+        // [0]:
+        Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
+        Node{ .statement = .{ .node = 18, .next = 0 } }, // statement ... : {...}
+        Node{ .callable_token = 1 }, // wowza_d
+        Node{ .enclosed = .{ .open = .paren, .tab = 0, .start = 0 } }, // (...) at tab 0
+        Node{ .binary = .{ .operator = .op_access, .left = 2, .right = 3 } }, // wowza_d   (...)
+        // [5]:
+        Node{ .enclosed = .{ .open = .brace, .tab = 0, .start = 6 } }, // {...} at tab 0
+        Node{ .statement = .{ .node = 7, .next = 0 } }, // statement \t...\b at tab 4
+        Node{ .enclosed = .{ .open = .none, .tab = 4, .start = 8 } }, // \t...\b at tab 4
+        Node{ .statement = .{ .node = 11, .next = 12 } }, // statement spin_d   (...)
+        Node{ .callable_token = 11 }, // spin_d
+        // [10]:
+        Node{ .enclosed = .{ .open = .paren, .tab = 4, .start = 0 } }, // (...) at tab 4
+        Node{ .binary = .{ .operator = .op_access, .left = 9, .right = 10 } }, // spin_d   (...)
+        Node{ .statement = .{ .node = 13, .next = 0 } }, // statement [...] at tab 4
+        Node{ .enclosed = .{ .open = .bracket, .tab = 4, .start = 14 } }, // [...] at tab 4
+        Node{ .statement = .{ .node = 15, .next = 16 } }, // statement 1
+        // [15]:
+        Node{ .atomic_token = 19 }, // 1
+        Node{ .statement = .{ .node = 17, .next = 0 } }, // statement 2
+        Node{ .atomic_token = 21 }, // 2
+        Node{ .binary = .{ .operator = .op_declare_readonly, .left = 4, .right = 5 } }, // ... : {...}
+        .end, // end
+    };
+    {
+        // One-true-brace
+        var parser: Parser = .{};
+        defer parser.deinit();
+        errdefer parser.debug();
+        const file_slice = [_][]const u8{
+            "wowza_d(): {",
+            "    spin_d()",
+            "    [1",
+            "    2]",
+            "}",
+        };
+        try parser.tokenizer.file.appendSlice(&file_slice);
+
+        try parser.complete(DoNothing{});
+
+        try parser.nodes.expectEqualsSlice(&expected_nodes);
+        // No tampering done with the file, i.e., no errors.
+        try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+    }
+    {
+        // Horstmann
+        var parser: Parser = .{};
+        defer parser.deinit();
+        errdefer parser.debug();
+        const file_slice = [_][]const u8{
+            "wowza_d():",
+            "{   spin_d()",
+            "[   1",
+            "    2",
+            "]",
+            "}",
+        };
+        try parser.tokenizer.file.appendSlice(&file_slice);
+        common.debugPrint("\nSTASRTING STUFF\n\n", .{});
+
+        try parser.complete(DoNothing{});
+
+        try parser.nodes.expectEqualsSlice(&expected_nodes);
+        // No tampering done with the file, i.e., no errors.
+        try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+    }
+    {
+        // No braces
+        var parser: Parser = .{};
+        defer parser.deinit();
+        errdefer parser.debug();
+        const file_slice = [_][]const u8{
+            "wowza_d():",
+            "    spin_d()",
+            "[   1",
+            "    2",
+            "]",
+        };
+        try parser.tokenizer.file.appendSlice(&file_slice);
+
+        try parser.complete(DoNothing{});
+
+        try parser.nodes.expectEqualsSlice(&[_]Node{
+            // [0]:
+            Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
+            Node{ .statement = .{ .node = 16, .next = 0 } }, // statement ... : \t...\b
+            Node{ .callable_token = 1 }, // wowza_d
+            Node{ .enclosed = .{ .open = .paren, .tab = 0, .start = 0 } }, // (...) at tab 0
+            Node{ .binary = .{ .operator = .op_access, .left = 2, .right = 3 } }, // wowza_d   (...)
+            // [5]:
+            Node{ .enclosed = .{ .open = .none, .tab = 4, .start = 6 } }, // \t...\b at tab 4
+            Node{ .statement = .{ .node = 9, .next = 10 } }, // statement spin_d   (...)
+            Node{ .callable_token = 9 }, // spin_d
+            Node{ .enclosed = .{ .open = .paren, .tab = 4, .start = 0 } }, // (...) at tab 4
+            Node{ .binary = .{ .operator = .op_access, .left = 7, .right = 8 } }, // spin_d   (...)
+            // [10]:
+            Node{ .statement = .{ .node = 11, .next = 0 } }, // statement [...] at tab 4
+            Node{ .enclosed = .{ .open = .bracket, .tab = 4, .start = 12 } }, // [...] at tab 4
+            Node{ .statement = .{ .node = 13, .next = 14 } }, // statement 1
+            Node{ .atomic_token = 17 }, // 1
+            Node{ .statement = .{ .node = 15, .next = 0 } }, // statement 2
+            // [15]:
+            Node{ .atomic_token = 19 }, // 2
+            Node{ .binary = .{ .operator = .op_declare_readonly, .left = 4, .right = 5 } }, // ... : \t...\b
+            .end, // end
+        });
+        // No tampering done with the file, i.e., no errors.
+        try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+    }
+}
+
 test "parser indent nesting" {
     const expected_nodes = [_]Node{
         // [0]:
