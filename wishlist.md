@@ -651,6 +651,7 @@ my_function(Str): int
         [   X: Str + ", world!"
             Y: Str count()
         ]
+```
 
 The keyword `pass` is useful in blocks where you don't want to return
 from the function just yet.
