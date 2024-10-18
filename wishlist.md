@@ -2311,12 +2311,22 @@ detect(greet(Int): string): int
 # if your function is named the same as the function argument, you can use it directly:
 greet(Int): string
     return "hay"
+# TODO: with overloads, i don't think we can assume we know which `greet` that we want to pass in here.
+#       i don't think we want to enforce that function arguments are named uniquely across overloads,
+#       because that negates the benefit of `Hm map((Ok): 2 * Ok)` and `Hm map((Er): 123)`.
+#       maybe we throw a compile error if the function `greet` has overloads??
+#       if it does have overloads, we specify via `greet($$Int) String`
 detect(greet)       # returns -1
 
 # if your function is not named the same, you can do argument renaming;
 # internally this does not create a new function:
 say_hi(Int): string
     return "hello, world" + "!" * Int
+# TODO: with overloads, i don't think we can assume we know which `say_hi` that we want to pass in here.
+#       i don't think we want to enforce that function arguments are named uniquely across overloads,
+#       because that negates the benefit of `Hm map((Ok): 2 * Ok)` and `Hm map((Er): 123)`.
+#       maybe we throw a compile error if the function `say_hi` has overloads??
+#       if it does have overloads, we specify via `greet(Int): say_hi(Int) String`
 detect(greet: say_hi)    # returns 1
 
 # you can also create a lambda function named correctly inline -- the function

@@ -9,6 +9,8 @@ const Value = Run.Value;
 const Condition = Run.Condition;
 
 pub const DoNothing = struct {
+    // TODO: pub fn evaluateAtom and/or evaluateNumber
+
     pub fn evaluatePrefix(self: *Self, context: RunContext, operator: Operator, right: Value) Error!Value {
         _ = context;
         _ = self;

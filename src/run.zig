@@ -22,11 +22,11 @@ pub const Run = struct {
         unevaluated,
     };
 
-    pub fn next_statement(self: *Self) RunContext {
-        return RunContext{ .statement = self.next_id() };
+    pub fn nextStatement(self: *Self) RunContext {
+        return RunContext{ .statement = self.nextId() };
     }
 
-    fn next_id(self: *Self) Id {
+    fn nextId(self: *Self) Id {
         const id = self.id_next;
         self.id_next += 1;
         return id;

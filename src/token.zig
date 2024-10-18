@@ -9,7 +9,6 @@ const TokenTag = enum {
     invalid,
     file_end,
     // includes newlines.
-    // TODO: i think i want to return to newlines as separate
     spacing,
     starts_upper,
     starts_lower,
