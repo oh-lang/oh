@@ -23,6 +23,133 @@ const std = @import("std");
 // and `if Some_condition |> Then` for the block case.  this will also let us
 // define functions like `my_fn(X: int) |> Do[return_type]: {...}`
 
+test "parser if with brackets" {
+    const expected_nodes = [_]Node{
+        // [0]:
+        Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
+        Node{ .statement = .{ .node = 12, .next = 0 } }, // statement if Codny {...} {...}
+        Node{ .atomic_token = 3 }, // Codny
+        Node{ .enclosed = .{ .open = .brace, .tab = 0, .start = 4 } }, // {...} at tab 0
+        Node{ .statement = .{ .node = 5, .next = 0 } }, // statement [...] at tab 0
+        // [5]:
+        Node{ .enclosed = .{ .open = .bracket, .tab = 0, .start = 6 } }, // [...] at tab 0
+        Node{ .statement = .{ .node = 7, .next = 0 } }, // statement \t...\b at tab 4
+        Node{ .enclosed = .{ .open = .none, .tab = 4, .start = 8 } }, // \t...\b at tab 4
+        Node{ .statement = .{ .node = 9, .next = 10 } }, // statement 543
+        Node{ .atomic_token = 9 }, // 543
+        // [10]:
+        Node{ .statement = .{ .node = 11, .next = 0 } }, // statement 127
+        Node{ .atomic_token = 11 }, // 127
+        Node{ .conditional = .{ .condition = 2, .if_node = 3, .else_node = 13 } }, // if Codny {...} {...}
+        Node{ .enclosed = .{ .open = .brace, .tab = 0, .start = 14 } }, // {...} at tab 0
+        Node{ .statement = .{ .node = 15, .next = 0 } }, // statement [...] at tab 0
+        // [15]:
+        Node{ .enclosed = .{ .open = .bracket, .tab = 0, .start = 16 } }, // [...] at tab 0
+        Node{ .statement = .{ .node = 17, .next = 0 } }, // statement \t...\b at tab 4
+        Node{ .enclosed = .{ .open = .none, .tab = 4, .start = 18 } }, // \t...\b at tab 4
+        Node{ .statement = .{ .node = 19, .next = 0 } }, // statement 689
+        Node{ .atomic_token = 23 }, // 689
+        // [20]:
+        .end, // end
+    };
+    {
+        // One-true-brace
+        var parser: Parser = .{};
+        defer parser.deinit();
+        errdefer parser.debug();
+        const file_slice = [_][]const u8{
+            "if Codny {[",
+            "    543",
+            "    127",
+            "]} else {[",
+            "    689",
+            "]}",
+        };
+        try parser.tokenizer.file.appendSlice(&file_slice);
+
+        try parser.complete(DoNothing{});
+
+        try parser.nodes.expectEqualsSlice(&expected_nodes);
+        // No tampering done with the file, i.e., no errors.
+        try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+    }
+    {
+        // Horstmann
+        var parser: Parser = .{};
+        defer parser.deinit();
+        errdefer parser.debug();
+        const file_slice = [_][]const u8{
+            "if Codny",
+            "{[  543",
+            "    127",
+            "]}",
+            "else",
+            "{[  689",
+            "]}",
+        };
+        try parser.tokenizer.file.appendSlice(&file_slice);
+
+        try parser.complete(DoNothing{});
+
+        try parser.nodes.expectEqualsSlice(&expected_nodes);
+        // No tampering done with the file, i.e., no errors.
+        try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+    }
+    {
+        // No braces
+        var parser: Parser = .{};
+        defer parser.deinit();
+        errdefer parser.debug();
+        const file_slice = [_][]const u8{
+            "if Codny",
+            "    [   543",
+            "        127",
+            "    ]",
+            "else",
+            "    [   689",
+            "    ]",
+        };
+        try parser.tokenizer.file.appendSlice(&file_slice);
+
+        try parser.complete(DoNothing{});
+
+        // TODO: i think this is actually broken unless we change the rules for parentheses.
+        //      if we follow the rules for `tab -> operator -> tab -> stuff` as being a line continuation,
+        //      then this looks like it should be a double indent, so it would be `Codny op_access [543, 127]`
+        //      NOT `Codny indent [543, 127]`.
+        try parser.nodes.expectEqualsSlice(&[_]Node{
+            // [0]:
+            Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
+            Node{ .statement = .{ .node = 12, .next = 0 } }, // statement if Codny \t...\b \t...\b
+            Node{ .atomic_token = 3 }, // Codny
+            Node{ .enclosed = .{ .open = .none, .tab = 4, .start = 4 } }, // \t...\b at tab 4
+            Node{ .statement = .{ .node = 5, .next = 0 } }, // statement [...] at tab 4
+            // [5]:
+            Node{ .enclosed = .{ .open = .bracket, .tab = 4, .start = 6 } }, // [...] at tab 4
+            Node{ .statement = .{ .node = 7, .next = 0 } }, // statement \t...\b at tab 8
+            Node{ .enclosed = .{ .open = .none, .tab = 8, .start = 8 } }, // \t...\b at tab 8
+            Node{ .statement = .{ .node = 9, .next = 10 } }, // statement 543
+            Node{ .atomic_token = 7 }, // 543
+            // [10]:
+            Node{ .statement = .{ .node = 11, .next = 0 } }, // statement 127
+            Node{ .atomic_token = 9 }, // 127
+            Node{ .conditional = .{ .condition = 2, .if_node = 3, .else_node = 13 } }, // if Codny \t...\b else \t...\b
+            Node{ .enclosed = .{ .open = .none, .tab = 4, .start = 14 } }, // \t...\b at tab 4
+            Node{ .statement = .{ .node = 15, .next = 0 } }, // statement [...] at tab 4
+            // [15]:
+            Node{ .enclosed = .{ .open = .bracket, .tab = 4, .start = 16 } }, // [...] at tab 4
+            Node{ .statement = .{ .node = 17, .next = 0 } }, // statement \t...\b at tab 8
+            Node{ .enclosed = .{ .open = .none, .tab = 8, .start = 18 } }, // \t...\b at tab 8
+            Node{ .statement = .{ .node = 19, .next = 0 } }, // statement 689
+            Node{ .atomic_token = 17 }, // 689
+            // [20]:
+            .end, // end
+        });
+        // No tampering done with the file, i.e., no errors.
+        try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+    }
+}
+
 test "parsing one-line if/elif/else statements" {
     var parser: Parser = .{};
     defer parser.deinit();

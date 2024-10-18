@@ -924,7 +924,7 @@ pub const Parser = struct {
                 common.debugPrint(" ", .{});
                 self.debugNodeShort(conditional.if_node);
                 if (conditional.else_node != 0) {
-                    common.debugPrint(" ", .{});
+                    common.debugPrint(" else ", .{});
                     self.debugNodeShort(conditional.else_node);
                 }
             },

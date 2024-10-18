@@ -657,13 +657,29 @@ TODO: alternatively, can we do an unindent indent?
 this might not look the best if we use `{}`, but it's not awful.
 ```
 my_function(Str): int
-    Results: if Str == "hello":
+    Results: if Str == "hello"
         do_something(Str)
     [   X: Str + ", world!"
         Y: Str count()
     ]
     else
         do_something_else()
+```
+however, this isn't great for consistency if we eliminate a line...
+```
+# this passes back [X, Y]
+if Blab
+    do_stuff()
+[   X: Str + ", world!"
+    Y: Str count()
+]
+
+# this calls `Blab[X, Y]`:
+if Blab
+[   X: Str + ", world!"
+    Y: Str count()
+]
+
 ```
 
 The keyword `pass` is useful in blocks where you don't want to return

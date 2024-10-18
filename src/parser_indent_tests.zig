@@ -72,7 +72,6 @@ test "parser deindent indents" {
             "}",
         };
         try parser.tokenizer.file.appendSlice(&file_slice);
-        common.debugPrint("\nSTASRTING STUFF\n\n", .{});
 
         try parser.complete(DoNothing{});
 
