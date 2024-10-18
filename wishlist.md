@@ -804,9 +804,9 @@ defining_another_function_that_returns_a_generic
 (   Argument0: str
     Argument1: int
 ):  some_generic_type
-    [   type0: int
-        type1: str
-    ]
+[   type0: int
+    type1: str
+]
     do_something(Argument0)
     print("got arguments ${Argument0}, ${Argument1}")
     return ...

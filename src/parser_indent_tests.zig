@@ -15,20 +15,20 @@ test "parser indenting into an array" {
     const expected_nodes = [_]Node{
         // [0]:
         Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
-        Node{ .statement = .{ .node = 12, .next = 0 } }, // statement A : \t...\b
+        Node{ .statement = .{ .node = 4, .next = 0 } }, // statement A : ...
         Node{ .atomic_token = 1 }, // A
-        Node{ .enclosed = .{ .open = .none, .tab = 4, .start = 4 } }, // \t...\b at tab 4
-        Node{ .statement = .{ .node = 5, .next = 0 } }, // statement [...] at tab 4
-    // [5]:
-        Node{ .enclosed = .{ .open = .bracket, .tab = 4, .start = 6 } }, // [...] at tab 4
-        Node{ .statement = .{ .node = 7, .next = 0 } }, // statement \t...\b at tab 8
-        Node{ .enclosed = .{ .open = .none, .tab = 8, .start = 8 } }, // \t...\b at tab 8
+        Node{ .callable_token = 5 }, // a
+        Node{ .binary = .{ .operator = .op_declare_readonly, .left = 2, .right = 12 } }, // A : ...
+        // [5]:
+        Node{ .enclosed = .{ .open = .bracket, .tab = 0, .start = 6 } }, // [...] at tab 0
+        Node{ .statement = .{ .node = 7, .next = 0 } }, // statement \t...\b at tab 4
+        Node{ .enclosed = .{ .open = .none, .tab = 4, .start = 8 } }, // \t...\b at tab 4
         Node{ .statement = .{ .node = 9, .next = 10 } }, // statement 177
-        Node{ .atomic_token = 7 }, // 177
-    // [10]:
+        Node{ .atomic_token = 9 }, // 177
+        // [10]:
         Node{ .statement = .{ .node = 11, .next = 0 } }, // statement 277
-        Node{ .atomic_token = 9 }, // 277
-        Node{ .binary = .{ .operator = .op_declare_readonly, .left = 2, .right = 3 } }, // A : \t...\b
+        Node{ .atomic_token = 11 }, // 277
+        Node{ .binary = .{ .operator = .op_access, .left = 3, .right = 5 } }, // a   [...]
         .end, // end
     };
     {
@@ -37,13 +37,13 @@ test "parser indenting into an array" {
         defer parser.deinit();
         errdefer parser.debug();
         const file_slice = [_][]const u8{
-            "A:",
-            "    [",
-            "        177",
-            "        277",
-            "    ]",
+            "A: a[",
+            "    177",
+            "    277",
+            "]",
         };
         try parser.tokenizer.file.appendSlice(&file_slice);
+        common.debugPrint("\n\nSTARTINSDFSDF\n\n\n", .{});
 
         try parser.complete(DoNothing{});
 
@@ -57,10 +57,10 @@ test "parser indenting into an array" {
         defer parser.deinit();
         errdefer parser.debug();
         const file_slice = [_][]const u8{
-            "A:",
-            "    [   177",
-            "        277",
-            "    ]",
+            "A: a",
+            "[   177",
+            "    277",
+            "]",
         };
         try parser.tokenizer.file.appendSlice(&file_slice);
 
