@@ -11,7 +11,68 @@ const std = @import("std");
 // This makes easy tests fail last, and they are easier to debug
 // if they are at the end of the input.
 
-test "parser deindent indents" {
+test "parser indenting into an array" {
+    const expected_nodes = [_]Node{
+        // [0]:
+        Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
+        Node{ .statement = .{ .node = 12, .next = 0 } }, // statement A : \t...\b
+        Node{ .atomic_token = 1 }, // A
+        Node{ .enclosed = .{ .open = .none, .tab = 4, .start = 4 } }, // \t...\b at tab 4
+        Node{ .statement = .{ .node = 5, .next = 0 } }, // statement [...] at tab 4
+    // [5]:
+        Node{ .enclosed = .{ .open = .bracket, .tab = 4, .start = 6 } }, // [...] at tab 4
+        Node{ .statement = .{ .node = 7, .next = 0 } }, // statement \t...\b at tab 8
+        Node{ .enclosed = .{ .open = .none, .tab = 8, .start = 8 } }, // \t...\b at tab 8
+        Node{ .statement = .{ .node = 9, .next = 10 } }, // statement 177
+        Node{ .atomic_token = 7 }, // 177
+    // [10]:
+        Node{ .statement = .{ .node = 11, .next = 0 } }, // statement 277
+        Node{ .atomic_token = 9 }, // 277
+        Node{ .binary = .{ .operator = .op_declare_readonly, .left = 2, .right = 3 } }, // A : \t...\b
+        .end, // end
+    };
+    {
+        // One-true-brace
+        var parser: Parser = .{};
+        defer parser.deinit();
+        errdefer parser.debug();
+        const file_slice = [_][]const u8{
+            "A:",
+            "    [",
+            "        177",
+            "        277",
+            "    ]",
+        };
+        try parser.tokenizer.file.appendSlice(&file_slice);
+
+        try parser.complete(DoNothing{});
+
+        try parser.nodes.expectEqualsSlice(&expected_nodes);
+        // No tampering done with the file, i.e., no errors.
+        try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+    }
+    {
+        // Horstmann
+        var parser: Parser = .{};
+        defer parser.deinit();
+        errdefer parser.debug();
+        const file_slice = [_][]const u8{
+            "A:",
+            "    [   177",
+            "        277",
+            "    ]",
+        };
+        try parser.tokenizer.file.appendSlice(&file_slice);
+
+        try parser.complete(DoNothing{});
+
+        try parser.nodes.expectEqualsSlice(&expected_nodes);
+        // No tampering done with the file, i.e., no errors.
+        try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+    }
+}
+
+test "parser returning a multiline object" {
     const expected_nodes = [_]Node{
         // [0]:
         Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
