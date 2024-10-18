@@ -380,20 +380,6 @@ pub const Parser = struct {
         var operation_tabbed = self.getSameStatementNextTabbed(tab) orelse {
             common.debugPrint("\n\nwanted next operation at tab {d} but got deindent\n", .{tab});
             self.debugTokens();
-            // Check and see if we have a Horstmann indent to `tab`, which we interpret as a comma.
-            if (tab >= 4 and self.isHorstmannTabbedGoingForward(self.farthest_token_index, tab - 4)) {
-                if ((self.peekToken() catch unreachable).isSpacing()) {
-                    self.farthest_token_index += 1;
-                }
-                common.debugPrint("was Horstmann deindent->indent\n", .{});
-                // This was a deindent that indented back to this tab.
-                return OperationResult{
-                    .operation = .{ .operator = .op_comma },
-                    .tab = tab,
-                    .until_triggered = false,
-                };
-            }
-            common.debugPrint("was NOT Horstmann deindent->indent, normal deindent\n", .{});
             return OperationResult{
                 .operation = .{ .operator = .op_none },
                 .tab = tab,
@@ -902,8 +888,10 @@ pub const Parser = struct {
         std.debug.assert(node_index < self.nodes.count());
         switch (self.nodes.inBounds(node_index)) {
             .enclosed => |enclosed| {
-                common.debugPrint("{s}...{s} at tab {d}", .{
+                const internal = if (enclosed.start != 0) "..." else "";
+                common.debugPrint("{s}{s}{s} at tab {d}", .{
                     enclosed.open.openSlice(),
+                    internal,
                     enclosed.open.closeSlice(),
                     enclosed.tab,
                 });
@@ -975,8 +963,10 @@ pub const Parser = struct {
         std.debug.assert(node_index < self.nodes.count());
         switch (self.nodes.inBounds(node_index)) {
             .enclosed => |enclosed| {
-                common.debugPrint("{s}...{s}", .{
+                const internal = if (enclosed.start != 0) "..." else "";
+                common.debugPrint("{s}{s}{s}", .{
                     enclosed.open.openSlice(),
+                    internal,
                     enclosed.open.closeSlice(),
                 });
             },

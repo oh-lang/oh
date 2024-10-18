@@ -113,10 +113,6 @@ test "parser if with brackets" {
 
         try parser.complete(DoNothing{});
 
-        // TODO: i think this is actually broken unless we change the rules for parentheses.
-        //      if we follow the rules for `tab -> operator -> tab -> stuff` as being a line continuation,
-        //      then this looks like it should be a double indent, so it would be `Codny op_access [543, 127]`
-        //      NOT `Codny indent [543, 127]`.
         try parser.nodes.expectEqualsSlice(&[_]Node{
             // [0]:
             Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0

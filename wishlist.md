@@ -579,9 +579,11 @@ If you need more indents, refactor your code.
 
 Lines can be continued at a +2 indent from the originating line, and all
 subsequent lines can stay there at that indent (without indenting more).
-Note that operators (including parentheses) *are ignored* for determining
-the indent, so typical practice is to tab to the operator then tab to the number/symbol
-you need for continuing a line.  There are some special rules with parentheses;
+Note that operators *are ignored* for determining the indent, so typical
+practice is to tab to the infix operator then tab to the number/symbol
+you need for continuing a line. 
+
+There are some special rules with parentheses;
 if an opening brace/bracket/paren starts a line, and its insides are indented,
 we try to pair it with the previous line, so it's not necessary to indent +2.
 Also note, if there is no operator between two lines at the same indent,
@@ -590,13 +592,18 @@ we'll assume we should add a comma.
 ```
 # the following are equivalent to `My_array: [5, 6, 7]`.
 
-# this follows the line continuation rule (that we should indent at +2),
+# this is the block-definition style for a variable
+My_array:
+    [5, 6, 7]
+
+# this is similar to the block definition.
 My_array:   # OK, but...
     [   5
         6
         7
     ]
-# but note it's unnecessary because we also allow opening brackets
+
+# note it's unnecessary because we also allow opening brackets
 # to get attached to the previous line if the internals are indented.
 My_array:   # better!
 [   5
@@ -608,11 +615,6 @@ My_array:   # better!
 My_array:
         [5, 6, 7]
 
-My_array:
-    # this actually is ok because it is
-    # a block-definition of a variable.
-    [5, 6, 7]
-
 # the parentheses trick only works if the inside is indented.
 Not_defined_correctly:
 [5, 6, 7]       # not attached to the previous line.
@@ -623,64 +625,33 @@ from a function, since we may try to pair it with the previous line.
 If you *don't* want to pair a block with the previous line, use `pass` or `return`.  
 
 ```
+# example of returning `[X, Y]` values from a function.
+# there's no issue here because we're not indenting in `[X, Y]`:
+my_function(Int): [X: int, Y: int]
+    do_something(Int)
+    [X: 5 - Int, Y: 5 + Int]
+
+# this indents `[X, Y]` (i.e., to split into a multi-line array),
+# but note that we need `return` to avoid parsing as `do_something(Int)[X: ...]`.
 my_function(Int): [X: int, Y: int]
     do_something(Int)
     return
     [   X: 5 - Int
         Y: 5 + Int
     ]
-    # the `return` is necessary otherwise it would parse as
-    # `do_something(Int)[X: 5 - Int, Y: 5 + Int]`
 
-# this is also ok:
+# alternatively, you could add a comma between the two statements
+# to ensure it doesn't parse as `do_something(Int)[X: ...]`:
 my_function(Int): [X: int, Y: int]
-    do_something(Int)
-    [X: 5 - Int, Y: 5 + Int]
-```
-
-TODO: can we use `Then` or even just a blank line here?  don't know
-if i want to add more keywords than necessary.  however as they are
-operators we probably can overload `my_class pass(...)` anyway because
-we need to use `I pass(3)` in order for it to trigger.
-alternatively we could use a comma after the first line.
-
-```
-my_function(Str): int
-    Results: if Str == "hello" |> Then:
-        do_something(Str),
-        [   X: Str + ", world!"
-            Y: Str count()
-        ]
-```
-
-TODO: alternatively, can we do an unindent indent?
-this might not look the best if we use `{}`, but it's not awful.
-```
-my_function(Str): int
-    Results: if Str == "hello"
-        do_something(Str)
-    [   X: Str + ", world!"
-        Y: Str count()
+    do_something(Int),
+    [   X: 5 - Int
+        Y: 5 + Int
     ]
-    else
-        do_something_else()
 ```
-however, this isn't great for consistency if we eliminate a line...
-```
-# this passes back [X, Y]
-if Blab
-    do_stuff()
-[   X: Str + ", world!"
-    Y: Str count()
-]
 
-# this calls `Blab[X, Y]`:
-if Blab
-[   X: Str + ", world!"
-    Y: Str count()
-]
-
-```
+Because parentheses indicate [argument objects](#argument-objects),
+which can be returned like brackets, similar care must be taken with
+indents in `()`.
 
 The keyword `pass` is useful in blocks where you don't want to return
 from the function just yet.
