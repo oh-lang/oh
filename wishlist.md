@@ -889,8 +889,7 @@ the multiline comment symbols (e.g., `#(#` to `#)#`) are ignored.
 Note that the prefix `#@` signifies an end-of-line comment from the compiler, so if you use
 them they may be deleted/updated in unexpected ways.
 
-TODO: discuss `# comment comment @O(N^2)` as a way to declare a method's asymptotic time
-with big O notation.
+With function documentation comments, it's recommended to declare the asymptotic run time.
 
 # overview of types
 
@@ -913,7 +912,8 @@ Other types which have a fixed amount of memory:
     `my_function(Do_something: No, Do_something_else: Ya)`
     `my_function(Do_something: Not, Do_something_else: Got)`
     `my_function(Do_something: No, Do_something_else: Do)`
-    `my_function(Do_something: Nay, Do_something_else: Yea)`
+    `my_function(Do_something: Nay, Do_something_else: Yea)` (or `Yah`)
+    `my_function(Do_something: Nope, Do_something_else: Sure)`
     `my_function(Do_something: Moot, Do_something_else: Sure)`
     `what Result {Sure {do_something_for_ya()}, Moot {do_something_for_no()}}`
 * `rune`: a utf8 character, presumably held within an `i32`
@@ -923,7 +923,7 @@ Other types which have a fixed amount of memory:
 * `u64` : unsigned integer which can hold values from 0 to `2^64 - 1`, inclusive
 * `uXYZ` : unsigned integer which can hold values from 0 to `2^XYZ - 1`, inclusive,
     where `XYZ` is 128 to 512 in steps of 64, and generically we can use
-    `unsigned[Bits: count]: what Bits {8 {u8}, 16 {u16}, 32 {u32}, ...}`
+    `unsigned[Bits: count]: what Bits {8 {u8}, 16 {u16}, 32 {u32}, ..., Count: {disallowed}}`
 * `count` : `s64` under the hood, intended to be >= 0 to indicate the amount of something.
 * `index` : signed integer, `s64` under the hood.  for indexing arrays starting at 0.
 * `ordinal` : signed integer, `s64` under the hood.  for indexing arrays starting at 1.
@@ -1344,7 +1344,8 @@ my_function(X: int): int
         # inner scope, usage of `X` might be accidental, so let's hide:
         @hide X
         ...
-        print(X)    # COMPILE ERROR, `X` was hidden from this scope.
+        print(@Other X) # OK
+        print(X)        # COMPILE ERROR, `X` was hidden from this scope.
         ...
     do_stuff(X)
     do_stuff(X: X // 2)
@@ -1778,28 +1779,39 @@ since we don't want to make users extend from a base nullable class.
 # nullish or.
 # `Nullable ?? X` to return `X` if `Nullable` is null,
 # otherwise the non-null value in `Nullable`.
-# TODO: maybe rename to `present_or`
-non_null_or(First ~A?., Second A.): a
-    what First A
+non_null_or(@First ~A?., @Second A.): a
+    what @First A
         Non_null: {Non_null}
-        Null {Second A}
+        Null {@Second A}
 
 # boolean or.
 # `Nullable || X` to return `X` if `Nullable` is null or falsy,
 # otherwise the non-null truthy value in `Nullable`.
-truthy_or(First ~A?., Second A.): a
-    what A
+truthy_or(@First ~A?., @Second A.): a
+    what @First A
         Non_null:
             if Non_null
                 Non_null
             else
-                Second A
-        Null {Second A)
+                @Second A
+        Null {@Second A}
 ```
 
 We don't currently intend to support Rust-like matching, e.g.,
-`what A { Non_null: and bool(Non_null) {Non_null}, Any: {Second A} }`,
+`what @First A { Non_null: and bool(Non_null) {Non_null}, Any: {@Second A} }`,
 but that is a possibility in the future.
+
+```
+# TODO: see if `Non_null: && !!Non_null` would be valid syntax...
+#       i think it breaks because && is stronger than :
+#       probably need a `where` operator, e.g., `Non_null: where !!Non_null`
+truthy_or(@First ~A?., @Second A.): a
+    what @First A
+        Non_null: where !!Non_null
+            Non_null
+        Null
+            @Second A
+```
 
 ## nested/object types
 
@@ -2478,11 +2490,11 @@ should be avoided in oh-lang as much as possible, where we prefer unique names.
 One example is the cross product of two vectors, where order matters but the
 names of the vectors don't.  (The relationship between the two orders is also
 somewhat trivial, `A cross(B) == -B cross(A)`, and this simplicity should be aspired to.)
-The way to accomplish this in oh-lang is to use `First` and `Second` namespaces for
-each variable.  If defined in a method, `Me` will be assumed to be namespaced as `First`,
-so you can use `Second` for the other variable being passed in.  Using `First` and `Second`
+The way to accomplish this in oh-lang is to use `@First` and `@Second` namespaces for
+each variable.  If defined in a method, `Me` will be assumed to be namespaced as `@First`,
+so you can use `@Second` for the other variable being passed in.  Using `@First` and `@Second`
 allows you to avoid the compiler errors like `@order_independent` does.  You can also
-use `You` as the variable name which in the class body is the same as `Second Me`.
+use `You` as the variable name which in the class body is the same as `@Second Me`.
 
 ```
 vector3: [X; dbl, Y; dbl, Z; dbl]
@@ -2499,10 +2511,10 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
 
 # defined outside the class body, we do it like this:
 # NOTE: both definitions are *not* required, only one.
-cross(First Vector3, Second Vector3): vector3
-(   X: First Vector3 Y * Second Vector3 Z - First Vector3 Z * Second Vector3 Y
-    Y: First Vector3 Z * Second Vector3 X - First Vector3 X * Second Vector3 Z
-    Z: First Vector3 X * Second Vector3 Y - First Vector3 Y * Second Vector3 X
+cross(@First Vector3, @Second Vector3): vector3
+(   X: @First Vector3 Y * @Second Vector3 Z - @First Vector3 Z * @Second Vector3 Y
+    Y: @First Vector3 Z * @Second Vector3 X - @First Vector3 X * @Second Vector3 Z
+    Z: @First Vector3 X * @Second Vector3 Y - @First Vector3 Y * @Second Vector3 X
 )
 ```
 
@@ -4675,10 +4687,10 @@ type `hm[er, ok]`, like `@Namespace er: one_of[Oops, My_bad], hm[of]: hm[ok: of,
 Here are some examples:
 
 ```
-# Note that in oh-lang we could define this as `pair[First of, Second of]`
+# Note that in oh-lang we could define this as `pair[@First of, @Second of]`
 # so we don't need to specify `first: int, second: dbl`, but for illustration
 # in the following examples we'll make the generic parameters named.
-pair[first, second]: [First, Second]
+pair[first, second]: [@Named First, @Named Second]
 pair[of]: pair[first: of, second: of]
 
 # examples using pair[of]: ======
