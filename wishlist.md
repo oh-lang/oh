@@ -545,7 +545,7 @@ another class's instance, like `int(My_number_string)` which converts `My_number
 (presumably a `string` type) into a big integer.
 
 There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
-`what`, `in`, `each`, `for`, `while`, `pass`,
+`what`, `in`, `each`, `for`, `while`, `pass`, `where`,
 which are function-like but may consume the rest of the statement.
 E.g., `return X + 5` will return the value `(X + 5)` from the enclosing function.
 There are some reserved namespaces with side effects like `@First`, `@Second`,
@@ -653,14 +653,10 @@ Because parentheses indicate [argument objects](#argument-objects),
 which can be returned like brackets, similar care must be taken with
 indents in `()`.
 
-The keyword `pass` is useful in blocks where you don't want to return
-from the function just yet.
-
 ```
 my_function(Str): int
     Results: if Str == "hello"
-        do_something(Str)
-        pass
+        do_something(Str),
         [   X: Str + ", world!"
             Y: Str count()
         ]
@@ -966,7 +962,7 @@ Notice we use `assert` to shortcircuit function evaluation and return an error r
 ```
 # Going from a floating point number to an integer should be done carefully...
 X: dbl(5.43)
-Safe_cast: X int()                   # Safe_cast is a result type (`hm[ok: int, Number_conversion er]`)
+Safe_cast: X int()                  # Safe_cast is a result type (`hm[ok: int, Number_conversion er]`)
 # also OK: `Safe_cast: int(X)`.
 Q: X int() assert()                 # returns an error since `X` is not representable as an integer
 Y: X round(Down) int() assert()     # Y = 5.  equivalent to `X floor()`
@@ -1189,7 +1185,7 @@ unnull[one_of[...~nested, null]]: nested
 
 Almost all operations should have result-like syntax.  e.g., `A * B` can overflow (or run out of memory for `int`).
 same for `A + B` and `A - B`.  `A // B` is safe.  However, instead of making oh-lang always assert,
-we will use `multiply(~First A, Second A): hm[ok: a, Number_conversion er]` and then have
+we will use `multiply(@First~A, @Second A): hm[ok: a, Number_conversion er]` and then have
 `A1 * A2` always give an `a` instance by panicking if we run out of memory.  i.e.,
 ```
 number::*(You): me
@@ -1197,7 +1193,7 @@ number::*(You): me
     Result ?? panic()
 ```
 Primitive types will do overflow like in other languages without panicking, but you can use, e.g.,
-`multiply(One U32, Another U32)` to return an error if it overflows.
+`multiply(@One U32, @Another U32)` to return an error if it overflows.
 
 TODO: add : , ; ?? postfix/prefix ?
 TODO: add ... for dereferencing.  maybe we also allow it for spreading out an object into function arguments,
@@ -1315,8 +1311,8 @@ my_function(X: int): int
 
 The way to get around this is to use a namespace for one or both conflicts.
 Namespaces look like `Variable_case` annotations with a field name, e.g.,
-`@My_namespace My_variable_name`, where `My_namespace` doesn't already need
-to be defined.  You normally use these in function arguments, but they can
+`@My_namespace My_variable_name`, where `My_namespace` is some unrestricted
+name.  You normally use these in function arguments, but they can
 annotate any variable that you're declaring.  Any future references to the
 variable require using the namespace as well.  It is recommended to namespace
 the "outer" variable so you don't accidentally use it in the inner scope.
@@ -1387,7 +1383,7 @@ some_function(@Input Index): null
             print(@Another Index)
         
 X: index = 100
-some_function(X)     # note that we don't need to call as `some_function(Index: X)` or `some_function(Input Index: X)`.
+some_function(X)     # note that we don't need to call as `some_function(Index: X)` or `some_function(@Input Index: X)`.
 ```
 
 You can use the same namespace for multiple variables, e.g., `@Input Rune` and `@Input String`,
@@ -1454,8 +1450,8 @@ get_median_slow(Array[int]): hm[ok: int, er: string]
     if Array count() == 0
         return er("no elements in array, can't get median.")
     # make a copy of the array, but no longer allow access to it (via `@hide`):
-    Sorted Array: @hide Array sort()   # same as `Array::sort()` since `Array` is readonly.
-    ok(Sorted Array[Sorted Array count() // 2])
+    @Sorted Array: @hide Array sort()   # same as `Array::sort()` since `Array` is readonly.
+    ok(@Sorted Array[@Sorted Array count() // 2])
 
 # sorts the array and returns the median.
 get_median_slow(Array[int];): hm[ok: int, er: string]
@@ -1652,9 +1648,11 @@ include `X -= 5`, `Y &= 0x12`, etc.
 Swapping two variables is accomplished by something like `A <-> B`.
 Swap uses `<->` since `<=>` is reserved for a future spaceship operator
 (encompassing `<`, `<=`, `==`, `=>` and `>` in one).  As a function, swap
-would require mutable variables, e.g., `@order_independent swap(~X;, Other X;): null`.
+would require mutable variables, e.g., `@order_independent ;;x(@New X.): [@Old X]`.
 If you define `swap` in this way for your custom class, it will be available
-for the shorthand notation `<->`.
+for the shorthand notation `Some_class X <-> 1234`.
+TODO: make all "swappers" have the same function signature, not `swap` but
+`;;x(X.): x`.  could also use `;;x(X;): null` as the function signature.
 
 # variables
 
@@ -1797,14 +1795,10 @@ truthy_or(@First ~A?., @Second A.): a
         Null {@Second A}
 ```
 
-We don't currently intend to support Rust-like matching, e.g.,
-`what @First A { Non_null: and bool(Non_null) {Non_null}, Any: {@Second A} }`,
-but that is a possibility in the future.
+We'll support more complicated pattern matching (like in Rust) using
+the `where` operator.  The shorter version of the above `what` statement is:
 
 ```
-# TODO: see if `Non_null: && !!Non_null` would be valid syntax...
-#       i think it breaks because && is stronger than :
-#       probably need a `where` operator, e.g., `Non_null: where !!Non_null`
 truthy_or(@First ~A?., @Second A.): a
     what @First A
         Non_null: where !!Non_null
@@ -1812,6 +1806,9 @@ truthy_or(@First ~A?., @Second A.): a
         Null
             @Second A
 ```
+
+In this case, you can think of the `what` cases as being evaluated in order,
+and the first one to match will be executed.  Internally there are more optimizations.
 
 ## nested/object types
 
@@ -1861,19 +1858,19 @@ mix_match: [Wr; dbl, Ro: dbl]
 
 # when defined with `;`, the object `Mutable_mix` is writable: mutable and reassignable.
 Mutable_mix; mix_match = [Wr: 3, Ro: 4]
-Mutable_mix = mix_match(Wr: 6, Ro: 3) # OK, Mutable_mix is writable and thus reassignable
-Mutable_mix renew(Wr: 100, Ro: 300)  # OK, will update `Ro` to 300 and `Wr` to 100
-Mutable_mix Wr += 4                  # OK, Mutable_mix is writable and this field is writable
-Mutable_mix Ro -= 1                  # COMPILE ERROR, Mutable_mix is writable but this field is readonly
+Mutable_mix = mix_match(Wr: 6, Ro: 3)   # OK, Mutable_mix is writable and thus reassignable
+Mutable_mix renew(Wr: 100, Ro: 300) # OK, will update `Ro` to 300 and `Wr` to 100
+Mutable_mix Wr += 4                 # OK, Mutable_mix is writable and this field is writable
+Mutable_mix Ro -= 1                 # COMPILE ERROR, Mutable_mix is writable but this field is readonly
                                     # if you want to modify the `Ro` field, you need to reassign
                                     # the variable completely or call `renew`.
 
 # when defined with `:`, the object is readonly, so its fields cannot be changed:
 Readonly_mix: mix_match = [Wr: 5, Ro: 3]
-Readonly_mix = mix_match(Wr: 6, Ro: 4)    # COMPILE ERROR, Readonly_mix is readonly, thus non-reassignable
-Readonly_mix renew(Wr: 7, Ro: 5)         # COMPILE ERROR, Readonly_mix is readonly, thus non-renewable
-Readonly_mix Wr += 4                     # COMPILE ERROR, Readonly_mix is readonly
-Readonly_mix Ro -= 1                     # COMPILE ERROR, Readonly_mix is readonly
+Readonly_mix = mix_match(Wr: 6, Ro: 4)  # COMPILE ERROR, Readonly_mix is readonly, thus non-reassignable
+Readonly_mix renew(Wr: 7, Ro: 5)        # COMPILE ERROR, Readonly_mix is readonly, thus non-renewable
+Readonly_mix Wr += 4                    # COMPILE ERROR, Readonly_mix is readonly
+Readonly_mix Ro -= 1                    # COMPILE ERROR, Readonly_mix is readonly
 
 # NOTE that in general, calling a function with variables defined by `;` is a different
 # overload than calling with `:`.  Mutable argument variables imply that the arguments will
@@ -2070,21 +2067,20 @@ references, but need nesting to be the most clear.  For example:
 copy(From: (Pixels, Rectangle.), To: (Pixels;, Rectangle.): null
 
 # function usage
-Source Pixels: pixels() @{ #( build image )# }
-Destination Pixels; pixels()
-Size Rectangle: rectangle(Width: 10, Height: 7)
+@Source Pixels: pixels() { #( build image )# }
+@Destination Pixels; pixels()
+Size: rectangle(Width: 10, Height: 7)
 
 copy
 (   From: 
-    (   Source Pixels
-        Size Rectangle + Vector2(X: 3, Y: 4)
+    (   @Source Pixels
+        Size + Vector2(X: 3, Y: 4)
     )
     To:
-    (   Destination Pixels;
-        Size Rectangle + Vector2(X: 9, Y: 8)
+    (   @Destination Pixels;
+        Size + Vector2(X: 9, Y: 8)
     )
 )
-
 ```
 
 We can create deeply nested argument objects by adding valid identifiers with consecutive `:`/`;`/`.`.
@@ -2437,7 +2433,7 @@ that have the same name.  This is obvious because we wouldn't be able to disting
 the two arguments inside the function body.
 
 ```
-my_fun(X: int, X: dbl): one_of[int, dbl] = X      # COMPILER ERROR.  duplicate identifiers
+my_fun(X: int, X: dbl): one_of[int, dbl] = X    # COMPILER ERROR.  duplicate identifiers
 ```
 
 However, there are times where it is useful for a function to have two arguments with the same
@@ -2447,18 +2443,18 @@ An example of (1) is in a function like `max`:
 
 ```
 @order_independent
-max(Int, Other Int): int
-    return if Int > Other Int
+max(Int, @Other Int): int
+    return if Int > @Other Int
         Int
     else
-        Other Int
+        @Other Int
 
 max(5, 3) == max(3, 5)
 ```
 
 The compiler is not smart enough to know whether order matters or not, so we need to annotate
 the function with `@order_independent` -- otherwise it's a compiler error -- and we need to use
-namespaces (e.g., `Other` with `Other Int`) in order to distinguish between the two variables
+namespaces (e.g., `@Other` with `@Other Int`) in order to distinguish between the two variables
 inside the function block.  When calling `max`, we don't need to use those namespaces, and
 can't (since they're invisible to the outside world).
 
@@ -2784,13 +2780,13 @@ to figure out which overload should be used.  E.g., `[X, Y]: my_overload()` will
 look for an overload with outputs named `X` and `Y`.  Due to
 [single field objects](#single-field-objects) (SFO), `X: my_overload()` is
 equivalent to `[X]: my_overload()`.  You can also explicitly type the return value,
-e.g., `Some Int: my_overload()` or `R: my_overload() Dbl`,
+e.g., `@Some Int: my_overload()` or `R: my_overload() Dbl`,
 which will look for an overload with an `int` or `dbl` return type, respectively.
 
 When matching outputs, the fields count as additional arguments, which must
 be matched.  If you want to call an overload with multiple output arguments,
 but you don't need one of the outputs, you can use the `@hide` annotation to
-ensure it's not used afterwards.  E.g., `{@hide X, Y}: my_overload()`.
+ensure it's not used afterwards.  E.g., `[@hide X, Y]: my_overload()`.
 You can also just not include it, e.g., `Y: my_overload()`, which is
 preferred, in case the function has an optimization which doesn't need to
 calculate `X`.
@@ -2811,7 +2807,7 @@ things outside the function block.  Inside the function block, pass-by-value
 arguments are mutable, and can be reassigned or modified as desired.
 Similar to Rust, variables that can be easily copied implement a `::copy(): me`
 method, while variables that may require large allocations should only implement
-`;;renew(Other Me): null` (essentially a C++ copy constructor).  This is done
+`;;renew(@Other Me): null` (essentially a C++ copy constructor).  This is done
 by default for most oh-lang classes.
 
 Functions can also be defined with writable or readonly reference arguments, e.g., via
@@ -2863,13 +2859,13 @@ check(Arg123: string): string
     return Arg123 + "-readonly"
 
 My_value; string = "great"
-check(Arg123. My_value copy())   # returns "great-tmp".  needs `copy` since
+check(Arg123. My_value copy())  # returns "great-tmp".  needs `copy` since
                                 # `.` requires a temporary.
-print(My_value)                  # prints "great"
-check(Arg123: My_value)          # returns "great-readonly"
-print(My_value)                  # prints "great"
-check(Arg123; My_value)          # returns "great-writable"
-print(My_value)                  # prints "great-writable"
+print(My_value)                 # prints "great"
+check(Arg123: My_value)         # returns "great-readonly"
+print(My_value)                 # prints "great"
+check(Arg123; My_value)         # returns "great-writable"
+print(My_value)                 # prints "great-writable"
 ```
 
 Note that if you try to call a function with a readonly reference argument,
@@ -2881,11 +2877,11 @@ only_readonly(A: int): str
     return str(A) * A
 
 My_a; 10
-only_readonly(A; My_a)        # COMPILE ERROR, no writable overload for `only_readonly(A;)`
-only_readonly(A. int(My_a))   # COMPILE ERROR, no temporary overload for `only_readonly(A.)`
+only_readonly(A; My_a)      # COMPILE ERROR, no writable overload for `only_readonly(A;)`
+only_readonly(A. int(My_a)) # COMPILE ERROR, no temporary overload for `only_readonly(A.)`
 
-print(only_readonly(A: 3))       # OK, prints "333"
-print(only_readonly(A: My_a))     # OK, prints "10101010101010101010"
+print(only_readonly(A: 3))      # OK, prints "333"
+print(only_readonly(A: My_a))   # OK, prints "10101010101010101010"
 
 only_mutable(B; int): str
     Result: str(B) * B
@@ -2893,11 +2889,11 @@ only_mutable(B; int): str
     return Result
 
 My_b; 10
-only_mutable(B: My_b)         # COMPILE ERROR, no readonly overload for `only_mutable(B:)`
-only_mutable(B. int(My_b))    # COMPILE ERROR, no temporary overload for `only_mutable(B.)`
+only_mutable(B: My_b)           # COMPILE ERROR, no readonly overload for `only_mutable(B:)`
+only_mutable(B. int(My_b))      # COMPILE ERROR, no temporary overload for `only_mutable(B.)`
 
-print(only_mutable(B; My_b))  # OK, prints "10101010101010101010"
-print(only_mutable(B; My_b))  # OK, prints "55555"
+print(only_mutable(B; My_b))    # OK, prints "10101010101010101010"
+print(only_mutable(B; My_b))    # OK, prints "55555"
 
 only_temporary(C. int): str
     Result; ""
@@ -2908,11 +2904,11 @@ only_temporary(C. int): str
     Result
 
 My_c; 5
-only_temporary(C: My_c)       # COMPILE ERROR, no readonly overload for `only_temporary(C:)`
-only_temporary(C; My_c)       # COMPILE ERROR, no temporary overload for `only_temporary(C;)`
+only_temporary(C: My_c)     # COMPILE ERROR, no readonly overload for `only_temporary(C:)`
+only_temporary(C; My_c)     # COMPILE ERROR, no temporary overload for `only_temporary(C;)`
 
-print(only_temporary(C. 3))      # OK, prints "10"
-print(only_temporary(C. My_c!))   # OK, prints "12"
+print(only_temporary(C. 3))     # OK, prints "10"
+print(only_temporary(C. My_c!)) # OK, prints "12"
 ```
 
 Note there is an important distinction between variables defined as writable inside a block
@@ -3141,15 +3137,16 @@ variables at the same time, which can be done with `[Field1, Field2]: do_stuff()
 or `[Field1, Field2] = do_stuff()` for reassignment.
 
 If the returned fields are references (and we don't want to copy them into local variables),
-we can use parentheses in an analogous way:  `(Ref1:, Ref2;, Ref3) = do_stuff()`,
+we can use parentheses in an analogous way:  `(Ref1:, Ref2;, Not_a_ref.) = do_stuff()`,
 but note that `(Ref1, Ref2): do_stuff()` is *not* available because that clashes with
 the shorthand for defining lambdas;
 `(X: int, Y: str) = some_function(Z)` is destructuring, while
 `(X: int, Y: str): some_function(Z)` is defining a lambda.
 TODO: think if there's a better, more-consistent resolution here.
-we could require `{}` (or a block indent) for lambdas, e.g., `(X: int, Y: str): {some_function(Z)}`.
-this would probably be easier to type functions, but i like it for the same reason
-we're allowed to define `X: 5` so `x(): 5` should also work.
+maybe we get rid of the option to do `[Field1, Field2]; do_stuff()` and always
+require `[Field1;, Field2;] = do_stuff()`.  after all, it wouldn't make sense
+to do something like `[Field1;, Field2]: do_stuff()`.  that way there's never
+an "analogous" way to destructure things with `[]` that would be invalid with `()`.
 
 You can also use destructuring to specify return types explicitly.
 The notation is `[Field1: type1, Field2; type2] = do_stuff()`.  This can be used
@@ -3249,7 +3246,7 @@ F32: patterns()             # COMPILE ERROR: no overload for `patterns(): f32`
 
 {Chaos}: patterns()         # calls `patterns(): [Chaos: f32]` overload via destructuring.
 Chaos: patterns()           # same, via SFO concision.
-My_value: patterns() Chaos   # same, but with renaming `Chaos` to `My_value`. 
+My_value: patterns() Chaos  # same, but with renaming `Chaos` to `My_value`. 
 Chaos as Cool: patterns()   # same, but with renaming `Chaos` to `Cool`.
 {Wow; chaos} patterns()     # same, but with renaming `Chaos` to `Wow`.
 
@@ -3258,7 +3255,7 @@ Result: patterns()          # calls `patterns(): [Chaos: f32, Order: i32]`
 {Chaos, Order}: patterns()  # same overload, but because of destructuring.
 {Order}: patterns()         # same, but will silently drop the `Chaos` return value.
 Order: patterns()           # more concise form of `{Order}: patterns()`.
-My_value: patterns() Order   # same, but with renaming `Order` to `My_value`.
+My_value: patterns() Order  # same, but with renaming `Order` to `My_value`.
 Order as U: patterns()      # same, with renaming `Order` to `U`.
 {T; order} patterns()       # same, with renaming `Order` to `T`.
 ```
@@ -3268,8 +3265,8 @@ The danger is that your overload may change based on your return variable
 name; but this is usually desired, e.g., `Old Count: Array count(1000) assert()`
 if you care to get the old count of an array.
 
-IMPLEMENTATION NOTE: `Old Count: ... assert()` will require inferring through
-the `[Old: [Count: count]]` return value through the result `hm[ok: [Old: [Count]], ...]`
+IMPLEMENTATION NOTE: `X: ... assert()` will require inferring through
+the `[X: x]` return value through the result `hm[ok: [X: x], ...]`
 via `assert()`.  This may be difficult for more complicated expressions.
 
 SFO effectively makes any `x` return type into a `[X: x]` object.  This means
@@ -3279,8 +3276,7 @@ conflict; trying to define both would be a compile error.
 TODO: we probably can have `x(@New X: x): null` overloads where we don't need
 to always swap out the old value (e.g., `x(@New X: x): x`.  If we want to readopt
 SFO, we should make it clear by requiring setters to return the old value only
-if `x(@New X: x): [Old X]` is used.  Here no annotation on `Old` is desired, since
-we mean `[Old: [X: x]]` for `[Old X]`.
+if `x(@New X: x): [@Old X]` is used.
 
 ### `arguments` class
 
@@ -3374,11 +3370,11 @@ some_function(X: int): string
 some_function(X: string): int
     return X count_bytes()
 
-My_string: string = some_function(X: 100)     # uses the first overload
-My_int: int = some_function(X: "cow")         # uses the second overload
-Check_type1: some_function(X: 123)            # uses the first overload since the type is `int`
-Check_type2: some_function(X: "asdf")         # uses the second overload since the type is `string`
-Invalid: some_function(X: 123.4)             # COMPILE ERROR: 123.4 is not referenceable as `int` or `string`
+My_string: string = some_function(X: 100)   # uses the first overload
+My_int: int = some_function(X: "cow")       # uses the second overload
+Check_type1: some_function(X: 123)          # uses the first overload since the type is `int`
+Check_type2: some_function(X: "asdf")       # uses the second overload since the type is `string`
+Invalid: some_function(X: 123.4)            # COMPILE ERROR: 123.4 is not referenceable as `int` or `string`
 
 # example which will use the default overload:
 Call; call
@@ -3881,8 +3877,8 @@ Example X -= 3                  # internal fields can be reassigned as well.
 # note that if you define an instance of the class as readonly, you can only operate
 # on the class with functions that do not mutate it.
 Const_var: example_class(X: 2)
-Const_var X += 3                 # COMPILER ERROR! `Const_var` is readonly.
-Const_var = example_class(X: 4)   # COMPILER ERROR! variable is readonly.
+Const_var X += 3                # COMPILER ERROR! `Const_var` is readonly.
+Const_var = example_class(X: 4) # COMPILER ERROR! variable is readonly.
 
 # calling class functions doesn't require an instance.
 Dont_need_an_instance: example_class some_static_function(Y; 5)
@@ -3953,22 +3949,24 @@ should be `@protected` (or `@private`), so it's a compile error if
 ```
 destructor_class: [X: int]
 {   @protected
-    ;;new(Debug X. int): null
-        print("X ${Debug X}")
-        My X = Debug X!
+    # TODO: the `@Debug` annotation should do something interesting, like
+    #       stop the debugger when the value is `set`ted or `get`ted.
+    ;;new(@Debug X. int): null
+        print("X ${@Debug X}")
+        My X = @Debug X!
     # `;;new` will also add methods like this,
     # with a step-up in visibility from whatever `;;new` was.
-    #       i(Debug X. int): me 
+    #       i(@Debug X. int): me 
     #           I;
-    #           I new(Debug X!)
+    #           I new(@Debug X!)
     #           I!
-    #       ;;renew(Debug X. int): null
+    #       ;;renew(@Debug X. int): null
     #           I descope()
-    #           I new(Debug X!)
+    #           I new(@Debug X!)
 
     # you should define the destructor:
     ;;descope(): null
-        print("going out of scope, had X ${Debug X}")
+        print("going out of scope, had X ${My X}")
         # note that destructors of instance variables (e.g., `My X`)
         # will automatically be called, in reverse order of definition.
 }
@@ -4476,12 +4474,12 @@ mythological_cat: all_of[cat, [Lives; 9]]
 Cat; @only cat
 Mythological_cat; mythological_cat()
 
-Cat = Mythological_cat       # COMPILER ERROR, implicit cast to `@only cat` not allowed.
-Cat = cat(Mythological_cat)  # OK.  explicit upcast is allowed.
+Cat = Mythological_cat      # COMPILER ERROR, implicit cast to `@only cat` not allowed.
+Cat = cat(Mythological_cat) # OK.  explicit upcast is allowed.
 
 Other_cat; @only cat
-Cat <-> Mythological_cat     # COMPILER ERROR.  swaps not allowed unless both types are the same.
-Other_cat <-> Cat            # OK.  both variables are `@only cat`.
+Cat <-> Mythological_cat    # COMPILER ERROR.  swaps not allowed unless both types are the same.
+Other_cat <-> Cat           # OK.  both variables are `@only cat`.
 ```
 
 We also will likely ignore `@only` annotations for tests, so that we can mock out
@@ -4515,7 +4513,7 @@ To_string: string = Some_example to()
 {My_value: dbl} Some_example to()
 
 # but you can't implicitly ask for the type.
-Unspecified: Some_example to()     # COMPILER ERROR, specify a type for `Unspecified`
+Unspecified: Some_example to()      # COMPILER ERROR, specify a type for `Unspecified`
 ```
 it'd be hard to give up `Array[3]` for simplicity/convenience/conciseness, etc,
 i don't prefer `Array at(3)` or `Array index(3)`.
@@ -4548,7 +4546,7 @@ like this: `my_single_generic_class[int] my_class_function(...)` or
 `my_multi_generic_class[type1: int, type2: str] other_class_function()`.
 
 ```
-# TODO: either use `[@Named Id]` or `[@use Id]` or change discussion in
+# TODO: either use `[@Named Id]` or change discussion in
 # "default field names with generics" back to what it was.
 # create a class with two generic types, `id` and `value`:
 generic_class[id, value]: [Id, Value]
@@ -5129,14 +5127,12 @@ TODO: discussion on how the formatter will move imports to the bottom
 of the file so you can see the main part of your code instantly.
 
 TODO: how to import functions, i.e., to distinguish from classes?
-e.g., is `{vector2}: \/vector2` a function or a class definition?
+e.g., is `[vector2]: \/vector2` a function or a class definition?
 we probably want to force importing the overload to ensure that we can
 determine if it's a function or a class in the importing file.  e.g.,
-`{my_function(My_arg1: int, My_arg2: dbl): str} = \/util`.
+`[my_function(My_arg1: int, My_arg2: dbl): str] = \/util`.
 we can always come up with a solution to "grab all overloads" like
-`{my_function: ...(...)} = \/util`. -- TODO something better.
-or `{my_function(_): _} = \/util` or `{my_function(*): *} = \/util`.
-or maybe `{my_function(Call;): null}`
+or maybe `[my_function(Call;): null]: \/util`
 
 You can use this `\/` notation inline as well, which is recommended
 for avoiding unnecessary imports.  It will be a language feature to
@@ -5460,8 +5456,8 @@ Example usage and declarations:
 ```
 # this is a readonly array:
 My_array: array[dbl]([1.2, 3, 4.5])  # converts all to dbl
-My_array append(5)   # COMPILE ERROR: My_array is readonly
-My_array[1] += 5     # COMPILE ERROR: My_array is readonly
+My_array append(5)  # COMPILE ERROR: My_array is readonly
+My_array[1] += 5    # COMPILE ERROR: My_array is readonly
 
 # writable integer array:
 Array[int];         # declaring a writable, default-named integer array
@@ -5714,7 +5710,7 @@ E.g., `dbl` and `flt` cannot be used, nor can types which include those (e.g., `
 
 ```
 Dbl_database; dbl[int]      # OK, int is an OK ID type
-Dbl_dbl_database; dbl[dbl]   # COMPILE ERROR, dbl is an invalid ID type.
+Dbl_dbl_database; dbl[dbl]  # COMPILE ERROR, dbl is an invalid ID type.
 ```
 
 However, we allow casting from these prohibited types to allowed ID types.  For example:
@@ -5723,8 +5719,8 @@ However, we allow casting from these prohibited types to allowed ID types.  For 
 Name_database; string[int]
 Name_database[123] = "John"
 Name_database[124] = "Jane"
-print(Name_database[123.4])  # RUNTIME ERROR, 123.4 is not representable as an `int`.
-print(Name_database[123.4 round(Stochastically)])    # prints "John" with 60% probability, "Jane" with 40%.
+print(Name_database[123.4]) # RUNTIME ERROR, 123.4 is not representable as an `int`.
+print(Name_database[123.4 round(Stochastically)])   # prints "John" with 60% probability, "Jane" with 40%.
 
 # note that the definition of the ID is a readonly array:
 Stack_database; lot[at: array[int], string]
@@ -5940,10 +5936,11 @@ set[of: hashable]: container[id: of, value: true]
     #   `Set[X, fn(Maybe True?;): {Maybe True = if Condition {True} else {Null}}]`
     # TODO: if we used `True?` as the identifier everywhere we wouldn't need to do `Maybe True`, e.g.,
     #   `Set[X, fn(True?;): {True? = if Condition {True} else {Null}}]`
-    ;;[Of, fn(Maybe True?; true): ~t]: t
+    # TODO: remove these methods and add `refer` methods
+    ;;[Of, fn(@Maybe True?; true): ~t]: t
 
     # Fancy getter for whether `Of` is in the set or not.
-    ::[Of, fn(Maybe True?): ~t]: t
+    ::[Of, fn(@Maybe True?): ~t]: t
 
     ::count(): count
 
@@ -6062,7 +6059,7 @@ array_iterator[of]: iterator[of]
     # `array_iterator`, but we keep it as `;;` since other container
     # iterators will generally need to update their index/ID.
     ;;remove(Array; array[of])?: if My Next < Array count()
-        Array remove(This Next)
+        Array remove(My Next)
     else
         Null
 }
@@ -6199,11 +6196,11 @@ you can do `if Whatever |> Then[my_if_block_type]:`, etc.
 ```
 if Some_condition |> Then:
     # do stuff
-    if Some_other_condition |> Named Then:
+    if Some_other_condition |> @Some_namespace Then:
         if Something_else1
             Then exit()
         if Something_else2
-            Named Then exit()
+            @Some_namespace Then exit()
     # do other stuff
 
 Result: what Some_value |> Then[str]:
