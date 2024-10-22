@@ -15,34 +15,41 @@ htmlElement:
 {   # TODO
 }
 
-# paragraph
+# <body>
+# https://developer.mozilla.org/en-US/docs/Web/API/HTMLBodyElement
+body: htmlElement
+{   ;;renew(Arguments[htmlElement].): null
+}
+
+# <p> paragraph
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLParagraphElement
 p: htmlElement
 {   ;;renew(Arguments[htmlElement].): null
     ;;renew(Text.): null 
 }
 
-# heading
+# <h1> through <h6> heading
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
 h: htmlElement
 {   ;;renew(Arguments[htmlElement].): null
     ;;renew(Text.): null
 }
 
-# hyperlink
+# <a> hyperlink
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLAnchorElement
 a: htmlElement
 {   ;;renew(Arguments[htmlElement].): null
     ;;renew(Text., Url.): null
 }
 
-# image
+# <img> image
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement
 img: htmlElement
 {   ;;renew(Arguments[htmlElement].): null
     ;;renew(Alt. text, Url.): null
 }
 
+# <video>
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement
 vdo: htmlElement
 {   ;;renew(Arguments[htmlElement].): null
@@ -50,6 +57,7 @@ vdo: htmlElement
     ;;renew(Url.): null
 }
 
+# <script>
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLScriptElement
 script: htmlElement
 {   ;;renew(Text.): null
