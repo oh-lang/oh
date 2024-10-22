@@ -28,7 +28,12 @@ so that declaring a variable and specifying a variable will work the same inside
 function arguments.  For example, declaring a function that takes an integer named `X`,
 `my_function(X: int): null`, and declaring an integer variable named `X` uses the same syntax:
 `X: int`.  Similarly, calling a function with arguments specified as `my_function(X: 5)` and
-defining a variable works the same outside of a function: `X: 5`.
+defining a variable works the same outside of a function: `X: 5`.  There is a slight distinction
+since we have the option of `.` in function arguments, which indicates a temporary.  E.g.,
+in `(X: int, Y; str, Z. dbl)` we declare `X` as a readonly reference, `Y` a writable reference,
+and `Z` a temporary, whereas outside of function arguments, `[X: int, Y; str]` indicates
+that `X` is readonly (though it can be written in constructors or first assignment) and `Y`
+is writable.
 
 In some languages, e.g., JavaScript, objects are passed by reference and primitives
 are passed by value when calling a function with these arguments.  In oh-lang,
@@ -38,6 +43,9 @@ and we extend that to function calls like `do_something(X)`.  Note that it's pos
 to pass by value as well; see [passing by reference or by value](#pass-by-reference-or-pass-by-value). 
 However, to avoid most surprises, by default arguments are passed by *readonly* reference.
 See [passing by reference gotchas](#passing-by-reference-gotchas)) for the edge cases.
+We make pass-by-constant-reference the default because we don't want to require
+using `:` when calling a method like `count(Container:)`, i.e., to grab the number
+of elements in a container without making a copy of the container.
 
 In oh-lang, determining the number of elements in a container uses the same
 method name for all container types; `count(Container)` or `Container count()`,
