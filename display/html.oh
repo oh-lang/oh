@@ -1,0 +1,57 @@
+#[#
+# example HTML page with these HTML wrappers.
+Page: html
+(   body
+    (   h1("My page")
+        p("Hello there")
+        a("Go here!", Url: "https://wikipedia.org")
+    )
+)
+#]#
+
+htmlElement:
+[   # TODO
+]
+{   # TODO
+}
+
+# paragraph
+# https://developer.mozilla.org/en-US/docs/Web/API/HTMLParagraphElement
+p: htmlElement
+{   ;;renew(Arguments[htmlElement].): null
+    ;;renew(Text.): null 
+}
+
+# heading
+# https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
+h: htmlElement
+{   ;;renew(Arguments[htmlElement].): null
+    ;;renew(Text.): null
+}
+
+# hyperlink
+# https://developer.mozilla.org/en-US/docs/Web/API/HTMLAnchorElement
+a: htmlElement
+{   ;;renew(Arguments[htmlElement].): null
+    ;;renew(Text., Url.): null
+}
+
+# image
+# https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement
+img: htmlElement
+{   ;;renew(Arguments[htmlElement].): null
+    ;;renew(Alt. text, Url.): null
+}
+
+# https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement
+vdo: htmlElement
+{   ;;renew(Arguments[htmlElement].): null
+    # <video> + <source> with this `Url`.
+    ;;renew(Url.): null
+}
+
+# https://developer.mozilla.org/en-US/docs/Web/API/HTMLScriptElement
+script: htmlElement
+{   ;;renew(Text.): null
+    ;;renew(Url.): null
+}
