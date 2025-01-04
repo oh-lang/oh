@@ -19,7 +19,7 @@ and tear on your caps-lock key.
 Why snake case: long names are hard to parse with Pascal case, and we want to support descriptive
 names.  We'll allow an option for converting `_x` to `X` in case users want to use `CamelCase`
 or `dromedaryCase`, or even if they want to go all-in with `_prefixed_snake_case` for variable
-names (since `_prefixed_snake_case` would be equivalent with `Prefixed_snake_case`
+names (since `_prefixed_snake_case` would be equivalent to `Prefixed_snake_case`
 with the `_x` equals `X` rule).  For the remainder of this document, we'll use `Variable_case`,
 `type_case`, and `function_case`, although the latter two are indistinguishable.
 
@@ -28,12 +28,12 @@ so that declaring a variable and specifying a variable will work the same inside
 function arguments.  For example, declaring a function that takes an integer named `X`,
 `my_function(X: int): null`, and declaring an integer variable named `X` uses the same syntax:
 `X: int`.  Similarly, calling a function with arguments specified as `my_function(X: 5)` and
-defining a variable works the same outside of a function: `X: 5`.  There is a slight distinction
-since we have the option of `.` in function arguments, which indicates a temporary.  E.g.,
-in `(X: int, Y; str, Z. dbl)` we declare `X` as a readonly reference, `Y` a writable reference,
+defining a variable works the same outside of a function: `X: 5`.  There is a slight difference
+because we can declare variables with `.` in function arguments, which indicates a temporary.  E.g.,
+in `(X: int, Y; str, Z. dbl)`, we declare `X` as a readonly reference, `Y` a writable reference,
 and `Z` a temporary, whereas outside of function arguments, `[X: int, Y; str]` indicates
 that `X` is readonly (though it can be written in constructors or first assignment) and `Y`
-is writable.
+is writable.  TODO: we could make `Z. int` (outside of function arguments) indicate a volatile.
 
 In some languages, e.g., JavaScript, objects are passed by reference and primitives
 are passed by value when calling a function with these arguments.  In oh-lang,
@@ -42,7 +42,7 @@ hand side of an expression like `X = 5`, we know that we're referring to `X` as 
 and we extend that to function calls like `do_something(X)`.  Note that it's possible
 to pass by value as well; see [passing by reference or by value](#pass-by-reference-or-pass-by-value). 
 However, to avoid most surprises, by default arguments are passed by *readonly* reference.
-See [passing by reference gotchas](#passing-by-reference-gotchas)) for the edge cases.
+See [passing by reference gotchas](#passing-by-reference-gotchas) for the edge cases.
 We make pass-by-constant-reference the default because we don't want to require
 using `:` when calling a method like `count(Container:)`, i.e., to grab the number
 of elements in a container without making a copy of the container.
@@ -55,8 +55,8 @@ arrays use a property (`Array.length`) and maps use a different property (`Map.s
 ## convenience
 
 oh-lang also prioritizes convenience; class methods can be called like a function with
-the instance as an argument or as a method on the instance, e.g., `my_method(My_class)`
-or `Class my_method()`.  This extends to functions with definitions like
+the instance as an argument or as a method on the instance, e.g., `the_method(My_class)`
+or `Class the_method()`.  This extends to functions with definitions like
 `my_two_instance_function(My_class_a, My_class_b, Width: int, Height: int)` which
 can be called as `(My_class_a, My_class_b) my_two_instance_function(Width: 5, Height: 10)`,
 or by calling it as a method on either one of the instances, e.g.,
@@ -109,12 +109,12 @@ This also works for generic classes like `my_generic[of]` where `of` is a templa
 
 Class methods technically take an argument for `Me/My/I` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
-writing `my_method(Me, X: int): str`, we can write `::my_method(X: int): str`.
-This parallels `my_class::my_method` in C++, but in oh-lang we can analogously use
-`my_class;;my_mutating_method` for a method that can mutate `Me`, i.e.,
-`my_mutating_method(Me;, X: int): str` becomes `;;my_mutating_method(X: int): str`,
-or `my_class..my_temporary_method()` for a method on a temporary `Me`, i.e.,
-`my_temporary_method(Me.)`.  You can substitute `I` or `My` for `Me` anywhere,
+writing `the_method(Me, X: int): str`, we can write `::the_method(X: int): str`.
+This parallels `my_class::the_method` in C++, but in oh-lang we can analogously use
+`my_class;;a_mutating_method` for a method that can mutate `Me`, i.e.,
+`a_mutating_method(Me;, X: int): str` becomes `;;a_mutating_method(X: int): str`,
+or `my_class..one_temporary_method()` for a method on a temporary `Me`, i.e.,
+`one_temporary_method(Me.)`.  You can substitute `I` or `My` for `Me` anywhere,
 including in methods that only declare one of them in the function arguments.
 We recommend using `My` for field access (e.g., `My X`) as well as getters/setters
 `My x()` or `My x(New_x_value)`, `Me` for returning a copy/clone (e.g., `return Me`),
@@ -123,14 +123,14 @@ and `I` for methods that start with a verb, e.g., `I draw()`.
 While it would be even more concise to omit `Me/My/I`, we want to support
 overloading keywords such as `pass` or `break`, and to make it clear that
 the overload is requested we need the `Me/My/I` context.
-TODO: can we get rid of the need for `My`/`Me`/`I` and just use `::my_method` or `;;other_method`
+TODO: can we get rid of the need for `My`/`Me`/`I` and just use `::the_method` or `;;other_method`
 inside function calls?  that way we wouldn't need to prefix `My X` for instance variables either.
 parent variables would still need to be referenced via `Parent X` or `::X`/`;;X`.
 TODO: should we go all in on underscores like `_my x(_new_x_value)`, but then
 instead of `_i` `_me` or `_my` we use `::` or `;;` to get methods/vars?
-e.g., `::x(_new_x_value)`.
+e.g., `::x(_new_x_value)`.  not the biggest fan of `_true`/`_false` though.
 
-Class getters/setters do not use `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
+Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
 of the benefits of using `function_case` for functions/methods and `Variable_case`
 for variables; we can easily distinguish intent without additional verbs.
@@ -140,7 +140,7 @@ Because we use `::` for readonly methods and `;;` for writable methods, we can
 easily define "const template" methods via `:;` which work in either case `:` or `;`.
 This is mostly useful when you can call a few other methods internally that have specific
 `::` and `;;` overloads, since there's usually some distinct logic for readonly vs. writable.
-E.g., `;:my_method(X;: str): I check(X;:)` where `check` has distinct overloads for `::` and `;;`.
+E.g., `;:the_method(X;: str): I check(X;:)` where `check` has distinct overloads for `::` and `;;`.
 See [const templates](#const-templates) for more details.
 
 oh-lang uses result-passing instead of exception-throwing in order to make it clear
@@ -156,7 +156,7 @@ See [the `hm` section](#hm) for more details.
 **Coolness** is a fairly subjective measure, but we do use it to break ties.
 While there are a lot of good formatting options out there, 
 [Horstmann brace style](https://en.wikipedia.org/wiki/Indentation_style#Horstmann) is
-hands-down the coolest-looking indentation style.  Similarly, `lower_snake_case`
+hands-down the raddest indentation style.  Similarly, `lower_snake_case`
 and `Initial_upper_snake_case` make for more readable long names, but they also
 look cooler than their `dromedaryCase` and `PascalCase` counterparts.
 
@@ -238,6 +238,7 @@ memory, these safe functions are a bit more verbose than the unchecked functions
         `Results: A [_ x(), _ Y], print("${Results[0]}, ${Results[1]})`.
         TODO: We can technically distinguish `A [_ x()]` (sequence building) from `A[x()]` (array access),
         but is this confusing from a developer/grammar/syntax?  maybe we always add a space in formatting.
+        or maybe we use `A@[@ x()]`
 * `{}` for blocks and sequence building
     * `{...}` to effectively indent `...`, e.g., `if Condition {do_thing()} else {do_other_thing(), 5}`
         * Note that braces `{}` are *optional* if you actually go to the next line and indent,
@@ -2785,7 +2786,7 @@ that's happening.
 If there are multiple return arguments, i.e., via an output type data class,
 e.g., `[X: dbl, Y: str]`, then we support [destructuring](#destructuring)
 to figure out which overload should be used.  E.g., `[X, Y]: my_overload()` will
-look for an overload with outputs named `X` and `Y`.  Due to
+look for an overload with outputs named `X` and `Y`.  Due to assumptions with
 [single field objects](#single-field-objects) (SFO), `X: my_overload()` is
 equivalent to `[X]: my_overload()`.  You can also explicitly type the return value,
 e.g., `@Some Int: my_overload()` or `R: my_overload() Dbl`,
@@ -3155,6 +3156,9 @@ maybe we get rid of the option to do `[Field1, Field2]; do_stuff()` and always
 require `[Field1;, Field2;] = do_stuff()`.  after all, it wouldn't make sense
 to do something like `[Field1;, Field2]: do_stuff()`.  that way there's never
 an "analogous" way to destructure things with `[]` that would be invalid with `()`.
+or potentially we could require lambdas to always need an indent (or braces), e.g.,
+`(X: int, Y: str): {some_function(Z)}`, that way `(X, Y): some_function(Z)` could
+be a destructure.
 
 You can also use destructuring to specify return types explicitly.
 The notation is `[Field1: type1, Field2; type2] = do_stuff()`.  This can be used
