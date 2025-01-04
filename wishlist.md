@@ -126,9 +126,6 @@ the overload is requested we need the `Me/My/I` context.
 TODO: can we get rid of the need for `My`/`Me`/`I` and just use `::the_method` or `;;other_method`
 inside function calls?  that way we wouldn't need to prefix `My X` for instance variables either.
 parent variables would still need to be referenced via `Parent X` or `::X`/`;;X`.
-TODO: should we go all in on underscores like `_my x(_new_x_value)`, but then
-instead of `_i` `_me` or `_my` we use `::` or `;;` to get methods/vars?
-e.g., `::x(_new_x_value)`.  not the biggest fan of `_true`/`_false` though.
 
 Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
@@ -192,8 +189,8 @@ memory, these safe functions are a bit more verbose than the unchecked functions
 # general syntax
 
 * `print(...)` to echo some values (in ...) to stdout, `error(...)` to echo to stderr
-* `type_case`/`function_case` identifiers like `x` are function/type-like, see [here](#variable-and-function-names)
-* `Variable_case` identifiers like `X` are instance-like, see [here](#variable-and-function-names)
+* `type_case`/`function_case` identifiers like `x` are function/type-like, see [here](#identifiers)
+* `Variable_case` identifiers like `X` are instance-like, see [here](#identifiers)
 * use `#` for [comments](#comments)
 * outside of arguments, use `:` for readonly declarations and `;` for writable declarations
 * for an argument, `:` is a readonly reference, `;` is a writable reference, and `.` is a temporary
@@ -208,6 +205,9 @@ memory, these safe functions are a bit more verbose than the unchecked functions
     * while declaring *and defining* something, you can avoid the type if you want the compiler to infer it,
         e.g., `A: some_expression()`
 * when not declaring things, `:` is not used; e.g., `if` statements do not require a trailing `:` like python
+* commas `,` are equivalent to a line break at the current tab and vice versa
+    * `do_something(), do_something_else()` executes both functions sequencially
+    * see [line continuations](#line-continuations) for how commas can be elided across newlines for e.g., array elements
 * `()` for argument objects, organization, and function calls/declarations
     * `(W: str = "hello", X: dbl, Y; dbl, Z. dbl)` to declare an argument object type, `W` is an optional field
         passed by readonly reference, `X` is a readonly reference, `Y` is a writable reference,
@@ -222,7 +222,7 @@ memory, these safe functions are a bit more verbose than the unchecked functions
         This allows `X` and `Y` to be references.  This can be useful e.g., when `A` is an expression
         that you don't want to add a local variable for, e.g., `my_long_computation() (_ x(), _ Y)`.
 * `[]` are for types, containers (including objects, arrays, and lots), and generics
-    * `[X: dbl, Y: dbl]` to declare a class with two double-precision fields, `X` and `Y`
+    * `[X: dbl, Y: dbl]` to declare a plain-old-data class with two double-precision fields, `X` and `Y`
     * `[X: 1.2, Y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `X` and `Y`
     * `"My String interpolation is $[X, Y]"` to add `[*value-of-X*, *value-of-Y*]` to the string.
     * For generic/template classes, e.g., classes like `array[Count, of]` for a fixed array of size
@@ -279,6 +279,10 @@ memory, these safe functions are a bit more verbose than the unchecked functions
     * `<>` for bit flips on integer types
     * `><` for bitwise xor
 
+## defining variables
+
+See [variables](#variables) for a deeper dive.
+
 ```
 # declaring a variable:
 Readonly_var: int
@@ -302,6 +306,10 @@ My_var:
 Other_var; explicit_type
     "asdf" + "jkl;"
 ```
+
+## defining arrays
+
+See [arrays](#arrays) for more information.
 
 ```
 # declaring a readonly array
@@ -336,6 +344,10 @@ Long_explicitly_typed: array[i32]
 Note there are some special rules that allow line continuations for parentheses
 as shown above.  See [line continuations](#line-continuations) for more details.
 
+## defining lots
+
+See [lots](#lots) for more information.
+
 ```
 # declaring a readonly lot
 My_lot: lot[at: id_type, value_type]
@@ -353,6 +365,10 @@ Votes_lot::["Cupcakes"]     # Null
 # now Votes_lot == ["Cake": 5, "Donuts": 11, "Ice Cream": 1]
 ```
 
+## defining sets
+
+See [sets](#sets) for more details.
+
 ```
 # declaring a readonly set
 My_set: set[element_type]
@@ -368,6 +384,10 @@ Some_set["fatigue"]!    # removes "fatigue", returns `True` since it was present
 Some_set["spools"]      # adds "spools", returns Null (wasn't in the set)
                         # Some_set == set("friends", "family", "spools")
 ```
+
+## defining functions
+
+See [functions](#functions) for a deeper dive.
 
 ```
 # declaring a "void" function:
@@ -411,6 +431,43 @@ do_something(X: int, Y: int): [W: int, Z: int]
     # option B:
     [Z: \\math atan(X, Y), W: 123]
 ```
+
+```
+# defining a function with some lambda functions as arguments
+do_something(you(): str, greet(Name: str): str): str
+    greet(Name: you())
+
+# calling a function with some functions as arguments
+my_name(): str
+    "World"
+# inline, `my_name(): "World"`
+do_something
+(   you: my_name
+    greet(Name: str): str
+        "Hello, ${Name}"
+)
+```
+
+```
+# defining a function that returns a lambda function
+make_counter(Counter; int): fn(): int
+    fn(): ++Counter
+Counter; 123
+counter: make_counter(Counter;)
+print(counter())    # 124
+```
+
+```
+# defining a function that takes two type constructors as arguments,
+# one of them being named (`of` is the default name), and returns a type constructor:
+some_constructor[of, named_new]: if random(dbl) < 0.5 {of} else {named_new}
+
+some_type: some_constructor[int, named_new: dbl] # int or dbl with 50-50 probability
+X: some_type(1234)  # `X` is either `int(1234)` or `dbl(1234)`.
+```
+
+
+## defining strings
 
 ```
 # declaring a string:
@@ -457,11 +514,16 @@ Good_long_line: "this is going to be a long discussion "
 Nested_interpolation: "hello, ${if Condition {Name} else {'World${"!" * 5}'}}!"
 ```
 
+## defining classes
+
+See [classes](#classes) for more information on syntax.
+
 ```
 # declaring a simple class
 vector3: [X: dbl, Y: dbl, Z: dbl]
 
-# declaring a "complicated" class.  the braces `{}` are optional.
+# declaring a "complicated" class.  the braces `{}` are optional
+# but recommended due to the length of the class body.
 my_class: [X: int]
 {   # here's a class function that's a constructor
     i(X. int): me
@@ -503,45 +565,10 @@ between "shadowed" functions like `my_class count()` (which returns the number o
 ```
 # combining two classes
 a_or_b: one_of[a, b]
-a_and_b: union[a, b]
-all_of[...args]: union[...args]  # in case symmetry between `one_of` and `all_of` makes more sense.
+a_and_b: all_of[a, b]
 ```
 
-```
-# defining a function with some lambda functions as arguments
-do_something(you(): str, greet(Name: str): str): str
-    greet(Name: you())
-
-# calling a function with some functions as arguments
-my_name(): str
-    "World"
-# inline, `my_name(): "World"`
-do_something
-(   you: my_name
-    greet(Name: str): str
-        "Hello, ${Name}"
-)
-```
-
-```
-# defining a function that returns a lambda function
-make_counter(Counter; int): fn(): int
-    fn(): ++Counter
-Counter; 123
-counter: make_counter(Counter;)
-print(counter())    # 124
-```
-
-```
-# defining a function that takes two type constructors as arguments,
-# one of them being named (`of` is the default name), and returns a type constructor:
-some_constructor[of, named_new]: if random(dbl) < 0.5 {of} else {named_new}
-
-some_type: some_constructor[int, named_new: dbl] # int or dbl with 50-50 probability
-X: some_type(1234)  # `X` is either `int(1234)` or `dbl(1234)`.
-```
-
-## variable and function names
+## identifiers
 
 Identifiers in oh-lang are very important.  The capitalization (or lack thereof)
 of the first letter indicates whether the identifier is a variable or a function.
@@ -570,9 +597,9 @@ can only be used as a reference to a different instance of the same type.
 
 Most ASCII symbols are not allowed inside identifiers, e.g., `*`, `/`, `&`, etc., but
 underscores (`_`) have some special handling.  They are ignored in numbers,
-e.g., `1_000_000` is the same as `1000000`, but highly recommended for large numbers.
-Underscores in identifiers will automatically capitalize the next letter, so
-`my_function` is the same as `my_function`, and `_count` is the same as `Count`.
+e.g., `1_000_000` is the same as `1000000`, and highly recommended for large numbers.
+Underscores in identifiers will automatically "capitalize" the next letter, so
+`my_function` is the same as `myFunction`, and `_count` is the same as `Count`.
 Numbers are ignored, so `x_1` is the same as `x1`.  Trailing underscores are not allowed;
 if you want to annotate a variable as unused, use the `@Unused` namespace.
 
@@ -4677,7 +4704,7 @@ My_lot; lot[My_namespace at, value]
 
 To constrain a generic type, use `[type: constraints, ...]`.  In this expression,
 `constraints` is simply another type like `non_null` or `number`, or even a combination
-of classes like `union[container[id, value], number]`.  It may be recommended for more
+of classes like `all_of[container[id, value], number]`.  It may be recommended for more
 complicated type constraints to define the constraints like this:
 `my_complicated_constraint_type: all_of[t1, one_of[t2, t3]]` and declaring the class as
 `new_generic~[of: my_complicated_constraint_type]`, which might be a more readable way to do
