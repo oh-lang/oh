@@ -3493,7 +3493,9 @@ otherwise you're just creating a new overload (and not redefining the function).
 ## nullable functions
 
 TODO: maybe don't allow optional functions.  the way to make them optional doesn't look right,
-e.g., `Child::optional_method?(Z: dbl); int = Null`.
+e.g., `nullable_fn?(Z: dbl); int {...}, nullable_fn = Null`.  the identifiers don't line up.
+maybe use `nullable_fn = null`??  but supposedly we need to specify the whole overload:
+`nullable_fn?(Z: dbl); int = Null`.  or could we use mooting?  `!nullable_fn`.
 
 The syntax for declaring a nullable/optional function is to put a `?` after the function name
 but before the argument list.  E.g., `optional_function?(...Args): return_type` for a non-reassignable
@@ -3611,9 +3613,23 @@ e.g., `copy[t: my_type_constraints](Value: ~t): t`, which allows you to specify 
 type constraints (`my_type_constraints` being optional).  Note that types defined with
 `~` are inferred and therefore can never be explicitly given inside of the brackets,
 e.g., `copy[t: int](Value: 3)` is invalid here, but `copy(Value: 3)` is fine.
-To get a "default named" type, use `of` in the brackets.  If the type is not inferred
-somewhere else (with `~`), you don't need to specify `[of: int]` to specialize to `int`,
-you can just use `[int]` if it's default named, otherwise `[whatever_type: int]`.
+
+If you want to require explicitly providing the type in brackets, don't use `~` when
+defining the function.
+
+```
+# this generic function does not infer any types because it doesn't use `~`.
+copy[the_type](Value: the_type): the_type
+    ...
+    the_type(Value)
+
+# therefore we need to specify the generics in brackets before calling the function.
+copy[the_type: int](Value: 1234)    # returns 1234
+```
+
+For this example, it would be better to use `of` instead of `the_type`, since `of`
+is the "default name" for a generic type.  E.g., you don't need to specify `[of: int]`
+to specialize to `int`, you can just use `[int]` if it's default named.
 See also [default named generic types](#default-named-generic-types).  For example:
 
 ```
@@ -3629,32 +3645,6 @@ copy[of: int](Value: 3) # will return the integer `3`
 # because it is default named, you can just put in the type without a field name.
 copy[dbl](Value: 3)     # will return `3.0`
 ```
-
-You can also have named generic types, i.e., use a name instead of `of`.
-Note that for the function argument to remain `Value: XYZ`, then we need
-to explicitly tell the compiler that we don't want default names to apply,
-which we do using the `@Named` namespace.
-
-```
-# this generic is inferred (recommended) at the call site:
-copy(@Named ~Value): value
-    ...
-    value(@Named Value)
-
-# it can be called like this, which implicitly infers the `value` type:
-copy(Value: 3)  # returns the integer `3`
-
-# this generic needs to be specified in brackets at the call site: 
-copy[value](@Named Value): value
-    ...
-    value(@Named Value)
-
-# and because it's not default named (i.e., it's named `value` not `of`),
-# you need to call it like this:
-copy[value: dbl](Value: 3)  # will return `3.0`
-```
-
-If you want default-named arguments with generics, see the next section.
 
 ### default-named generic arguments
 
@@ -3700,16 +3690,44 @@ logger[int](3)  # returns the integer `3`
 logger[dbl](3)  # will return `3.0`
 ```
 
-If we have a named generic type, we simply do not include a `@Named` namespace
-on the argument, so default names can apply.
+If we have a named generic type, just name the `type_case` type the
+same as the `Variable_case` variable name (besides initial capitalization)
+so default names can apply.
 
 ```
 logger[value](Value): value
     print("got ${Value}")
     Value
 
-logger[value: dbl](3)  # will return `3.0`
+logger[value: dbl](3)  # will return `3.0` and print "got 3.0"
 ```
+
+If we want to suppress default naming, e.g., require the function argument 
+to be `Value: XYZ`, then we need to explicitly tell the compiler that we don't
+want default names to apply, which we do using the `@Named` namespace.
+
+```
+logger(@Named ~Value): value
+    print("got ${@Named Value}")
+    @Named Value
+
+# it can be called like this, which implicitly infers the `value` type:
+logger(Value: 3)  # returns the integer `3`
+```
+
+And as usual, you can avoid inferring the type by avoiding using `~`.
+
+```
+# this generic needs to be specified in brackets at the call site: 
+logger[value](@Named Value): value
+    ...
+    value(@Named Value)
+
+# and because it's not default named (i.e., it's named `value` not `of`),
+# you need to call it like this:
+logger[value: dbl](Value: 3)  # will return `3.0`
+```
+
 
 ### argument name generics: with different type
 
