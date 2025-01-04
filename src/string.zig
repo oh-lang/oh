@@ -223,12 +223,12 @@ pub const Small = extern struct {
         // Since SnakeCase can add chars (e.g., myPascal -> my_pascal), return
         // up to two chars in a u16, little-endian style.  (First char is (result & 255)
         // and second char is (result >> 8).)
-        fn transform(self: SnakeCase, char: u8, at_start: bool) u16 {
+        fn transform(self: SnakeCase, char: u8, at_start: bool, saw_underscore: bool) u16 {
             return switch (self) {
                 .start_lower => transformStartLower(char, at_start),
                 .start_upper => transformStartUpper(char, at_start),
                 .no_uppers => transformNoUppers(char, at_start),
-                .keep_starting_case => transformKeepStartingCase(char, at_start),
+                .keep_starting_case => transformKeepStartingCase(char, at_start, saw_underscore),
             };
         }
 
@@ -261,8 +261,8 @@ pub const Small = extern struct {
             }
         }
 
-        inline fn transformKeepStartingCase(char: u8, at_start: bool) u16 {
-            if (at_start or !isCapital(char)) {
+        inline fn transformKeepStartingCase(char: u8, at_start: bool, saw_underscore: bool) u16 {
+            if ((at_start and !saw_underscore) or !isCapital(char)) {
                 return char;
             } else {
                 return underscoreChar(char);
@@ -278,17 +278,19 @@ pub const Small = extern struct {
     pub fn toSnakeCase(self: *const Small, case: SnakeCase) StringError!Self {
         var work_buffer: [65535]u8 = undefined;
         var index: usize = 0;
-        // If the string looks like we're supposed to capitalize.
-        var capitalize_next = false;
+        // If the string has an underscore before the next letter.
+        var underscore_next = false;
         var at_start = true; // until we see a non-underscore character.
         for (self.slice()) |char| {
             if (char == '_') {
-                capitalize_next = true;
+                underscore_next = true;
                 continue;
             }
-            const modified_char = if (capitalize_next) capitalize(char) else char;
-            capitalize_next = false;
-            const sequence16 = case.transform(modified_char, at_start);
+            // We'll pretend to capitalize after an underscore, but then transform
+            // it back as needed in `case.transform`.
+            const modified_char = if (underscore_next) capitalize(char) else char;
+            const sequence16 = case.transform(modified_char, at_start, underscore_next);
+            underscore_next = false;
             at_start = false;
             if (index >= work_buffer.len) {
                 return StringError.string_too_long;
@@ -647,9 +649,8 @@ test "non-allocked String.toSnakeCase keep_starting_case works" {
     try (try Small.noAlloc("_____").toSnakeCase(.keep_starting_case)).expectEqualsSlice("");
     try (try Small.noAlloc("lower_cased").toSnakeCase(.keep_starting_case)).expectEqualsSlice("lower_cased");
     try (try Small.noAlloc("Upper_cased").toSnakeCase(.keep_starting_case)).expectEqualsSlice("Upper_cased");
-    // TODO: i think this is probably ok, but we should consider retaining the prefix underscore.
-    try (try Small.noAlloc("_prefix_cased").toSnakeCase(.keep_starting_case)).expectEqualsSlice("Prefix_cased");
-    try (try Small.noAlloc("___super_pix").toSnakeCase(.keep_starting_case)).expectEqualsSlice("Super_pix");
+    try (try Small.noAlloc("_prefix_cased").toSnakeCase(.keep_starting_case)).expectEqualsSlice("_prefix_cased");
+    try (try Small.noAlloc("___super_pix").toSnakeCase(.keep_starting_case)).expectEqualsSlice("_super_pix");
 }
 
 test "does not sign short strings" {
