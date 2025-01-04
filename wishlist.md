@@ -1073,30 +1073,20 @@ u[Bits: count](Scaled8): hm[ok: u[Bits], Number_conversion er]
 
 Every variable has a reflexive type which describes the object/primitive that is held
 in the variable, which can be accessed via the `type_case` version of the
-`Variable_case` variable name.  For more methods of determining/transforming
-internal types, see
-[declaring more complicated types via `one_of`](#declaring-more-complicated-types-via-one_of).
+`Variable_case` variable name.  
 
 ```
 # implementation note: `int` should come first so it gets tried first;
 # `dbl` will eat up many values that are integers, including `4`.
 X; one_of[int, dbl] = 4
-...
-if x == int
-    print("X is an integer")
-elif x == dbl
-    print("X is a double")
+Y; x = 4.56     # use the type of `X` to define a variable `Y`.
 ```
 
-You can create a new instance of the same type using the `type_case` type:
-
-```
-x_type: x
-Y: x_type(1234)
-
-# alternatively, you can use directly:
-Y: x(1234)
-```
+Note that the `type_case` version of the `Variable_case` name does not have
+any information about the instance, so `x` is `one_of[int, dbl]` in the above
+example and `Y` is an instance of the same `one_of[int, dbl]` type.  For 
+ways to handle different types differently within a `one_of`, see 
+[this](#declaring-more-complicated-types-via-one_of).
 
 Some more examples:
 
