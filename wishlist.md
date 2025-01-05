@@ -3754,31 +3754,39 @@ is passed in: `my_function(~My_name: my_name)` or `my_function(~My_name) for sho
 
 ### generic require
 
-TODO: should we make this an annotation instead?  `@Require: of is orderable`??
 `Require` is a special generic field that allows you to include a function,
 method, or variable only if it meets some compile-time constraints.  It is
 effectively a keyword within a generic specification, so it can't be used
 for other purposes, and the boolean value it takes must be known at compile-time.
 
 ```
-# `of is orderable` is true iff `of` extends `orderable`.
-less_than[Require: of is orderable](Left: ~of, Right: of): bool
-    Left < Right
-
-my_class[of, N: count]: all_of
+my_class[of, N: count]:
 [   Value: of
+    # this field `Second_value` is only present if `N` is 2 or more.
     # TODO: does this conflict with any other usages of generic classes?
-    Second_value[Require: N > 1]: of
+    # if so, let's switch to `@require(N >= 2) Second_value: of`
+    Second_value[Require: N >= 2]: of
+    # this field `Third_value` is only present if `N` is 3 or more.
+    Third_value[Require: N >= 3]: of
+    ... # plz help am i coding this right??
 ]
 {   # `of is hashable` is true iff `of` extends `hashable`.
     ::hash[Require: of is hashable](~Builder):
         Builder hash(My Value)
         # TODO: is this the best notation for if `Second_value` is compile-time present?
         #       alternatively use `@if N > 1 {Builder hash(My Second_value)}`
-        #       or something like `Builder hash(@?My Second_value)`
-        Builder hash(?My Second_value)
+        Builder hash(@?My Second_value)
+        Builder hash(@?My Third_value)
+        ...
 }
 ```
+
+TODO: should we make this an annotation instead?  `@require(of is orderable)`??
+in C++, these sorts of things are templates, but that can be kinda confusing.
+but it does allow you to do things like this, where you introduce new types
+on the fly and can require them to be a certain way:
+`::do[additional_type, Require: additional_type is foo](~Additional_type): int`
+so if possible, i think i'd prefer to keep it as a template.
 
 # classes
 
