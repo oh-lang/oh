@@ -1617,9 +1617,10 @@ so `Q: X < Y > Z` instantiates `Q` as a boolean.
 
 ## and/or/xor operators
 
-If you are looking for bitwise `AND`, `OR`, and `XOR`, they are `&`, `|`, and `><`.
+If you are looking for bitwise `AND`, `OR`, and `XOR`, they are `&`, `|`, and `><`, respectively.
+
 The operators `and` and `or` act the same as JavaScript `&&` and `||`, as long as the
-left hand side is not nullble.
+left hand side is not nullable.  `xor` is an "exclusive or" operator.
 
 The `or` operation `X or Y` has type `one_of[x, y]` (for `X: x` and `Y: y`).
 If `X` evaluates to truthy (i.e., `!!X == True`), then the return value of `X or Y` will be `X`.
@@ -1641,7 +1642,7 @@ Nullable_or?: X or Y        # Nullable_or?: if X {X} elif Y {Y} else {Null}
 Nullable_and?: X and Y      # Nullable_and?: if !!X and !!Y {Null} else {Y}
 ```
 
-This makes things similar to the `xor` operator, but this operator always requires a nullable LHS.
+This makes things similar to the `xor` operator, but `xor` always requires a nullable LHS.
 The exclusive-or operation `X xor Y` has type `one_of[x, y, null]`, and will return `Null`
 if both `X` and `Y` are truthy or if they are both falsey.  If just one of the operands
 is truthy, the result will be the truthy operand.  An example implementation:
