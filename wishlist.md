@@ -466,7 +466,6 @@ some_type: some_constructor[int, named_new: dbl] # int or dbl with 50-50 probabi
 X: some_type(1234)  # `X` is either `int(1234)` or `dbl(1234)`.
 ```
 
-
 ## defining strings
 
 ```
@@ -1269,7 +1268,8 @@ e.g., `my_function(A: 3, B: 2, ...My_object)` will call `my_function(A: 3, B: 4,
 |   11      |   `=`     | assignment                | binary: `A = B`   | LTR           |
 |           |  `???=`   | compound assignment       | binary: `A += B`  |               |
 |           |   `<->`   | swap                      | binary: `A <-> B` |               |
-|   12      |   `,`     | comma                     | binary/postfix    | LTR           |
+|   12      |   `|>`    | hat                       | binary: `A |> B`  | LTR           |
+|   13      |   `,`     | comma                     | binary/postfix    | LTR           |
 
 
 TODO: discussion on `~`
@@ -1684,6 +1684,27 @@ If you define `swap` in this way for your custom class, it will be available
 for the shorthand notation `Some_class X <-> 1234`.
 TODO: make all "swappers" have the same function signature, not `swap` but
 `;;x(X.): x`.  could also use `;;x(X;): null` as the function signature.
+
+## hat operator
+
+`|>` is called the "hat operator" and is used in conditional logic for
+more fine-grained flow control to define a `then` instance which can
+break out of loops in more interesting (possibly *less readable*) ways.
+Use sparingly.
+
+```
+X: if Some_condition |> Then:
+    if Other_condition
+        Then exit(5)
+    Then exit(7)
+else |> Then:
+    Then exit(10)
+
+# the above is equivalent to the following:
+X: if Some_condition { if Other_condition {5} else {7} } else {10}
+```
+
+See [then statements](#then-statements) for more examples and details.
 
 # variables
 
@@ -6242,14 +6263,14 @@ This also happens with `elif`, as long as there is no final `else` statement.
 ### then statements
 
 We can rewrite conditionals to accept an additional `then` "argument".  For `if`/`elif`
-statements, the syntax is `if Expression |> Then:` to have the compiler guess the `then`'s
+statements, the syntax is `if Expression |> Then:` to have the compiler infer the `then`'s
 return type, or `elif Expression |> Whatever_name: then[whatever_type]` to explicitly provide it
 and also rename `Then` to `Whatever_name`.  Similarly for `what` statements, e.g.,
 `what Expression |> Whatever_name: then[whatever]` or `what Expression |> Then:`.  `else`
-statements elide the `|>` expression as `else Then:` or `else Whatever: then[else_type]`.
+statements also use the `|>` expression, e.g., `else |> Then:` or `else |> Whatever: then[else_type]`.
 Note that we use a `:` here because we're declaring an instance of `then`; if we don't use
 `then` logic we don't use `:` for conditionals.  Also note that `then` is a thin wrapper
-around the `block` class (i.e., a reference that removes the `::loop()` method that
+around the [`block`](#blocks) class (i.e., a reference that removes the `::loop()` method that
 doesn't make sense for a `then`).  If you want to just give the type without renaming,
 you can do `if Whatever |> Then[my_if_block_type]:`, etc.
 
