@@ -277,7 +277,7 @@ memory, these safe functions are a bit more verbose than the unchecked functions
     * `**` and `^` for exponentiation
     * `&|` at the start of each text slice to create a multiline string.
     * `<>` for bit flips on integer types
-    * `><` for bitwise xor
+    * `><` for bitwise xor on integer types
 
 ## defining variables
 
@@ -378,7 +378,7 @@ Some_set; set[str]("friends", "family", "fatigue")
 # We can also infer types implicitly via the following:
 #   * `Some_set; set("friends", ...)`
 Some_set::["friends"]   # `True`
-Some_set::["enemies"]   # Null (falsy)
+Some_set::["enemies"]   # Null (falsey)
 Some_set["fatigue"]!    # removes "fatigue", returns `True` since it was present.
                         # Some_set == set("friends", "family")
 Some_set["spools"]      # adds "spools", returns Null (wasn't in the set)
@@ -1617,6 +1617,10 @@ so `Q: X < Y > Z` instantiates `Q` as a boolean.
 
 ## and/or/xor operators
 
+If you are looking for bitwise `AND`, `OR`, and `XOR`, they are `&`, `|`, and `><`.
+The operators `and` and `or` act the same as JavaScript `&&` and `||`, as long as the
+left hand side is not nullble.
+
 The `or` operation `X or Y` has type `one_of[x, y]` (for `X: x` and `Y: y`).
 If `X` evaluates to truthy (i.e., `!!X == True`), then the return value of `X or Y` will be `X`.
 Otherwise, the return value will be `Y`.  Note in a conditional, e.g., `if X or Y`, we'll always
@@ -1626,26 +1630,26 @@ Similarly, the `and` operation `X and Y` also has type `one_of[x, y]`.  If `X` i
 then the return value will be `X`.  If `X` is truthy, the return value will be `Y`.
 Again, in a conditional, we'll cast `X and Y` to a boolean.
 
-Thus, `and` and `or` act the same as JavaScript `&&` and `||`, for ease of transition.
-However, to make things more consistent with the `xor` operator, if your return value
-is nullable, `X or Y` will be `one_of[x, y, null]` and `X and Y` will be `one_of[y, null]`.
+If the LHS of the expression can take a nullable, then there is a slight modification.
+`X or Y` will be `one_of[x, y, null]` and `X and Y` will be `one_of[y, null]`.
 The result will be `Null` if both (either) operands are falsey for `or` (`and`).
 
 ```
-Non_null_or: X or Y           # Non_null_or: if X {X} else {Y}
-Non_null_and: X and Y         # Non_null_and: if !X {X} else {Y}
-Nullable_or?: X or Y         # Nullable_or?: if X {X} elif Y {Y} else {Null}
-Nullable_and?: X and Y       # Nullable_and?: if !!X and !!Y {Null} else {Y}
+Non_null_or: X or Y         # Non_null_or: if X {X} else {Y}
+Non_null_and: X and Y       # Non_null_and: if !X {X} else {Y}
+Nullable_or?: X or Y        # Nullable_or?: if X {X} elif Y {Y} else {Null}
+Nullable_and?: X and Y      # Nullable_and?: if !!X and !!Y {Null} else {Y}
 ```
 
+This makes things similar to the `xor` operator, but this operator always requires a nullable LHS.
 The exclusive-or operation `X xor Y` has type `one_of[x, y, null]`, and will return `Null`
-if both `X` and `Y` are truthy or if they are both falsy.  If just one of the operands
+if both `X` and `Y` are truthy or if they are both falsey.  If just one of the operands
 is truthy, the result will be the truthy operand.  An example implementation:
 
 ```
 # you can define it as nullable via `xor(~X, ~Y): one_of[x, y, null]` or like this:
 xor(~X, ~Y)?: one_of[x, y]
-    X_is_true: bool(X)        # `XIs_true: !!X` is also ok.
+    X_is_true: bool(X)          # `X_is_true: !!X` is also ok.
     Y_is_true: bool(Y)
     if X_is_true
         if Y_is_true {Null} else {X}
@@ -1655,11 +1659,11 @@ xor(~X, ~Y)?: one_of[x, y]
         Null
 ```
 
-Note that `xor` will thus return a nullable value, unless you do an assert.
+Thus `xor` will thus return a nullable value, unless you do an assert.
 
 ```
 Nullable_xor?: X xor Y
-Non_null_xor: X xor Y assert()     # will shortcircuit this block if `X xor Y` is null
+Non_null_xor: X xor Y assert()  # will shortcircuit this block if `X xor Y` is null
 ```
 
 ## reassignment operators
@@ -1809,7 +1813,7 @@ non_null_or(@First ~A?., @Second A.): a
         Null {@Second A}
 
 # boolean or.
-# `Nullable || X` to return `X` if `Nullable` is null or falsy,
+# `Nullable || X` to return `X` if `Nullable` is null or falsey,
 # otherwise the non-null truthy value in `Nullable`.
 truthy_or(@First ~A?., @Second A.): a
     what @First A
