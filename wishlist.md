@@ -6779,26 +6779,25 @@ even that probably could be better served by pulling out a function to call in
 both blocks.
 
 ```
-if Some_condition, Block[str]:
+if Some_condition |> Then[str]:
     if Other_condition
         if Nested_condition
-            # breaks out of `Block`
-            return X
+            Then exit(X)
     else
-        Block exit("whatever")
+        Then exit("whatever")
     # COMPILE ERROR, this function returns here if
     # `Other_condition && !Nested_condition`.
 
 # here's an example where we re-use a function for the block.
-My_block: block[str]
+My_then: then[str]
     ... complicated logic ...
     exit("made it")
 
-# not super excited by this syntax, but should be ok.
-if Some_condition, My_block
+Result: if Some_condition |> My_then
 elif Some_thing_else
-    print("don't use it here")
-else My_block
+    print("don't use `My_then` here")
+    "no"
+else |> My_then
 ```
 
 ### function blocks
