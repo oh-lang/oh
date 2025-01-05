@@ -2802,28 +2802,28 @@ my_overload(Y: str): [X?: int]
         Ok: $[X: Ok]
         Er: $[]
 
-{X}: my_overload(Y: "1234")  # calls (2) if it's defined, otherwise it's a compiler error.
-{X?}: my_overload(Y: "abc")  # calls (1) or (3) if one is defined, otherwise it's a compiler error.
+[X]: my_overload(Y: "1234")  # calls (2) if it's defined, otherwise it's a compiler error.
+[X?]: my_overload(Y: "abc")  # calls (1) or (3) if one is defined, otherwise it's a compiler error.
 ```
 
 Note that if only Case 3 is defined, we can use a special notation to ensure that the return
-value is not null, e.g., `{X: non_null} = ...`.  This will throw a run-time error if the return
+value is not null, e.g., `[X: non_null] = ...`.  This will throw a run-time error if the return
 value for `X` is null.  Note that this syntax is invalid if Case 2 is defined, since there is
 no need to assert a non-null return value in that case.
-TODO: we probably need a way to do this for results as well, maybe `{X}: my_overload() assert()`,
-which should also work for non_null casting.  It also makes it clear there's an assertion
+TODO: we probably need a way to do this for results as well, maybe `[X]: my_overload() assert()`,
+which should also work for `non_null` casting.  It also makes it clear there's an assertion
 that's happening.
 
 ```
 # normal call for case 3, defines an X which may be null:
-{X?}: my_overload(Y: "123")
+[X?]: my_overload(Y: "123")
 
 # special call for case 3; if X is null, this will throw a run-time error,
 # otherwise will define a non-null X:
-{X: non_null} my_overload(Y: "123")
+[X: non_null] = my_overload(Y: "123")
 
 # make a default for case 3, in case X comes back as null from the function
-{X: -1} my_overload(Y: "123")
+[X: -1] = my_overload(Y: "123")
 ```
 
 If there are multiple return arguments, i.e., via an output type data class,
@@ -3275,7 +3275,7 @@ nest(X: int, Y: str): [W: [Z: [A: int], B: str, C: str]]
     [W: [Z: [A: X], B: Y, C: Y * X]]
 
 # defines `A`, `B`, and `C` in the outside scope:
-{W: Z: A, W: B, W: C} nest(X: 5, Y: "hi")
+[W: Z: A, W: B, W: C] = nest(X: 5, Y: "hi")
 print(A)    # 5
 print(B)    # "hi"
 ```
@@ -3290,7 +3290,7 @@ determine which overload will be called.  Consider the following overloads.
 patterns(): [Chaos: f32, Order: i32]
 patterns(): i32
 # overload when we don't need to calculate `Order`:
-patterns(): Chaos: f32      # equivalent to `patterns(): {Chaos: f32}`
+patterns(): Chaos: f32      # equivalent to `patterns(): [Chaos: f32]`
 
 I32: patterns()             # calls `patterns(): i32` overload
 My_value: patterns() I32    # same, but defining `My_value` via the `i32` return value.
@@ -3299,23 +3299,23 @@ I32 as Q: patterns()        # same, defining `Q` via the `i32`.
 
 F32: patterns()             # COMPILE ERROR: no overload for `patterns(): f32`
 
-{Chaos}: patterns()         # calls `patterns(): [Chaos: f32]` overload via destructuring.
+[Chaos]: patterns()         # calls `patterns(): [Chaos: f32]` overload via destructuring.
 Chaos: patterns()           # same, via SFO concision.
 My_value: patterns() Chaos  # same, but with renaming `Chaos` to `My_value`. 
 Chaos as Cool: patterns()   # same, but with renaming `Chaos` to `Cool`.
-{Wow; chaos} patterns()     # same, but with renaming `Chaos` to `Wow`.
+[Wow; chaos] = patterns()   # same, but with renaming `Chaos` to `Wow`.
 
 Result: patterns()          # calls `patterns(): [Chaos: f32, Order: i32]`
                             # because it is the default (first defined).
-{Chaos, Order}: patterns()  # same overload, but because of destructuring.
-{Order}: patterns()         # same, but will silently drop the `Chaos` return value.
-Order: patterns()           # more concise form of `{Order}: patterns()`.
+[Chaos, Order]: patterns()  # same overload, but because of destructuring.
+[Order]: patterns()         # same, but will silently drop the `Chaos` return value.
+Order: patterns()           # more concise form of `[Order]: patterns()`.
 My_value: patterns() Order  # same, but with renaming `Order` to `My_value`.
 Order as U: patterns()      # same, with renaming `Order` to `U`.
-{T; order} patterns()       # same, with renaming `Order` to `T`.
+[T; order] = patterns()     # same, with renaming `Order` to `T`.
 ```
 
-The effect of SFO is to make it possible to elide `{}` when asking for a single named output.
+The effect of SFO is to make it possible to elide `[]` when asking for a single named output.
 The danger is that your overload may change based on your return variable
 name; but this is usually desired, e.g., `Old Count: Array count(1000) assert()`
 if you care to get the old count of an array.
@@ -3329,9 +3329,11 @@ that overloads like `patterns(): i32` and `patterns(): [I32]` would actually
 conflict; trying to define both would be a compile error.
 
 TODO: we probably can have `x(@New X: x): null` overloads where we don't need
-to always swap out the old value (e.g., `x(@New X: x): x`.  If we want to readopt
-SFO, we should make it clear by requiring setters to return the old value only
-if `x(@New X: x): [@Old X]` is used.
+to always swap out the old value (e.g., `x(@New X: x): x`.
+TOOD: we should make it clear by requiring setters to return the old value only
+if `x(@New X: x): [@Old X]` is used.  or just use `;;x(X; x): null` as the
+swapper signature and `;;x(X. x): null` as the setter, and don't specify
+what `;;x(X; x): x` would mean.
 
 ### `arguments` class
 
