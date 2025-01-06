@@ -2843,8 +2843,9 @@ You can also just not include it, e.g., `Y: my_overload()`, which is
 preferred, in case the function has an optimization which doesn't need to
 calculate `X`.
 
-We also allow calling functions with any dynamically generated arguments, so that means
-being able to resolve the overload at run-time.
+We also allow
+[calling functions with any dynamically generated arguments](#dynamically-determining-arguments-for-a-function),
+so that means being able to resolve the overload at run-time.
 
 ### pass-by-reference or pass-by-value
 
@@ -2970,13 +2971,13 @@ For a full example:
 
 ```
 reference_this(A; int): int
-    B; A  # B is a copy of A
+    B; A  # B is a mutable copy of A.  if you want a reference, use `(B;) = A`
     A *= 2
     B *= 3
     return B
 
 A; 10
-print(reference_this(A;))    # prints 30, not 60.
+print(reference_this(A;))   # prints 30, not 60.
 print(A)                    # A is now 20, not 60.
 ```
 
@@ -3202,6 +3203,7 @@ an "analogous" way to destructure things with `[]` that would be invalid with `(
 or potentially we could require lambdas to always need an indent (or braces), e.g.,
 `(X: int, Y: str): {some_function(Z)}`, that way `(X, Y): some_function(Z)` could
 be a destructure.
+OR we always require a name for lambda functions, e.g., `fn(...): do_stuff()`.
 
 You can also use destructuring to specify return types explicitly.
 The notation is `[Field1: type1, Field2; type2] = do_stuff()`.  This can be used
