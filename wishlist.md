@@ -1235,7 +1235,7 @@ e.g., `my_function(A: 3, B: 2, ...My_object)` will call `my_function(A: 3, B: 4,
 |   2       |   `::`    | impure read scope         | binary: `A::B`    | LTR           |
 |           |   `;;`    | impure read/write scope   | binary: `A;;B`    |               |
 |           |   ` `     | implicit member access    | binary: `A B`     |               |
-|           |   ` []`   | parenthetical subscript   | binary: `A[B]`    |               |
+|           |   ` []`   | subscript                 | binary: `A[B]`    |               |
 |           |   `!`     | postfix moot = move+renew | unary:  `A!`      |               |
 |           |   `?`     | postfix nullable          | unary:  `A?`/`a?` |               |
 |           |   `??`    | nullish OR                | binary: `A??B`    |               |
@@ -1425,7 +1425,7 @@ namespace operator binds left to right.
     or kept for field names in [generic objects](#default-field-names-with-generics).
 
 
-## member access operators `::`, `;;`, and ` `
+## member access operators `::`, `;;`, ` `, and subscripts `[]`
 
 We use `::`, `;;`, and ` ` (member access) for accessing variables or functions that belong to
 another object.  The `::` operator ensures that the RHS operand is read only, not write,
@@ -1491,7 +1491,7 @@ Note that if the LHS is readonly, you will not be able to use a `;;` method.
 To sum up, if the LHS is writable, you can use `;;` or `::`, and ` ` (member access) will
 effectively be `;;`.  If the LHS is readonly, you can only use `::` and ` `, which are equivalent.
 
-Subscripts have the same binding strength as member access operators since they are conceptually
+Subscripts `[]` have the same binding strength as member access operators since they are conceptually
 similar operations.  This allows for operations like `++A[3]` meaning `++(A[3])` and
 `--A B C[3]` equivalent to `--(((A;;B);;C)[3])`.  Member access binds stronger than exponentation
 so that operations like `A B[C]^3` mean `((A::B)[C])^3`.
@@ -2265,17 +2265,15 @@ f(Int: 7)               # ok but overly verbose
 ```
 
 If passing functions as an argument where the function name doesn't matter,
-the default-named argument for a function is `fn`.  When *defining* a function
-with a function argument, the default name must be used (`fn`); when declaring
-the function, or when creating a lambda function for use inside the function,
-the default name can be omitted.
+the default-named argument for a function is `fn`.
+TODO: consider `f` instead as the default name for a function.
+`q(f(): bool): null`
 
 ```
-# declaring a function doesn't require the default name:
-q((): bool): null
+# declaring a function that takes a lambda, note the default name `fn`.
+q(fn(): bool): null
 
-# when defining the function, the default name `fn` must be used,
-# so that it can be used inside the function block.
+# defining a function that takes a lambda.
 q(fn(): bool): null
     if fn()
         print("function returned true!")
@@ -2292,21 +2290,24 @@ another_test_function(): bool
 q(another_test_function)  # should print "function returned false!"
 
 # or you can create a default-named function yourself:
-q(fn(): bool
-    random() > 0.5
+q
+(   fn(): bool
+        random() > 0.5
 )   # will print one of the above due to randomness.
-# equivalent to `q((): random() > 0.5)`
+# equivalent to `q(fn(): random() > 0.5)` or `q({random() > 0.5})`
 
-# when defining a lambda (not declaring it), you can omit the name:
-q((): True)
+# defining a lambda still requires a name, feel free to use the default:
+q(fn(): True)
 
-# or you can do multiline with a name-omitted lambda:
+# or you can do multiline:
 X; bool
-q(():
-    return X
+q
+(   fn():
+        X
 )
-# equivalent to `q((): X)`
-# also equivalent to `q((): {X})`
+# equivalent to `q(fn(): X)`
+# also equivalent to `q(fn(): {X})`
+# also equivalent to `q({X})`
 ```
 
 You only really need to use `{X}` if you're also doing a side computation,
@@ -2372,8 +2373,6 @@ detect(greet(Int): string): int
 greet(Int): string
     return "hay"
 # TODO: with overloads, i don't think we can assume we know which `greet` that we want to pass in here.
-#       i don't think we want to enforce that function arguments are named uniquely across overloads,
-#       because that negates the benefit of `Hm map((Ok): 2 * Ok)` and `Hm map((Er): 123)`.
 #       maybe we throw a compile error if the function `greet` has overloads??
 #       if it does have overloads, we specify via `greet($$Int) String`
 detect(greet)       # returns -1
@@ -2383,8 +2382,6 @@ detect(greet)       # returns -1
 say_hi(Int): string
     return "hello, world" + "!" * Int
 # TODO: with overloads, i don't think we can assume we know which `say_hi` that we want to pass in here.
-#       i don't think we want to enforce that function arguments are named uniquely across overloads,
-#       because that negates the benefit of `Hm map((Ok): 2 * Ok)` and `Hm map((Er): 123)`.
 #       maybe we throw a compile error if the function `say_hi` has overloads??
 #       if it does have overloads, we specify via `greet(Int): say_hi(Int) String`
 detect(greet: say_hi)    # returns 1
@@ -2415,6 +2412,14 @@ run_asdf($K * $J + str($$L))   # prints "hayhayhayhayhay3.14"
 
 Note that `$K`, `$J`, and `$$L` attach to the same lambda because `$$L` is
 inside some parentheses.
+
+TODO: do an example with `{}` just for organization.  do we need to increment
+the number of dollar signs here?
+e.g., `run_asdf({print($$K), $K * $J + str($$L)})` or
+needs `run_asdf({print($$$K), $$K * $$J + str($$$L)})`?
+if we want to avoid spamming $, which may be buggy, we probably could require a single $
+and then require `{}` for lambdas, so that we have
+`run_asdf({$K * $J + str($L)})` (note no double `$$` on `L`).
 
 ### types as arguments
 
@@ -3180,7 +3185,7 @@ so we can never pass a temporary argument (e.g., `Arg. str`) into `next_generato
 
 If the return type from a function has multiple fields, we can grab them
 using the notation `[Field1:, Field2;, Field3] = do_stuff()`, where `do_stuff` has
-a function signature of `(): [Field1: field1, Field2: field2, Field3: field3, ...]`,
+a function signature of `fn(): [Field1: field1, Field2: field2, Field3: field3, ...]`,
 and `...` are optional ignored return fields.  In the example, we're declaring
 `Field1` as readonly, `Field2` as writable, and `Field3` is an existing variable
 that we're updating (which should be writeable), but any combination of `;`, `:`,
@@ -3190,20 +3195,15 @@ variables at the same time, which can be done with `[Field1, Field2]: do_stuff()
 or `[Field1, Field2] = do_stuff()` for reassignment.
 
 If the returned fields are references (and we don't want to copy them into local variables),
-we can use parentheses in an analogous way:  `(Ref1:, Ref2;, Not_a_ref.) = do_stuff()`,
-but note that `(Ref1, Ref2): do_stuff()` is *not* available because that clashes with
-the shorthand for defining lambdas;
-`(X: int, Y: str) = some_function(Z)` is destructuring, while
-`(X: int, Y: str): some_function(Z)` is defining a lambda.
-TODO: think if there's a better, more-consistent resolution here.
-maybe we get rid of the option to do `[Field1, Field2]; do_stuff()` and always
-require `[Field1;, Field2;] = do_stuff()`.  after all, it wouldn't make sense
-to do something like `[Field1;, Field2]: do_stuff()`.  that way there's never
-an "analogous" way to destructure things with `[]` that would be invalid with `()`.
-or potentially we could require lambdas to always need an indent (or braces), e.g.,
-`(X: int, Y: str): {some_function(Z)}`, that way `(X, Y): some_function(Z)` could
-be a destructure.
-OR we always require a name for lambda functions, e.g., `fn(...): do_stuff()`.
+we can use parentheses in an analogous way:  `(Ref1:, Ref2;, Not_a_ref.) = do_stuff()`
+to define `Ref1` as a readonly reference, `Ref2` as a writeable reference, and
+`Not_a_ref` as a unique, writable instance.  Or if we want to do all fields the same,
+`(Ref1, Ref2): do_stuff()` works to define `Ref1` and `Ref2` as readonly references, or
+`(Ref1, Ref2); do_stuff()` works to define them as writable references, and
+`(Ref1, Ref2). do_stuff()` works to define them as unique, writable instances.
+Notice that the only distinction between destructuring references and defining a function
+is that the function requires a `function_case` identifier before the parentheses
+(e.g., `fn(): ...` or `do_stuff(Ref1, Ref2); ...`).
 
 You can also use destructuring to specify return types explicitly.
 The notation is `[Field1: type1, Field2; type2] = do_stuff()`.  This can be used
@@ -3211,8 +3211,8 @@ to grab even a single field and explicitly type it, e.g., `[X: str] = whatever()
 
 This notation is a bit more flexible than JavaScript, since we're
 allowed to reassign existing variables while destructuring.  In JavaScript,
-`const {Field1, Field2} = do_stuff();` declares and defines the fields `Field1` and `Field2`,
-but `{Field1, Field2} = do_stuff();`, i.e., reassignment in oh-lang, is an error in JS.
+`/*js*/ const {Field1, Field2} = do_stuff();` declares and defines the fields `Field1` and `Field2`,
+but `/*js??*/ {Field1, Field2} = do_stuff();`, i.e., reassignment in oh-lang, is an error in JS.
 
 Some worked examples follow, including field renaming.
 
@@ -5372,8 +5372,8 @@ if Result is_ok()
     print("ok")
 
 # but it'd be nice to transform `Result` into the `Ok` (or `Er`) value along the way.
-Result is((Ok): print("Ok: ", Ok))
-Result is((Er): print("Er: ", Er))
+Result is(fn(Ok): print("Ok: ", Ok))
+Result is(fn(Er): print("Er: ", Er))
 
 # or if you're sure it's that thing, or want the program to terminate if not:
 Ok: Result ?? panic("expected `Result` to be non-null!!")
@@ -5440,7 +5440,7 @@ then we can automatically convert its return value into a `one_of[ok, null]`, i.
 a nullable version of the `ok` type.  This is helpful for things like type casting;
 instead of `My_int: what int(My_dbl) {Ok. {Ok}, Er: {-1}}` you can do
 `My_int: int(My_dbl) ?? -1`.  Although, there is another option that
-doesn't use nulls:  `int(My_dbl) map((Er): -1)`.
+doesn't use nulls:  `int(My_dbl) map(fn(Er): -1)`.
 
 TODO: should this be valid if `ok` is already a nullable type?  e.g.,
 `my_function(): hm[ok: one_of[int, null], er: str]`.
@@ -6754,7 +6754,7 @@ block[of, declaring: null]:
 ]
 {   # exits the `indent` with the corresponding `of` value.  example:
     #   Value; 0
-    #   what indent((Block[str]): never
+    #   what indent(fn(Block[str]): never
     #       @Old Value: Value
     #       Value = Value // 2 + 9
     #       # sequence should be: 0, 9, 4+9=13, 6+9=15, 7+9=16, 8+9=17
@@ -6771,7 +6771,7 @@ block[of, declaring: null]:
     # like a `continue` statement; will bring control flow back to
     # the start of the `indent` block.  example:
     #   Value; 0
-    #   indent((Block[str]):
+    #   indent(fn(Block[str]):
     #       if ++Value >= 10 {Block exit("done")}
     #       if Value % 2
     #           Block loop()
@@ -6906,7 +6906,7 @@ ci[of]: resumable[one_of[Cease, Value: of]]
 
 ```
 countdown: co[int]
-{   ;;renew(My Int.): Co renew((Ci[int];):
+{   ;;renew(My Int.): Co renew(fn(Ci[int];):
         while My Int > 0
             Ci give(--My Int)
         Ci exit()
@@ -7265,12 +7265,12 @@ if Tree is_leaf()
 # narrowing to a `leaf` type that is readonly, while retaining a reference
 # to the original `Tree` variable.  the nested function only executes if
 # `Tree` is internally of type `leaf`:
-Tree is((Leaf): print(Leaf))
+Tree is(fn(Leaf): print(Leaf))
 
 # narrowing to a `branch` type that is writable.  `Tree` was writable, so `Branch` can be.
 # the nested function only executes if `Tree` is internally of type `branch`:
 Tree is
-(   (Branch;):
+(   fn(Branch;):
         print(Branch Left, " ", Branch Right)
         # this operation can affect/modify the `Tree` variable.
         Branch Left some_operation()
