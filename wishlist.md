@@ -584,7 +584,7 @@ There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
 which are function-like but may consume the rest of the statement.
 E.g., `return X + 5` will return the value `(X + 5)` from the enclosing function.
 There are some reserved namespaces with side effects like `@First`, `@Second`,
-`@Unused`, `@Named`,
+`@Unused`, `@Ignore`, `@Named`,
 which should be used for their side effects.  For example, `@First` and `@Second`
 are reserved for binary operations like `&&` and `*`.  See [namespaces](#namespaces)
 for more details.  Other reserved keywords:
@@ -600,7 +600,7 @@ e.g., `1_000_000` is the same as `1000000`, and highly recommended for large num
 Underscores in identifiers will automatically "capitalize" the next letter, so
 `my_function` is the same as `myFunction`, and `_count` is the same as `Count`.
 Numbers are ignored, so `x_1` is the same as `x1`.  Trailing underscores are not allowed;
-if you want to annotate a variable as unused, use the `@Unused` namespace.
+if you want to annotate a variable as unused, use the `@Unused` or `@Ignore` namespace.
 
 ## blocks
 
@@ -1421,6 +1421,7 @@ namespace operator binds left to right.
 * `@First` - for the first operand in a binary operation (where order matters)
 * `@Second` - for the second operand in a binary operation (where order matters)
 * `@Unused` - for variables that aren't used in this block
+* `@Ignore` - for variables that aren't used in this block, usually for errors, e.g., `Result map(fn(@Ignore Er): -1)`
 * `@Named` - for identifiers that should be explicitly named in [generic arguments](#argument-type-generics)
     or kept for field names in [generic objects](#default-field-names-with-generics).
 
@@ -5374,6 +5375,11 @@ if Result is_ok()
 # but it'd be nice to transform `Result` into the `Ok` (or `Er`) value along the way.
 Result is(fn(Ok): print("Ok: ", Ok))
 Result is(fn(Er): print("Er: ", Er))
+# this is slightly more idiomatic, however:
+if Result is Ok:
+    print("Ok: ", Ok)
+elif Result is Er:
+    print("Er: ", Er)
 
 # or if you're sure it's that thing, or want the program to terminate if not:
 Ok: Result ?? panic("expected `Result` to be non-null!!")
