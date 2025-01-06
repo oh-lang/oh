@@ -5375,40 +5375,30 @@ if Result is_ok()
 # but it'd be nice to transform `Result` into the `Ok` (or `Er`) value along the way.
 Result is(fn(Ok): print("Ok: ", Ok))
 Result is(fn(Er): print("Er: ", Er))
-# this is slightly more idiomatic, however:
-if Result is Ok:
-    print("Ok: ", Ok)
-elif Result is Er:
-    print("Er: ", Er)
 
 # or if you're sure it's that thing, or want the program to terminate if not:
 Ok: Result ?? panic("expected `Result` to be non-null!!")
 ```
 
-A few keywords, such as `is`, are actually operators, so we can overload
-them and use them in this way.  Notice that we declare an `Ok` variable
-here so we need to use a colon (e.g., `Ok:`).
+A few keywords, such as `is`, are actually [operators](#is-operator), so we can
+overload them and use them in this slightly more idiomatic way.  Notice that
+we declare an `Ok` variable here so we need to use a colon (e.g., `Ok:`).
 
 ```
 if Result is Ok:
     print("Ok: ", Ok)
+elif Result is Er:
+    print("Er: ", Er)
 ```
 
-This is how you might declare similar functionality for your own class.
+Or use `what` if you want to ensure via the compiler that you get all cases:
 
 ```
-example_class: [Value: int]
-{   # the standard way to use this method uses syntax sugar:
-    #   if Example_class is Large:
-    #       print("was large: ${Large}")
-    # `If` is probably a wrapper around `Block`.
-    :;.is(If[declaring: (Large:;. int), ~t]): t
-        if My Value > 999
-            If then(Declaring: (Large` My Value))
-        else
-            If else()
-}
-
+what Result
+    Ok:
+        print("Ok: ", Ok)
+    Er:
+        print("Er: ", Er)
 ```
 
 ## assert
@@ -5446,7 +5436,8 @@ then we can automatically convert its return value into a `one_of[ok, null]`, i.
 a nullable version of the `ok` type.  This is helpful for things like type casting;
 instead of `My_int: what int(My_dbl) {Ok. {Ok}, Er: {-1}}` you can do
 `My_int: int(My_dbl) ?? -1`.  Although, there is another option that
-doesn't use nulls:  `int(My_dbl) map(fn(Er): -1)`.
+doesn't use nulls:  `int(My_dbl) map(fn(@Ignore Er): -1)`.
+TODO: short? `int(My_dbl) map(@Ignore $Er, -1)`?? or use `{@Ignore $Er, -1}`?
 
 TODO: should this be valid if `ok` is already a nullable type?  e.g.,
 `my_function(): hm[ok: one_of[int, null], er: str]`.
@@ -6318,6 +6309,48 @@ if Some Long Condition
     |>  Then:
     print("good")
     ...
+```
+
+### is operator
+
+You can use the `is` operator to convert statements like `X is(fn(Another_type: ...): ...)`
+into more idiomatic things like `if X is Another_type: ...`.
+
+```
+# not idiomatic:
+my_decider(X: one_of[type1, type2]):
+    X is
+    (   fn(Type1):
+            print("X was type1: ", Type1)
+    )
+    X is
+    (   fn(Type2):
+            print("X was type2: ", Type2)
+    )
+
+# idiomatic:
+my_decider(X: one_of[type1, type2]):
+    if X is Type1:
+        print("X was type1: ", Type1)
+    elif X is Type2:
+        print("X was type2: ", Type2)
+```
+
+This is how you might declare similar functionality for your own class,
+by overloading the `is` operator.
+
+```
+example_class: [Value: int]
+{   # the standard way to use this method uses syntax sugar:
+    #   if Example_class is Large:
+    #       print("was large: ${Large}")
+    # `If` is probably a wrapper around `Block`.
+    :;.is(If[declaring: (Large:;. int), ~t]): t
+        if My Value > 999
+            If then(Declaring: (Large` My Value))
+        else
+            If else()
+}
 ```
 
 ### what statements
