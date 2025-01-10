@@ -21,7 +21,9 @@ names.  We'll allow an option for converting `_x` to `X` in case users want to u
 or `dromedaryCase`, or even if they want to go all-in with `_prefixed_snake_case` for variable
 names (since `_prefixed_snake_case` would be equivalent to `Prefixed_snake_case`
 with the `_x` equals `X` rule).  For the remainder of this document, we'll use `Variable_case`,
-`type_case`, and `function_case`, although the latter two are indistinguishable.
+`type_case`, and `function_case`, although the latter two are indistinguishable without context.
+In context, functions and types are followed by optional generics (in `[]` brackets),
+while functions alone have parentheses `()` with optional arguments inside.
 
 Another change is that oh-lang uses `:` (or `;`) for declarations and `=` for reassignment,
 so that declaring a variable and specifying a variable will work the same inside and outside
@@ -440,13 +442,15 @@ do_something(you(): str, greet(Name: str): str): str
 # calling a function with some functions as arguments
 my_name(): str
     "World"
-# inline, `my_name(): "World"`
 do_something
-(   you: my_name
+(   you(): str = my_name()
     greet(Name: str): str
         "Hello, ${Name}"
 )
 ```
+
+Note that because we support [function overloading](#function-overloads), we need
+to specify the *whole* function [when passing it in as an argument](#functions-as-arguments).
 
 ```
 # defining a function that returns a lambda function
@@ -2031,6 +2035,12 @@ excite(Times: int): str
 oh(Really; dbl): dbl { Really *= 2.5, return 50 + Really }
 ```
 
+Note that we disallow the inverted syntax of `function_name: return_type(...Args)`
+because this looks like declaring a type (e.g., no parentheses on the left hand side)
+and the right hand side looks like how we call a function and get an instance (not a type).
+See [returning a type](#returning-a-type) for how we'd return a type.
+TODO: we need to go through the entire doc to see if we have any remaining declarations like that.
+
 ## calling a function
 
 You can call functions with arguments in any order.  Arguments must be specified
@@ -2359,7 +2369,12 @@ is short-hand for `[My_function: My_class_instance my_function()]`.
 
 A function can have a function as an argument, and there are a few different ways to call
 it in that case.  This is usually a good use-case for lambda functions, which define
-an inline function to pass into the other function.
+an inline function to pass into the other function.  Because we support
+[function overloading](#function-overloads), any externally defined functions need to be
+fully specified.  (E.g., this is not allowed: `greet(Int): "hello" + "!" * Int, do_greet(greet)`.)
+This is also because we allow passing in types as function arguments, so anything that is
+`function_case` without a subsequent parenthesized argument list `(Args...)` will be considered
+`type_case` instead.
 
 ```
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
@@ -2370,22 +2385,21 @@ detect(greet(Int): string): int
             return @Check Int
     return -1
 
-# if your function is named the same as the function argument, you can use it directly:
+# if your function is named the same as the function argument...
 greet(Int): string
     return "hay"
-# TODO: with overloads, i don't think we can assume we know which `greet` that we want to pass in here.
-#       maybe we throw a compile error if the function `greet` has overloads??
-#       if it does have overloads, we specify via `greet($$Int) String`
-detect(greet)       # returns -1
+# you can use it directly, although you still need to specify which overload you're using:
+detect(greet($$Int) String)     # returns -1
+# also ok but not idiomatic:
+detect(greet(Int): greet(Int) String)
+# also ok but not idiomatic:
+detect(greet(Int): string = greet(Int))
 
 # if your function is not named the same, you can do argument renaming;
 # internally this does not create a new function:
 say_hi(Int): string
     return "hello, world" + "!" * Int
-# TODO: with overloads, i don't think we can assume we know which `say_hi` that we want to pass in here.
-#       maybe we throw a compile error if the function `say_hi` has overloads??
-#       if it does have overloads, we specify via `greet(Int): say_hi(Int) String`
-detect(greet: say_hi)    # returns 1
+detect(greet(Int): say_hi(Int) String)  # returns 1
 
 # you can also create a lambda function named correctly inline -- the function
 # will not be available outside, after this call (it's scoped to the function arguments).
@@ -2393,12 +2407,8 @@ detect(greet(Int): string
     return "hello, world!!!!" substring(Length: Int)
 )   # returns 13
 
-detect(greet: ["hi", "hey", hello"][$$Int % 3] + ", world!") # returns 2
+detect(greet(Int): ["hi", "hey", hello"][Int % 3] + ", world!") # returns 2
 ```
-
-Note that the last example builds a lambda function using lambda arguments;
-`$$Int` attaches an `Int` argument to the `greet` lambda.  We need two `$`
-because `Array[$Int]` would call `["hi", ...][fn(Int): null]`.
 
 You can define a lambda function with multiple arguments using multiple lambda
 arguments.  The lambda argument names should match the arguments that the
@@ -2408,11 +2418,17 @@ input function declares.
 run_asdf(fn(J: int, K: str, L: dbl): null): null
     print(fn(J: 5, K: "hay", L: 3.14))
 
+# One example with parentheses:
+# Note that `$K`, `$J`, and `$$L` attach to the same lambda because `$$L` is
+# inside some parentheses.
 run_asdf($K * $J + str($$L))   # prints "hayhayhayhayhay3.14"
-```
 
-Note that `$K`, `$J`, and `$$L` attach to the same lambda because `$$L` is
-inside some parentheses.
+# One example with brackets:
+My_array: [0.06, 0.5, 4.0, 30.0, 200.0, 1000.0]
+# Again, `$K`, `$$$J`, and `$$L` attach to the same lambda because they need
+# the right number of `$`s to escape parentheses or brackets.
+run_asdf($K + str(My_array[$$$J] * $$L) # prints "hay3140
+```
 
 TODO: do an example with `{}` just for organization.  do we need to increment
 the number of dollar signs here?
@@ -2450,14 +2466,16 @@ print(do_something(dbl)) # returns 123.0
 print(do_something(u8))  # returns u8(123)
 ```
 
-### returning a type constructor
+### returning a type
 
 We use a different syntax for functions that return types; namely `()` becomes `[]`,
-e.g., `constructor_fn[Args...]: constructor`.  This is because we do not need
+e.g., `type_fn[Args...]: the_type`.  This is because we do not need
 to support functions that return instances *or* constructors, and it becomes clearer
 that we're dealing with a type if we use `[]`.  The alternative would be to use
 `fn(Int): Int` to return an `int` instance and `fn(Int): int` to return the
-`int` constructor, but again we never need to mix and match.
+`int` constructor, but again we never need to mix and match.  The bracket syntax is
+related to [template classes](#generictemplate-classes) and
+[overloading generic types](#overloading-generic-types).
 
 ```
 # it's preferable to return a more specific value here, like
@@ -2469,6 +2487,15 @@ random_class[]: any
         dbl
     else
         string
+
+X: random_class[] = 123
+match X
+    Int:
+        print("X is an int")
+    Dbl:
+        print("X is a dbl")
+    String:
+        print("X is a string")
 ```
 
 We can also pass in named types as arguments.  Here is an example
@@ -2482,7 +2509,7 @@ random_class[~x, named_new: ~y]: one_of[x, y]
 print(random_class[int, named_new: dbl])  # will print `int` or `dbl` with 50-50 probability
 ```
 
-To return multiple constructors, you can use the [type tuple syntax](#type-tuples).
+To return multiple types, you can use the [type tuple syntax](#type-tuples).
 
 ### unique argument names
 
@@ -2657,11 +2684,17 @@ something like `X: calling(Input_args...)`, which will first look for an `X` out
 to match, such as `calling(Input_args...): [X: whatever_type]`.  If there is no `X` output
 name, then the first non-null, default-named output overload will be used.  E.g., if
 `calling(Input_args...): dbl` was defined before `calling(Input_args...): str`, then `dbl`
-will win.  For an output variable with an explicit type, e.g., `X: calling(Input_args...) Dbl`,
-this will look for an overload with output name `Dbl` first.  For function calls like
+will win.  For an output variable with an explicit field request, e.g., `X: calling(Input_args...) Dbl`,
+this will look for an overload with output name `Dbl` first.  If there is no output named `X`,
+then `X: dbl = calling(Input_args...)` will also work to get the `Dbl` field.  For function calls like
 `X: dbl(calling(Input_args...))`, we will lose all `X` output name information because
 `dbl(...)` will hide the `X` name.  In this case, we'll use the default overload and attempt
 to convert it to a `dbl`.
+
+One downside of overloads is that we must specify the whole function
+[when passing it in as an argument](#functions-as-arguments).  But we also need to specify
+the whole function because we want to be able to distinguish `type_case` from `function_case`
+(where some parenthesized arguments `(Args...)` follow).
 
 ### nullable input arguments
 
@@ -3540,25 +3573,19 @@ A nullable function has `?` before the argument list; a `?` after the argument l
 means that the return type is nullable.  The possible combinations are therefore the following:
 
 * `normal_function(...Args): return_type` is a non-null function
-  returning a non-null `return_type` instance.  You can also
-  declare this as `normal_function: return_type(...Args)`.
+  returning a non-null `return_type` instance.
 
 * `nullable_function?(...Args): return_type` is a nullable function,
   which, if non-null, will return a non-null `return_type` instance.
   Conversely, if `nullable_function` is null, trying to call it will return null.
-  You can also declare this as `nullable_function?: return_type(...Args)`
-  or `nullable_function: return_type(...Args)?`.
 
 * `nullable_return_function(...Args)?: return_type` is a non-null function
-  which can return a nullable instance of `return_type`.  You can also
-  declare this as `nullable_return_function: return_type?(...Args)`.
+  which can return a nullable instance of `return_type`.
 
 * `super_null_function?(...Args)?: return_type` is a nullable function
   which can return a null `return_type` instance, even if the function is non-null.
   I.e., if `super_null_function` is null, trying to call it will return null,
   but even if it's not null `super_null_function` can still return null.
-  You can also declare this as `super_null_function?: return_type?(...Args)`
-  or `super_null_function: return_type?(...Args)?`.
 
 Some examples:
 
@@ -4895,7 +4922,7 @@ My_number; my_tuples number(5.0)
 My_vector; my_tuples vector(X: 3.0, Y: 4.0)
 ```
 
-See also [`new[...]: ...` syntax](#returning-a-type-constructor).
+See also [`new[...]: ...` syntax](#returning-a-type).
 
 
 ### default field names with generics
@@ -4989,6 +5016,16 @@ You get a run-time error if multiple child-class singletons are imported/instant
 at the same time.
 
 ## sequence building
+
+TODO: i'm not super excited by the syntax here.
+`A (_ b(), _ c())` is more clunky than just `A@ ( b(), c())` but less precise,
+in case we do want to support `A ( if _ b() {do_something()}, ... )`, etc.
+is there a different operator we can use for member access here?
+or we can just remove sequence building and return a reference (like regular builder pattern).
+maybe `|`?  `A(|b(), |c())`.  however, `A(..., c())` doesn't make sense anyway
+because we're not allowed to parenthesize `Variable_case`.  maybe we support
+`A@ ( b(), c() )` for the common case of `A (_ b(), _ c())`, i.e., where the `_`
+is at the front of each expression.
 
 Some languages use a builder pattern, e.g., Java, where you add fields to an object
 using setters.  For example, `MyBuilder.setX(123).setY(456).setZ("great").build()` [Java].
