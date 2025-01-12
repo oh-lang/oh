@@ -261,11 +261,10 @@ memory, these safe functions are a bit more verbose than the unchecked functions
             TODO: we could make this become a zero-argument lambda function body declaration.
             e.g., `do_something(${print(X), return 5})`.  or maybe we can assume that anyway
             with `do_something({print(X), return 5})`.
-    * `My_array map($Int * 2 + 1)` to create a [lambda function](#functions-as-arguments)
+    * `My_array map({$Int * 2 + 1})` to create a [lambda function](#functions-as-arguments)
         which will iterate over e.g., `My_array: [1, 2, 3, 4]` as `[3, 5, 7, 9]`.
-        * Lambda arguments need to specify which scope they attach to, by increasing
-            the number of `$` to escape parentheses, e.g., `My_array map(str($$Int) * 2)`
-            to get `["11", "55", "1010"]` for `My_array: [1, 5, 10]`.
+        The `$` variables attach to the nearest brace/indent as a function argument,
+        so `My_array map({str($Int) * 2})` will give `["11", "55", "1010"]` for `My_array: [1, 5, 10]`.
 * all arguments are specified by name so order doesn't matter, although you can have default-named arguments
   for the given type which will grab an argument with that type (e.g., `Int` for an `int` type).
     * `(X: dbl, Int)` can be called with `(1234, X: 5.67)` or even `(Y, X: 5.67)` if `Y` is an `int`
@@ -1129,7 +1128,7 @@ object == merge[object fields(), [$Field Name: $Field value]]
 ```
 
 TODO: good ways to do keys and values for an object type (e.g., like TypeScript).
-see if there's a better way to do it, e.g., `object valued[um[$$value]]`, so
+see if there's a better way to do it, e.g., `object valued[{um[$value]}]`, so
 it's easy to see that all field names are the same, just values that change.
 
 Here are some examples of changing the nested fields on an object
@@ -1140,17 +1139,17 @@ or a container, e.g., to convert an array or object to one containing futures.
 nest[@Nest_in of, new[nested]: of]: disallowed
 
 # container specialization.
-# e.g., `nest[array[int], um[$$nested]] == array[um[int]]`,
-# or you can do `array[int] nest[um[$$nested]]` for the same effect.
+# e.g., `nest[array[int], {um[$nested]}] == array[um[int]]`,
+# or you can do `array[int] nest[{um[$nested]}]` for the same effect.
 nest[container[of: ~nested, ~at], new[nested]: of]: container[of: new[nested], at]
 
 # object specialization.
-# e.g., `nest[hm[ok: $$nested, er: some_er], [X: int, Y: str]]`
+# e.g., `nest[{hm[ok: $nested, er: some_er]}, [X: int, Y: str]]`
 # to make `[X: hm[ok: int, er: some_er], Y: hm[ok: str, er: some_er]]`,
-# or you can do `hm[ok: $$nested, er: some_er] nest[[X: int, Y: str]]` for the same effect.
+# or you can do `[X: int, Y: str] nest[{hm[ok: $nested, er: some_er]}]` for the same effect.
 nest[object, new[nested]: of]: merge
 [   object fields()
-    [$Field Name: new[nested: $$Field value]]
+    {[$Field Name: new[nested: $Field value]]}
 ]
 ```
 
@@ -1314,7 +1313,7 @@ some_function(X: int, Y; dbl, Z. str):
 curried_function(Z. str): some_function(X: 5, Y; 2.4, Z.)
 
 # or you can make it almost implicit like this:
-curried_function: some_function(X: 5, Y; 2.4, $$Z.)
+$curried_function{some_function(X: 5, Y; 2.4, $Z.)}:
 ```
 
 ## namespaces
@@ -2374,6 +2373,9 @@ fully specified.  (E.g., this is not allowed: `greet(Int): "hello" + "!" * Int, 
 This is also because we allow passing in types as function arguments, so anything that is
 `function_case` without a subsequent parenthesized argument list `(Args...)` will be considered
 `type_case` instead.
+TODO: we could come up with a good syntax for "pass all overloads in"
+and pick what we need based on the body of the function.
+e.g., `my_calling_function(take_all_overloads(Call;))`.
 
 ```
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
@@ -2388,7 +2390,7 @@ detect(greet(Int): string): int
 greet(Int): string
     return "hay"
 # you can use it directly, although you still need to specify which overload you're using:
-detect(greet($$Int) String)     # returns -1
+detect({greet($Int) String})    # returns -1
 # also ok but not idiomatic:
 detect(greet(Int): greet(Int) String)
 # also ok but not idiomatic:
@@ -2417,25 +2419,23 @@ input function declares.
 run_asdf(fn(J: int, K: str, L: dbl): null): null
     print(fn(J: 5, K: "hay", L: 3.14))
 
-# One example with parentheses:
-# Note that `$K`, `$J`, and `$$L` attach to the same lambda because `$$L` is
-# inside some parentheses.
-run_asdf($K * $J + str($$L))   # prints "hayhayhayhayhay3.14"
+# Note that `$K`, `$J`, and `$L` attach to the same lambda based on looking
+# for the first matching `{}`.
+run_asdf({$K * $J + str($L)})   # prints "hayhayhayhayhay3.14"
 
 # One example with brackets:
 My_array: [0.06, 0.5, 4.0, 30.0, 200.0, 1000.0]
-# Again, `$K`, `$$$J`, and `$$L` attach to the same lambda because they need
-# the right number of `$`s to escape parentheses or brackets.
-run_asdf($K + str(My_array[$$$J] * $$L) # prints "hay3140
+# Again, `$K`, `$J`, and `$L` attach to the same lambda.
+run_asdf({$K + str(My_array[$J] * $L)})  # prints "hay3140
 ```
 
-TODO: do an example with `{}` just for organization.  do we need to increment
-the number of dollar signs here?
-e.g., `run_asdf({print($$K), $K * $J + str($$L)})` or
-needs `run_asdf({print($$$K), $$K * $$J + str($$$L)})`?
-if we want to avoid spamming `$`, which may be buggy, we probably could require a single `$`
-and then require `{}` for lambdas, so that we have
-`run_asdf({$K * $J + str($L)})` (note no double `$$` on `L`).
+TODO: discussion on how to name lambda functions defined in this way.
+i think `function_name{$My_lambda + $Other_arg}` is probably fine.
+but we'd need to verify that it doesn't conflict with other things like
+`if X is int {$My_lambda...}`, this might look like defining
+`int(My_lambda): ...` if we're not careful.  maybe need to use
+`if X is int ${$My_lambda...}` and we can do
+`$function_name{$My_lambda}` in case the function name is required.
 
 ### types as arguments
 
