@@ -17,7 +17,9 @@ to stop you if you try to change a constant variable, and you'll save wear
 and tear on your caps-lock key.
 
 Why snake case: long names are hard to parse with Pascal case, and we want to support descriptive
-names.  We'll allow an option for converting `_x` to `X` in case users want to use `CamelCase`
+names.  Code is read more than it is written, so we don't need to optimize underscores out
+(e.g., like in `PascalCase`) at the cost of making the code harder to read.
+We'll allow an option for converting `_x` to `X` in case users want to use `CamelCase`
 or `dromedaryCase`, or even if they want to go all-in with `_prefixed_snake_case` for variable
 names (since `_prefixed_snake_case` would be equivalent to `Prefixed_snake_case`
 with the `_x` equals `X` rule).  For the remainder of this document, we'll use `Variable_case`,
@@ -113,9 +115,9 @@ Class methods technically take an argument for `Me/My/I` everywhere, which is so
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
 writing `the_method(Me, X: int): str`, we can write `::the_method(X: int): str`.
 This parallels `my_class::the_method` in C++, but in oh-lang we can analogously use
-`my_class;;a_mutating_method` for a method that can mutate `Me`, i.e.,
+`;;a_mutating_method` for a method that can mutate `Me`, i.e.,
 `a_mutating_method(Me;, X: int): str` becomes `;;a_mutating_method(X: int): str`,
-or `my_class..one_temporary_method()` for a method on a temporary `Me`, i.e.,
+or `..one_temporary_method()` for a method on a temporary `Me`, i.e.,
 `one_temporary_method(Me.)`.  You can substitute `I` or `My` for `Me` anywhere,
 including in methods that only declare one of them in the function arguments.
 We recommend using `My` for field access (e.g., `My X`) as well as getters/setters
@@ -191,8 +193,8 @@ memory, these safe functions are a bit more verbose than the unchecked functions
 # general syntax
 
 * `print(...)` to echo some values (in ...) to stdout, `error(...)` to echo to stderr
-* `type_case`/`function_case` identifiers like `x` are function/type-like, see [here](#identifiers)
-* `Variable_case` identifiers like `X` are instance-like, see [here](#identifiers)
+* `type_case`/`function_case` identifiers like `x` are function/type-like, see [identifiers](#identifiers)
+* `Variable_case` identifiers like `X` are instance-like, see [identifiers](#identifiers)
 * use `#` for [comments](#comments)
 * outside of arguments, use `:` for readonly declarations and `;` for writable declarations
 * for an argument, `:` is a readonly reference, `;` is a writable reference, and `.` is a temporary
@@ -238,9 +240,6 @@ memory, these safe functions are a bit more verbose than the unchecked functions
         and return them in an object with fields `X` and `Y`, i.e., `[X: A x(), Y: A Y]`.
         You can also consider them as ordered, e.g.,
         `Results: A [_ x(), _ Y], print("${Results[0]}, ${Results[1]})`.
-        TODO: We can technically distinguish `A [_ x()]` (sequence building) from `A[x()]` (array access),
-        but is this confusing from a developer/grammar/syntax?  maybe we always add a space in formatting.
-        or maybe we use `A@[@ x()]`
 * `{}` for blocks and sequence building
     * `{...}` to effectively indent `...`, e.g., `if Condition {do_thing()} else {do_other_thing(), 5}`
         * Note that braces `{}` are *optional* if you actually go to the next line and indent,
@@ -2434,7 +2433,7 @@ TODO: do an example with `{}` just for organization.  do we need to increment
 the number of dollar signs here?
 e.g., `run_asdf({print($$K), $K * $J + str($$L)})` or
 needs `run_asdf({print($$$K), $$K * $$J + str($$$L)})`?
-if we want to avoid spamming $, which may be buggy, we probably could require a single $
+if we want to avoid spamming `$`, which may be buggy, we probably could require a single `$`
 and then require `{}` for lambdas, so that we have
 `run_asdf({$K * $J + str($L)})` (note no double `$$` on `L`).
 
