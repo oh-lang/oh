@@ -257,14 +257,10 @@ memory, these safe functions are a bit more verbose than the unchecked functions
             `Array: if Some_condition $[1, 2, 3] else $[4, 5]`
         * `$(...)` as shorthand for a new block defining `(...)`, e.g., an argument object:
             `Result: if X > Y $(Max: X, Min: Y) else $(Min: X, Max: Y)`
-        * note that (outside of a string) `${...}` is functionally the same as `{...}`.
-            TODO: we could make this become a zero-argument lambda function body declaration.
-            e.g., `do_something(${print(X), return 5})`.  or maybe we can assume that anyway
-            with `do_something({print(X), return 5})`.
-    * `My_array map({$Int * 2 + 1})` to create a [lambda function](#functions-as-arguments)
-        which will iterate over e.g., `My_array: [1, 2, 3, 4]` as `[3, 5, 7, 9]`.
-        The `$` variables attach to the nearest brace/indent as a function argument,
-        so `My_array map({str($Int) * 2})` will give `["11", "55", "1010"]` for `My_array: [1, 5, 10]`.
+    * `$Arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
+        * `My_array map({$Int * 2 + 1})` will iterate over e.g., `My_array: [1, 2, 3, 4]`
+            as `[3, 5, 7, 9]`.  The `$` variables attach to the nearest brace/indent as
+            function arguments.
 * all arguments are specified by name so order doesn't matter, although you can have default-named arguments
   for the given type which will grab an argument with that type (e.g., `Int` for an `int` type).
     * `(X: dbl, Int)` can be called with `(1234, X: 5.67)` or even `(Y, X: 5.67)` if `Y` is an `int`
@@ -2389,12 +2385,13 @@ detect(greet(Int): string): int
 # if your function is named the same as the function argument...
 greet(Int): string
     return "hay"
-# you can use it directly, although you still need to specify which overload you're using:
-detect({greet($Int) String})    # returns -1
-# also ok but not idiomatic:
-detect(greet(Int): greet(Int) String)
-# also ok but not idiomatic:
+# you can use it directly, although you still need to specify which overload you're using,
+detect(greet(Int): greet(Int) String)    # returns -1
+# also ok:
 detect(greet(Int): string = greet(Int))
+# using lambda functions:
+# TODO: we probably want to pull out `greet` as the function name.
+detect({greet($Int) String})
 
 # if your function is not named the same, you can do argument renaming;
 # internally this does not create a new function:
@@ -2411,9 +2408,14 @@ detect(greet(Int): string
 detect(greet(Int): ["hi", "hey", hello"][Int % 3] + ", world!") # returns 2
 ```
 
-You can define a lambda function with multiple arguments using multiple lambda
-arguments.  The lambda argument names should match the arguments that the
-input function declares.
+### lambda functions
+
+Lambda functions are good candidates for [functions as arguments](#functions-as-arguments),
+since they are very concise ways to define a function.  They utilize an indented block
+or set of braces  like `{...function-body...}` with function arguments defined inside using
+`$The_argument_name`.  There is no way to specify the type of a lambda function argument,
+so the compiler must be able to infer it (e.g., via using the entire lambda as an argument,
+or by using a default name like `$Int` to define an integer).  Some examples:
 
 ```
 run_asdf(fn(J: int, K: str, L: dbl): null): null
@@ -2427,15 +2429,33 @@ run_asdf({$K * $J + str($L)})   # prints "hayhayhayhayhay3.14"
 My_array: [0.06, 0.5, 4.0, 30.0, 200.0, 1000.0]
 # Again, `$K`, `$J`, and `$L` attach to the same lambda.
 run_asdf({$K + str(My_array[$J] * $L)})  # prints "hay3140
+# The same example with an indent:
+run_asdf
+(   $K + str(My_array[$J] * $L)
+)
 ```
 
-TODO: discussion on how to name lambda functions defined in this way.
-i think `function_name{$My_lambda + $Other_arg}` is probably fine.
-but we'd need to verify that it doesn't conflict with other things like
-`if X is int {$My_lambda...}`, this might look like defining
-`int(My_lambda): ...` if we're not careful.  maybe need to use
-`if X is int ${$My_lambda...}` and we can do
-`$function_name{$My_lambda}` in case the function name is required.
+TODO: how to name lambda functions, maybe using the hat function `function_name |> { ... }`?
+This is only required if the function is not default named (e.g., not `fn`).
+
+If you need a lambda function inside a lambda function, use another `$` to escape
+one variable into the parent scope, e.g.,
+
+```
+# with function signatures
+# `run(fn(X: any): any): any` and
+# `run_nested(fn(Y: any): any): any`
+run({$X + run_nested({$Y + $$X})})
+
+# or with indents
+run
+(   $X + run_nested
+    (   $Y + $$X
+    )
+)
+```
+
+But it would probably be more readable to just define the functions normally in this instance.
 
 ### types as arguments
 
@@ -3555,10 +3575,8 @@ otherwise you're just creating a new overload (and not redefining the function).
 
 ## nullable functions
 
-TODO: maybe don't allow optional functions.  the way to make them optional doesn't look right,
-e.g., `nullable_fn?(Z: dbl); int {...}, nullable_fn = Null`.  the identifiers don't line up.
-maybe use `nullable_fn = null`??  but supposedly we need to specify the whole overload:
-`nullable_fn?(Z: dbl); int = Null`.  or could we use mooting?  `!nullable_fn`.
+TODO: we need to specify the whole overload, and maybe use a new identifier, e.g., `$null`?
+`nullable_fn?(Z: dbl); int = $null`.  or could we use mooting?  `!nullable_fn`.
 
 The syntax for declaring a nullable/optional function is to put a `?` after the function name
 but before the argument list.  E.g., `optional_function?(...Args): return_type` for a non-reassignable
@@ -3622,7 +3640,7 @@ Child optional_method(0)     # returns 12
 
 # but note that unless the method is protected, users can still redefine it.
 Child::optional_method(Z: dbl): int
-    return floor(Z)
+    floor(Z)
 
 Child optional_method(5.4)   # returns 5
 
@@ -3630,11 +3648,10 @@ Child optional_method(5.4)   # returns 5
 # we cannot stop a Null from being assigned here.  this is because
 # if the instance is passed into a function which takes a parent class,
 # that function scope can reassign the method to Null (since the parent
-# class has no restrictions).
-# TODO: we probably need to specify the whole function overload here.
-Child optional_method = Null
-# TODO: but this looks like defining the function to return Null.
-Child::optional_method?(Z: dbl); int = Null      # should be the same
+# class has no restrictions).  note the entire overload must be specified.
+Child::optional_method?(Z: dbl); int = $null
+# TODO: maybe a good reason to always require {} (or indenting) on a function,
+#       we can distinguish between `= Null` and `{ ... }` and wouldn't need `$null`
 # TODO: maybe need to erase it.
 erase(Child, optional_method?(Me, Z: dbl); int)
 
