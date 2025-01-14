@@ -1419,7 +1419,7 @@ namespace operator binds left to right.
 * `@First` - for the first operand in a binary operation (where order matters)
 * `@Second` - for the second operand in a binary operation (where order matters)
 * `@Unused` - for variables that aren't used in this block
-* `@Ignore` - for variables that aren't used in this block, usually for errors, e.g., `Result map(fn(@Ignore Er): -1)`
+* `@Ignore` - the same as `@Unused`, but usually used for errors, e.g., `Result map(fn(@Ignore Er): -1)`
 * `@Named` - for identifiers that should be explicitly named in [generic arguments](#argument-type-generics)
     or kept for field names in [generic objects](#default-field-names-with-generics).
 
@@ -2391,6 +2391,7 @@ detect(greet(Int): greet(Int) String)    # returns -1
 detect(greet(Int): string = greet(Int))
 # using lambda functions:
 # TODO: we probably want to pull out `greet` as the function name.
+# maybe `$$greet`
 detect({greet($Int) String})
 
 # if your function is not named the same, you can do argument renaming;
@@ -2434,8 +2435,16 @@ run_asdf
 (   $K + str(My_array[$J] * $L)
 )
 ```
+TODO: is the indent example going to be considered an indent by the grammar?
+or would we need something else?
+```
+# this is probably wrong, this looks like line continuation??
+run_asdf
+(       $K + str(My_array[$J] * $L)
+)
+```
 
-TODO: how to name lambda functions, maybe using the hat function `function_name |> { ... }`?
+TODO: maybe `@named(greet) { ... }` because hat operators are for conditionals.
 This is only required if the function is not default named (e.g., not `fn`).
 
 If you need a lambda function inside a lambda function, use another `$` to escape
@@ -5489,8 +5498,8 @@ then we can automatically convert its return value into a `one_of[ok, null]`, i.
 a nullable version of the `ok` type.  This is helpful for things like type casting;
 instead of `My_int: what int(My_dbl) {Ok. {Ok}, Er: {-1}}` you can do
 `My_int: int(My_dbl) ?? -1`.  Although, there is another option that
-doesn't use nulls:  `int(My_dbl) map(fn(@Ignore Er): -1)`.
-TODO: short? `int(My_dbl) map(@Ignore $Er, -1)`?? or use `{@Ignore $Er, -1}`?
+doesn't use nulls:  `int(My_dbl) map(fn(@Ignore Er): -1)`, or via
+[lambda functions](#lambda-functions): `int(My_dbl) map({@Ignore $Er, -1})`.
 
 TODO: should this be valid if `ok` is already a nullable type?  e.g.,
 `my_function(): hm[ok: one_of[int, null], er: str]`.
@@ -6209,19 +6218,12 @@ as a method called `each`.
 array[of]: []
 {   # TODO: technically this should be a `Block`, right?
     ::each(fn(Of): loop): null
-        # TODO: not excited by `range` but it's pretty accepted.
-        #       is `over` or `in` any better? `in(3) each Index:`
-        #       `over(5) each Index`
-        #       i think as soon as we start adding named values it doesn't work.
-        #       `over(StartAt: 3, LessThan: 5)`; here `range` is better.
-        #       `range(StartAt: 3, LessThan: 5)`
-        #   can we just make `Count` have an `each`?
-        #   e.g., `count::each()` just goes from 0 to Count-1 ?
+        # The `count` type has an `each` iterator method:
         My count() each Index:
             if fn(My[Index]) == Break
                 break
 
-    # no-copy iteration, but can mutate the array.
+    # no-copy iteration, but can mutate the array elements.
     ;;each(fn(Of;): loop): null
         My count() each Index:
             if fn(My[Index];) == Break
@@ -6376,9 +6378,9 @@ my_decider(X: one_of[type1, type2]):
     (   fn(Type1):
             print("X was type1: ", Type1)
     )
+    # or using lambda functions:
     X is
-    (   fn(Type2):
-            print("X was type2: ", Type2)
+    (   print("X was type2: ", $Type2)
     )
 
 # idiomatic:
@@ -6846,29 +6848,31 @@ block[of, declaring: null]:
 ]
 {   # exits the `indent` with the corresponding `of` value.  example:
     #   Value; 0
-    #   what indent(fn(Block[str]): never
-    #       @Old Value: Value
-    #       Value = Value // 2 + 9
-    #       # sequence should be: 0, 9, 4+9=13, 6+9=15, 7+9=16, 8+9=17
-    #       if @Old Value == Value
-    #           Block exit("exited at ${@Old Value}")
-    #       # note we need to `loop` otherwise we won't satisfy the `never`
-    #       # part of the indent function.
-    #       Block loop()
+    #   what indent
+    #   (   fn(Block[str]): never
+    #           @Old Value: Value
+    #           Value = Value // 2 + 9
+    #           # sequence should be: 0, 9, 4+9=13, 6+9=15, 7+9=16, 8+9=17
+    #           if @Old Value == Value
+    #               Block exit("exited at ${@Old Value}")
+    #           # note we need to `loop` otherwise we won't satisfy the `never`
+    #           # part of the indent function.
+    #           Block loop()
     #   )
-    #       String.
-    #           print(String)       # should print "exited at 17"
+    #       Str.
+    #           print(Str)       # should print "exited at 17"
     ::exit(Of.): jump
 
     # like a `continue` statement; will bring control flow back to
     # the start of the `indent` block.  example:
     #   Value; 0
-    #   indent(fn(Block[str]):
-    #       if ++Value >= 10 {Block exit("done")}
-    #       if Value % 2
+    #   indent
+    #   (   fn(Block[str]):
+    #           if ++Value >= 10 {Block exit("done")}
+    #           if Value % 2
+    #               Block loop()
+    #           print(Value)
     #           Block loop()
-    #       print(Value)
-    #       Block loop()
     #   )
     #   # should print "2", "4", "6", "8"
     @hide_from(then)
@@ -6998,10 +7002,11 @@ ci[of]: resumable[one_of[Cease, Value: of]]
 
 ```
 countdown: co[int]
-{   ;;renew(My Int.): Co renew(fn(Ci[int];):
-        while My Int > 0
-            Ci give(--My Int)
-        Ci exit()
+{   ;;renew(My Int.): Co renew
+    (   fn(Ci[int];):
+            while My Int > 0
+                Ci give(--My Int)
+            Ci exit()
     )
 }
 
