@@ -16,6 +16,7 @@ const TokenTag = enum {
     /// becomes just the inner part (no quotes).  escape sequences
     /// will still be present, e.g., \" for escaping the quote.
     // [5]:
+    // TODO: rename to `simple_string`
     slice,
     number,
     operator,
