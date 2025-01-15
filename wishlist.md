@@ -274,6 +274,7 @@ memory, these safe functions are a bit more verbose than the unchecked functions
     * `&|` at the start of each text slice to create a multiline string.
     * `<>` for bit flips on integer types
     * `><` for bitwise xor on integer types
+* see [operator overloading](#operator-overloading) for how to overload operators.
 
 ## defining variables
 
@@ -3561,6 +3562,7 @@ some_function(My_call; call): null
     print(Call Input["X"]) # OK
 ```
 
+
 ## redefining a function
 
 To declare a reassignable function, use `;` after the arguments.
@@ -4566,6 +4568,40 @@ Weird_animal: animal
 Weird_animal escape()    # prints "Waberoo ... meanders ... meanders back ... meanders away!!"
 ```
 
+## operator overloading
+
+To overload operators for a class, we use the following syntax.
+
+```
+# this class checks for overflow/underflow and switches to a "null" (-128) if so.
+flow8: [I8;]
+{   ::!(): bool     # overload `!Me`
+        My I8 == -128 || My I8 == 0
+
+    ;;()!: me       # overload `Me!`, i.e., mooting
+        I8: My I8
+        # after mooting `Me!`, we want `!Me` to return true.
+        My I8 = -128
+        [I8]
+
+    ;;+=(You): null
+        if My I8 == -128
+            return
+        if Your I8 == -128
+            My I8 = -128
+            return
+        I16: My I8 + Your I8
+        My I8 = i8(I16) map({@Ignore $Er, -128})
+
+    ::+(You): flow8
+        Copy; Me
+        Copy += You
+        Copy
+}
+```
+
+And similarly for all other operators.
+
 ## inheritance and dynamic allocation
 
 We will likely use C/C++ to implement oh-lang at first, i.e., so that it transpiles to C/C++.
@@ -5340,7 +5376,8 @@ Unit tests should be written inside the file that they are testing.  Files shoul
 1000 lines of code, including tests, but this is not strictly enforced.  Because unit tests live inside
 the files where the code is defined, tests can access private functions for testing.  It is generally
 recommended to test the public API exhaustively, however, so private function testing should be redundant.
-Tests are written as indented blocks with a `@test` annotation.
+Tests are written as indented blocks with a `@test` annotation, and include a trailing `:` because
+we are declaring a test.
 
 ```
 @private
@@ -5349,41 +5386,45 @@ private_function(X: int, Y: int): [Z: str]
 
 @protected
 protected_function(X: int, Y: int): [Z: str]
-    {Z;} = private_function(X, Y)
+    [Z;] = private_function(X, Y)
     Z += "!"
-    {Z}
+    [Z]
 
 public_function(X1: int, Y1: int, X2: int, Y2: int): null
     print(protected_function(X: X1, Y: Y1) Z, private_function(X: X2, Y: Y2))
 
 @test "foundation works fine":
-    assert private_function(X: 5, Y: 3) == [Z: "5:3"]
-    assert private_function(X: -2, Y: -7) == [Z: "-2:-7"]
+    test(private_function(X: 5, Y: 3)) == [Z: "5:3"]
+    test(private_function(X: -2, Y: -7)) == [Z: "-2:-7"]
 
 @test "building blocks work fine":
-    assert protected_function(X: 5, Y: -3) == [Z: "5:-3!"]
-    assert protected_function(X: -2, Y: 7) == [Z: "-2:7!"]
+    test(protected_function(X: 5, Y: -3)) == [Z: "5:-3!"]
+    test(protected_function(X: -2, Y: 7)) == [Z: "-2:7!"]
 
 @test "public function works correctly":
     public_function(X1: -5, Y1: 3, X2: 2, Y2: 7)
-    assert Test print() == "-5:3!2:7" + \\os New_line
+    test(Test print()) == ["-5:3!2:7"]
 
     @test "nested tests also work":
         public_function(X1: 2, Y1: -7, X2: -5, Y2: -3)
-        assert Test print() == "2:-7!-5:-3" + \\os New_line
+        test(Test print()) == ["2:-7!-5:-3"]
 ```
+
+See [the test definition](https://github.com/oh-lang/oh/blob/main/core/test.oh) for
+how the `test` function and `@test` macro work.
 
 Nested tests will freshly execute any parent logic before executing themselves.
 This ensures a clean state.  If you want multiple tests to start with the same
 logic, just move that common logic to a parent test.
 
 TODO: parametric tests probably can just be `@test "params":` and nesting
-`for Params: All_possible_params {@test "works for $(Params)": ...}`.
+`for Params: All_possible_params {@test "works for $[Params]": ...}`.
 
 Inside of a `test` block, you have access to a `Test` variable which includes
 things like what has been printed (`Test print()`).  In this example, `Test print()`
-will pull everything that would have been printed in the test and puts it into a string
-for comparisons and matching.  It then clears its internal state so that new calls
+will pull everything that would have been printed in the test, putting it into
+a string array (one string per newline), for comparisons and matching.
+It then clears its internal state so that new calls
 to `Test print()` will only see new things since the last time `Test print()` was called.
 
 Integration tests can be written in files that end with `.test.oh` or `.test.ohs` (i.e., as a script).

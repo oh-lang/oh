@@ -1,0 +1,92 @@
+# TODO: define the `@test` macro
+# TODO: define the `@test_panics` macro
+# TODO: define the `@compile_panics` macro
+
+test[of]: [Of]
+{   i(~T.): test[t]
+        [T!]
+
+    ::==(Of): bool
+        if My Of == Of
+            return True
+        panic("expected ${My Of} == ${Of}")
+        False
+
+    ::!=(Of): bool
+        if My Of != Of
+            return True
+        panic("expected ${My Of} != ${Of}")
+        False
+
+    ::>=(Of): bool
+        if My Of >= Of
+            return True
+        panic("expected ${My Of} >= ${Of}")
+        False
+
+    ::<=(Of): bool
+        if My Of <= Of
+            return True
+        panic("expected ${My Of} <= ${Of}")
+        False
+        
+    ::>(Of): bool
+        if My Of > Of
+            return True
+        panic("expected ${My Of} > ${Of}")
+        False
+
+    ::<(Of): bool
+        if My Of < Of
+            return True
+        panic("expected ${My Of} < ${Of}")
+        False
+}
+
+@test "==":
+    @test "works for ints":
+        test(5) == 5
+        test(10) == 10
+
+    @test_panics "expected 5 == 6":
+        test(5) == 6
+
+@test "!=":
+    @test "works for ints":
+        test(5) != 50
+        test(10) != 12
+
+    @test_panics "expected 3 != 3":
+        test(3) != 3
+
+@test ">=":
+    @test "works for ints":
+        test(5) >= 3
+        test(10) >= 10
+
+    @test_panics "expected 5 >= 6":
+        test(5) >= 6
+
+@test "<=":
+    @test "works for ints":
+        test(5) <= 6
+        test(12) <= 12
+
+    @test_panics "expected 7 <= 6":
+        test(7) <= 6
+
+@test "<":
+    @test "works for ints":
+        test(5) < 6
+        test(10) < 11
+
+    @test_panics "expected 7 < -1":
+        test(7) < -1
+
+@test ">":
+    @test "works for ints":
+        test(5) > 3
+        test(20) > 19
+
+    @test_panics "expected -1 > 1":
+        test(-1) > 1
