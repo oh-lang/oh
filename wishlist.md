@@ -5243,11 +5243,10 @@ Subsequent subdirectories are separated using forward slashes, e.g.,
 `\/relative/path/to/file` to reference the file at `./relative/path/to/file.oh`,
 and `..` is allowed between forward slashes to go to the parent directory relative
 to the current directory, e.g., `\/../subdirectory_in_parent_directory/other/file`.
-Note that we don't include the `.oh` extension on the final file, and we allow
-underscores in file and directory names.
-TODO: we can probably alias `.oh` imports into their non-`.oh` version.
-TODO: discuss using `oh("./file_path.oh")` instead.  might be better
-to reserve `\/` and `\\` for something interesting.
+Note that we don't include the `.oh` extension on the final file, but the formatter
+will remove this for you so you don't need to do this by hand when copying in file
+paths.  You can also use `oh("./relative/path/to/file.oh")`, which does require
+the final `.oh` extension.
 
 For example, suppose we have two files, `vector2.oh` and `main.oh` in the same
 directory.  Each of these is considered a module, and we can use backslashes
@@ -5263,7 +5262,7 @@ vector2: [X: dbl, Y: dbl]
 }
 
 # main.oh
-Vector2_oh: \/vector2   # .oh extension must be left off.
+Vector2_oh: \/vector2   # .oh extension can be used but will be formatted off.
 # alternatively: `Vector2_oh: oh("./vector2.oh")`
 Vector2: Vector2_oh vector2(X: 3, Y: 4)
 print(Vector2)
@@ -5271,16 +5270,12 @@ print(Vector2)
 [vector2]: \/vector2    # or `[vector2]: oh("./vector2.oh")`
 ```
 
-TODO: discussion on how the formatter will move imports to the bottom
-of the file so you can see the main part of your code instantly.
-
-TODO: how to import functions, i.e., to distinguish from classes?
-e.g., is `[vector2]: \/vector2` a function or a class definition?
-we probably want to force importing the overload to ensure that we can
-determine if it's a function or a class in the importing file.  e.g.,
-`[my_function(My_arg1: int, My_arg2: dbl): str] = \/util`.
-we can always come up with a solution to "grab all overloads" like
-or maybe `[my_function(Call;): null]: \/util`
+Note that we cannot import a function like this: `[my_function]: \/other_file`;
+to oh-lang this looks like a type.  You either need to specify the overload
+that you're pulling in, e.g., `[my_function(Int): str]: \/other_file`,
+or request all overloads via `[my_function(Call;): null]: \/other_file`.
+Or you can just import the file and use the function as needed:
+`Other_file: \/other_file, Other_file my_function(123)`.
 
 You can use this `\/` notation inline as well, which is recommended
 for avoiding unnecessary imports.  It will be a language feature to
@@ -5295,6 +5290,12 @@ print(\/path/to/relative/file function_from_file("hello, world!"))
 # importing a function from the math library:
 Angle: \\math atan2(X: 5, Y: -3)
 ```
+
+Following the principle of laying out your code with the most important, higher-level
+logic first, followed by more specific, lower-level logic, the formatter will automatically
+move imports to the *bottom* of the file so that you can see the main part of your code
+instantly.  Java imports are the absolute worst example of clutter before the main 
+part of your code, and have inspired this rule.
 
 To import a path that has special characters, just use the special characters
 inline after the `\/`, e.g., `\/sehr/übel` to reference the file at `./sehr/übel.oh`.
@@ -5325,8 +5326,10 @@ it to compiled code by converting the `.ohs` file to a `.oh` file.
 
 Note that one downside of scripting is that what could be compile-time errors become runtime errors.
 
-TODO: figure out how we import hm scripts (`.ohs` files).  Maybe something like
-`Script: import("../my_scripts/doom.ohs"), Script doom()`.
+With that, you can do imports using the `oh` type, and note we need the assertion when dealing
+with `.ohs` files, since they can fail at run-time:
+`Script: oh("../my_script/doom.ohs") assert(Er: "should compile")`.
+
 TODO: how are we actually going to do this, e.g., need to expose public/protected functions to
 the calling code, pulling in other import dependencies should not reload code if we've already loaded
 those dependencies in other compiled files, etc.
