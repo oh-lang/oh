@@ -498,19 +498,22 @@ Multiline_interpolation:
 Evil_long_line: "this is going to be a long discussion ${
         Name}, can you confirm your availability?"
 # INSTEAD, use string concatenation:
-Good_long_line: "this is going to be a long discussion "
-    +   "${Name}, can you confirm your availability?"
-
-# TODO: do we want an operator like `'123' & '456'` which creates '123 456' (i.e., adds a space?)
-#       the operator could check both left and right strings for spaces and ensure only one is present
-#       in the end result, e.g., `'123   ' & ' 456'` is still '123 456'.
-#       this could also strip newlines, e.g., `'123\n \n' & '\n456'` is again '123 456'.
-#       it could also be used as a postfix or prefix operator, e.g., `&'   hi'` is 'hi'
-#       and `'hey\n  '&` is 'hey'.  not sure this is better than `'   hi' strip()` though.
+Good_long_line: "this is going to be a long discussion"
+    &   "${Name}, can you confirm your availability?"
 
 # you can also nest interpolation logic, although this isn't recommended:
 Nested_interpolation: "hello, ${if Condition {Name} else {'World${"!" * 5}'}}!"
 ```
+
+Notice that the `&` operator works on strings to add a space (if necessary)
+between the two operands.  E.g., `'123' & '456'` becomes `'123 456'`.  It also
+strips any trailing whitespace on the left operand and any leading whitespace
+on the right operand to ensure things like `'123\n \n' & '\n456'` are still just `'123 456'`.
+This makes it the perfect operator for string concatenation across lines where we want
+to ensure a space between words on one line and the next.
+TODO: it could also be used as a postfix or prefix operator, e.g., `&'   hi'` is 'hi'
+and `'hey\n  '&` is 'hey'.  not sure this is better than `'   hi' strip()` though.
+
 
 ## defining classes
 
@@ -1256,7 +1259,7 @@ e.g., `my_function(A: 3, B: 2, ...My_object)` will call `my_function(A: 3, B: 4,
 |           |   `%%`    | remainder after //        | binary: `A%%B`    |               |
 |   7       |   `+`     | add                       | binary: `A+B`     | LTR           |
 |           |   `-`     | subtract                  | binary: `A-B`     |               |
-|   8       |   `&`     | bitwise AND               | binary: `A&B`     |               |
+|   8       |   `&`     | bitwise AND + string cat  | binary: `A&B`     |               |
 |           |   `\|`    | bitwise OR                | binary: `A\|B`    |               |
 |           |   `><`    | bitwise XOR               | binary: `A><B`    |               |
 |   9       |   `==`    | equality                  | binary: `A==B`    | LTR           |

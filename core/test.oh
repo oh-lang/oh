@@ -2,20 +2,23 @@
 # TODO: define the `@compile_panics` macro
 
 @test(Ast;): hm[er: str]
-    Node; Ast next()
+    Statement; Ast next()
     @Bad_declaration Er: 'Expected `@test "test name":` with `{...}` or indented block'
-    Binary; Node! binary_operation() assert(@Bad_declaration Er)
+    Binary; Statement! binary_operation() assert(@Bad_declaration Er)
     assert(Binary operator == Op_declare_readonly, @Bad_declaration Er)
-    Atomic; Binary Left! atomic() assert(@Bad_declaration Er)
-    Test_name: Atomic! simple_string() assert(@Bad_declaration Er)
+
+    Atomic_name; Binary Left! atomic() assert(@Bad_declaration Er)
+    # TODO: support for non-simple strings for test names:
+    Test_name: Atomic_name! simple_string() assert(@Bad_declaration Er) strip()
+
     Block; Binary Right! block() assert(@Bad_declaration Er)
     # TODO: there might be something we need to do to force Test_name into this string
     # before even @statement gets a hold of it.  but this will be a common need, so
-    # maybe we can have a special syntax here, e.g., `@"Test push(${Test_name})"`, or
+    # maybe we can have a special syntax here, e.g., `@"Test push(\"${Test_name}\")"`, or
     # we just force @statement to evaluate the interpolation first, then parse.
-    Block prepend(@statement("Test push(${Test_name})"))
-    Block append(@statement("Test pop(${Test_name})"))
-    if !@in_scope(Test)
+    Block prepend(@statement("Test push(\"${Test_name}\")"))
+    Block append(@statement("Test pop(\"${Test_name}\")"))
+    if !Ast in_scope("Test")
         Block prepend(@statement("Test; test_context"))
         # TODO: @statement builds something like this:
         # statement
@@ -25,8 +28,10 @@
         #         Right: identifier("test_context")
         #     )
         # )
-        
     # TODO: add Block back into the Ast
+    Ast prepend
+    (   
+    )
 
 @private
 test_context: [@protected Printed; array[str], @protected Name; str]
@@ -38,8 +43,11 @@ test_context: [@protected Printed; array[str], @protected Name; str]
     ;;push(Str: str):
         My Name &= Str
 
-    ;;pop(Str. str):
-        My Name
+    ;;pop(Str: str):
+        assert(My Name ends_with(Str)) ?? panic("test_context needs to match push/pop")
+        My Name count(My Name count() - Str count())
+        if My Name ends_with(' ')
+            My Name pop()
 }
         
 
