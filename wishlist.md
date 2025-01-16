@@ -189,6 +189,18 @@ there is a safe API, e.g., `Result: Array at(100, Put: 123)` and `Result` can th
 be checked for `is_er()`, etc.  For convenience for cases where you don't care about
 memory, these safe functions are a bit more verbose than the unchecked functions.
 
+Almost all operations should have result-like syntax.  e.g., `A * B` can overflow (or run out of memory for `int`).
+same for `A + B` and `A - B`.  `A // B` is safe.  However, instead of making oh-lang always assert,
+we will use `multiply(@First~A, @Second A): hm[ok: a, Number_conversion er]` and then have
+`A1 * A2` always give an `a` instance by panicking if we run out of memory.  i.e.,
+```
+number::*(You): me
+    Result: multiply(Me, You)
+    Result ?? panic()
+```
+Primitive types will do overflow like in other languages without panicking, but you can use, e.g.,
+`multiply(@One U32, @Another U32)` to return an error if it overflows.
+
 
 # general syntax
 
@@ -1210,31 +1222,19 @@ unnull[one_of[...~nested, null]]: nested
 
 # operators and precedence
 
-Almost all operations should have result-like syntax.  e.g., `A * B` can overflow (or run out of memory for `int`).
-same for `A + B` and `A - B`.  `A // B` is safe.  However, instead of making oh-lang always assert,
-we will use `multiply(@First~A, @Second A): hm[ok: a, Number_conversion er]` and then have
-`A1 * A2` always give an `a` instance by panicking if we run out of memory.  i.e.,
-```
-number::*(You): me
-    Result: multiply(Me, You)
-    Result ?? panic()
-```
-Primitive types will do overflow like in other languages without panicking, but you can use, e.g.,
-`multiply(@One U32, @Another U32)` to return an error if it overflows.
-
 TODO: add : , ; ?? postfix/prefix ?
 TODO: add ... for dereferencing.  maybe we also allow it for spreading out an object into function arguments,
 e.g., `my_function(A: 3, B: 2, ...My_object)` will call `my_function(A: 3, B: 4, C: 5)` if `My_object == [B: 4, C: 5]`.
 
 | Precedence| Operator  | Name                      | Type/Usage        | Associativity |
 |:---------:|:---------:|:--------------------------|:-----------------:|:-------------:|
-|   0       |   `()`    | parentheses               | grouping: `(A)`   | ??            |
+|   1       |   `()`    | parentheses               | grouping: `(A)`   | ??            |
 |           |   `[]`    | parentheses               | grouping: `[A]`   |               |
 |           |   `{}`    | parentheses               | grouping: `{A}`   |               |
 |           | `\\x/y/z` | library module import     | special: `\\a/b`  |               |
 |           | `\/x/y/z` | relative module import    | special: `\/a/b`  |               |
-|   1       |  ` ()`    | function call             | on fn: `a(B)`     | LTR           |
-|   2       |   `::`    | impure read scope         | binary: `A::B`    | LTR           |
+|   2       |  ` ()`    | function call             | on fn: `a(B)`     | LTR           |
+|           |   `::`    | impure read scope         | binary: `A::B`    | LTR           |
 |           |   `;;`    | impure read/write scope   | binary: `A;;B`    |               |
 |           |   ` `     | implicit member access    | binary: `A B`     |               |
 |           |   ` []`   | subscript                 | binary: `A[B]`    |               |
@@ -1284,24 +1284,11 @@ primitive constant (like `5`), or `any_function_name(Any + Expression / Here)`.
 In case a function returns another function, you can also chain like this:
 `get_function(X)(Y, Z)` to call the returned function with `(Y, Z)`.
 
-Note that methods defined on classes can be prefaced by member access (e.g., ` `, `::`, or `;;`),
-and that path will still be used for function specification, even though member access has
-less precedence.  So for example, if some instance `My_class_instance` has a field `My_field`
-which itself has a method `print`, then `My_class_instance::My_field::print("Carrots")` 
-(or `My_class_instance My_field print("Carrots")`) will use the `print` function specified
-on `My_field` rather than the global `print` function, even though the function call has
-higher precedence than member access.  E.g., the compiler sees
-`My_class_instance::My_field::(print("Carrots"))`, but knows to use
-`My_class_instance::My_field::print` when running the internal `(print("Carrots"))`.
-
 It is recommended to use parentheses where possible, to help people see the flow more easily.
 E.g., `some_function(Some_instance Some_field some_method()) Final_field` looks pretty complicated.
 This would compile as `(some_function(Some_instance)::Some_field::some_method())::Final_field`,
 and including these parentheses would help others follow the flow.  Even better would be to
 add descriptive variables as intermediate steps.
-
-Deep dive!  Function calls are higher priority than member access because `some_method() Final_field`
-would compile as `some_method( ()::Final_field )` otherwise, which would be a weird compile error.  
 
 We don't allow for implicitly currying functions in oh-lang,
 but you can explicitly curry like this:

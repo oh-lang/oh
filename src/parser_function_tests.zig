@@ -241,12 +241,42 @@ test "generic function calls" {
     try parser.tokenizer.file.expectEqualsSlice(&file_slice);
 }
 
+test "member access function calls" {
+    var parser: Parser = .{};
+    defer parser.deinit();
+    errdefer parser.debug();
+    const file_slice = [_][]const u8{
+        "Frebly balsu(Brimly: 394)",
+    };
+    try parser.tokenizer.file.appendSlice(&file_slice);
+
+    try parser.complete(DoNothing{});
+
+    try parser.nodes.expectEqualsSlice(&[_]Node{
+        // [0]:
+        Node{ .enclosed = .{ .open = .none, .tab = 0, .start = 1 } }, // \t...\b at tab 0
+        Node{ .statement = .{ .node = 10, .next = 0 } }, // statement ...   (...)
+        Node{ .atomic_token = 1 }, // Frebly
+        Node{ .callable_token = 3 }, // balsu
+        Node{ .binary = .{ .operator = .op_access, .left = 2, .right = 3 } }, // Frebly   balsu
+        // [5]:
+        Node{ .enclosed = .{ .open = .paren, .tab = 0, .start = 6 } }, // (...) at tab 0
+        Node{ .statement = .{ .node = 9, .next = 0 } }, // statement Brimly : 394
+        Node{ .atomic_token = 7 }, // Brimly
+        Node{ .atomic_token = 11 }, // 394
+        Node{ .binary = .{ .operator = .op_declare_readonly, .left = 7, .right = 8 } }, // Brimly : 394
+        // [10]:
+        Node{ .binary = .{ .operator = .op_access, .left = 4, .right = 5 } }, // ...   (...)
+        .end, // end
+    });
+    // No errors when parsing:
+    try parser.tokenizer.file.expectEqualsSlice(&file_slice);
+}
+
 test "simple function calls" {
     var parser: Parser = .{};
     defer parser.deinit();
-    errdefer {
-        common.debugPrint("# file:\n", parser.tokenizer.file);
-    }
+    errdefer parser.debug();
     const file_slice = [_][]const u8{
         "superb(Brepus. 161, Canyon; Noynac, Candid)",
     };

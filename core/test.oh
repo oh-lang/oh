@@ -2,25 +2,55 @@
 # TODO: define the `@compile_panics` macro
 
 @test(Ast;): hm[er: str]
-    Statement; Ast next()
     @Bad_declaration Er: 'Expected `@test "test name":` with `{...}` or indented block'
-    Binary; Statement! binary_operation() assert(@Bad_declaration Er)
+    Node; Ast parse_next() assert(@Bad_declaration Er)
+
+    Binary; Node! binary_operation() assert(@Bad_declaration Er)
     assert(Binary operator == Op_declare_readonly, @Bad_declaration Er)
 
-    Atomic_name; Binary Left! atomic() assert(@Bad_declaration Er)
-    # TODO: support for non-simple strings for test names:
-    Test_name: Atomic_name! simple_string() assert(@Bad_declaration Er) strip()
+    # `Test_name_string` includes quotes, e.g., `"whatever \"test name\" you want"`:
+    Test_name: Binary Left! string() assert(@Bad_declaration Er)
+    Test_block; Binary Right! block() assert(@Bad_declaration Er)
 
-    Block; Binary Right! block() assert(@Bad_declaration Er)
-    # TODO: there might be something we need to do to force Test_name into this string
-    # before even @statement gets a hold of it.  but this will be a common need, so
-    # maybe we can have a special syntax here, e.g., `@"Test push(\"${Test_name}\")"`, or
-    # we just force @statement to evaluate the interpolation first, then parse.
-    Block prepend(@statement("Test push(\"${Test_name}\")"))
-    Block append(@statement("Test pop(\"${Test_name}\")"))
+    if Ast release()
+        return
+
+    # Create a unique name for the test block so we can use it in code.
+    Test_block_name: Ast unique_variable()
+    Ast add
+    (   statement
+        (   binary_operation
+            (   Left: identifier(Test_block_name)
+                Op_declare_readonly
+                Right: Test_block
+            )
+        )
+    )
+
+    # TODO: it might be clearer to just define this statement:
+    # Block; block
+    # (   statement
+    #     (   binary_operation
+    #         (   Left: binary_operation
+    #             (   Left: identifier("Test")
+    #                 Op_access
+    #                 Right: identifier("run")
+    #             )
+    #             Op_access
+    #             Right: enclosed
+    #             (   ...
+    #                 Test_block
+    #             )
+    #         )
+    #     )
+    # )
+    Block; block
+    (   statement("Test run(${Test_name}, ${Test_block_name})"))
+    )
+
     if !Ast in_scope("Test")
-        Block prepend(@statement("Test; test_context"))
-        # TODO: @statement builds something like this:
+        Block prepend(statement("Test; test_context"))
+        # statement, via string, builds something like this:
         # statement
         # (   binary_operation
         #     (   Left: identifier("Test")
@@ -28,21 +58,25 @@
         #         Right: identifier("test_context")
         #     )
         # )
-    # TODO: add Block back into the Ast
-    Ast prepend
-    (   
-    )
+        # `
+        Ast add(Test. Block!)
+    else
+        Ast add(statement(Block!))
 
-@private
+@protected
 test_context: [@protected Printed; array[str], @protected Name; str]
 {   i()
     {   print
     }
     # TODO
 
+    ;;run(Str: str, 
+
+    @private
     ;;push(Str: str):
         My Name &= Str
 
+    @private
     ;;pop(Str: str):
         assert(My Name ends_with(Str)) ?? panic("test_context needs to match push/pop")
         My Name count(My Name count() - Str count())
