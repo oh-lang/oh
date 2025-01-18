@@ -5077,6 +5077,7 @@ maybe `|`?  `A(|b(), |c())`.  however, `A(..., c())` doesn't make sense anyway
 because we're not allowed to parenthesize `Variable_case`.  maybe we support
 `A@ ( b(), c() )` for the common case of `A (_ b(), _ c())`, i.e., where the `_`
 is at the front of each expression.
+We might need `@` anyway because `A(...)` may gramatically look wrong.
 
 Some languages use a builder pattern, e.g., Java, where you add fields to an object
 using setters.  For example, `MyBuilder.setX(123).setY(456).setZ("great").build()` [Java].
@@ -6433,12 +6434,20 @@ example_class: [Value: int]
 {   # the standard way to use this method uses syntax sugar:
     #   if Example_class is Large:
     #       print("was large: ${Large}")
-    # `If` is probably a wrapper around `Block`.
-    :;.is(If[declaring: (Large:;. int), ~t]): t
+    :;.is(If_block[declaring: (Large:;. int), ~t]): never
         if My Value > 999
-            If then(Declaring: (Large` My Value))
+            If_block then(Declaring: (Large` My Value))
         else
-            If else()
+            If_block else()
+
+    # another way to do this
+    :;.is(then(Large:;. int): ~t, else(): ~u): flatten[t, u]
+        if My Value > 999
+            then(Large` My Value)
+        else
+            # TODO: can we distinguish `else` from `else()` because we always
+            #       require parentheses around functions now??
+            else()
 }
 ```
 
@@ -6447,6 +6456,8 @@ example_class: [Value: int]
 `what` statements are comparable to `switch-case` statements in C/C++,
 but in oh-lang the `case` keyword is not required.  You can use the keyword
 `else` for a case that is not matched by any others, i.e., the default case.
+You can also use `Any:;.` to match any other case, if you want access to the
+remaining values.  (`else` is therefore like an `@Ignore Any:` case.)
 We switch from the standard terminology for two reasons: (1) even though
 `switch X` does describe that the later logic will branch between the different
 cases of what `X` could be, `what X` is more descriptive as to checking what `X` is,
@@ -6455,7 +6466,6 @@ which is the important thing that `what` is doing at the start of the statement.
 e.g., `My_instance switch(Background1)`, and having `switch` as a keyword negates
 that possibility.
 
-TODO: non-ternary example with numbers.
 TODO: explain how `case` values are cast to the same type as the value being `what`-ed.
 
 You can use RHS expressions for the last line of each block to return a value
@@ -6483,6 +6493,7 @@ X: what String
 
 # Note again that you can use braces to make these inline.
 # Try to keep usage to code that can fit legibly on one line:
+# TODO: do we even need the commas here?
 Y: what String { "hello" {5}, "world" {7}, else {100} }
 ```
 
@@ -6519,7 +6530,7 @@ update: one_of
     position: vector3
     velocity: vector3
 ]
-# example usage:
+# example usage of creating various `update`s:
 Update0: update status Alive
 Update1: update position(X: 5.0, Y: 7.0, Z: 3.0)
 Update2: update velocity(X: -3.0, Y: 4.0, Z: -1.0)
@@ -6545,10 +6556,42 @@ what Update
         print("got update: $(Velocity)")
 ```
 
-We don't use function style here, e.g.,
+We don't recommend function style here, e.g.,
 `what Update { (Position: vector3): print("got position update: $(Position)") }`,
-because that would only fire if `Update` was a null-returning function with
-one `Position: vector3` argument.
+mostly because we want to allow `return` inside a `what` case to return
+from the function that encloses `what`, and not `return` just inside the `what` case.
+However, that's something we want to support, in case your `what` case
+is complicated.
+
+```
+speed: one_of[
+    None
+    Slow
+    Going_up
+    Going_down
+    Going_sideways
+    Dead
+]
+check_speed(Update): speed
+    what Update
+        # you can mix and match non-function and function notation:
+        status Dead:
+            Dead
+        # here we use function notation:
+        (Velocity: vector3):
+            if Velocity length() < 5
+                # this returns early from the `what` case
+                return Slow
+            print("going slow, checking up/down")
+            if Velocity Y abs() < 0.2
+                Going_sideways
+            elif Velocity Y > 0.0
+                Going_up
+            else
+                Going_down
+        else
+            None
+```
 
 Note that variable declarations can be argument style, i.e., including
 temporary declarations (`.`), readonly references (`:`), and writable
@@ -6586,16 +6629,15 @@ here.
 my_vec2: [X; dbl, Y; dbl]
 {   # TODO: we probably can distinguish between each of these functions by
     #       the arguments.  so don't need namespaces...
-    # 
     ::what
     (   @Q1 fn(QuadrantI. dbl): ~a
         @Q2 fn(QuadrantII. dbl): ~b
         @Q3 fn(QuadrantIII. dbl): ~c
         @Q4 fn(QuadrantIV. dbl): ~d
-        default(): one_of[a, b, c, d]
-    ): one_of[a, b, c, d]
+        else(): ~e
+    ): flatten[a, b, c, d, e]
         if My X == 0.0 or My Y == 0.0
-            default()      
+            else()
         elif My X > 0.0
             if My Y > 0.0
                 @Q1 fn(QuadrantI. +X + Y)
@@ -6608,7 +6650,6 @@ my_vec2: [X; dbl, Y; dbl]
                 @Q4 fn(QuadrantIII. -X - Y)
 }
 ```
-
 
 
 ### what implementation details
@@ -6691,18 +6732,6 @@ oh-lang will support fast hashes for classes like `int`, `i32`, and `array[u64]`
 and other containers of precise types, as well as recursive containers thereof.
 
 ```
-# TODO: there should maybe be a way to avoid using extend syntax for all interfaces.
-#       maybe we can do `@override ::hash(~Builder): null` for common interfaces
-# TODO: maybe something like `my_hashable_class: [...] {...}, assert(my_hashable_class is hashable)`.
-#       even better, maybe the callers should be responsible for checking if a class is
-#       hashable (or whatever).
-#       OR we could do something where we annotate methods, like this:
-#           `my_hashable: [Non_hash_fields...]`
-#           `{   @extend(hashable)`
-#           `    ::hash(~Builder): Builder@{...}`
-#           `}`
-#       this has the benefit of code locality, but only really works if the class
-#       has only one method to implement.
 my_hashable_class: all_of[hashable, [Id: u64, Name; string]]
 {   # we allow a generic hash builder so we can do cryptographically secure hashes
     # or fast hashes in one definition, depending on what is required.
@@ -6711,6 +6740,7 @@ my_hashable_class: all_of[hashable, [Id: u64, Name; string]]
         Builder hash(My Id)       # you can use `hash` via the builder or...
         My Name hash(Builder;)    # you can use `hash` via the field.
 
+    # equivalent definition via sequence building:
     ::hash(~Builder;): Builder @
     {   hash(My Id)
         hash(My Name)
@@ -7493,6 +7523,8 @@ one_of[..., t]: []
 ```
 
 TODO:  we want `one_of[one_of[a, b], one_of[c, d]]` to flatten to `one_of[a, b, c, d]`, probably?
+or maybe have a separate `flatten[a, b, c]` which will flatten to e.g., `one_of[a, b, x, y]` if
+`c: one_of[x, y]`.
 
 ## `one_of`s as function arguments
 
