@@ -5,6 +5,7 @@
     @Bad_declaration Er: 'Expected `@test "test name":` with `{...}` or indented block'
     Node; Ast parse_next() assert(@Bad_declaration Er)
 
+    # TODO: maybe `binary_operation` instead of `binary_operation`?  or `op_left_right`
     Binary; Node! binary_operation() assert(@Bad_declaration Er)
     assert(Binary operator == Op_declare_readonly, @Bad_declaration Er)
 
@@ -12,14 +13,15 @@
     Test_name: Binary Left! string() assert(@Bad_declaration Er)
     Test_block; Binary Right! block() assert(@Bad_declaration Er)
 
-    if Ast release()
+    # TODO: should we have a `continue_if Ast includes(Tests)` function?
+    if !Ast includes(Tests)
         return
 
     # Create a unique name for the test block so we can use it in code.
     Test_block_name: Ast unique_variable()
     Ast add
-    (   statement
-        (   binary_operation
+    (   ast statement
+        (   ast binary_operation
             (   Left: identifier(Test_block_name)
                 Op_declare_readonly
                 Right: Test_block
@@ -27,17 +29,17 @@
         )
     )
 
-    # TODO: it might be clearer to just define this statement:
+    # TODO: it might be cleaner to just define this statement:
     # Block; block
-    # (   statement
-    #     (   binary_operation
-    #         (   Left: binary_operation
+    # (   ast statement
+    #     (   ast binary_operation
+    #         (   Left: ast binary_operation
     #             (   Left: identifier("Test")
     #                 Op_access
     #                 Right: identifier("run")
     #             )
     #             Op_access
-    #             Right: enclosed
+    #             Right: parentheses
     #             (   ...
     #                 Test_block
     #             )
@@ -45,23 +47,24 @@
     #     )
     # )
     Block; block
-    (   statement("Test run(${Test_name}, ${Test_block_name})"))
+    (   ast statement("Test run(${Test_name}, ${Test_block_name})"))
     )
 
-    if !Ast in_scope("Test")
-        Block prepend(statement("Test; test_context"))
-        # statement, via string, builds something like this:
-        # statement
-        # (   binary_operation
-        #     (   Left: identifier("Test")
-        #         Op_declare_writable
-        #         Right: identifier("test_context")
-        #     )
-        # )
-        # `
-        Ast add(Test. Block!)
-    else
-        Ast add(statement(Block!))
+    if Ast in_scope("Test")
+        Ast add(ast statement(Block!))
+        return
+
+    Block prepend(ast statement("Test; test_context"))
+    # statement, via string, builds something like this:
+    # ast statement
+    # (   ast binary_operation
+    #     (   Left: identifier("Test")
+    #         Op_declare_writable
+    #         Right: identifier("test_context")
+    #     )
+    # )
+    # `
+    Ast add(Test_block. Block!)
 
 @protected
 test_context: [@protected Printed; array[str], @protected Name; str]

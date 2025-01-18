@@ -6576,6 +6576,41 @@ what Whatever!      # ensure passing as a temporary by mooting here.
         do_something_else(Card!)
 ```
 
+### what operator
+
+Can we overload the `what` operator?  oh-lang would like to avoid walling off
+parts of the code that you can't touch.  We'd need to figure out a good syntax
+here.
+
+```
+my_vec2: [X; dbl, Y; dbl]
+{   # TODO: we probably can distinguish between each of these functions by
+    #       the arguments.  so don't need namespaces...
+    # 
+    ::what
+    (   @Q1 fn(QuadrantI. dbl): ~a
+        @Q2 fn(QuadrantII. dbl): ~b
+        @Q3 fn(QuadrantIII. dbl): ~c
+        @Q4 fn(QuadrantIV. dbl): ~d
+        default(): one_of[a, b, c, d]
+    ): one_of[a, b, c, d]
+        if My X == 0.0 or My Y == 0.0
+            default()      
+        elif My X > 0.0
+            if My Y > 0.0
+                @Q1 fn(QuadrantI. +X + Y)
+            else
+                @Q4 fn(QuadrantIV. +X - Y)
+        else
+            if My Y > 0.0
+                @Q1 fn(QuadrantII. -X + Y)
+            else
+                @Q4 fn(QuadrantIII. -X - Y)
+}
+```
+
+
+
 ### what implementation details
 
 ```
@@ -7406,7 +7441,11 @@ Tree is
         # this operation can affect/modify the `Tree` variable.
         Branch Left some_operation()
 )
+```
 
+Even better, use the [`is` operator](#is-operator) and define a block:
+
+```
 # you can also use this in a conditional; note we don't wrap in a lambda function
 # because we're using fancier `Block` syntax.
 if Tree is Branch;
@@ -7452,6 +7491,8 @@ one_of[..., t]: []
     ;:.is(), Block[declaring:;. t, exit: ~u]: bool
 }
 ```
+
+TODO:  we want `one_of[one_of[a, b], one_of[c, d]]` to flatten to `one_of[a, b, c, d]`, probably?
 
 ## `one_of`s as function arguments
 
@@ -7733,6 +7774,8 @@ is descoped.
 # function that takes a function as an argument and returns a function
 # example usage:
 #   some_fn(): "hey"
+#   TODO: this actually is a good case for not needing () in function definitions.
+#       is there a way we can determine this isn't a type??
 #   other_fn: wow(some_fn)
 #   print(other_fn()) # 3
 wow(Input fn(): string): fn(): int
