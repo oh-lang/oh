@@ -134,6 +134,9 @@ inside function calls?  that way we wouldn't need to prefix `My X` for instance 
 parent variables would still need to be referenced via `Parent X` or `::X`/`;;X`.
 this would be a reason to switch to *prefix* `;:.` for pre-named arguments, so we could do
 `do_something(;;X)` instead of `do_something(;;X;)`.
+However, I'm not a big fan of this because then we lose some symmetry between
+class methods/variables (`my X` or `i x()`) compared to instance methods/variables
+(`My X` and `I x()`).
 
 Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
@@ -237,10 +240,10 @@ Primitive types will do overflow like in other languages without panicking, but 
         with `X` and `W` as readonly references, `Y` as mutable reference, and `Z` as a temporary.
     * `"My String Interpolation is $(X, Y: Z)"` to add `(X: *value-of-X*, Y: *value-of-Z*)` to the string.
     * `f(A: 3, B: "hi")` to call a function, and `f(A: int, B: str): null` to declare a function.
-    * `A (_ x(), _ Y)` to call `A x()` then `A Y` with [sequence building](#sequence-building)
+    * `A@ (x(), Y)` to call `A x()` then `A Y` with [sequence building](#sequence-building)
         and return them in an argument object with fields `X` and `Y`, i.e., `(X: A x(), Y: A Y)`.
         This allows `X` and `Y` to be references.  This can be useful e.g., when `A` is an expression
-        that you don't want to add a local variable for, e.g., `my_long_computation() (_ x(), _ Y)`.
+        that you don't want to add a local variable for, e.g., `my_long_computation()@ (x(), Y)`.
 * `[]` are for types, containers (including objects, arrays, and lots), and generics
     * `[X: dbl, Y: dbl]` to declare a plain-old-data class with two double-precision fields, `X` and `Y`
     * `[X: 1.2, Y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `X` and `Y`
@@ -252,15 +255,15 @@ Primitive types will do overflow like in other languages without panicking, but 
         where `of` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
     * `[Greeting: str, Times: int] = destructure_me()` to do destructuring of a return value
         see [destructuring](#destructuring).
-    * `A [_ x(), _ Y]` to call `A x()` then `A Y` with [sequence building](#sequence-building)
+    * `A@ [x(), Y]` to call `A x()` then `A Y` with [sequence building](#sequence-building)
         and return them in an object with fields `X` and `Y`, i.e., `[X: A x(), Y: A Y]`.
         You can also consider them as ordered, e.g.,
-        `Results: A [_ x(), _ Y], print("${Results[0]}, ${Results[1]})`.
+        `Results: A@ [x(), Y], print("${Results[0]}, ${Results[1]})`.
 * `{}` for blocks and sequence building
     * `{...}` to effectively indent `...`, e.g., `if Condition {do_thing()} else {do_other_thing(), 5}`
         * Note that braces `{}` are *optional* if you actually go to the next line and indent,
             but they are recommended for long blocks.
-    * `A {_ x(), _ Y}` with [sequence building](#sequence-building), 
+    * `A@ {x(), Y}` with [sequence building](#sequence-building), 
         calling `A x()` and `A Y`, returning `A` if it's a temporary otherwise `A Y`
     * `"My String Interpolation is ${missing(), X}"` to add `X` to the string.
         Note that only the last element in the `${}` is added, but `missing()` will still be evaluated.
@@ -4046,15 +4049,15 @@ example_class some_static_impure_function(): int
 example_class;;another_method(Plus_k: int): null
     My X += Plus_k * 1000
 
-# Use `_` inside the block to reference the LHS `example_class` and do sequence building.
-example_class
+# Use sequence building.
+example_class@
 {   # with sequence building, `example_class my_added_class_function(K: int): example_class`
     # is exactly how you'd define a class function.
-    _ my_added_class_function(K: int): example_class
+    my_added_class_function(K: int): example_class
         example_class(X: K * 1000)
 
     # a method which keeps the instance readonly:
-    _::my_added_method(Y: int): int
+    ::my_added_method(Y: int): int
         My X * 1000 + Y * 100
 }
 ```
@@ -5074,19 +5077,16 @@ at the same time.
 
 ## sequence building
 
-TODO: i'm not super excited by the syntax here.
-`A (_ b(), _ c())` is more clunky than just `A@ ( b(), c())` but less precise,
-in case we do want to support `A ( if _ b() {do_something()}, ... )`, etc.
-is there a different operator we can use for member access here?
-or we can just remove sequence building and return a reference (like regular builder pattern).
-maybe `|`?  `A(|b(), |c())`.  however, `A(..., c())` doesn't make sense anyway
-because we're not allowed to parenthesize `Variable_case`.  maybe we support
-`A@ ( b(), c() )` for the common case of `A (_ b(), _ c())`, i.e., where the `_`
-is at the front of each expression.
-We might need `@` anyway because `A(...)` may gramatically look wrong.
+Sequence building is using the syntax `A@ [B, c()]` to create an object like `[B: A B, C: A c()]`,
+similarly with `()` to create an argument object, or `{}` to evaluate a few methods on the same
+object.  If you need the LHS of a sequence builder to come in at a different spot, use `@` inside
+the parentheses, e.g., `A@ [B + @ x(), if @ y() { C } else { @ Z }]`, which corresponds to
+`[B: B + A x(), Y: if A y() { C } else { A Z }]`.  Note that if you use `@` anywhere in a parenthetical
+statement, you need to use it everywhere you want the LHS to appear.
 
+Why would you need sequence building?
 Some languages use a builder pattern, e.g., Java, where you add fields to an object
-using setters.  For example, `MyBuilder.setX(123).setY(456).setZ("great").build()` [Java].
+using setters.  For example, `/* Java */ MyBuilder.setX(123).setY(456).setZ("great").build()`.
 In oh-lang, this is mostly obviated by named arguments: `my_class(X: 123, Y: 456, Z: "great")`
 could do the same thing.  However, there are still situations where it's useful to chain 
 methods on the same class instance, and oh-lang does not recommend returning a reference
@@ -5103,16 +5103,16 @@ my_builder: [...]
 # Note, inside the `{}` we allow mutating methods because `my_builder()` is a temporary.
 # The resulting variable will be readonly after this definition + mutation chain,
 # due to being defined with `:`.
-My_builder: my_builder()
-{   _ set("Abc", 123)
-    _ set("Lmn", 456)
-    _ set("Xyz", 789)
+My_builder: my_builder()@
+{   set("Abc", 123)
+    set("Lmn", 456)
+    set("Xyz", 789)
     # etc.
 }
 
 # You can also do inline, but you should use commas here.
 # Note that this variable can be mutated after this line due to being defined with `;`.
-My_builder2; my_builder() {_ set("Def", 987), _ set("Uvw", 321)}
+My_builder2; my_builder()@ {set("Def", 987), set("Uvw", 321)}
 ```
 
 By default, if the left-hand side of the sequence builder is writable (readonly),
@@ -5136,25 +5136,25 @@ Some examples of the LHS being a reference follow:
 
 ```
 Readonly_array: [0, 100, 20, 30000, 4000]
-Results: Readonly_array
-[   _[2]            # returns 20
-    _::sort()       # returns a sorted copy of the array; `::` is unnecessary
-    _::print()      # prints unsorted array; `::` is unnecessary
+Results: Readonly_array@
+[   [2]            # returns 20
+    ::sort()       # returns a sorted copy of the array; `::` is unnecessary
+    ::print()      # prints unsorted array; `::` is unnecessary
     # this will throw a compile-error, but we'll discuss results
     # as if this wasn't here.
-    ++_;;[3]        # compile error, `Readonly_array` is readonly
+    ++@;;[3]        # compile error, `Readonly_array` is readonly
 ]
 # should print [0, 100, 20, 30000, 4000] without the last statement
 # Results = [Int: 20, Sort: [0, 20, 100, 4000, 30000]]
 
 Writeable_array; [-1, 100, 20, 30000, 4000]
-Result: Writeable_array
-{   _[2]            # returns 20
-    _ sort()        # in-place sort, i.e., `;;sort()`
-    ++_;;[3]        # OK, a bit verbose since `;;` is unnecessary
+Result: Writeable_array@
+{   [2]            # returns 20
+    sort()        # in-place sort, i.e., `;;sort()`
+    ++@;;[3]        # OK, a bit verbose since `;;` is unnecessary
     # prints the array after all the above modifications:
-    _::print()      # OK, we probably don't have a `;;print()` but you never know
-    _ min()
+    ::print()      # OK, we probably don't have a `;;print()` but you never know
+    min()
 }
 # should print [-1, 20, 100, 4001, 30000]
 # Result = [20, 4001, -1]
@@ -5169,9 +5169,9 @@ the sequence builder.
 
 ```
 My_class: [...]
-Results: My_class
-[   Field1: _ my_method()
-    Field2: _ next_method()
+Results: My_class@
+[   Field1: @ my_method()
+    Field2: @ next_method()
 ]
 # The above is equivalent to the following:
 Results:
@@ -5182,29 +5182,29 @@ Results:
 # This is a compile error because the LHS of the sequence builder `My_class get_value()`
 # is a temporary, so the fields are not used in the return value.
 # this also would be a compile error for `()` and `{}` sequence builders.
-Results: My_class get_value()
-[   Field1: _ do_something()
-    Field2: _ do_something_else()
+Results: My_class get_value()@
+[   Field1: @ do_something()
+    Field2: @ do_something_else()
 ]   # COMPILE ERROR: Field1 is not used anywhere
 
 # this would be ok:
-Results: My_class get_value()
-{   Field1: _ do_something()
-    print(_ do_something_else() * Field1)
+Results: My_class get_value()@
+{   Field1: @ do_something()
+    print(@ do_something_else() * Field1)
 }
 ```
 
 ### nested sequence builders
 
-There is one exception in oh-lang for shadowing identifiers, and it is for `_`
+There is one exception in oh-lang for shadowing identifiers, and it is for `@`
 inside nested sequence builders.  We don't expect this to be a common practice.
 
 ```
 # Example method sequence builder:
-My_class
-[   _ my_method() [_ next_method(), _ next_method2(), _ Nested_field]
-    _ other_method()
-    _ Some_field
+My_class@
+[   my_method()@ [next_method(), next_method2(), Nested_field]
+    other_method()
+    Some_field
 ]
 
 # Is equivalent to this sequence:
@@ -5222,8 +5222,7 @@ Some_field: My_class Some_field
 
 Aliases enable writing out logic with semantically similar descriptions, and 
 are useful for gently adjusting programmer expectations.  The oh-lang formatter will
-substitute the preferred name for any aliases found, and the compiler will only
-warn on finding aliases.
+substitute the preferred name/logic for any aliases found.
 
 Aliases can be used for simple naming conventions, e.g.:
 
