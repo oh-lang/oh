@@ -4004,7 +4004,7 @@ example_class: parent_class
 
     # this function does not require an instance, and cannot use instance variables,
     # but it can read/write global variables (or other files):
-    some_static_impure_function_with_side_effects(Y: int): null
+    some_static_function(Y: int): null
         write(Y, File: "Y")
 }
 
@@ -4719,10 +4719,7 @@ like this: `my_single_generic_class[int] my_class_function(...)` or
 `my_multi_generic_class[type1: int, type2: str] other_class_function()`.
 
 ```
-# TODO: either use `[@Named Id]` or change discussion in
-# "default field names with generics" back to what it was.
-# create a class with two generic types, `id` and `value`:
-generic_class[id, value]: [Id, Value]
+generic_class[id, value]: @Named@ [Id, Value]
 {   ;;renew(My Id: id, My Value: value): Null
 }
 # more concisely:
@@ -5080,12 +5077,19 @@ at the same time.
 Sequence building is using the syntax `A@ [B, c()]` to create an object like `[B: A B, C: A c()]`,
 similarly with `()` to create an argument object, or `{}` to evaluate a few methods on the same
 object.  If you need the LHS of a sequence builder to come in at a different spot, use `@` inside
-the parentheses, e.g., `A@ [B + @ x(), if @ y() { C } else { @ Z }]`, which corresponds to
-`[B: B + A x(), Y: if A y() { C } else { A Z }]`.  Note that if you use `@` anywhere in a parenthetical
-statement, you need to use it everywhere you want the LHS to appear.
+the parentheses, e.g., `A@ [B + @ x(), if @ y() { C } else { @ Z }, W]`, which corresponds to
+`[B: B + A x(), Y: if A y() { C } else { A Z }, W: A W]`.  Note that if you use `@` anywhere in
+a parenthetical statement, you need to use it everywhere you want the LHS to appear.
 
 Why would you need sequence building?
-Some languages use a builder pattern, e.g., Java, where you add fields to an object
+One reason is that it makes declaring a bunch of private (or protected) variables convenient,
+e.g., `simple_class: @private@ [My_var: int, My_var2: str]` instead of
+`simple_class: [@private My_var: int, @private My_var2: str]`, and
+`my_class: all_of[other_classes..., @private@ [My_var: int, My_var2: str]]` instead
+of `my_class: all_of[other_classes..., [@private My_var: int, @private My_var2: str]]`.
+
+Another reason for sequence building:
+some languages use a builder pattern, e.g., Java, where you add fields to an object
 using setters.  For example, `/* Java */ MyBuilder.setX(123).setY(456).setZ("great").build()`.
 In oh-lang, this is mostly obviated by named arguments: `my_class(X: 123, Y: 456, Z: "great")`
 could do the same thing.  However, there are still situations where it's useful to chain 
