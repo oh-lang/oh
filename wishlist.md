@@ -100,6 +100,8 @@ reference (`Y; Y`), or `tmp_function(Z!)` to pass in as a temporary `Z. Z!`.  Wh
 technically we might want the `:;.` on the left-hand side of the variable we're passing in
 (e.g., `other_function(;Y)`), we keep it on the right-hand side for consistency of how
 functions are defined, and to avoid needing to do something like `tmp_function(.Z!)`.
+TODO: we probably could keep it `tmp_function(Z!)` and infer `Z. Z!` like we do with
+things like `tmp_function(z())` which (presumably) creates a tmp value `Z`.
 
 When defining a function, variable arguments that use the default name for a type can
 elide the type name; e.g., `my_function(Int): str` will declare a function that takes 
@@ -130,6 +132,8 @@ the overload is requested we need the `Me/My/I` context.
 TODO: can we get rid of the need for `My`/`Me`/`I` and just use `::the_method` or `;;other_method`
 inside function calls?  that way we wouldn't need to prefix `My X` for instance variables either.
 parent variables would still need to be referenced via `Parent X` or `::X`/`;;X`.
+this would be a reason to switch to *prefix* `;:.` for pre-named arguments, so we could do
+`do_something(;;X)` instead of `do_something(;;X;)`.
 
 Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
@@ -1411,6 +1415,8 @@ namespace operator binds left to right.
 * `@Second` - for the second operand in a binary operation (where order matters)
 * `@Unused` - for variables that aren't used in this block
 * `@Ignore` - the same as `@Unused`, but usually used for errors, e.g., `Result map(fn(@Ignore Er): -1)`
+    TODO: probably can use a *trailing* underscore to ignore a variable, e.g., `Result map({$Er_, -1})`,
+    but i like the purposeful intent behind the `@Ignore` namespace.
 * `@Named` - for identifiers that should be explicitly named in [generic arguments](#argument-type-generics)
     or kept for field names in [generic objects](#default-field-names-with-generics).
 
@@ -1843,8 +1849,8 @@ the `where` operator.  The shorter version of the above `what` statement is:
 ```
 truthy_or(@First ~A?., @Second A.): a
     what @First A
-        Non_null: where !!Non_null
-            Non_null
+        @Non_null A: where !!@Non_null A
+            @Non_null A
         Null
             @Second A
 ```
@@ -3827,7 +3833,7 @@ generic and different.  `my_function(~My_name: ~another_type)` (COMPILE ERROR)
 is needlessly verbose; if the type should be generic, just rely on what
 is passed in: `my_function(~My_name: my_name)` or `my_function(~My_name) for short.
 
-### generic require
+### require
 
 `Require` is a special generic field that allows you to include a function,
 method, or variable only if it meets some compile-time constraints.  It is
@@ -6280,78 +6286,16 @@ We have a few standard control statements or flow control keywords in oh-lang.
 TODO -- `return`
 TODO -- description, plus `if/else/elif` section
 
-## conditional expressions
-
 Conditional statements including `if`, `elif`, `else`, as well as `what`,
 can act as expressions and return values to the wider scope.  This obviates the need
 for ternary operators (like `X = do_something() if Condition else Default_value` in python
 which inverts the control flow, or `int X = Condition ? do_something() : Default_value;`
 in C/C++ which takes up two symbols `?` and `:`).  In oh-lang, we borrow from Kotlin the idea that
-[`if` is an expression](https://kotlinlang.org/docs/control-flow.html#if-expression)
-and write something like:
+[`if` is an expression](https://kotlinlang.org/docs/control-flow.html#if-expression),
+and similarly for `what` statements (similar to
+[`when` in kotlin](https://kotlinlang.org/docs/control-flow.html#when-expressions-and-statements)).
 
-```
-X: if Condition
-    do_something()
-elif Other_condition
-    do_something_else()
-else
-    calculate_side_effects(...) # ignored for setting X
-    Default_value
-
-# now X is either the result of `do_something()`, `do_something_else()`,
-# or `Default_value`.  note, we can also do this with braces to indicate
-# blocks, and can fit in one line if we have fewer conditions, e.g.,
-
-Y: if Condition { do_something() } else { calculate_side_effects(...), Default_value }
-```
-
-Note that ternary logic short-circuits operations, so that calling the function
-`do_something()` only occurs if `Condition` is true.  Also, only the last line
-of a block can become the RHS value for a statement like this.
-
-TODO: more discussion about how `return` works vs. putting a RHS statement on a line.
-
-Of course you can get two values out of a conditional expression, e.g., via destructuring:
-
-```
-[X, Y]: if Condition
-    [X: 3, Y: do_something()]
-else
-    [X: 1, Y: Default_value]
-```
-
-Note that indent matters quite a bit here.  Conditional blocks are supposed to indent
-at +1 from the initial condition (e.g., `if` or `else`), but the +1 is measured from
-the line which starts the conditional (e.g., `[X, Y]` in the previous example).  Indenting
-more than this would trigger line continuation logic.  I.e., at +2 or more indent,
-the next line is considered part of the original statement and not a block.  For example:
-
-```
-# WARNING, PROBABLY NOT WHAT YOU WANT:
-Q?: if Condition
-        What + Indent_twice
-# actually looks to the compiler like:
-Q?: if Condition What + Indent_twice
-```
-
-Which will give a compiler error since there is no internal block for the `if` statement.
-
-### conditional without else
-
-You can use the result of an `if` expression without an `else`, but the resulting
-variable becomes nullable, and therefore must be defined with `?:` (or `?;`).
-
-```
-greet(): str
-    return "hello, world!"
-
-Result?: if Condition { greet() }
-```
-
-This also happens with `elif`, as long as there is no final `else` statement.
-
-### then statements
+## then statements
 
 We can rewrite conditionals to accept an additional `then` "argument".  For `if`/`elif`
 statements, the syntax is `if Expression |> Then:` to have the compiler infer the `then`'s
@@ -6363,7 +6307,7 @@ Note that we use a `:` here because we're declaring an instance of `then`; if we
 `then` logic we don't use `:` for conditionals.  Also note that `then` is a thin wrapper
 around the [`block`](#blocks) class (i.e., a reference that removes the `::loop()` method that
 doesn't make sense for a `then`).  If you want to just give the type without renaming,
-you can do `if Whatever |> Then[my_if_block_type]:`, etc.
+you can do `if Whatever |> Then[my_if_block_type]:`.
 
 ```
 if Some_condition |> Then:
@@ -6400,6 +6344,70 @@ if Some Long Condition
     print("good")
     ...
 ```
+
+## if statements
+
+```
+X: if Condition
+    do_something()
+elif Other_condition
+    do_something_else()
+else
+    calculate_side_effects(...) # ignored for setting X
+    Default_value
+
+# now X is either the result of `do_something()`, `do_something_else()`,
+# or `Default_value`.  note, we can also do this with braces to indicate
+# blocks, and can fit in one line if we have fewer conditions, e.g.,
+
+Y: if Condition {do_something()} else {calculate_side_effects(...), Default_value}
+```
+
+Note that ternary logic short-circuits operations, so that calling the function
+`do_something()` only occurs if `Condition` is true.  Also, only the last line
+of a block can become the RHS value for a statement like this.
+
+TODO: more discussion about how `return` works vs. putting a RHS statement on a line.
+
+Of course you can get two values out of a conditional expression, e.g., via destructuring:
+
+```
+[X, Y]: if Condition
+    [X: 3, Y: do_something()]
+else
+    [X: 1, Y: Default_value]
+```
+
+Note that indent matters quite a bit here.  Conditional blocks are supposed to indent
+at +1 from the initial condition (e.g., `if` or `else`), but the +1 is measured from
+the line which starts the conditional (e.g., `[X, Y]` in the previous example).  Indenting
+more than this would trigger line continuation logic.  I.e., at +2 or more indent,
+the next line is considered part of the original statement and not a block.  For example:
+
+```
+# WARNING, PROBABLY NOT WHAT YOU WANT:
+Q?: if Condition
+        What + Indent_twice
+# actually looks to the compiler like:
+Q?: if Condition What + Indent_twice
+```
+
+Which will give a compiler error since there is no internal block for the `if` statement.
+
+### if without else
+
+You can use the result of an `if` expression without an `else`, but the resulting
+variable becomes nullable, and therefore must be defined with `?:` (or `?;`).
+
+```
+greet(): str
+    "hello, world!"
+
+Result?: if Condition { greet() }
+```
+
+This also happens with `elif`, as long as there is no final `else` statement.
+
 
 ### is operator
 
@@ -6451,7 +6459,7 @@ example_class: [Value: int]
 }
 ```
 
-### what statements
+## what statements
 
 `what` statements are comparable to `switch-case` statements in C/C++,
 but in oh-lang the `case` keyword is not required.  You can use the keyword
@@ -6493,8 +6501,7 @@ X: what String
 
 # Note again that you can use braces to make these inline.
 # Try to keep usage to code that can fit legibly on one line:
-# TODO: do we even need the commas here?
-Y: what String { "hello" {5}, "world" {7}, else {100} }
+Y: what String { "hello" {5} "world" {7} else {100} }
 ```
 
 You don't need to explicitly "break" a `case` statement like in C/C++.
@@ -6524,6 +6531,8 @@ E.g., suppose we have the following:
 ```
 status: one_of[Unknown, Alive, Dead]
 vector3: [X; dbl, Y; dbl, Z; dbl]
+{   ::length(): sqrt(My X^2 + My Y^2 + My Z^2)
+}
 
 update: one_of
 [   status
@@ -6545,6 +6554,7 @@ with earlier `what` cases taking precedence.
 ...
 # checking what `Update` is:
 what Update
+    # no trailing `:` because we're not declaring anything here:
     status Unknown
         print("unknown update")
     Status:
@@ -6560,8 +6570,7 @@ We don't recommend function style here, e.g.,
 `what Update { (Position: vector3): print("got position update: $(Position)") }`,
 mostly because we want to allow `return` inside a `what` case to return
 from the function that encloses `what`, and not `return` just inside the `what` case.
-However, that's something we want to support, in case your `what` case
-is complicated.
+However, that's something we do support, in case your `what` case is complicated.
 
 ```
 speed: one_of[
@@ -6575,11 +6584,11 @@ speed: one_of[
 check_speed(Update): speed
     what Update
         # you can mix and match non-function and function notation:
-        status Dead:
+        status Dead
             Dead
         # here we use function notation:
         (Velocity: vector3):
-            if Velocity length() < 5
+            if Velocity length() < 5.0
                 # this returns early from the `what` case
                 return Slow
             print("going slow, checking up/down")
@@ -6589,6 +6598,8 @@ check_speed(Update): speed
                 Going_up
             else
                 Going_down
+        Position: where Position length() is_nan()
+            Dead
         else
             None
 ```
@@ -6618,6 +6629,46 @@ what Whatever!      # ensure passing as a temporary by mooting here.
         print("can do something with temporary here: ${Card}")
         do_something_else(Card!)
 ```
+
+### where operator
+
+The `where` operator can be used to further narrow a conditional.  It
+is typically used in a `what` statement like this:
+
+```
+cows: one_of
+[   One
+    Two
+    many: i32
+]
+Cows: some_function_returning_cows()
+what Cows
+    One
+        print("got one cow")
+    Two
+        print("got two cows")
+    Many: where Many <= 5       # optionally `Many: i32 where Many <= 5`
+        print("got a handful of cows")
+    Many:                       # optionally `Many: i32`
+        print("got ${Many} cows")
+```
+
+It can also be used in a conditional alongside the `is` operator.
+Using the same `cows` definition from above for an example:
+
+```
+Cows: some_function_returning_cows()
+if Cows is Many: where Many > 5
+    # executes if `Cows` is `cows many` and `Many` is 6 or more.
+    print("got ${Many} cows")
+else
+    # executes if `Cows` is something else.
+    print("not a lot of cows")
+```
+
+`where` is similar to the [`Require`](#require) field, but
+`Require` needs to be computable at compile-time, and `where`
+can be computed at run-time.
 
 ### what operator
 

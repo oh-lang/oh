@@ -1,17 +1,6 @@
-er: one_of
-[   # TODO: this might be hard to do correctly since each `er` indexes from 0.
-    #       and any values of `indexable er` need to be increased to come after `allocation`
-    #       we could get around some of the downsides here by ensuring we always
-    #       compare to real values and not just `X == 0`.
-    #       could borrow from Zig that each error (token/tag) is unique (and non-zero).
-    # TODO: maybe ideally we do `indexable: { er: one_of[Index_too_negative] }` and then
-    #       `array: { er: extend(indexable er)[ Array_er1, Array_er2 ] }`.
-    #       but the following notation is pretty clear (no extra `extend` keyword necessary)
-    # TODO: ideally there is an easy way to say that a `one_of` extends another `one_of`,
-    #       even if the number offsets would be different.
-    #       maybe `contains`.  e.g., `some_er: contains(my_other_er)`
-    ...\/allocation er
-    ...\/indexable er
+er: flatten
+[   \/allocation er
+    \/indexable er
 ]
 hm[ok]: hm[ok, er]
 
