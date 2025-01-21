@@ -1,3 +1,5 @@
+[allocation]: \/allocation
+
 er: flatten
 [   \/allocation er
     \/indexable er
@@ -5,46 +7,63 @@ er: flatten
 hm[ok]: hm[ok, er]
 
 array[of]: all_of
-[   indexable_sequence[of]
-    @private
+[   hashable
+    indexable_sequence[of]
+    @private@
     [   Allocation; allocation
-
-        # TODO: convert this into a deque, add `Start: count`
-        #       however, this will make resizing more complicated.
-
-        @private
         Count; count = 0
     ]
 ]
-{   ;;enscope(Arguments[of].):
-        Allocation count(Arguments count()) ?? panic()
+{   ;;enscope(Arguments[of].): null
+        Allocation capacity(Arguments count()) ?? panic()
         while Count < Arguments count()
             Allocation move_construct(In_bounds: Arguments[Count++]!)
 
-    ::count(): Count
+    ;;descope(): null
+        I clear(Drop_capacity)
 
-    ;;count(@New Count): hm[count]
+    ::capacity(): count
+        My Allocation capacity()
+
+    ;;capacity(Capacity): hm[capacity]
+        while My Count > Capacity
+            @Unused Of: I pop()
+        My Allocation capacity(Capacity)
+
+    ::count(): count
+        My Count
+
+    ;;count[Require: of is defaultable](@New Count): hm[count]
         @Old Count: My Count
         if @New Count == @Old Count
             return ok(@Old Count)
         if @New Count > @Old Count
-            I allocate(At_least: Count) assert()
+            My capacity(At_least: Count) assert()
             while My Count < @New Count
                 Allocation default_construct(In_bounds: My Count++)
         else
             assert(@New Count >= 0, er Invalid_count)
             while My Count > @New Count
-                Allocation deconstruct(In_bounds: --My Count)
+                @Unused Of: I pop()
         ok(@Old Count)
+    
+    ;;clear(One_of. one_of[Keep_capacity, Drop_capacity] = Keep_capacity): null
+        while My Count > 0
+            @Unused Of: I pop()
+        what One_of
+            Keep_capacity
+                pass
+            Drop_capacity
+                My Allocation capacity(0)
 
     ;;append(Of): hm[null]
         debug assert(My Count < count::Max)
-        I allocate(At_least: My Count + 1) assert()
+        My capacity(At_least: My Count + 1) assert()
         Allocation copy_construct(My Count++, Of)
 
     ;;append(Of.): hm[null]
         debug assert(My Count < count::Max)
-        I allocate(At_least: My Count + 1) assert()
+        My capacity(At_least: My Count + 1) assert()
         Allocation move_construct(My Count++, Of!)
    
     # in-bounds reference, which is unsafe to call unless `In_bounds` is 
@@ -53,10 +72,16 @@ array[of]: all_of
         debug assert(In_bounds >= 0 and In_bounds < My count())
         Allocation[In_bounds_and_constructed. In_bounds]
 
+    ;;pop()?: of
+        if My Count == 0
+            Null
+        else
+            My Allocation read_out(--My Count)
+        
     # returns a value of the array element at the specified index,
     # or the end of the array if not specified.  returns null if the element
     # would be out of bounds (e.g., `Index >= My count()`).
-    ;;pop(Index. -1)?: of
+    ;;pop(Index.)?: of
         # don't resize the array in case `Index >= My Count`.
         what My in_bounds(Index)
             # TODO: shouldn't this be `Ok. in_bounds` if we're going to be pedantic
@@ -123,18 +148,16 @@ array[of]: all_of
     # without certain transitive properties, the result's order may not make sense.
     :;sort(fn(Left: of, Right: of): comparison): respectively[you, null]
 
-    @hashable
-    ::hash(~Builder;): Builder
-    {   _ hash(of)  # make array hashes distinct based on type.
+    ::hash(~Builder;):
+    {   Builder hash(of)  # make array hashes distinct based on type.
         My each (Index., Of:)
-            _ hash(Index)
-            _ hash(Of)
+            Builder hash(Index)
+            Builder hash(Of)
     }
 
     @private
-    ;;allocate(At_least: count): hm[null]
-        debug assert(At_least >= 0)
-        if At_least <= My Allocation Count
+    ;;capacity(At_least: count): hm[null]
+        if At_least <= My capacity()
             return ok()
 
         # we should at least try to double the storage
