@@ -1412,6 +1412,16 @@ You can use the same namespace for multiple variables, e.g., `@Input Rune` and `
 as long as the variable names don't overlap.  Like the member access operators below, the
 namespace operator binds left to right.
 
+TODO: i don't like shadowing multiple variables (e.g., from function arguments), but *transmuting*
+variables into a different type does feel nice in Rust's shadowing.  we probably want to support
+something explicit like this
+
+```
+fn(X: int):
+    # TODO: `@transmute` or something else might be better.
+    @shadow X: flt(X)
+```
+
 ### full list of reserved namespaces
 
 * `@First` - for the first operand in a binary operation (where order matters)
