@@ -136,7 +136,31 @@ this would be a reason to switch to *prefix* `;:.` for pre-named arguments, so w
 `do_something(;;X)` instead of `do_something(;;X;)`.
 However, I'm not a big fan of this because then we lose some symmetry between
 class methods/variables (`my X` or `i x()`) compared to instance methods/variables
-(`My X` and `I x()`).
+(`My X` and `I x()`).  It also doesn't look as good for things like
+```
+vector3: [X; dbl, Y; dbl, Z; dbl]
+{   ::dot(You): dbl
+        ::X * Your X + ::Y * Your Y + ::Z * Your Z
+    ::cross(You): vector3
+    (   # you can use `You` or `Your` in this block:
+        X. ::Y * Your Z - ::Z * Your Y
+        Y. ::Z * Your X - ::X * Your Z
+        Z. ::X * Your Y - ::Y * Your X
+    )
+}
+# or with `Me/My`:
+vector3: [X; dbl, Y; dbl, Z; dbl]
+{   ::dot(You): dbl
+        My X * Your X + My Y * Your Y + My Z * Your Z
+    
+    ::cross(You): vector3
+    (   # you can use `You` or `Your` in this block:
+        X. My Y * Your Z - My Z * Your Y
+        Y. My Z * Your X - My X * Your Z
+        Z. My X * Your Y - My Y * Your X
+    )
+}
+```
 
 Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
@@ -224,7 +248,6 @@ Primitive types will do overflow like in other languages without panicking, but 
         with any arguments inside `()`.
     * use `a: y` to declare `a` as a constructor that builds instances of type `y`
     * use `new[]: y` to declare `new` as a function returning a type `y`, with any arguments inside `[]`.
-        TODO: can we distinguish lambdas `$X` and `$x` for being an instance function or a type function?
     * while declaring *and defining* something, you can avoid the type if you want the compiler to infer it,
         e.g., `A: some_expression()`
 * when not declaring things, `:` is not used; e.g., `if` statements do not require a trailing `:` like python
@@ -2387,7 +2410,7 @@ e.g., `my_calling_function(take_all_overloads(Call;))`.
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
 # if it can't find it.
 detect(greet(Int): string): int
-    range(100) each @Check Int:
+    100 each @Check Int:
         if greet(@Check Int) == "hello, world!"
             return @Check Int
     return -1
@@ -2399,10 +2422,6 @@ greet(Int): string
 detect(greet(Int): greet(Int) String)    # returns -1
 # also ok:
 detect(greet(Int): string = greet(Int))
-# using lambda functions:
-# TODO: we probably want to pull out `greet` as the function name.
-# maybe `$$greet`
-detect({greet($Int) String})
 
 # if your function is not named the same, you can do argument renaming;
 # internally this does not create a new function:
@@ -2410,7 +2429,7 @@ say_hi(Int): string
     return "hello, world" + "!" * Int
 detect(greet(Int): say_hi(Int) String)  # returns 1
 
-# you can also create a lambda function named correctly inline -- the function
+# you can also create a function named correctly inline -- the function
 # will not be available outside, after this call (it's scoped to the function arguments).
 detect(greet(Int): string
     return "hello, world!!!!" substring(Length: Int)
@@ -2425,7 +2444,7 @@ Lambda functions are good candidates for [functions as arguments](#functions-as-
 since they are very concise ways to define a function.  They utilize an indented block
 or set of braces  like `{...function-body...}` with function arguments defined inside using
 `$The_argument_name`.  There is no way to specify the type of a lambda function argument,
-so the compiler must be able to infer it (e.g., via using the entire lambda as an argument,
+so the compiler must be able to infer it (e.g., via using the lambda function as an argument,
 or by using a default name like `$Int` to define an integer).  Some examples:
 
 ```
@@ -2444,18 +2463,11 @@ run_asdf({$K + str(My_array[$J] * $L)})  # prints "hay3140
 run_asdf
 (   $K + str(My_array[$J] * $L)
 )
-```
-TODO: is the indent example going to be considered an indent by the grammar?
-or would we need something else?
-```
-# this is probably wrong, this looks like line continuation??
+# this is wrong, this looks like line continuation.
 run_asdf
 (       $K + str(My_array[$J] * $L)
 )
 ```
-
-TODO: maybe `@named(greet) { ... }` because hat operators are for conditionals.
-This is only required if the function is not default named (e.g., not `fn`).
 
 If you need a lambda function inside a lambda function, use another `$` to escape
 one variable into the parent scope, e.g.,
@@ -2475,6 +2487,10 @@ run
 ```
 
 But it would probably be more readable to just define the functions normally in this instance.
+
+There is currently no good way to define the name of a lambda function; we may use
+`@named(whatever_name) {$X + $Y}`, but it's probably more readable to just define
+the function inline as `whatever_name(X, Y): X + Y`.
 
 ### types as arguments
 
