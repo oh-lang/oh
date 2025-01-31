@@ -1153,7 +1153,7 @@ and `my_function Outputs`.
 ## type overloads
 
 Similar to defining a function overload, we can define type overloads for generic types.
-For example, the generic result class in oh-lang is `hm[ok, er: non_null]`, which
+For example, the generic result class in oh-lang is `hm[ok, er]`, which
 encapsulates an ok value (`ok`) or a non-nullable error (`er`).  For your custom class you
 may not want to specify `hm[ok: my_ok_type, er: my_class_er]` all the time for your custom
 error type `my_class_er`, so you can define `hm[of]: hm[ok: of, er: my_class_er]` and
@@ -2840,6 +2840,18 @@ some_nullish_function()?: int
     return if Some_condition { Null } else { 100 }
 ```
 
+Note however that if a value is definitely null, then we don't allow passing
+it in as a nullable argument.
+
+```
+some_null_function(): null
+    print("go team")
+ 
+# COMPILE ERROR, `X` is always null.
+# cleaner: `some_null_function(), some_function()`:
+some_function(X?: some_null_function())
+```
+
 We also want to make it easy to chain function calls with variables that might be null,
 where we actually don't want to call an overload of the function if the argument is null.
 
@@ -2899,13 +2911,11 @@ my_overload(Y: str): [X?: int]
 [X?]: my_overload(Y: "abc")  # calls (1) or (3) if one is defined, otherwise it's a compiler error.
 ```
 
-Note that if only Case 3 is defined, we can use a special notation to ensure that the return
-value is not null, e.g., `[X: non_null] = ...`.  This will throw a run-time error if the return
+Note that if only Case 3 is defined, we can use `assert`s to ensure that the return
+value is not null, e.g., `[X]: my_overload() assert()`.  This will throw a run-time error if the return
 value for `X` is null.  Note that this syntax is invalid if Case 2 is defined, since there is
-no need to assert a non-null return value in that case.
-TODO: we probably need a way to do this for results as well, maybe `[X]: my_overload() assert()`,
-which should also work for `non_null` casting.  It also makes it clear there's an assertion
-that's happening.
+no need to assert a non-null return value in that case.  This will also work for an
+overload which returns a result `hm`.
 
 ```
 # normal call for case 3, defines an X which may be null:
@@ -2913,7 +2923,7 @@ that's happening.
 
 # special call for case 3; if X is null, this will throw a run-time error,
 # otherwise will define a non-null X:
-[X: non_null] = my_overload(Y: "123")
+[X]: my_overload(Y: "123") assert()
 
 # make a default for case 3, in case X comes back as null from the function
 [X: -1] = my_overload(Y: "123")
@@ -2973,7 +2983,7 @@ we can cast like this, e.g., `My_value: 123` can be used for a `My_value: u8` ar
 and (2) child types are allowed to be passed by reference when the function asks
 for a parent type.
 
-Note that return types are never references, so one secondary difference between
+Return types are never inferred as references, so one secondary difference between
 `fn(Int.): ++Int` and `fn(Int;): ++Int` is that a copy/temporary is required
 before calling the former and a copy is made for the return type in the latter.
 The primary difference is that the latter will modify the passed-in variable in
@@ -2982,6 +2992,9 @@ temporary will actually create a hidden `int` before the function call.  E.g.,
 `fn(Int; 12345)` will essentially become `Uniquely_named_int; 12345` then
 `fn(Int; @hide Uniquely_named_int)`, so that `Uniquely_named_int` is hidden from the
 rest of the block.  See also [lifetimes and closures](#lifetimes-and-closures).
+To avoid a copy entirely, you'd need to explicitly annotate the return type;
+e.g., you can use `fn(Int;): (Int;) {++Int}` for the above example, i.e.,
+using [argument objects](#argument-objects) for the return value.
 
 In C++ terms, arguments declared as `.` are passed as temporaries (`t &&`),
 arguments declared as `:` are passed as constant reference (`const t &)`,
@@ -5480,7 +5493,8 @@ returned and handled explicitly.  We use the notation `hm[ok, er]` to indicate
 a generic return type that might be `ok` or it might be an error (`er`).
 In practice, you'll often specify the generic arguments like this:
 `hm[ok: int, er: string]` for a result that might be ok (as an integer) or it might
-be an error string.
+be an error string.  If your function never fails, but the interface requires using
+`hm`, you can use `hm[ok, er: null]` to indicate the result will never be an error.
 
 To make it easy to handle errors being returned from other functions, oh-lang uses
 the `assert` method on a result class.  E.g., `Ok: My_hm assert()` which will convert
