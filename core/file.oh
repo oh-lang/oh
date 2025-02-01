@@ -1,0 +1,61 @@
+file[Mode]: [@private File_handle]
+{   i(Path.): hm[me]
+
+    # moves the file pointer to the byte specified by `Count`.
+    ;;seek(Count): hm[null]
+
+    # returns the number of bytes *remaining* in this file.
+    ::count(): count
+
+    # reads the remaining parts of the file as an array of bytes.
+    # if you just opened the file, this will read the entire file.
+    # if you are at the end of a file, it will return an empty array.
+    ;;read[Require: Mode is_readable()]: hm[array[u8]]
+
+    # reads a line from the file, stripping newline character(s).
+    # if you are at the end of the file, will return a null line.
+    # an empty line will be the empty string.
+    ;;read[Require: Mode is_readable()]: hm[[Line?: str]]
+
+    # reads all remaining lines from the file, stripping newline character(s)
+    # and putting each line into a separate element in the array.  an empty
+    # line will be an empty string.  if you are at the end of a file,
+    # it will return an empty array.
+    ;;read[Require: Mode is_readable()]: hm[array[str]]
+
+    # appends a line to the file, and also adds newline character(s).
+    ;;write[Require: Mode is_writable()](Line: str): hm[null]
+
+    # appends bytes to the file.
+    ;;write[Require: Mode is_writable()](Array[u8]): hm[null]
+
+    # appends a byte to the file.
+    ;;write[Require: Mode is_writable()](U8): hm[null]
+}
+
+mode: one_of
+[   Read_only
+    Read_write
+    # TODO: Truncate_write??
+]
+{   ::is_writable(): bool
+        what Me
+            Read_write
+                True
+            Read_only
+                False
+
+    @alias is_writeable: is_writable
+
+    ::is_readable(): bool
+        what Me
+            Read_only
+            Read_write
+                True
+}
+
+er: one_of
+[   Invalid # TODO
+]
+
+hm[of]: hm[ok: of, er]

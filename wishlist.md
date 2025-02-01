@@ -4861,8 +4861,10 @@ We use a new syntax here because it would be confusing
 to reinterpret a generic class declaration of a variable declared using `:`
 as writeable in a specification with a `;`.
 
-TODO: we probably want a compiler warning if a generic class declaration
-has no backtick for the type, and the user supplies the type as `;`.
+Note that if the generic class has no backticks inside, then it is a compile error
+if you try to specify the generic class with a `;` type.  E.g., if we have the declaration
+`generic[a]: [A]`, then the specification `My_gen: generic[a; int](5)` is a compile error.
+If desired, we can switch to `generic[a]: [A\`]` to make the specification correct.
 
 ### virtual generic methods
 
@@ -4870,9 +4872,7 @@ You can also have virtual generic methods on generic classes, which is not allow
 
 ```
 generic[of]: [Value; of]
-{   # not a `@final` method, so this can be extended/overridden:
-    # TODO: maybe switch to final as `:;method(): int` and virtual as `:;method(); int`
-    ::method(~U): u
+{   ::method(~U): u
         Other_of: of = My Value * (U + 5)
         U + u(Other_of) ?? panic()
 }
@@ -5024,10 +5024,9 @@ between the two usages of `some_class[specified_type]` and `some_class`.
 ### type tuples
 
 One can conceive of a tuple type like `[x, y, z]` for nested types `x`, `y`, `z`.
-Note that these are *not* order dependent, so `[z, x, y]` is the same tuple type,
-so they are grammatically equivalent to a `lot` of types, and their use is
-make it easy to specify types for a generic class.  This must be done using the
-spread operator `...` in the following manner.
+They are grammatically equivalent to a `lot` of types (where usually order doesn't matter),
+and their use is make it easy to specify types for a generic class.  This must be done
+using the spread operator `...` in the following manner.
 
 ```
 tuple_type: [x, y, z]
@@ -5076,7 +5075,9 @@ This may also be helpful with internals for a `lot[of, at]`, like `[@Named At, @
 in case they ever leave the class and could be consumed by someone else.
 
 TODO: are we sure about this?  inconsistency here isn't the worst thing
-if there's some confusion about how this works.
+if there's some confusion about how this works.  we could make it so that
+default names apply in argument objects, e.g., `(Value: ~value)`, but not
+inside of objects `[Value: value]`.
 
 ## common class methods
 
@@ -5498,7 +5499,7 @@ This ensures a clean state.  If you want multiple tests to start with the same
 logic, just move that common logic to a parent test.
 
 TODO: parametric tests probably can just be `@test "params":` and nesting
-`for Params: All_possible_params {@test "works for $[Params]": ...}`.
+`All_possible_params each Params: {@test "works for $[Params]": ...}`.
 
 Inside of a `test` block, you have access to a `Test` variable which includes
 things like what has been printed (`Test print()`).  In this example, `Test print()`
@@ -5521,7 +5522,8 @@ and any subdirectories.
 
 ## file access / file system
 
-TODO: how does file access work with the reference pattern
+Files can be opened via the `file` class, which is a handle to a system file.
+See [the `file` definition](https://github.com/oh-lang/oh/blob/main/core/file.oh).
 
 TODO: make it possible to mock out file system access in unit tests.
 
