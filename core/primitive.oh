@@ -1,0 +1,134 @@
+primitive: flatten
+[   unsigned_primitive
+    signed_primitive
+    symmetric_primitive
+    negated_primitive
+]
+
+bit_count: one_of[8, 16, 32, 64]
+
+# unsigned primitives represent numbers from `0` to `2^P - 1`, inclusive,
+# where `P` is the number of bits used; i.e., `u8` has `P: 8` and `u64` has `P: 64`.
+# `u8` can thus represent numbers from 0 to 255.
+unsigned_primitive: one_of
+[   u8
+    u16
+    u32
+    u64
+]
+{   # Usage: `Unsigned: unsigned_primitive bits[32]` to define `Unsigned` as a `u32`.
+    bits[Bit_count]: what Bit_count
+        8 { u8 }
+        16 { u16 }
+        32 { u32 }
+        64 { u64 }
+}
+
+signed[unsigned_primitive]: signed_primitive
+signed[u8]: i8
+signed[u16]: i16
+signed[u32]: i32
+signed[u64]: i64
+
+# signed primitives represent numbers from `-2^(P-1)` to `2^(P-1) - 1`, inclusive,
+# where `P` is the number of bits used; i.e., `i8` has `P: 8` and `i64` has `P: 64`.
+# `i8` can thus represent numbers from -128 to 127.
+signed_primitive: one_of
+[   i8
+    i16
+    i32
+    i64
+]
+{   # Usage: `Signed: signed_primitive bits[16]` to define `Signed` as an `i16`.
+    bits[Bit_count]: what Bit_count
+        8 { i8 }
+        16 { i16 }
+        32 { i32 }
+        64 { i64 }
+}
+
+unsigned[signed_primitive]: unsigned_primitive
+unsigned[i8]: u8
+unsigned[i16]: u16
+unsigned[i32]: u32
+unsigned[i64]: u64
+
+negated[signed_primitive]: negated_primitive
+negated[i8]: n8
+negated[i16]: n16
+negated[i32]: n32
+negated[i64]: n64
+
+# symmetric primitives represent numbers from `-2^(P-1) + 1` to `2^(P-1) - 1`, inclusive,
+# where `P` is the number of bits used; i.e., `s8` has `P: 8` and `s64` has `P: 64`.
+# `s8` can thus represent numbers from -127 to 127.  they use two's complement but
+# keep `-2^(P-1)` reserved as a `Null` value for when the type is nullable.
+symmetric_primitive: one_of
+[   s8
+    s16
+    s32
+    s64
+]
+{   # Usage: `Symmetric: symmetric_primitive bits[8]` to define `Symmetric` as an `s8`.
+    bits[Bit_count]: what Bit_count
+        8 { s8 }
+        16 { s16 }
+        32 { s32 }
+        64 { s64 }
+}
+
+s64: symmetric[wrapping: i64]
+s32: symmetric[wrapping: i32]
+s16: symmetric[wrapping: i16]
+s8: symmetric[wrapping: i8]
+
+symmetric[wrapping: signed_primitive]: all_of[[Value; wrapping], number]
+{   i(Wrapping.): hm[number er, me]
+        if Wrapping == wrapping min()
+            Unrepresentable
+        else
+            [Value: Wrapping]
+
+    @number(Value)
+}
+
+# negated primitives represent numbers from `-2^(P-1) + 1` to `2^(P-1)`, inclusive,
+# where `P` is the number of bits used; i.e., `n8` has `P: 8` and `n64` has `P: 64`.
+# `n8` can thus represent numbers from -127 to 128.
+negated_primitive: one_of
+[   n8
+    n16
+    n32
+    n64
+]
+{   # Usage: `Negated: negated_primitive bits[64]` to define `Negated` as an `n64`.
+    bits[Bit_count]: what Bit_count
+        8 { n8 }
+        16 { n16 }
+        32 { n32 }
+        64 { n64 }
+}
+
+n64: negated[wrapping: i64]
+n32: negated[wrapping: i32]
+n16: negated[wrapping: i16]
+n8: negated[wrapping: i8]
+
+negated[wrapping: signed_primitive]: all_of[[Negated_value; wrapping], number]
+{   i(Wrapping.): hm[number er, me]
+        if Wrapping == wrapping min()
+            Unrepresentable
+        else
+            [Negated_value: -Wrapping]
+
+    i(Negated. wrapping): me
+        [Negated_value: Negated]
+
+    @negated_number(Negated_value)
+}
+
+signed[negated_primitive]: signed_primitive
+signed[n8]: i8
+signed[n16]: i16
+signed[n32]: i32
+signed[n64]: i64

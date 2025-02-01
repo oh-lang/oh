@@ -1,14 +1,24 @@
-str:
+@align(8)
+str: @private@
 [   Special_count; i16
-    Start; array[4, u8]
-    Middle; c_union[Capacity; u16, If_unallocated; array[2, u8]]
-    End; c_union[Ptr[u8];, If_unallocated; array[8, u8]]    
+    Union; c_union
+    [   Unallocated; array[14, u8]
+        Allocated_in_16:
+        [   Padding; array[2, u8]
+            Capacity; count16
+            Ptr[u8];
+        ]
+        Allocated_past_16:
+        [   Padding; array[4, u8]
+            Ptr[u8];
+        ]
+    ]
 ]
 {   # we use `Special_count <= 0` to indicate an `Allocated_in_16`
-    # size of the string via `count16`.  if we're local, we need
-    # to therefore start at 1.
+    # size of the string via `count16`.  if we're local (`Unallocated`),
+    # we need to therefore start at 1.
     Local_zero_start: i16(1)
-    Null_count: Local_zero_start + size_of(me) - size_of(me() Special_count)
+    Null_count: Local_zero_start + size_of(me() Union Unallocated)
     Max_allocation_count: i16 max() // 2
 
     @private

@@ -4805,8 +4805,6 @@ like this: `my_single_generic_class[int] my_class_function(...)` or
 generic_class[id, value]: @Named@ [Id, Value]
 {   ;;renew(My Id: id, My Value: value): Null
 }
-# more concisely:
-generic_class[id, value]: [Id, Value]
 
 # creating an instance using type inference:
 Class_instance: generic_class(Id: 5, Value: "hello")
