@@ -346,6 +346,55 @@ Other_var; explicit_type
     "asdf" + "jkl;"
 ```
 
+## defining strings
+
+```
+# declaring a string:
+Name: "Barnabus"
+
+# using interpolation in a string:
+Greeting: "hello, ${Name}!"
+
+# declaring a multiline string
+Important_items:
+        &|Fridge
+        &|Pancakes and syrup
+        &|Cheese
+# this is the same as `Important_items: "Fridge\nPancakes and syrup\nCheese\n"`
+
+# TODO: consider making the last line not have a newline.
+# a single-line multiline string includes a newline at the end.
+Just_one_line: &|This is a 'line' "you know"
+# this is equivalent to `Just_one_line: "This is a 'line' \"you know\"\n"
+
+# declaring a multiline string with interpolation
+Multiline_interpolation:
+        &|Special delivery for ${Name}:
+        &|You will receive ${Important_items} and more.
+# becomes "Special delivery for Barnabus\nYou will receive Fridge\nPancakes and syrup\nCheese\n and more."
+
+# interpolation over multiple file lines.
+# WARNING: this does not comply with Horstmann indenting,
+# and it's hard to know what the indent should be on the second line.
+Evil_long_line: "this is going to be a long discussion ${
+        Name}, can you confirm your availability?"
+# INSTEAD, use string concatenation:
+Good_long_line: "this is going to be a long discussion"
+    &   "${Name}, can you confirm your availability?"
+
+# you can also nest interpolation logic, although this isn't recommended:
+Nested_interpolation: "hello, ${if Condition {Name} else {'World${"!" * 5}'}}!"
+```
+
+Notice that the `&` operator works on strings to add a space (if necessary)
+between the two operands.  E.g., `'123' & '456'` becomes `'123 456'`.  It also
+strips any trailing whitespace on the left operand and any leading whitespace
+on the right operand to ensure things like `'123\n \n' & '\n456'` are still just `'123 456'`.
+This makes it the perfect operator for string concatenation across lines where we want
+to ensure a space between words on one line and the next.
+TODO: it could also be used as a postfix or prefix operator, e.g., `&'   hi'` is 'hi'
+and `'hey\n  '&` is 'hey'.  not sure this is better than `'   hi' strip()` though.
+
 ## defining arrays
 
 See [arrays](#arrays) for more information.
@@ -561,56 +610,6 @@ fn[x: str](Value: "asdf")
 See [generic/template functions](#generictemplate-functions) for more details.
 
 
-## defining strings
-
-```
-# declaring a string:
-Name: "Barnabus"
-
-# using interpolation in a string:
-Greeting: "hello, ${Name}!"
-
-# declaring a multiline string
-Important_items:
-        &|Fridge
-        &|Pancakes and syrup
-        &|Cheese
-# this is the same as `Important_items: "Fridge\nPancakes and syrup\nCheese\n"`
-
-# TODO: consider making the last line not have a newline.
-# a single-line multiline string includes a newline at the end.
-Just_one_line: &|This is a 'line' "you know"
-# this is equivalent to `Just_one_line: "This is a 'line' \"you know\"\n"
-
-# declaring a multiline string with interpolation
-Multiline_interpolation:
-        &|Special delivery for ${Name}:
-        &|You will receive ${Important_items} and more.
-# becomes "Special delivery for Barnabus\nYou will receive Fridge\nPancakes and syrup\nCheese\n and more."
-
-# interpolation over multiple file lines.
-# WARNING: this does not comply with Horstmann indenting,
-# and it's hard to know what the indent should be on the second line.
-Evil_long_line: "this is going to be a long discussion ${
-        Name}, can you confirm your availability?"
-# INSTEAD, use string concatenation:
-Good_long_line: "this is going to be a long discussion"
-    &   "${Name}, can you confirm your availability?"
-
-# you can also nest interpolation logic, although this isn't recommended:
-Nested_interpolation: "hello, ${if Condition {Name} else {'World${"!" * 5}'}}!"
-```
-
-Notice that the `&` operator works on strings to add a space (if necessary)
-between the two operands.  E.g., `'123' & '456'` becomes `'123 456'`.  It also
-strips any trailing whitespace on the left operand and any leading whitespace
-on the right operand to ensure things like `'123\n \n' & '\n456'` are still just `'123 456'`.
-This makes it the perfect operator for string concatenation across lines where we want
-to ensure a space between words on one line and the next.
-TODO: it could also be used as a postfix or prefix operator, e.g., `&'   hi'` is 'hi'
-and `'hey\n  '&` is 'hey'.  not sure this is better than `'   hi' strip()` though.
-
-
 ## defining classes
 
 See [classes](#classes) for more information on syntax.
@@ -664,6 +663,41 @@ between "shadowed" functions like `my_class count()` (which returns the number o
 a_or_b: one_of[a, b]
 a_and_b: all_of[a, b]
 ```
+
+### defining generic classes
+
+With classes, generic types must be explicitly declared in brackets.
+Any conditions on the types can be specified via `[the_type: the_condition, ...]`.
+
+```
+# default-named generic
+generic[of]: [Of]
+{   # you can use inference in functions, so you can use `generic(12)`
+    # to create an instance of `generic` with `of: int` inferred.
+    # You don't need this definition if `[Of]` is public.
+    # TODO: we might need another identifier instead of `i` for the generic
+    # class *without* its specification.  e.g., `i: generic[of]` and `g: generic`(?)
+    # maybe we can infer this based on whether we're a class function or an instance method.
+    i(~T): i[t]
+        [T] 
+}
+
+Generic[int](1)             # shorthand for `Generic: generic[int](1)`.
+My_generic: generic(1.23)   # infers `generic[dbl]` for this type.
+
+# not default named:
+entry[at: hashable, of: number]: [@Named At, Value; of]
+{   ::add(Of): null
+        My Value += Of
+}
+
+Entry[at: str, int](At: "cookies", Value: 123)  # shorthand for `Entry: entry[at: str, int](...)`
+My_entry: entry(At: 123, Value: 4.56)           # infers `at: int` and `of: dbl`.
+My_entry add(1.23)
+My_entry Value == 5.79
+```
+
+See [generic/template classes](#generictemplate-classes) for more information.
 
 ## identifiers
 
