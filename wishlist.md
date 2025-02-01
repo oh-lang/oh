@@ -4818,15 +4818,12 @@ Other_instance: generic_class[id: dbl, value: string](Id: 3, Value: "4")
 ### default-named generics
 
 If you have a generic class like `my_generic[type1, type2]`, you can use them as a
-function argument with the shorthand `My_generic[type1, type2]`.
-
-TODO: find where else we talk about this.
-TODO: can we distinguish between an expression like `Generic[3]` and `Generic[Count]`
-as a default-named variable declaration?  i guess it depends on whether we can
-verify if it's a declaration or not;  we could require `Generic[3]:` for a declaration
-e.g., of an array of 3 elements, and `Generic[3]` as an expression might be something
-like accessing the fourth element in the array.  we should be able to distinguish
-based on whether `Generic` is in scope or not.
+default-named function argument like `My_generic[type1, type2]`, which is short for
+`My_generic: my_generic[type1, type2]`.  This works even for generics over values,
+e.g., if `fixed_array[Count]` is an array of size `Count`, then `Fixed_array[3]`
+can be a declaration for a fixed array of size 3.  We can distinguish between 
+`Fixed_array[3]` being (1) this declaration or (2) a request to access the fourth
+element in an array based on whether `Fixed_array` is in scope.
 
 ### generic class type mutability
 
