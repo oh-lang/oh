@@ -1,0 +1,37 @@
+str:
+[   Special_count; i16
+    Start; array[4, u8]
+    Middle; c_union[Capacity; u16, If_unallocated; array[2, u8]]
+    End; c_union[Ptr[u8];, If_unallocated; array[8, u8]]    
+]
+{   # we use `Special_count <= 0` to indicate an `Allocated_in_16`
+    # size of the string via `count16`.  if we're local, we need
+    # to therefore start at 1.
+    Local_zero_start: i16(1)
+    Null_count: Local_zero_start + size_of(me) - size_of(me() Special_count)
+    Max_allocation_count: i16 max() // 2
+
+    @private
+    ::locality(): locality
+        if My Special_count < Local_zero_start
+            Allocated_in_16
+        elif My Special_count < Null_count
+            Local
+        elif My Special_count == Max_allocation_count
+            Allocated_past_16
+        panic("str was null or something else")
+}
+
+str?: str
+{   Null: str(Special_count: str Null_count)
+
+    ::is(null): bool
+        return My Special_count == str Null_count
+}
+
+@private
+locality: one_of
+[   Local
+    Allocated_in_16
+    Allocated_past_16
+]
