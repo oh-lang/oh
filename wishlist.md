@@ -3492,8 +3492,8 @@ call:
     ;;output(Any): null
         assert(My Output count() == 0)
         # TODO: a better way to refer to the class name.
-        # can we just do `Any ClassName`?
-        My Output[Any is() ClassName] = Any
+        # can we just do `Any Class_name`?
+        My Output[Any is() Class_name] = Any
 
     # adds a field to the return type with a default value.
     # e.g., `Call output(Field_name: 123)` will ensure
@@ -3622,9 +3622,6 @@ otherwise you're just creating a new overload (and not redefining the function).
 
 ## nullable functions
 
-TODO: we need to specify the whole overload, and maybe use a new identifier, e.g., `$null`?
-`nullable_fn?(Z: dbl); int = $null`.  or could we use mooting?  `!nullable_fn`.
-
 The syntax for declaring a nullable/optional function is to put a `?` after the function name
 but before the argument list.  E.g., `optional_function?(...Args): return_type` for a non-reassignable
 function and swapping `:` for `;` to create a reassignable function.
@@ -3651,59 +3648,27 @@ means that the return type is nullable.  The possible combinations are therefore
   I.e., if `super_null_function` is null, trying to call it will return null,
   but even if it's not null `super_null_function` can still return null.
 
-Some examples:
-
 ```
-# creating an optional method in a class:
-parent: [X: dbl, Y: dbl]
-{   ;;renew(My X: dbl, My Y: dbl): Null
+# creating an optional function in a class:
+example: [X: dbl, optional_fn?(Me, Z: dbl); int]
 
-    # note that this is a reassignable method, which means it is defined on a per-instance basis.
-    ::optional_method?(Z: dbl); int
-}
+Example; example(X: 5)
 
-Example; parent(X: 5, Y: 1)
-
-# define your own function for optional_method:
-Example::optional_method(Z: dbl); int
+# define your own function for optional_fn:
+Example::optional_fn(Z: dbl); int
     return floor(Z * My X)
 
-Example optional_method(2.15)    # returns 10
+# or set it to null (would set all overloads to null):
+Example optional_fn = null
 
-# or set it to Null:
-Example optional_method = Null
+# the entire overload must be specified
+# if you want to delete just one overload.
+# (i.e., in case there are multiple overloads)
+Example optional_fn?(Z: dbl); int = null
 
-Example optional_method(3.21)    # returns Null
-
-# child classes can define a "method" that overrides the parent's optional function:
-child: parent
-{   ::optional_method(Z: dbl); int
-        return ceil(My X * My Y * exp(-Z))
-}
-
-Child; child(X: 6, Y: 2)
-
-Child optional_method(0)     # returns 12
-
-# but note that unless the method is protected, users can still redefine it.
-Child::optional_method(Z: dbl): int
-    floor(Z)
-
-Child optional_method(5.4)   # returns 5
-
-# also note that while the child method appears to always be defined,
-# we cannot stop a Null from being assigned here.  this is because
-# if the instance is passed into a function which takes a parent class,
-# that function scope can reassign the method to Null (since the parent
-# class has no restrictions).  note the entire overload must be specified.
-Child::optional_method?(Z: dbl); int = $null
-# TODO: maybe a good reason to always require {} (or indenting) on a function,
-#       we can distinguish between `= Null` and `{ ... }` and wouldn't need `$null`
-# TODO: maybe need to erase it.
-erase(Child, optional_method?(Me, Z: dbl); int)
-
-# therefore the executable will always check for Null before calling the method:
-Child optional_method(1.45)  # returns Null
+# after setting it to null...
+# TODO: do we always want to require always usingn `?`, e.g. `optional_fn?(Z: 3.21)` 
+Example optional_fn(Z: 3.21)    # returns Null
 ```
 
 ## generic/template functions
@@ -4020,18 +3985,12 @@ example_class: parent_class
     ;;add_something(Int): null
         My X += Int
 
-    # TODO: do we really want `virtual` methods explicit?  i'd probably
-    #       prefer to allow all methods to be virtual.  but we don't have
-    #       a good need for `my_fun(X); type` besides being virtual.
-    # this method is "virtual", i.e., it can be changed in child classes;
-    # but it can't be changed to mutate the child instance, it must always
-    # keep the instance constant.
-    ::virtual_method(Int); string
+    # COMPILE ERROR: reassignable methods are currently not supported;
+    # they may be in the future but would require hotswapping functions.
+    # in case someone is running an old function, we need to let them
+    # finish before reclaiming the memory of that function.
+    ::reassignable_method(Int); string
         return string(My X + Int)
-
-    # this method is "virtual" and can mutate the instance.
-    ;;virtual_mutable_method(Int); null
-        My X -= Int
 
     # some examples of class functions:
     # this function does not require an instance, and cannot use instance variables:
