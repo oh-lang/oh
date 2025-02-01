@@ -507,6 +507,60 @@ some_type: some_constructor[int, named_new: dbl] # int or dbl with 50-50 probabi
 X: some_type(1234)  # `X` is either `int(1234)` or `dbl(1234)`.
 ```
 
+### defining generic functions
+
+There are two ways to define a generic function: (1) via type inference `~x`
+and (2) with an explicit generic specification `[types...]` after the function name.
+You can combine the two methods if you want to infer a type and specify a
+condition that the type should satisfy, e.g., `fn[x: number](X: ~x): x`
+to require that `x` is a number type.  Any types that are not inferred
+but are explicitly given in brackets must be added at the callsite, e.g.,
+`fn[x: number, y](~X, After: y): y` should be called as `fn[y: int](123.4, After: 5)`.
+At the callsite, the specified generics in brackets `[]` must not be abstract.
+
+Note that default names apply to either case; `~X` is shorthand for `X: ~x`
+which would not need an argument name, and `fn[value](Value): null` would
+require `value` specified in the brackets but not in the argument list,
+e.g., `fn[value: int](123)`.  In brackets, the "default name" for a type is
+`of`, so you can call a function like `fn[of](Of): null` as `fn[int](123)`.
+
+Some examples:
+
+```
+# this argument type is inferred, with a default name
+fn(~X): x
+# call it like this:
+fn(512)
+
+# this argument is inferred but need to name it as `X: ...`
+fn(@Named ~X): x
+# call it like this:
+fn(X: 512)
+
+# another way to infer an argument but require naming it as `X: ...`
+fn(X: ~t): t
+# we call it like this:
+fn(X: 512)
+
+# explicit generic with condition, not inferred:
+fn[x: condition](X): x
+# call it like this, where `int` should satisfy `condition`
+fn[x: int](5)
+
+# explicit generic with condition, inferred
+fn[x: condition](X: ~x): x
+# call it like this, where `dbl` should satisfy `condition`
+fn[x: dbl](3.14)
+
+# explicit generic without a default name:
+fn[x](Value: x): null
+# call it like this:
+fn[x: str](Value: "asdf")
+```
+
+See [generic/template functions](#generictemplate-functions) for more details.
+
+
 ## defining strings
 
 ```
@@ -3667,7 +3721,6 @@ Example optional_fn = null
 Example optional_fn?(Z: dbl); int = null
 
 # after setting it to null...
-# TODO: do we always want to require always usingn `?`, e.g. `optional_fn?(Z: 3.21)` 
 Example optional_fn(Z: 3.21)    # returns Null
 ```
 
@@ -3715,7 +3768,7 @@ copy[the_type: int](Value: 1234)    # returns 1234
 
 For this example, it would be better to use `of` instead of `the_type`, since `of`
 is the "default name" for a generic type.  E.g., you don't need to specify `[of: int]`
-to specialize to `int`, you can just use `[int]` if it's default named.
+to specialize to `int`, you can just use `[int]` for an `[of]`-defined generic.
 See also [default named generic types](#default-named-generic-types).  For example:
 
 ```
