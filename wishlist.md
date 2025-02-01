@@ -3433,7 +3433,7 @@ conflict; trying to define both would be a compile error.
 
 TODO: we probably can have `x(@New X: x): null` overloads where we don't need
 to always swap out the old value (e.g., `x(@New X: x): x`.
-TOOD: we should make it clear by requiring setters to return the old value only
+TODO: we should make it clear by requiring setters to return the old value only
 if `x(@New X: x): [@Old X]` is used.  or just use `;;x(X; x): null` as the
 swapper signature and `;;x(X. x): null` as the setter, and don't specify
 what `;;x(X; x): x` would mean.
@@ -3467,11 +3467,9 @@ encountered when calling the function.  These fields are named to imply that the
 call can do just about anything (including fetching data from a remote server).
 
 ```
+reference[of]: one_of[writable: (Of;), readonly: (Of:)]
 call:
-[   # TODO: need to distinguish between readonly and writable references.
-    #       this can be done on the pointer (e.g., Ptr[]; for writable
-    #       and Ptr[]: for readonly) or here somehow.
-    Input; lot[at: str, ptr[any]]
+[   Input; lot[at: str, reference[any]]
     # we need to distinguish between the caller asking for specific fields
     # versus asking for the whole output.
     Output; lot[at: str, any]
@@ -3482,12 +3480,12 @@ call:
 ]
 {   # adds an argument to the function call.
     # e.g., `Call input(Name: "Cave", Value: "Story")`
-    ;;input(Name: str, Value: ptr any): null
+    ;;input(Name: str, Value: reference[any]): null
         My Input[Name] = Value
 
     # adds an argument to the function call.
     # e.g., `Call input(Cave: "Story")`
-    ;;input(~Name: ptr any): null
+    ;;input(~Name: reference[any]): null
         My Input[@@Name] = Name
 
     # adds a single-value return type
