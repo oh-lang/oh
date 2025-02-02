@@ -1,15 +1,16 @@
+# TODO: use the heap_or_local_array instead here.
 @align(8)
 str: @private@
 [   Special_count; i16
     Union; c_union
-    [   Unallocated; array[14, u8]
+    [   Unallocated; vector[14, u8]
         Allocated_in_16:
-        [   Padding; array[2, u8]
+        [   Padding; vector[2, u8]
             Capacity; count16
             Ptr[u8];
         ]
         Allocated_past_16:
-        [   Padding; array[4, u8]
+        [   Padding; vector[4, u8]
             Ptr[u8];
         ]
     ]

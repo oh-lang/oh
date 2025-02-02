@@ -1,0 +1,18 @@
+# efficiently stores up to 9_223_372_036_854_775_808 elements, more being less efficient.
+heap_or_local_array64: heap_or_local_array[counting: count64]
+
+# efficiently stores up to 2_147_483_648 elements, more being less efficient.
+heap_or_local_array32: heap_or_local_array[counting: count32]
+
+# efficiently stores up to 32_768 elements, more being less efficient.
+heap_or_local_array16: heap_or_local_array[counting: count16]
+
+# efficiently stores up to 128 elements, more being less efficient.
+heap_or_local_array8: heap_or_local_array[counting: count8]
+
+# heap/local array
+heap_or_local_array[counting, Local_bits: Bit_count, of]:
+[
+]
+{
+}

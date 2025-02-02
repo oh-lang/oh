@@ -14,7 +14,9 @@ array[of]: all_of
         Count; count = 0
     ]
 ]
-{   ;;enscope(Arguments[of].): null
+{   heap_or_local[Local_bits: Bit_count]: heap_or_local_array[Local_bits, of]
+
+    ;;enscope(Arguments[of].): null
         Allocation capacity(Arguments count()) ?? panic()
         while Count < Arguments count()
             Allocation move_construct(In_bounds: Arguments[Count++]!)
