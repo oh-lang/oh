@@ -161,6 +161,24 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
     )
 }
 ```
+Technically we only need `;:.` for methods, we could look under the namespace
+of `My` for any variables we don't recognize.  The main thing that I do want
+is for nested types to not require `my` or `i` prefixes, which is annoying.
+```
+non_negative: [Value; int]
+{   i(Value. int): hm[me]       # instead of `i hm[me]`.
+        if Value < 0
+            er Negative         # instead of `i er Negative`
+        else
+            [Value]
+
+    hm[of]: hm[ok: of, er]
+    er: one_of[Negative]
+}
+```
+However, I thought we wanted to avoid collisions between class functions
+and class methods; if `x some_fn()` is defined, then `X some_fn()` should
+do the same thing.
 
 Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
@@ -1070,15 +1088,6 @@ Other types which have a fixed amount of memory:
 * `flt`: single-precision floating-point number, AKA `f32`
 * `dbl`: double-precision floating-point number, AKA `f64`
 * `bool`: can hold a True or False value
-    TODO: consider trying to have the same number of characters.
-    `my_function(Do_something: False, Do_something_else: True)`
-    `my_function(Do_something: No, Do_something_else: Ya)`
-    `my_function(Do_something: Not, Do_something_else: Got)`
-    `my_function(Do_something: No, Do_something_else: Do)`
-    `my_function(Do_something: Nay, Do_something_else: Yea)` (or `Yah`)
-    `my_function(Do_something: Nope, Do_something_else: Sure)`
-    `my_function(Do_something: Moot, Do_something_else: Sure)`
-    `what Result {Sure {do_something_for_ya()}, Moot {do_something_for_no()}}`
 * `rune`: a utf8 character, presumably held within an `i32`
 * `u8`: unsigned byte (can hold values from 0 to 255, inclusive)
 * `u16` : unsigned integer which can hold values from 0 to 65535, inclusive
@@ -1254,7 +1263,7 @@ an overload, as that would be the equivalent of shadowing.
 Plain-old-data objects can be thought of as merging all fields
 in this way:
 ```
-object == merge[object fields(), [$Field Name: $Field value]]
+object == merge[object fields(), {[$Field Name: $Field value]}]
 ```
 
 TODO: good ways to do keys and values for an object type (e.g., like TypeScript).
