@@ -18,8 +18,8 @@ count[wrapping: hoisted_primitive]: all_of
     i(Signed. signed[wrapping]): hm[ok: me, number er]
         if Signed >= 0
             # no representability issues, only `Signed min()` would be
-            # problematic with a negation, but `Signed` is non-negative:
-            [Value: n64(Signed) ?? panic("should be fine")]
+            # problematic with hoisting, but `Signed` is non-negative:
+            [Value: hoisted(Signed) ?? panic("should be fine")]
         else
             Unrepresentable 
 
