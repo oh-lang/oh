@@ -1,8 +1,12 @@
 primitive: flatten
-[   unsigned_primitive
+[   # unsigned primitives represent `0` to `2^P - 1`.
+    unsigned_primitive
+    # signed primitives represent `-2^(P-1)` to `2^(P-1) - 1`.
     signed_primitive
+    # symmetric primitives represent `-2^(P-1) + 1` to `2^(P-1) - 1`.
     symmetric_primitive
-    negated_primitive
+    # hoisted primitives represent `-2^(P-1) + 1` to `2^(P-1)`.
+    hoisted_primitive
 ]
 
 bit_count: one_of[8, 16, 32, 64]
@@ -53,11 +57,11 @@ unsigned[i16]: u16
 unsigned[i32]: u32
 unsigned[i64]: u64
 
-negated[signed_primitive]: negated_primitive
-negated[i8]: n8
-negated[i16]: n16
-negated[i32]: n32
-negated[i64]: n64
+hoisted[signed_primitive]: hoisted_primitive
+hoisted[i8]: h8
+hoisted[i16]: h16
+hoisted[i32]: h32
+hoisted[i64]: h64
 
 # symmetric primitives represent numbers from `-2^(P-1) + 1` to `2^(P-1) - 1`, inclusive,
 # where `P` is the number of bits used; i.e., `s8` has `P: 8` and `s64` has `P: 64`.
@@ -82,40 +86,47 @@ s32: symmetric[wrapping: i32]
 s16: symmetric[wrapping: i16]
 s8: symmetric[wrapping: i8]
 
-symmetric[wrapping: signed_primitive]: all_of[[Value; wrapping], number]
+symmetric[wrapping: signed_primitive]: all_of
+[   [@private Value; wrapping]
+    integer
+]
 {   i(Wrapping.): hm[number er, me]
         if Wrapping == wrapping min()
             Unrepresentable
         else
             [Value: Wrapping]
 
-    @number(Value)
+    @integer(Value)
 }
 
-# negated primitives represent numbers from `-2^(P-1) + 1` to `2^(P-1)`, inclusive,
-# where `P` is the number of bits used; i.e., `n8` has `P: 8` and `n64` has `P: 64`.
-# `n8` can thus represent numbers from -127 to 128.
-negated_primitive: one_of
-[   n8
-    n16
-    n32
-    n64
+# hoisted primitives represent numbers from `-2^(P-1) + 1` to `2^(P-1)`, inclusive,
+# where `P` is the number of bits used; i.e., `h8` has `P: 8` and `h64` has `P: 64`.
+# `h8` can thus represent numbers from -127 to 128.
+hoisted_primitive: one_of
+[   h8
+    h16
+    h32
+    h64
 ]
-{   # Usage: `Negated: negated_primitive bits[64]` to define `Negated` as an `n64`.
+{   # Usage: `Negated: hoisted_primitive bits[64]` to define `Negated` as an `n64`.
     bits[Bit_count]: what Bit_count
-        8 { n8 }
-        16 { n16 }
-        32 { n32 }
-        64 { n64 }
+        8 { h8 }
+        16 { h16 }
+        32 { h32 }
+        64 { h64 }
 }
 
-n64: negated[wrapping: i64]
-n32: negated[wrapping: i32]
-n16: negated[wrapping: i16]
-n8: negated[wrapping: i8]
+h64: hoisted[wrapping: i64]
+h32: hoisted[wrapping: i32]
+h16: hoisted[wrapping: i16]
+h8: hoisted[wrapping: i8]
 
-negated[wrapping: signed_primitive]: all_of[[Negated_value; wrapping], number]
-{   i(Wrapping.): hm[number er, me]
+# internally a `hoisted` primitive negates the primitive type to represent itself.
+hoisted[wrapping: signed_primitive]: all_of
+[   [@private Negated_value; wrapping]
+    integer
+]
+{   i(Wrapping.): hm[number er, ok: me]
         if Wrapping == wrapping min()
             Unrepresentable
         else
@@ -124,11 +135,11 @@ negated[wrapping: signed_primitive]: all_of[[Negated_value; wrapping], number]
     i(Negated. wrapping): me
         [Negated_value: Negated]
 
-    @negated_number(Negated_value)
+    @negated_integer(Negated_value)
 }
 
-signed[negated_primitive]: signed_primitive
-signed[n8]: i8
-signed[n16]: i16
-signed[n32]: i32
-signed[n64]: i64
+signed[hoisted_primitive]: signed_primitive
+signed[h8]: i8
+signed[h16]: i16
+signed[h32]: i32
+signed[h64]: i64

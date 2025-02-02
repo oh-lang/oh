@@ -1,0 +1,27 @@
+ordinal: ordinal64
+ordinal64: ordinal[wrapping: h64]
+ordinal32: ordinal[wrapping: h32]
+ordinal16: ordinal[wrapping: h16]
+ordinal8: ordinal[wrapping: h8]
+
+@final
+ordinal[wrapping: hoisted_primitive]: all_of
+[   [@private Value; wrapping]
+    integer
+]
+{   i(Wrapping. wrapping): hm[me, number er]
+        if Wrapping > 0
+            [Value: Wrapping]
+        else
+            Unrepresentable
+
+    i(Index[signed[wrapping]].): hm[me, number er]
+        if Index >= 0
+            Value: Index hoisted()
+                ??  panic("Hoisting should be able to represent all positive indices")
+            [Value + 1]
+        else
+            Unrepresentable
+
+    @integer(Value)
+}

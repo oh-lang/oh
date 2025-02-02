@@ -1,10 +1,18 @@
-index: index[wrapping: i64]
+index: index64
 index64: index[wrapping: i64]
 index32: index[wrapping: i32]
 index16: index[wrapping: i16]
 index8: index[wrapping: i8]
 
 @final
-index[wrapping: signed_primitive]: all_of[[Value; wrapping], number]
-{   @number(Value)
+index[wrapping: signed_primitive]: all_of[
+    [@private Value; wrapping]
+    integer
+]
+{   @integer(Value)
+
+    ::hoisted(): hm[ok: hoisted, number er]
+        hoisted(My Value)
+
+    hoisted: hoisted[wrapping]
 }

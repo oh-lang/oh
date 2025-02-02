@@ -1,27 +1,28 @@
-count: count[wrapping: n64]
-count64: count[wrapping: n64]
-count32: count[wrapping: n32]
-count16: count[wrapping: n16]
-count8: count[wrapping: n8]
+count: count64
+count64: count[wrapping: h64]
+count32: count[wrapping: h32]
+count16: count[wrapping: h16]
+count8: count[wrapping: h8]
 
 @final
-count[wrapping: negated_primitive]: all_of[[@private Value; wrapping], number]
-{   i(Wrapping. wrapping): hm[me, number er]
+count[wrapping: hoisted_primitive]: all_of
+[   [@private Value; wrapping]
+    integer
+]
+{   i(Wrapping. wrapping): hm[ok: me, number er]
         if Wrapping >= 0
-            [Wrapping]
+            [Value: Wrapping]
         else
             Unrepresentable 
 
-    i(Signed. signed[wrapping]): hm[me, number er]
+    i(Signed. signed[wrapping]): hm[ok: me, number er]
         if Signed >= 0
             # no representability issues, only `Signed min()` would be
             # problematic with a negation, but `Signed` is non-negative:
-            [n64(Signed) ?? panic("should be fine")]
+            [Value: n64(Signed) ?? panic("should be fine")]
         else
             Unrepresentable 
 
-    # negated_primitive already takes care of negating things, so don't double negate
-    # here with `negated_number`.
-    @number(Value)
+    @integer(Value)
 }
 
