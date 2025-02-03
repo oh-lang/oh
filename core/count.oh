@@ -15,6 +15,12 @@ count[wrapping: hoisted_primitive]: all_of
         else
             Unrepresentable 
 
+    min(): i
+        [Value: 0]
+
+    max(): i
+        [Value: wrapping max()]
+
     i(Signed. signed[wrapping]): hm[ok: me, number er]
         if Signed >= 0
             # no representability issues, only `Signed min()` would be
@@ -24,5 +30,12 @@ count[wrapping: hoisted_primitive]: all_of
             Unrepresentable 
 
     @integer(Value)
+
+    ::double_or_max(At_least. wrapping): me
+        what multiply(Me, 2)
+            Ok.
+                max(Ok, At_least)
+            @Ignore Er.
+                max()
 }
 

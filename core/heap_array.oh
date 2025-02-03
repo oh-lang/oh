@@ -1,0 +1,43 @@
+heap_array[capacity: hoisted_primitive, of]: all_of
+[   [   Allocation[of, capacity];
+        Count; count[wrapping: capacity]
+    ]
+    array[of]
+]
+{   
+    ;;enscope(Arguments[of].): null
+        Allocation capacity(Arguments count()) ?? panic()
+        while Count < Arguments count()
+            Allocation move_construct(In_bounds: Arguments[Count++]!)
+
+    ;;descope(): null
+        I clear(Drop_capacity)
+
+    ::capacity(): count
+        My Allocation capacity()
+
+    ;;capacity(Capacity.): hm[capacity]
+        while My Count > Capacity
+            @Unused Of: I pop()
+        My Allocation capacity(Capacity)
+
+    ::count(): count
+        My Count
+
+    ;;append(Of.): hm[null]
+        debug assert(My Count < count::Max)
+        My capacity(At_least: My Count + 1) assert()
+        Allocation move_construct(My Count++, Of!)
+   
+    # in-bounds reference, which is unsafe to call unless `In_bounds` is 
+    # within the range `[0, My count())`.
+    :;[In_bounds.]: (Of:;)
+        debug assert(In_bounds >= 0 and In_bounds < My count())
+        Allocation[In_bounds_and_constructed. In_bounds]
+
+    ;;pop()?: of
+        if My Count == 0
+            Null
+        else
+            My Allocation read_out(--My Count)
+}

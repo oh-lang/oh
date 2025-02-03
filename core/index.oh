@@ -5,8 +5,8 @@ index16: index[wrapping: i16]
 index8: index[wrapping: i8]
 
 @final
-index[wrapping: signed_primitive]: all_of[
-    [@private Value; wrapping]
+index[wrapping: signed_primitive]: all_of
+[   [@private Value; wrapping]
     integer
 ]
 {   @integer(Value)

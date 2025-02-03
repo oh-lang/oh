@@ -6,31 +6,17 @@ er: flatten
 ]
 hm[ok]: hm[ok, er]
 
-array[of]: all_of
+array[of, capacity: count]: all_of
 [   hashable
     indexable_sequence[of]
-    @private@
-    [   Allocation; allocation
-        Count; count = 0
-    ]
 ]
-{   heap_or_local[Local_bits: Bit_count]: heap_or_local_array[Local_bits, of]
-
-    ;;enscope(Arguments[of].): null
-        Allocation capacity(Arguments count()) ?? panic()
-        while Count < Arguments count()
-            Allocation move_construct(In_bounds: Arguments[Count++]!)
-
-    ;;descope(): null
-        I clear(Drop_capacity)
+{   heap_or_local[Local_bytes, locality: hoisted_primitive = h16]:
+            heap_or_local_array[Local_bytes, locality, of]
+    heap[capacity: hoisted_primitive = h64]: heap_array[capacity, of]
 
     ::capacity(): count
-        My Allocation capacity()
 
-    ;;capacity(Capacity): hm[capacity]
-        while My Count > Capacity
-            @Unused Of: I pop()
-        My Allocation capacity(Capacity)
+    ;;capacity(Capacity.): null 
 
     ::count(): count
         My Count
@@ -42,44 +28,44 @@ array[of]: all_of
         if @New Count > @Old Count
             My capacity(At_least: Count) assert()
             while My Count < @New Count
-                Allocation default_construct(In_bounds: My Count++)
+                append(of())
         else
             assert(@New Count >= 0, er Invalid_count)
             while My Count > @New Count
                 @Unused Of: I pop()
         ok(@Old Count)
-    
-    ;;clear(One_of. one_of[Keep_capacity, Drop_capacity] = Keep_capacity): null
+
+    clear: one_of[Keeping_capacity, Dropping_capacity]
+    {   @alias Keep_capacity: Keeping_capacity
+        @alias Drop_capacity: Dropping_capacity
+    }
+
+    ;;clear(Clear: clear = Keeping_capacity): null
         while My Count > 0
             @Unused Of: I pop()
         what One_of
-            Keep_capacity
+            Keeping_capacity
                 pass
-            Drop_capacity
-                My Allocation capacity(0)
-
-    ;;append(Of): hm[null]
-        debug assert(My Count < count::Max)
-        My capacity(At_least: My Count + 1) assert()
-        Allocation copy_construct(My Count++, Of)
+            Dropping_capacity
+                My capacity(0)
 
     ;;append(Of.): hm[null]
-        debug assert(My Count < count::Max)
-        My capacity(At_least: My Count + 1) assert()
-        Allocation move_construct(My Count++, Of!)
    
-    # in-bounds reference, which is unsafe to call unless `In_bounds` is 
-    # within the range `[0, My count())`.
     :;[In_bounds.]: (Of:;)
-        debug assert(In_bounds >= 0 and In_bounds < My count())
-        Allocation[In_bounds_and_constructed. In_bounds]
+
+    # moves and resets the value at this index.
+    ;;[Index.]!?: of
+        what My in_bounds(Index)
+            Ok.
+                My[Ok]!
+            @Ignore Er.
+                Null
+
+    ;;[In_bounds.]!: of
 
     ;;pop()?: of
-        if My Count == 0
-            Null
-        else
-            My Allocation read_out(--My Count)
-        
+        # TODO: can implement here in terms of moot
+    
     # returns a value of the array element at the specified index,
     # or the end of the array if not specified.  returns null if the element
     # would be out of bounds (e.g., `Index >= My count()`).
@@ -91,8 +77,7 @@ array[of]: all_of
             #       of `hm`, and it would just be `In_bounds.`
             Ok.
                 I pop(Ok)
-            Er.
-                @ignore Er
+            @Ignore Er.
                 Null
         # alternatively: `My in_bounds(Index) map((Ok.): I pop(Ok), (@Unused Er.): Null)`
 
@@ -102,15 +87,18 @@ array[of]: all_of
         I erase(In_bounds)
         Result
 
-    ;;erase(Index.): null
+    ;;erase(Index.): capacity
         if My in_bounds(Index) is Ok.
             I erase(Ok)
+        else
+            0
 
-    ;;erase(In_bounds.): null
+    ;;erase(In_bounds.): capacity
         debug assert(In_bounds >= 0 and In_bounds < My count())
         range(In_bounds, My count() - 1) each Destination_index:
             My[Destination_index] = My[In_bounds: Destination_index + 1]!
-        My count(My count() - 1)
+        I pop()
+        1
 
     !!(Me): bool
         count(Me) > 0
@@ -157,28 +145,9 @@ array[of]: all_of
             Builder hash(Of)
     }
 
-    @private
     ;;capacity(At_least: count): hm[null]
-        if At_least <= My capacity()
+        Current_capacity: My capacity()
+        if At_least <= Current_capacity 
             return ok()
-
-        # we should at least try to double the storage
-        Try_to_allocate; I roughly_double_allocation()
-        while Try_to_allocate > At_least
-            if My Allocation count(Try_to_allocate) is_ok()
-                return ok()
-            # in case we can't allocate that much, we can back down.
-            Try_to_allocate = (Try_to_allocate + At_least) // 2
-
-        My Allocation count(At_least)
-
-    @private
-    ::roughly_double_allocation(): count
-        if My Allocation Count == 0
-            return 4
-        Doubled: 2 * My Allocation Count
-        if Doubled >= 0
-            return Doubled
-        # if we're at this point, we're in insane territory
-        # TODO
+        My capacity(Current_capacity double_or_max(At_least. 4))
 }
