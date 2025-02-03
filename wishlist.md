@@ -7414,6 +7414,7 @@ be different than `one_of[new_identifier: 0, other_identifier: 3]`? or not??
 in both cases, it seems like `0` and `3` are specifying the tag.  but would
 `one_of[new_id: [X: dbl], other_id: [Y: str]]` be different than
 `one_of[New_id: [X: dbl], Other_id: [Y: str]]`?...  maybe we just force lowercase.
+TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific instances.
 
 Enums are by default the smallest standard integral type that holds all values,
 but they can be signed types (in contrast to masks which are unsigned).
@@ -7666,11 +7667,28 @@ one_of[..., t]: []
 }
 ```
 
-TODO:  we want `one_of[one_of[a, b], one_of[c, d]]` to flatten to `one_of[a, b, c, d]`, probably?
-or maybe have a separate `flatten[a, b, c]` which will flatten to e.g., `one_of[a, b, x, y]` if
-`c: one_of[x, y]`.
+### flattening and containing
 
-## `one_of`s as function arguments
+Note that `one_of[one_of[a, b], one_of[c, d]]` is not the same as
+`one_of[a, b, c, d]`.  To get that result, use `flatten`, e.g.,
+`flatten[one_of[a, b], one_of[c, d]]` will equal `one_of[a, b, c, d]`.
+This is safe to use on other types, so `flatten[one_of[c, d], e]`
+is `one_of[c, d, e]`.
+
+If you want to check if a condition is true for a type,
+you can use notation like `x is one_of[a, b]`.  This is true if `x`
+is `a`, `b`, or even `one_of[a, b]`, and false otherwise.
+This can be used to restrict generics to a list of only certain types,
+e.g., `primitives: one_of[i8, i16], my_generic[of: primitives]: [Of]`
+will only allow specification as `my_generic[i8]` or `my_generic[i16]`.
+TODO: do we need `exactly_one_of` to make sure `of` is not `one_of[i8, i16]`?
+if not, how do we make these distinctions?
+
+Going the other way, you can check check if a `one_of` contains some
+type by using `contains`, e.g., `a_or_b: one_of[a, b], a_or_b contains[x]`
+is true if `x` is `a`, `b`, or `one_of[a, b]`.
+
+### `one_of`s as function arguments
 
 The default name for a `one_of` argument is `One_of`.  E.g.,
 
