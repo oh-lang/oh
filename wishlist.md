@@ -147,6 +147,19 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
         Y. ::Z * Your X - ::X * Your Z
         Z. ::X * Your Y - ::Y * Your X
     )
+
+    ;;project(Along: vector3): null
+        print(count())  # is this `my count` or `count` the type?
+        Dot: ::dot(Along)
+        ;;X = Dot * Along X
+        ;;Y = Dot * Along Y
+        ;;Z = Dot * Along Z
+
+    ::count_nonzero(): count
+        # count(True) == 1 and count(False) == 0:
+        count(::X != 0.0) + count(::Y != 0.0) + count(::Z != 0.0)
+
+    count(): count(3)
 }
 # or with `Me/My`:
 vector3: [X; dbl, Y; dbl, Z; dbl]
@@ -159,6 +172,43 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
         Y. My Z * Your X - My X * Your Z
         Z. My X * Your Y - My Y * Your X
     )
+
+    ;;project(Along: vector3): null
+        print(count())  # is this `my count` or `count` the type?
+        Dot: dot(Me, Along)     # or `Dot: ::dot(Along)`
+        My X = Dot * Along X
+        My Y = Dot * Along Y
+        My Z = Dot * Along Z
+
+    # number of non-zero components.
+    ::count_nonzero(): count
+        # count(True) == 1 and count(False) == 0:
+        count(My X != 0.0) + count(My Y != 0.0) + count(My Z != 0.0)
+
+    count(): count(3)
+}
+# without Me/My (C++ style)
+vector3: [X; dbl, Y; dbl, Z; dbl]
+{   ::dot(O): dbl
+        X * O X + Y * O Y + Z * O Z
+    ::cross(O): vector3
+    (   X. Y * O Z - Z * O Y
+        Y. Z * O X - X * O Z
+        Z. X * O Y - Y * O X
+    )
+    ;;project(Along: vector3): null
+        print(count())  # is this `my count` or `count` the type?
+        Dot: dot(Along)
+        X = Dot * Along X
+        Y = Dot * Along Y
+        Z = Dot * Along Z
+
+    # number of non-zero components.
+    ::count_nonzero(): count
+        # count(True) == 1 and count(False) == 0:
+        count(X != 0.0) + count(Y != 0.0) + count(Z != 0.0)
+
+    count(): count(3)
 }
 ```
 Technically we only need `;:.` for methods, we could look under the namespace
