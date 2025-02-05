@@ -138,18 +138,17 @@ However, I'm not a big fan of this because then we lose some symmetry between
 class methods/variables (`my X` or `i x()`) compared to instance methods/variables
 (`My X` and `I x()`).  It also doesn't look as good for things like
 ```
-vector3: [X; dbl, Y; dbl, Z; dbl]
-{   ::dot(You): dbl
-        ::X * Your X + ::Y * Your Y + ::Z * Your Z
-    ::cross(You): vector3
-    (   # you can use `You` or `Your` in this block:
-        X. ::Y * Your Z - ::Z * Your Y
-        Y. ::Z * Your X - ::X * Your Z
-        Z. ::X * Your Y - ::Y * Your X
+vector3[of: number]: [X; of, Y; of, Z; of]
+{   ::dot(O): of
+        ::X * O X + ::Y * O Y + ::Z * O Z
+    ::cross(O): vector3
+    (   X. ::Y * O Z - ::Z * O Y
+        Y. ::Z * O X - ::X * O Z
+        Z. ::X * O Y - ::Y * O X
     )
 
     ;;project(Along: vector3): null
-        print(count())  # is this `my count` or `count` the type?
+        print(count())  # is this `m count()` or `count()` the type?
         Dot: ::dot(Along)
         ;;X = Dot * Along X
         ;;Y = Dot * Along Y
@@ -166,42 +165,12 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
             2 {(:;Z)}
 
     count(): count(3)
-}
-# or with `Me/My`:
-vector3: [X; dbl, Y; dbl, Z; dbl]
-{   ::dot(You): dbl
-        My X * Your X + My Y * Your Y + My Z * Your Z
-    
-    ::cross(You): vector3
-    (   # you can use `You` or `Your` in this block:
-        X. My Y * Your Z - My Z * Your Y
-        Y. My Z * Your X - My X * Your Z
-        Z. My X * Your Y - My Y * Your X
-    )
 
-    ;;project(Along: vector3): null
-        print(count())  # is this `my count` or `count` the type?
-        Dot: dot(Me, Along)     # or `Dot: I dot(Along)`
-        My X = Dot * Along X
-        My Y = Dot * Along Y
-        My Z = Dot * Along Z
-
-    # number of non-zero components.
-    ::count_nonzero(): count
-        # count(True) == 1 and count(False) == 0:
-        count(My X != 0.0) + count(My Y != 0.0) + count(My Z != 0.0)
-
-    :;[One_of[0, 1, 2]]: (Dbl:;)
-        what One_of
-            0 {(My X:;)}
-            1 {(My Y:;)}
-            2 {(My Z:;)}
-
-    count(): count(3)
+    vector4: vector4[of]
 }
 # replacing `Me/My/I` with `M` and `You` with `O`ther.
-vector3: [X; dbl, Y; dbl, Z; dbl]
-{   ::dot(O): dbl
+vector3[of: number]: [X; of, Y; of, Z; of]
+{   ::dot(O): of
         M X * O X + M Y * O Y + M Z * O Z
     
     ::cross(O): vector3
@@ -211,7 +180,7 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
     )
 
     ;;project(Along: vector3): null
-        print(count())  # is this `m count` or `count` the type?
+        print(count())  # is this `m count()` or `count()` the type?
         Dot: dot(M, Along)     # or `Dot: M dot(Along)`
         M X = Dot * Along X
         M Y = Dot * Along Y
@@ -230,37 +199,6 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
 
     count(): count(3)
 }
-# without Me/My (C++ style)
-vector3: [X; dbl, Y; dbl, Z; dbl]
-{   ::dot(O): dbl
-        X * O X + Y * O Y + Z * O Z
-    ::cross(O): vector3
-    (   X. Y * O Z - Z * O Y
-        Y. Z * O X - X * O Z
-        Z. X * O Y - Y * O X
-    )
-    ;;project(Along: vector3): null
-        print(count())  # is this `my count` or `count` the type?
-        Dot: dot(Along)
-        X = Dot * Along X
-        Y = Dot * Along Y
-        Z = Dot * Along Z
-
-    # number of non-zero components.
-    ::count_nonzero(): count
-        # count(True) == 1 and count(False) == 0:
-        count(X != 0.0) + count(Y != 0.0) + count(Z != 0.0)
-
-    :;[One_of[0, 1, 2]]: (Dbl:;)
-        what One_of
-            0 {(X:;)}
-            1 {(Y:;)}
-            2 {(Z:;)}
-
-    count(): count(3)
-
-    # TODO: `each`
-}
 ```
 Technically we only need `;:.` for methods, we could look under the namespace
 of `My` for any variables we don't recognize.  The main thing that I do want
@@ -277,9 +215,10 @@ non_negative: [Value; int]
     er: one_of[Negative]
 }
 ```
-However, I thought we wanted to avoid collisions between class functions
-and class methods; if `x some_fn()` is defined, then `X some_fn()` should
-do the same thing.
+I think we have to give up on this as it's not consistent with variables and methods.
+`m hm[me]` isn't that much more verbose than `hm[me]`.  Alternatively you can define
+`hm` in the root scope, which may be desired for generic classes anyway, since you
+don't need to specify the generic.
 
 Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
@@ -1274,7 +1213,7 @@ scaled8:
     Scale: 32_u8
 
     i(Flt): hm[ok: me, er: one_of[Negative, Too_big]]
-        Scaled_value: round(Flt * Scale)
+        Scaled_value: round(Flt * m Scale)
         if Scaled_value < 0
             return Negative
         if Scaled_value > u8 max() flt()
@@ -1286,14 +1225,14 @@ scaled8:
     # this can be called like `flt(Scaled8)` or `Scaled8 flt()`.
     ::flt(): flt
         # `u8` types have a `flt` method.
-        My Scaled_value flt() / my Scale flt()
+        My Scaled_value flt() / m Scale flt()
 
     # if you have representability issues, you can return a result instead.
     ::int(): hm[ok: int, Number_conversion er]
-        if My Scaled_value % my Scale != 0
+        if My Scaled_value % m Scale != 0
             Number_conversion Not_an_integer
         else
-            My Scaled_value // my Scale
+            M Scaled_value // m Scale
 }
 
 # global function; can also be called like `Scaled8 dbl()`.
