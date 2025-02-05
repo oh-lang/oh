@@ -159,6 +159,12 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
         # count(True) == 1 and count(False) == 0:
         count(::X != 0.0) + count(::Y != 0.0) + count(::Z != 0.0)
 
+    :;[.One_of[0, 1, 2]]: (:;Dbl)
+        what One_of
+            0 {(:;X)}
+            1 {(:;Y)}
+            2 {(:;Z)}
+
     count(): count(3)
 }
 # or with `Me/My`:
@@ -175,7 +181,7 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
 
     ;;project(Along: vector3): null
         print(count())  # is this `my count` or `count` the type?
-        Dot: dot(Me, Along)     # or `Dot: ::dot(Along)`
+        Dot: dot(Me, Along)     # or `Dot: I dot(Along)`
         My X = Dot * Along X
         My Y = Dot * Along Y
         My Z = Dot * Along Z
@@ -184,6 +190,43 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
     ::count_nonzero(): count
         # count(True) == 1 and count(False) == 0:
         count(My X != 0.0) + count(My Y != 0.0) + count(My Z != 0.0)
+
+    :;[One_of[0, 1, 2]]: (Dbl:;)
+        what One_of
+            0 {(My X:;)}
+            1 {(My Y:;)}
+            2 {(My Z:;)}
+
+    count(): count(3)
+}
+# replacing `Me/My/I` with `M` and `You` with `O`ther.
+vector3: [X; dbl, Y; dbl, Z; dbl]
+{   ::dot(O): dbl
+        M X * O X + M Y * O Y + M Z * O Z
+    
+    ::cross(O): vector3
+    (   X. M Y * O Z - M Z * O Y
+        Y. M Z * O X - M X * O Z
+        Z. M X * O Y - M Y * O X
+    )
+
+    ;;project(Along: vector3): null
+        print(count())  # is this `m count` or `count` the type?
+        Dot: dot(M, Along)     # or `Dot: M dot(Along)`
+        M X = Dot * Along X
+        M Y = Dot * Along Y
+        M Z = Dot * Along Z
+
+    # number of non-zero components.
+    ::count_nonzero(): count
+        # count(True) == 1 and count(False) == 0:
+        count(M X != 0.0) + count(M Y != 0.0) + count(M Z != 0.0)
+
+    :;[One_of[0, 1, 2]]: (Dbl:;)
+        what One_of
+            0 {(M X:;)}
+            1 {(M Y:;)}
+            2 {(M Z:;)}
 
     count(): count(3)
 }
@@ -208,7 +251,15 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
         # count(True) == 1 and count(False) == 0:
         count(X != 0.0) + count(Y != 0.0) + count(Z != 0.0)
 
+    :;[One_of[0, 1, 2]]: (Dbl:;)
+        what One_of
+            0 {(X:;)}
+            1 {(Y:;)}
+            2 {(Z:;)}
+
     count(): count(3)
+
+    # TODO: `each`
 }
 ```
 Technically we only need `;:.` for methods, we could look under the namespace
