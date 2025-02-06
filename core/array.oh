@@ -19,20 +19,20 @@ array[of, capacity: count]: all_of
     ;;capacity(Capacity.): null 
 
     ::count(): count
-        My Count
+        M Count
 
     ;;count[Require: of is defaultable](@New Count): hm[count]
-        @Old Count: My Count
+        @Old Count: M Count
         if @New Count == @Old Count
             return ok(@Old Count)
         if @New Count > @Old Count
-            My capacity(At_least: Count) assert()
-            while My Count < @New Count
+            M capacity(At_least: Count) assert()
+            while M Count < @New Count
                 append(of())
         else
             assert(@New Count >= 0, er Invalid_count)
-            while My Count > @New Count
-                @Unused Of: I pop()
+            while M Count > @New Count
+                @Unused Of: M pop()
         ok(@Old Count)
 
     clear: one_of[Keeping_capacity, Dropping_capacity]
@@ -41,23 +41,23 @@ array[of, capacity: count]: all_of
     }
 
     ;;clear(Clear: clear = Keeping_capacity): null
-        while My Count > 0
-            @Unused Of: I pop()
+        while M Count > 0
+            @Unused Of: M pop()
         what One_of
             Keeping_capacity
                 pass
             Dropping_capacity
-                My capacity(0)
+                M capacity(0)
 
     ;;append(Of.): hm[null]
    
     :;[In_bounds.]: (Of:;)
 
-    # moves and resets the value at this index.
+    # moves out and resets the value at this index.
     ;;[Index.]!?: of
-        what My in_bounds(Index)
+        what M in_bounds(Index)
             Ok.
-                My[Ok]!
+                M[Ok]!
             @Ignore Er.
                 Null
 
@@ -68,40 +68,40 @@ array[of, capacity: count]: all_of
     
     # returns a value of the array element at the specified index,
     # or the end of the array if not specified.  returns null if the element
-    # would be out of bounds (e.g., `Index >= My count()`).
+    # would be out of bounds (e.g., `Index >= M count()`).
     ;;pop(Index.)?: of
-        # don't resize the array in case `Index >= My Count`.
-        what My in_bounds(Index)
+        # don't resize the array in case `Index >= M Count`.
+        what M in_bounds(Index)
             # TODO: shouldn't this be `Ok. in_bounds` if we're going to be pedantic
             #       with naming?  otherwise we shouldn't use `@Named Ok` in the definition
             #       of `hm`, and it would just be `In_bounds.`
             Ok.
-                I pop(Ok)
+                M pop(Ok)
             @Ignore Er.
                 Null
-        # alternatively: `My in_bounds(Index) map((Ok.): I pop(Ok), (@Unused Er.): Null)`
+        # alternatively: `M in_bounds(Index) map((Ok.): M pop(Ok), (@Unused Er.): Null)`
 
     ;;pop(In_bounds.): of
-        debug assert(In_bounds >= 0 and In_bounds < My count())
-        Result: My[In_bounds]!
-        I erase(In_bounds)
+        debug assert(In_bounds >= 0 and In_bounds < M count())
+        Result: M[In_bounds]!
+        M erase(In_bounds)
         Result
 
     ;;erase(Index.): capacity
-        if My in_bounds(Index) is Ok.
-            I erase(Ok)
+        if M in_bounds(Index) is Ok.
+            M erase(Ok)
         else
             0
 
     ;;erase(In_bounds.): capacity
-        debug assert(In_bounds >= 0 and In_bounds < My count())
-        range(In_bounds, My count() - 1) each Destination_index:
-            My[Destination_index] = My[In_bounds: Destination_index + 1]!
-        I pop()
+        debug assert(In_bounds >= 0 and In_bounds < M count())
+        range(In_bounds, M count() - 1) each Destination_index:
+            M[Destination_index] = M[In_bounds: Destination_index + 1]!
+        M pop()
         1
 
-    !!(Me): bool
-        count(Me) > 0
+    !!(M): bool
+        count(M) > 0
 
     # returns a copy of this array, but sorted.
     # only makes sense if `of` is orderable.
@@ -140,14 +140,14 @@ array[of, capacity: count]: all_of
 
     ::hash(~Builder;):
     {   Builder hash(of)  # make array hashes distinct based on type.
-        My each (Index., Of:)
+        M each (Index., Of:)
             Builder hash(Index)
             Builder hash(Of)
     }
 
     ;;capacity(At_least: count): hm[null]
-        Current_capacity: My capacity()
+        Current_capacity: M capacity()
         if At_least <= Current_capacity 
             return ok()
-        My capacity(Current_capacity double_or_max(At_least. 4))
+        M capacity(Current_capacity double_or_max(At_least. 4))
 }

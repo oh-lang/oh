@@ -9,13 +9,13 @@ ordinal[wrapping: hoisted_primitive]: all_of
 [   [@private Value; wrapping]
     integer
 ]
-{   i(Wrapping. wrapping): hm[me, number er]
+{   m(Wrapping. wrapping): hm[m, number er]
         if Wrapping > 0
             [Value: Wrapping]
         else
             Unrepresentable
 
-    i(Index[signed[wrapping]].): hm[me, number er]
+    m(Index[signed[wrapping]].): hm[m, number er]
         if Index >= 0
             Value: Index hoisted()
                 ??  panic("Hoisting should be able to represent all positive indices")

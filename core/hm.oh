@@ -25,12 +25,12 @@ hm[ok, er]: one_of[ok, er]
     #       )
     #   ```
     ..assert[block_return: contains[er]](Block[~block_return]): ok
-        what Me
+        what M
             Ok: $(Ok)
             Er: $(debug error(Er), Block exit(Er))
 
     # The API is `Ok: Hm assert(Er: "custom error if not `ok`")`.
-    # This will moot `Me` and shortcircuit a failure (i.e., if `Hm`
+    # This will moot `M` and shortcircuit a failure (i.e., if `Hm`
     # is `er`) to the calling block.  For example,
     #   ```
     #   do_something(Dbl): hm[ok: dbl, er: str]
@@ -55,13 +55,13 @@ hm[ok, er]: one_of[ok, er]
     #       )
     #   ```
     ..assert[block_return: contains[new_er]](@New Er: ~new_er, Block[~block_return]): ok
-        what Me
+        what M
             Ok: $(Ok)
             Er:
                 debug error(Er)
                 Block exit(@New Er)
 
-    # maps an `Ok` result to a different type of `ok`, consuming `Me`.
+    # maps an `Ok` result to a different type of `ok`, consuming `M`.
     # since this is a `@Named` namespace, we need to use `My_hm map((Ok.): Ok + 3)`
     # instead of whatever type `ok` is, e.g., `My_hm map((Int.): Int + 3)` would not work.
     # TODO: maybe use `@As` instead of `@Named`.
@@ -71,7 +71,7 @@ hm[ok, er]: one_of[ok, er]
     #       things get worse if we allow output-type overloading; then we need `Hm! map(my_fn($$Ok) Int)`.
     ..map(fn(@Named Ok.): @A~ok): hm[@A ok, er]
 
-    # maps an `Ok` result to a different type of `ok`, with possibly an error, consuming `Me`.
+    # maps an `Ok` result to a different type of `ok`, with possibly an error, consuming `M`.
     # TODO: namespaces are kinda annoying.  can we do `a_ok` and just match the suffix for `hm[a_ok, er]`?  
     #       there's some ambiguity, however, if our type name has `_` inside, e.g., `fixed_array`.
     ..map(fn(@Named Ok.): hm[@A~ok, er]): hm[@A ok, er]
@@ -87,18 +87,18 @@ hm[ok, er]: one_of[ok, er]
     ..map(@Ok fn(@Named Ok.): ~t, @Er fn(@Named Er.): t): t
 
     # runs a callback if OK but returns self
-    ..check(fn(@Named Ok): null): me
+    ..check(fn(@Named Ok): null): m
 
     # runs a callback if not OK but returns self
-    ..check(fn(@Named Er): null): me
+    ..check(fn(@Named Er): null): m
 
     # runs different callbacks based on OK/not-OK but returns self
     # TODO: namespaces are kinda annoying.  can we do `ok_fn` and `er_fn` and just
     #       match the suffix for an existing type?  
-    ..check(@Ok fn(@Named Ok): null, @Er fn(@Named Er): null): me
+    ..check(@Ok fn(@Named Ok): null, @Er fn(@Named Er): null): m
 
     # TODO: should we use `to` here or is there a better way to indicate casting?
     # it's technically something like `one_of[ok, null](Result: hm[ok, er]): one_of[ok, null]`
-    # which is pretty verbose.  could use `(Me.): one_of[ok, null]` for implicit conversion
+    # which is pretty verbose.  could use `(M.): one_of[ok, null]` for implicit conversion
     ..to(): one_of[ok, null]
 }

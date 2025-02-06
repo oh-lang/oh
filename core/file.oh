@@ -1,5 +1,5 @@
 file[Mode]: [@private File_handle]
-{   i(Path.): hm[me]
+{   m(Path.): hm[m]
 
     # moves the file pointer to the byte specified by `Count`.
     ;;seek(Count): hm[null]
@@ -39,7 +39,7 @@ mode: one_of
     # TODO: Truncate_write??
 ]
 {   ::is_writable(): bool
-        what Me
+        what M
             Read_write
                 True
             Read_only
@@ -48,7 +48,7 @@ mode: one_of
     @alias is_writeable: is_writable
 
     ::is_readable(): bool
-        what Me
+        what M
             Read_only
             Read_write
                 True

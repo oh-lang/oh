@@ -90,7 +90,7 @@ symmetric[wrapping: signed_primitive]: all_of
 [   [@private Value; wrapping]
     integer
 ]
-{   i(Wrapping.): hm[number er, me]
+{   m(Wrapping.): hm[number er, m]
         if Wrapping == wrapping min()
             Unrepresentable
         else
@@ -126,13 +126,13 @@ hoisted[wrapping: signed_primitive]: all_of
 [   [@private Negated_value; wrapping]
     integer
 ]
-{   i(Wrapping.): hm[number er, ok: me]
+{   m(Wrapping.): hm[number er, ok: m]
         if Wrapping == wrapping min()
             Unrepresentable
         else
             [Negated_value: -Wrapping]
 
-    i(Negated. wrapping): me
+    m(Negated. wrapping): m
         [Negated_value: Negated]
 
     @negated_integer(Negated_value)

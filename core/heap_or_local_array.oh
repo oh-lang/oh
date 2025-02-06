@@ -1,55 +1,77 @@
 # stores up to 9_223_372_036_854_775_808 elements.
-# uses at least 8 bytes for a pointer + 8 bytes for count & locality.
+# uses at least 8 bytes for a pointer + 8 bytes for count.
 # setting `Local_bytes: 16` thus doesn't provide any room for a local array.
 heap_or_local_array64[of, Local_bytes]:
-        heap_or_local_array[of, locality: h64, Local_bytes]
+        heap_or_local_array[of, special_count: h64, Local_bytes]
 
 # efficiently stores up to 2_147_483_648 elements, more being less efficient.
-# uses at least 8 bytes for a pointer + 4 bytes for count & locality.
+# uses at least 8 bytes for a pointer + 4 bytes for count & special_count.
 heap_or_local_array32[of, Local_bytes]:
-        heap_or_local_array[of, locality: h32, Local_bytes]
+        heap_or_local_array[of, special_count: h32, Local_bytes]
 
 # efficiently stores up to 32_768 elements, more being less efficient.
-# uses at least 8 bytes for a pointer + 2 bytes for count & locality.
+# uses at least 8 bytes for a pointer + 2 bytes for count & special_count.
 heap_or_local_array16[of, Local_bytes]:
-        heap_or_local_array[of, locality: h16, Local_bytes]
+        heap_or_local_array[of, special_count: h16, Local_bytes]
 
 # efficiently stores up to 128 elements, more being less efficient.
-# uses at least 8 bytes for a pointer + 1 byte for count & locality.
+# uses at least 8 bytes for a pointer + 1 byte for count & special_count.
 heap_or_local_array8[of, Local_bytes]:
-        heap_or_local_array[of, locality: h8, Local_bytes]
+        heap_or_local_array[of, special_count: h8, Local_bytes]
 
 # for simplicity, rounds to multiples of 8 bytes.
 Local_bytes: one_of[16, 24, 32, 40, 48, 56, 64]
-
-// TODO: make ShtickN(i16), (i32), (i64)
-// with corresponding local capacities of 14 bytes (16 bytes total local bytes)
-// 20 bytes (24 bytes total), and 24 bytes (32 bytes), respectively.
-
 
 # array that is local up to a certain capacity (`Max_unallocated_count`)
 # and allocated on the heap past that.
 @align(8)
 heap_or_local_array
-[   locality: hoisted_primitive
+[   special_count: hoisted_primitive
     of
     Local_bytes
     # ensure that `Efficient_allocation` doesn't increase the size of this struct past `Local_bytes`.
-    Require: Local_bytes >= count_bytes(efficient_allocation[locality, of]) + count_bytes(locality)
+    Require: Local_bytes >= count_bytes(efficient_allocation[special_count, of]) + count_bytes(special_count)
 ]: all_of
-[   @private@
+[   @private m:
     [   Union; c_union
         [   Unallocated; vector[Max_unallocated_count, of]
-            Efficient_allocation; efficient_allocation[locality, of]
+            Efficient_allocation; efficient_allocation[special_count, of]
             Inefficient_allocation; ptr[heap_array[of]]
         ]
-        Special_count; locality
+        Special_count;
     ]
     array[of]
 ]
-{   Max_unallocated_count: (Local_bytes - count_bytes(locality)) // count_bytes(of)
+{   Max_unallocated_count: (Local_bytes - count_bytes(special_count)) // count_bytes(of)
+    Local_zero_start: special_count(1)
+    Null_special_count: m Local_zero_start + m Max_unallocated_count
+    Inefficient_special_count: special_count max() // 2
+
+    @private
+    ::locality(): locality
+        if M Special_count < Local_zero_start
+            Allocated_efficiently
+        elif M Special_count < Null_special_count
+            Local
+        elif M Special_count == Inefficient_special_count
+            Allocated_inefficiently
+        else
+            panic("heap_or_local_array was null or something else")
+
+    ?: m
+    {   Null: [Special_count: m Null_special_count]
+        ::is(null): M Special_count == Null_count
+    }
 }
 
+@private
 efficient_allocation[locality: hoisted_primitive, of]:
 [   Allocation[of, capacity: hoisted_primitive]
+]
+
+@private
+locality: one_of
+[   Local
+    Allocated_efficiently
+    Allocated_inefficiently
 ]

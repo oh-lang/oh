@@ -68,7 +68,7 @@
 
 @protected
 test_context: [@protected Printed; array[str], @protected Name; str]
-{   i()
+{   m()
     {   print
     }
     # TODO
@@ -77,55 +77,61 @@ test_context: [@protected Printed; array[str], @protected Name; str]
 
     @private
     ;;push(Str: str):
-        My Name &= Str
+        M Name &= Str
 
     @private
     ;;pop(Str: str):
-        assert(My Name ends_with(Str)) ?? panic("test_context needs to match push/pop")
-        My Name count(My Name count() - Str count())
-        if My Name ends_with(' ')
-            My Name pop()
+        assert(M Name ends_with(Str)) ?? panic("test_context needs to match push/pop")
+        M Name count(M Name count() - Str count())
+        if M Name ends_with(' ')
+            M Name pop()
 }
         
 
-test[of]: [Of]
-{   i(~T.): test[t]
-        [T!]
+test[of]: [Of, Oh_line]
+{   g(~T., @Oh_line): g[t]
+        [T, Oh_line]
 
     ::==(Of): bool
-        if My Of == Of
+        if M Of == Of
             return True
-        panic("expected ${My Of} == ${Of}")
+        error("expected ${M Of} == ${Of} at ${M Oh_line}")
+        panic("expected ${M Of} == ${Of}")
         False
 
     ::!=(Of): bool
-        if My Of != Of
+        if M Of != Of
             return True
-        panic("expected ${My Of} != ${Of}")
+        error("expected ${M Of} != ${Of} at ${M Oh_line}")
+        panic("expected ${M Of} != ${Of}")
         False
 
     ::>=(Of): bool
-        if My Of >= Of
+        if M Of >= Of
             return True
-        panic("expected ${My Of} >= ${Of}")
+        error("expected ${M Of} >= ${Of} at ${M Oh_line}")
+        panic("expected ${M Of} >= ${Of}")
         False
 
     ::<=(Of): bool
-        if My Of <= Of
+        if M Of <= Of
             return True
-        panic("expected ${My Of} <= ${Of}")
+        error("expected ${M Of} <= ${Of} at ${M Oh_line}")
+        panic("expected ${M Of} <= ${Of}")
         False
         
     ::>(Of): bool
-        if My Of > Of
+        if M Of > Of
             return True
-        panic("expected ${My Of} > ${Of}")
+        error("expected ${M Of} > ${Of} at ${M Oh_line}")
+        panic("expected ${M Of} > ${Of}")
         False
 
     ::<(Of): bool
-        if My Of < Of
+        if M Of < Of
             return True
-        panic("expected ${My Of} < ${Of}")
+        error("expected ${M Of} < ${Of} at ${M Oh_line}")
+        panic("expected ${M Of} < ${Of}")
         False
 }
 
@@ -148,6 +154,7 @@ test[of]: [Of]
 @test ">=":
     @test "works for ints":
         test(5) >= 3
+        test(4) >= 4
         test(10) >= 10
 
     @test_panics "expected 5 >= 6":
@@ -156,6 +163,7 @@ test[of]: [Of]
 @test "<=":
     @test "works for ints":
         test(5) <= 6
+        test(7) <= 7
         test(12) <= 12
 
     @test_panics "expected 7 <= 6":
@@ -169,6 +177,9 @@ test[of]: [Of]
     @test_panics "expected 7 < -1":
         test(7) < -1
 
+    @test_panics "expected -1 < -1":
+        test(-1) < -1
+
 @test ">":
     @test "works for ints":
         test(5) > 3
@@ -176,3 +187,6 @@ test[of]: [Of]
 
     @test_panics "expected -1 > 1":
         test(-1) > 1
+
+    @test_panics "expected 1 > 1":
+        test(1) > 1

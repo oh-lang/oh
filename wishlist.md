@@ -2017,6 +2017,37 @@ so that you can define e.g. a nullable `f32` in exactly 32 bits.  To get this fu
 you must declare your variable as type `s8?` or `f32?`, so that the nullable checks
 kick in.
 
+If you are defining a class and want to also declare the nullable at the same time, you
+do the following:
+
+```
+my_class: [@private Some_state: int]
+{   ;;renew(M Some_state: int): Null
+    ::normal_method(): int
+        M Some_state + 3
+
+    # the nullable definition, inside a class:
+    ?: m
+    {   Null: [Some_state: -1]
+        ::is_null(): M Some_state < 0
+
+        ::null_method(): int
+            assert(M Some_state >= 0)
+            M Some_state * 5
+    }
+}
+
+# nullable definition, outside a class (but same file).
+# both internal/external definitions aren't required of course.
+my_class?: my_class
+{   Null: [Some_state: -1]
+    ::is_null(): M Some_state < 0
+    ::null_method(): int
+        assert(M Some_state >= 0)
+        M Some_state * 5
+}
+```
+
 Note that any `one_of` that can be null gets nullable methods.  They are defined globally
 since we don't want to make users extend from a base nullable class.
 
