@@ -113,30 +113,26 @@ or `my_function(Int.): str` for a function which takes a temporary integer.
 This also works for generic classes like `my_generic[of]` where `of` is a template type;
 `my_function(My_generic[int];)` is short for `my_function(My_generic; my_generic[int])`.
 
-Class methods technically take an argument for `Me/My/I` everywhere, which is somewhat
+Class methods technically take an argument for `M` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
-writing `the_method(Me, X: int): str`, we can write `::the_method(X: int): str`.
+writing `the_method(M, X: int): str`, we can write `::the_method(X: int): str`.
 This parallels `my_class::the_method` in C++, but in oh-lang we can analogously use
-`;;a_mutating_method` for a method that can mutate `Me`, i.e.,
-`a_mutating_method(Me;, X: int): str` becomes `;;a_mutating_method(X: int): str`,
-or `..one_temporary_method()` for a method on a temporary `Me`, i.e.,
-`one_temporary_method(Me.)`.  You can substitute `I` or `My` for `Me` anywhere,
-including in methods that only declare one of them in the function arguments.
-We recommend using `My` for field access (e.g., `My X`) as well as getters/setters
-`My x()` or `My x(New_x_value)`, `Me` for returning a copy/clone (e.g., `return Me`),
-and `I` for methods that start with a verb, e.g., `I draw()`.
+`;;a_mutating_method` for a method that can mutate `M`, i.e.,
+`a_mutating_method(M;, X: int): str` becomes `;;a_mutating_method(X: int): str`,
+or `..one_temporary_method()` for a method on a temporary `M`, i.e.,
+`one_temporary_method(M.)`.  
 
-While it would be even more concise to omit `Me/My/I`, we want to support
+While it would be even more concise to omit `M`, we want to support
 overloading keywords such as `pass` or `break`, and to make it clear that
-the overload is requested we need the `Me/My/I` context.
-TODO: can we get rid of the need for `My`/`Me`/`I` and just use `::the_method` or `;;other_method`
-inside function calls?  that way we wouldn't need to prefix `My X` for instance variables either.
+the overload is requested we need the `M` context.
+TODO: can we get rid of the need for `M` and just use `::the_method` or `;;other_method`
+inside function calls?  that way we wouldn't need to prefix `M X` for instance variables either.
 parent variables would still need to be referenced via `Parent X` or `::X`/`;;X`.
 this would be a reason to switch to *prefix* `;:.` for pre-named arguments, so we could do
 `do_something(;;X)` instead of `do_something(;;X;)`.
 However, I'm not a big fan of this because then we lose some symmetry between
-class methods/variables (`my X` or `i x()`) compared to instance methods/variables
-(`My X` and `I x()`).  It also doesn't look as good for things like
+class methods/variables (`m X`) compared to instance methods/variables
+(`M X`).  It also doesn't look as good for things like
 ```
 vector3[of: number]: [X; of, Y; of, Z; of]
 {   ::dot(O): of
@@ -168,7 +164,7 @@ vector3[of: number]: [X; of, Y; of, Z; of]
 
     vector4: vector4[of]
 }
-# replacing `Me/My/I` with `M` and `You` with `O`ther.
+# replacing `M/My/I` with `M` and `You` with `O`ther.
 vector3[of: number]: [X; of, Y; of, Z; of]
 {   ::dot(O): of
         M X * O X + M Y * O Y + M Z * O Z
@@ -201,11 +197,11 @@ vector3[of: number]: [X; of, Y; of, Z; of]
 }
 ```
 Technically we only need `;:.` for methods, we could look under the namespace
-of `My` for any variables we don't recognize.  The main thing that I do want
+of `M` for any variables we don't recognize.  The main thing that I do want
 is for nested types to not require `my` or `i` prefixes, which is annoying.
 ```
 non_negative: [Value; int]
-{   i(Value. int): hm[me]       # instead of `i hm[me]`.
+{   i(Value. int): hm[m]       # instead of `i hm[m]`.
         if Value < 0
             er Negative         # instead of `i er Negative`
         else
@@ -216,9 +212,10 @@ non_negative: [Value; int]
 }
 ```
 I think we have to give up on this as it's not consistent with variables and methods.
-`m hm[me]` isn't that much more verbose than `hm[me]`.  Alternatively you can define
+`m hm[m]` isn't that much more verbose than `hm[m]`.  Alternatively you can define
 `hm` in the root scope, which may be desired for generic classes anyway, since you
-don't need to specify the generic.
+don't need to specify the generic.  let's just figure out a good syntax for shortcut
+of `Class_type: m class_type`, e.g., `m Class_type`.
 
 Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
@@ -283,8 +280,8 @@ same for `A + B` and `A - B`.  `A // B` is safe.  However, instead of making oh-
 we will use `multiply(@First~A, @Second A): hm[ok: a, Number_conversion er]` and then have
 `A1 * A2` always give an `a` instance by panicking if we run out of memory.  i.e.,
 ```
-number::*(You): me
-    Result: multiply(Me, You)
+number::*(You): m
+    Result: multiply(M, You)
     Result ?? panic()
 ```
 Primitive types will do overflow like in other languages without panicking, but you can use, e.g.,
@@ -680,12 +677,12 @@ vector3: [X: dbl, Y: dbl, Z: dbl]
 # but recommended due to the length of the class body.
 my_class: [X: int]
 {   # here's a class function that's a constructor
-    i(X. int): me
-        ++my Count
+    i(X. int): m
+        ++m Count
         [X]
 
     ;;descope(): null
-        --my Count
+        --m Count
 
     # here's a class variable (not defined per instance)
     @private
@@ -693,26 +690,26 @@ my_class: [X: int]
 
     # here's a class function (not defined per instance)
     # which can be called via `my_class count()` outside this class
-    # or `my count()` inside it.
+    # or `m count()` inside it.
     count(): count
         Count
     # for short, `count(): Count`
 
     # methods which keep the class readonly use a `::` prefix
     ::do_something(Y: int): int
-        My X * Y
-    # inline: `::do_something(Y: int): int(My X * Y)`
+        M X * Y
+    # inline: `::do_something(Y: int): int(M X * Y)`
 
     # methods which mutate the class use a `;;` prefix
     ;;update(Y: int): null
-        My X = I do_something(Y)
+        M X = I do_something(Y)
         # also ok, and more specific since we're requiring `I` readonly:
-        # `My X = ::do_something(Y)` or `My X = do_something(Y, Me)`
+        # `M X = ::do_something(Y)` or `M X = do_something(Y, M)`
 }
 ```
 
-Note that we always use `My` (or `I` or `Me`) to scope instance variables/functions
-and `my` (or `i` or `me`) to scope class variables/functions so that we can distinguish
+Note that we always use `M` to scope instance variables/functions
+and `m` to scope class variables/functions so that we can distinguish
 between "shadowed" functions like `my_class count()` (which returns the number of
 `my_class` instances) and `count()` (which constructs an instance of the `count` type).
 
@@ -746,7 +743,7 @@ My_generic: generic(1.23)   # infers `generic[dbl]` for this type.
 # not default named:
 entry[at: hashable, of: number]: [@Named At, Value; of]
 {   ::add(Of): null
-        My Value += Of
+        M Value += Of
 }
 
 Entry[at: str, int](At: "cookies", Value: 123)  # shorthand for `Entry: entry[at: str, int](...)`
@@ -779,10 +776,10 @@ which should be used for their side effects.  For example, `@First` and `@Second
 are reserved for binary operations like `&&` and `*`.  See [namespaces](#namespaces)
 for more details.  Other reserved keywords:
 
-There are some reserved variable names, like `I`, `Me`, and `My`, which can only
-be used as a reference to the current class instance, and `You` and `Your` which
-can only be used as a reference to a different instance of the same type.
-(The corresponding types `i`, `me`, `my`, `you`, and `your` are reserved for the same reasons.)
+There are some reserved variable names, like `M`, which can only
+be used as a reference to the current class instance, and `O` which
+can only be used as a reference to an *O*ther instance of the same type.
+(The corresponding types `m`, and `o` are reserved for the same reasons.)
 
 Most ASCII symbols are not allowed inside identifiers, e.g., `*`, `/`, `&`, etc., but
 underscores (`_`) have some special handling.  They are ignored in numbers,
@@ -1204,7 +1201,7 @@ or a class method, like this:
 
 ```
 scaled8:
-[   # the actual value held by a `scaled8` is `My Scaled_value / my Scale`.
+[   # the actual value held by a `scaled8` is `M Scaled_value / m Scale`.
     @private
     Scaled_value: u8
 ]
@@ -1212,7 +1209,7 @@ scaled8:
     @private
     Scale: 32_u8
 
-    i(Flt): hm[ok: me, er: one_of[Negative, Too_big]]
+    i(Flt): hm[ok: m, er: one_of[Negative, Too_big]]
         Scaled_value: round(Flt * m Scale)
         if Scaled_value < 0
             return Negative
@@ -1225,11 +1222,11 @@ scaled8:
     # this can be called like `flt(Scaled8)` or `Scaled8 flt()`.
     ::flt(): flt
         # `u8` types have a `flt` method.
-        My Scaled_value flt() / m Scale flt()
+        M Scaled_value flt() / m Scale flt()
 
     # if you have representability issues, you can return a result instead.
     ::int(): hm[ok: int, Number_conversion er]
-        if My Scaled_value % m Scale != 0
+        if M Scaled_value % m Scale != 0
             Number_conversion Not_an_integer
         else
             M Scaled_value // m Scale
@@ -1603,17 +1600,17 @@ the RHS operand as writable, and therefore cannot be used if the LHS variable is
 The implicit member access operator ` ` is equivalent to `::` when the LHS is a readonly variable
 and `;;` when the LHS is a writable variable.  When declaring class methods, `::` and `;;` can be
 unary prefixes to indicate readonly/writable-instance class methods.  They are shorthand for adding a
-readonly/writable `I/Me/My` as an argument.
+readonly/writable `M` (self/this) as an argument.
 
 ```
 example_class: [X: int, Y: dbl]
-{   # this `;;` prefix is shorthand for `renew(Me;, ...): null`:
-    ;;renew(My X: int, My Y: dbl): null
+{   # this `;;` prefix is shorthand for `renew(M;, ...): null`:
+    ;;renew(M X: int, M Y: dbl): null
         print("X ${X} Y ${Y}")
 
-    # this `::` prefix is shorthand for `multiply(My: my, ...): dbl`:
+    # this `::` prefix is shorthand for `multiply(M: m, ...): dbl`:
     ::multiply(Z: dbl): dbl
-        My X * My Y * Z
+        M X * M Y * Z
 }
 ```
 
@@ -1635,7 +1632,7 @@ Nested_class[3] A[4] = "oops"    # creates a default [2] and [3], sets [3]'s A t
 
 For class methods, `;;` (`::`) selects the overload with a writable (readonly) class
 instance, respectively.  For example, the `array` class has overloads for sorting, (1) which
-does not change the instance but returns a sorted copy of the array (`::sort(): me`), and
+does not change the instance but returns a sorted copy of the array (`::sort(): m`), and
 (2) one which sorts in place (`;;sort(): null`).  The ` ` (member access) operator will use
 `A:` if the LHS is a readonly variable or `A;` if the LHS is writable.  Some examples in code:
 
@@ -1695,16 +1692,17 @@ There's also an infix `??` type which is a nullish or.
 The operator `!` is always unary (except when combined with equals for not equals,
 e.g., `!=`).  It can act as a prefix operator "not", e.g., `!A`, pronounced "not A",
 or a postfix operator on a variable, e.g., `Z!`, pronounced "Z mooted" (or "moot Z").  In the first
-example, prefix `!` calls the `!(Me): bool` method defined on `A`, which creates a
+example, prefix `!` calls the `!(M): bool` (or `::!(): bool`) method defined on `A`, which creates a
 temporary value of the boolean opposite of `A` without modifying `A`.  In the second
 case, it calls a built-in method on `Z`, which moves the current data out of `Z` into
 a temporary instance of whatever type `Z` is, and resets `Z` to a blank/default state.
+The method would look like `::()!: m` or `(M)!: m`, but again this is defined for you.
 This is a "move and reset" operation, or "moot" for short.  Overloads for prefix `!`
 should follow the rule that, after e.g., `Z!`, checking whether `Z` evaluates to false,
 i.e., by `!Z`, should return true.
 
 Note, it's easier to think about positive boolean actions sometimes than negatives,
-so we allow defining either `!!(Me): bool` or `!(Me): bool` on a class, the former
+so we allow defining either `!!(M): bool` or `::!!(): bool` on a class, the former
 allowing you to cast a value, e.g., `A`, to its positive boolean form `!!A`, pronounced
 "not not A."  Note, you cannot define both `!` and `!!` overloads for a class, since
 that would make things like `!!!` ambiguous.
@@ -1983,10 +1981,10 @@ is null on it.  For example, the signed type `s8` defines null as `-128` like th
 ```
 s8: i8 {@Null: -128}
 
-# roughly equivalent to `s8?: s8 { Null: -128_i8, ::is(null): Me == -128_i8 }`
+# roughly equivalent to `s8?: s8 { Null: -128_i8, ::is(null): M == -128_i8 }`
 ```
 
-Similarly, `f32?` and `f64?` indicate that `NaN` is null via `{@Null: NaN, ::is(null): is_nan(Me)}`,
+Similarly, `f32?` and `f64?` indicate that `NaN` is null via `{@Null: NaN, ::is(null): is_nan(M)}`,
 so that you can define e.g. a nullable `f32` in exactly 32 bits.  To get this functionality,
 you must declare your variable as type `s8?` or `f32?`, so that the nullable checks
 kick in.
@@ -2739,11 +2737,11 @@ that is in method definitions.  Take for example the vector dot product:
 
 ```
 vector2: [X; dbl, Y; dbl]
-{   ;;renew(My X. dbl, My Y. dbl): Null
+{   ;;renew(M X. dbl, M Y. dbl): Null
 
     @order_independent
     ::dot(Vector2): dbl
-        return My X * Vector2 X + My Y * Vector2 Y
+        return M X * Vector2 X + M Y * Vector2 Y
 }
 Vector2: vector2(1, 2)
 Other_vector2: vector2(3, -4)
@@ -2751,8 +2749,8 @@ print(Vector2 dot(Other_vector2))    # prints -5
 print(dot(Vector2, Other_vector2))   # equivalent, prints -5
 ```
 
-The method `::dot(Vector2): dbl` has a function signature `dot(Me, Vector2): dbl`,
-where `Me` is an instance of `vector2`, so ultimately this function creates a global
+The method `::dot(Vector2): dbl` has a function signature `dot(M, Vector2): dbl`,
+where `M` is an instance of `vector2`, so ultimately this function creates a global
 function with the function signature `dot(Vector2, Vector2): dbl`.  Therefore this function
 *must* be order independent and should be annotated as such.  Otherwise it is
 a compiler error.
@@ -2763,21 +2761,20 @@ One example is the cross product of two vectors, where order matters but the
 names of the vectors don't.  (The relationship between the two orders is also
 somewhat trivial, `A cross(B) == -B cross(A)`, and this simplicity should be aspired to.)
 The way to accomplish this in oh-lang is to use `@First` and `@Second` namespaces for
-each variable.  If defined in a method, `Me` will be assumed to be namespaced as `@First`,
+each variable.  If defined in a method, `M` will be assumed to be namespaced as `@First`,
 so you can use `@Second` for the other variable being passed in.  Using `@First` and `@Second`
 allows you to avoid the compiler errors like `@order_independent` does.  You can also
-use `You` as the variable name which in the class body is the same as `@Second Me`.
+use `O` as the variable name which in the class body is the same as `@Second M`.
 
 ```
 vector3: [X; dbl, Y; dbl, Z; dbl]
-{   ;;renew(My X. dbl, My Y. dbl, My Z. dbl): Null
+{   ;;renew(M X. dbl, M Y. dbl, M Z. dbl): Null
 
     # defined in the class body, we do it like this:
-    ::cross(You): vector3
-    (   # you can use `You` or `Your` in this block:
-        X. My Y * Your Z - My Z * Your Y
-        Y. My Z * Your X - My X * Your Z
-        Z. My X * Your Y - My Y * Your X
+    ::cross(O): vector3
+    (   X. M Y * O Z - M Z * O Y
+        Y. M Z * O X - M X * O Z
+        Z. M X * O Y - M Y * O X
     )
 }
 
@@ -2792,7 +2789,7 @@ cross(@First Vector3, @Second Vector3): vector3
 
 One final note is that operations like `+` should be order independent, whereas `+=` should be
 order dependent, since the method would look like this: `;;+=(Vector2)`, which is
-equivalent to `+=(Me;, Vector2)`, where the first argument is writable.  These
+equivalent to `+=(M;, Vector2)`, where the first argument is writable.  These
 two arguments can be distinguished because of the writeability.
 
 ## function overloads
@@ -3100,7 +3097,7 @@ things outside the function block.  Inside the function block, pass-by-value
 arguments are mutable, and can be reassigned or modified as desired.
 Similar to Rust, variables that can be easily copied implement a `::copy(): me`
 method, while variables that may require large allocations should only implement
-`;;renew(@Other Me): null` (essentially a C++ copy constructor).  This is done
+`;;renew(@Other M): null` (essentially a C++ copy constructor).  This is done
 by default for most oh-lang classes.
 
 Functions can also be defined with writable or readonly reference arguments, e.g., via
@@ -3787,7 +3784,7 @@ means that the return type is nullable.  The possible combinations are therefore
 
 ```
 # creating an optional function in a class:
-example: [X: dbl, optional_fn?(Me, Z: dbl); int]
+example: [X: dbl, optional_fn?(M, Z: dbl); int]
 
 Example; example(X: 5)
 
@@ -4030,16 +4027,13 @@ to refer to the current class instance type.  E.g.,
 my_class: [Variable_x: int]
     ::copy(): me    # OK
         print("logging a copy")
-        return me(Me)   # or fancier copy logic
+        return m(M)   # or fancier copy logic
 ```
 
-Inside a class method, you must use `Me/My/I` to refer to any other instance variables or methods,
-e.g., `My X` or `I do_stuff_method()`, so that we can disambiguate calling a global function
+Inside a class method, you must use `M` to refer to any other instance variables or methods,
+e.g., `M X` or `M do_stuff_method()`, so that we can disambiguate calling a global function
 that might have the same name as our class instance method, or using a global variable that
 might have the same name as a class instance variable.
-TODO: is this really necessary?  it'd be nice to assume `My` and then try `me` and then finally
-try global methods, for concision.  if we don't allow shadowing variables, we probably can
-avoid shadowing method/function names.
 
 Note that when returning a newly-declared type from a function (e.g., `my_fn(Int): [X: int, Y: dbl]`),
 we do not allow building out the class body; any indented block will be assumed
@@ -4079,12 +4073,12 @@ example_class: parent_class
     # individually for each class instance, unlike a class function/method
     # which is shared.
     # we define a default for this function but you could change its definition in a constructor.
-    # NOTE: instance functions can use `Me`/`My`/`I` as necessary.
+    # NOTE: instance functions can use `M` as necessary.
     #       even though we could use the notation `::instance_function()` here,
     #       we prefer to keep that for methods, to make it more clear that
     #       this is different in principle.
-    instance_function(Me): null
-        print("hello ${My X}!")
+    instance_function(M): null
+        print("hello ${M X}!")
 
     # this class instance function can be changed after the instance has been created
     # (due to being declared with `;`), as long as the instance is mutable.
@@ -4251,15 +4245,14 @@ be called).
 ## instance functions, class functions, and methods
 
 Class methods can access instance variables and call other class methods,
-and require a `My: my`, `I; i`, or `Me. me` argument to indicate that it's an instance method.
-(`I`, `Me`, and `My` are all interchangeable.)
-Mutating methods -- i.e., that modify the class instance, `My/Me/I`, i.e., by modifying
-its values/variables -- must be defined with `I;` in the arguments.
-Non-mutating methods must be defined with `I:` and can access variables but not modify them.
-Methods defined with `I.` indicate that the instance is temporary.  We'll use
+and require a `M: m` argument to indicate that it's an instance method.
+Mutating methods -- i.e., that modify the class instance, `M`, i.e., by modifying
+its values/variables -- must be defined with `M;` in the arguments.
+Non-mutating methods must be defined with `M:` and can access variables but not modify them.
+Methods defined with `M.` indicate that the instance is temporary.  We'll use
 the shorthand notation `Some_class..temporary_method()` to refer to a temporary instance method,
 `Some_class;;some_mutating_method()` to refer to a mutable instance method,
-and `Some_class::some_method()` to refer to a readonly instance method, with an implicit `I` due
+and `Some_class::some_method()` to refer to a readonly instance method, with an implicit `M` due
 to the class instance `Some_class` being present.  Calling a class method does not require
 the `..`, `;;`, or `::` prefix, but it is allowed, e.g.,
 
@@ -4283,14 +4276,14 @@ You can also call a class method via an inverted syntax, e.g., `some_method(Some
 `some_mutating_method(Some_class;)`, or `temporary_method(Some_class!)`,
 with any other arguments to the method added as well.
 This is useful to overload e.g., the printing of your class instance, via defining
-`print(Me)` as a method, so that `print(Some_class)` will then call `Some_class::print()`.
-Similarly, you can do `count(Some_class)` if `Some_class` has a `count(Me)` method, which
+`print(M)` as a method, so that `print(Some_class)` will then call `Some_class::print()`.
+Similarly, you can do `count(Some_class)` if `Some_class` has a `count(M)` method, which
 all container classes have.  This also should work for multiple argument methods, since
 `Array swap(Index1, Index2)` can easily become `swap(Array;, Index1, Index2)`.
 
 And of course, class methods can also be overridden by child classes (see section on overrides).
 
-Class functions can't depend on the instance, i.e., `I/Me/My`.  They can
+Class functions can't depend on the instance, i.e., `M`.  They can
 be called from the class name, e.g., `x my_class_function()`, or
 from an instance of the class, e.g., `X my_class_function()`.  Note that because of this,
 we're not allowed to define class functions with the same overload as instance methods.
@@ -4306,7 +4299,7 @@ Class constructors can be defined in two ways, either as a method or as a class 
 Class *method* constructors are defined with the function signature (a) `;;renew(Args...): null`
 or (b) `;;renew(Args...): hm[ok: null, er: ...]`, and these methods also allow you to renew an
 existing class instance as long as the variable is writable.  Class *function* constructors
-are defined like (c) `i(Args...): me` or (d) `i(Args...): hm[ok: me, er: ...]`.  In both
+are defined like (c) `i(Args...): m` or (d) `i(Args...): hm[ok: m, er: ...]`.  In both
 (a) and (c) cases, you can use them like `MyVar: myClass(Args...)`, and for (b) and (d)
 you use them like `MyVar: myClass(Args...) assert()`.
 
@@ -4365,8 +4358,8 @@ file as the class definition*.  Non-friends are not able to access or modify pri
 The privacy for methods on a class follows the same table.
 Using the method depends on visibility as well
 as if the method modifies the class or not, i.e., whether the method was
-defined as `mutating_method(My;): return_type` (AKA `;;mutating_method(): return_type`)
-or `non_mutating_method(My): return_type` (AKA `::non_mutating_method(): return_type`).
+defined as `mutating_method(M;): return_type` (AKA `;;mutating_method(): return_type`)
+or `non_mutating_method(M): return_type` (AKA `::non_mutating_method(): return_type`).
 Mutating methods follow the "mutate" visibility in the table above, and non-mutating methods follow
 the "access" visibility in the table above.
 
@@ -4402,7 +4395,7 @@ named the `function_case` version of the `Variable_case` variable,
 with various arguments to determine the desired action.
 TODO: at some point we need to have a "base case" so that we don't infinitely recurse;
 should a parent class not call the child class accessors?  or should we only
-not recurse when we're in a method like `;;x(X): { My X = X }`?  or should we
+not recurse when we're in a method like `;;x(X): { M X = X }`?  or should we
 avoid recursing if the variable was defined in the class itself?  (probably the
 latter, as it's the least surprising.)
 
@@ -4421,28 +4414,28 @@ example:
 {   # no-copy readonly reference getter.
     @visibility
     ::x(): (Str)
-        return (My X)
+        return (M X)
 
     # no-copy writable reference getter.
     ;;x(): (Str;)
-        return (My X;)
+        return (M X;)
 
     # copy getter; has lower priority than no-copy getters.
     ::x(): Str
-        return My X
+        return M X
 
     # setter.
     ;;x(Str.):
-        My X <-> Str
+        M X <-> Str
 
     # swapper: swaps the value of X with whatever is passed in.
     @visibility
     ;;x(Str;):
-        My X <-> Str
+        M X <-> Str
 
     # no-copy "take" method.  moves X from this temporary.
     @visibility
-    ..x(): My X!
+    ..x(): M X!
 }
 W = example()
 W x(W x() + ", world")
@@ -4461,10 +4454,10 @@ and modifier classes.
 # a class with a getter and setter gets reference getters automatically:
 just_copyable: [@invisible A_var; int]
 {   ::some_var(): int
-        return My A_var - 1000
+        return M A_var - 1000
 
     ;;some_var(Int.): null
-        My A_var = Int + 1000
+        M A_var = Int + 1000
 
     #(#
     # the following references become automatically defined;
@@ -4472,34 +4465,34 @@ just_copyable: [@invisible A_var; int]
 
     # writable reference
     ;;some_var(): (Int;)
-        return refer
-        (   Me;
-            some_var($$Just_copyable)
-            some_var($$Just_copyable;, $$Int.)
+        refer
+        (   M;
+            {some_var($O)}          # getter: `O` is an instance of `just_copyable`
+            {some_var($O;, $Int.)}  # setter
         )
 
     # readonly reference
     ::some_var(): (Int)
-        return refer
-        (   Me
-            some_var($$Just_copyable)
+        refer
+        (   M
+            {some_var($O)}
         )
 
     # similarly a no-copy take method becomes defined based on the getter.
     ..some_var(): int
-        return My A_var! - 1000
+        M A_var! - 1000
     #)#
 }
 
 # a class with a reference getter method gets a copy getter automatically:
 just_gettable: [@invisible Some_var; int]
-{   ::some_var(): (My Some_var)
+{   ::some_var(): (M Some_var)
 
     #(#
     # the following becomes automatically defined:
     ::some_var(): int
         # uses automatic conversion of (Int) -> int:
-        return My some_var()
+        M some_var()
     #)#
 }
 
@@ -4507,7 +4500,7 @@ just_gettable: [@invisible Some_var; int]
 just_swappable: [@invisible Some_var; int]
 {   @visibility
     ;;some_var(Int;): null
-        My Some_var <-> Int
+        M Some_var <-> Int
         # you can do some checks/modifications on Some_var here if you want,
         # though it's best not to surprise developers.  a default-constructed
         # value for `Some_var` (e.g., in this case `Int: 0`) should be allowed
@@ -4518,13 +4511,13 @@ just_swappable: [@invisible Some_var; int]
     #(#
     # the following modifier becomes automatically defined:
     ;;some_var(Int.): null
-        My some_var(Int;)
+        M some_var(Int;)
 
     # and the following take method becomes automatically defined:
     ..some_var(): t
         Temporary; int
         # swap Some_var into Temporary:
-        My some_var(Temporary;)    # could also write `My Some_var <-> Temporary`
+        M some_var(Temporary;)    # could also write `M Some_var <-> Temporary`
         return Temporary!
     #)#
 }
@@ -4532,23 +4525,27 @@ just_swappable: [@invisible Some_var; int]
 # a class with a reference method gets a swapper and taker method automatically:
 just_referable: [@invisible Some_var; int]
 {   ;;some_var(): (Int;)
-        # you can do some checks/modifications on `Me` here if you want,
+        # you can do some checks/modifications on `M` here if you want,
         # though it's best not to surprise developers
-        ...
+        refer
+        (   M;
+            {some_var($O)}          # getter: `O` is an instance of `just_copyable`
+            {some_var($O;, $Int.)}  # setter
+        )
 
     #(#
     # the following swapper becomes automatically defined:
     ;;some_var(Int;): null
-        Int <-> My some_var()
+        Int <-> M some_var()
 
     # the following setter becomes automatically defined:
     ;;some_var(Int.): null
-        My some_var() = Int!
+        M some_var() = Int!
 
     # and the following taker method becomes automatically defined:
     ..some_var(): t
         Result; int
-        Result <-> My some_var()
+        Result <-> M some_var()
         return Result!
     #)#
 }
@@ -4566,26 +4563,26 @@ TODO: parent class with getter defined, child class with copy defined.
 You can define parent-child class relationships with the following syntax.
 For one parent, `child_class: parent_class_name {#( child methods )#}`.  Multiple
 inheritance is allowed as well, via `all_of[parent1, parent2] {#( child methods )#}`.
-We can access the current class instance using `My` (or `Me`/`My`),
-and `i` (or `me`/`my`) will be the current instance's type.  Thus, `i`/`me`/`my` is
+We can access the current class instance using `M`,
+and `m` will be the current instance's type.  Thus, `m` is
 the parent class if the instance is a parent type, or a subclass if the instance
-is a child class.  E.g., a parent class method can return a `me` type instance,
+is a child class.  E.g., a parent class method can return a `m` type instance,
 and using the method on a subclass instance will return an instance of the subclass.
 If your parent class method truncates at all (e.g., removes information from child classes),
 make sure to return the same `parent_class_name` that defines the class.
 
 We can access member variables or functions that belong to that the parent type,
-i.e., without subclass overloads, using the syntax `parent_class_name some_method(My, ...Args)`
-or `Parent_class_name::some_method(...Args)`.  Use `My;` to access variables or methods that will
-mutate the underlying class instance, e.g., `parent_class_name some_method(My;, ...Args)`
-or `Parent_class_name;;some_method(...Args)`.  oh-lang doesn't have a `super` keyword
+i.e., without subclass overloads, using the syntax `parent_class_name some_method(M, ...Args)`
+or `parent_class_name::some_method(...Args)`.  Use `My;` to access variables or methods that will
+mutate the underlying class instance, e.g., `parent_class_name some_method(M;, ...Args)`
+or `parent_class_name;;some_method(...Args)`.  oh-lang doesn't have a `super` keyword
 because we want inheritance to be as clear as composition for how method calls work.
 
 Some examples:
 
 ```
 animal: [Name: string]
-{   ;;renew(My Name: string): Null
+{   ;;renew(M Name: string): Null
 
     # define two methods on `animal`: `speak` and `go`.
     # these are "abstract" methods, i.e., not implemented by this base class.
@@ -4595,13 +4592,13 @@ animal: [Name: string]
     # this method is defined, so it's implemented by the base class.
     # derived classes can still change it, though.
     ::escape(): null
-        print("${My Name} ${I go()} away!!")
+        print("${M Name} ${I go()} away!!")
 
     # a method that returns an instance of whatever the class instance
     # type is known to be.  e.g., an animal returns an animal instance,
     # while a subclass would return a subclass instance:
-    ::clone(): me
-        return me(My Name)
+    ::clone(): m
+        return m(string(M Name))
 }
 
 snake: animal
@@ -4630,7 +4627,7 @@ cat: all_of[animal, [Fur_balls: int]]
         # can refer to parent methods using the `Variable_case`
         # version of the `type_case` class name:
         Animal renew(Name: "Cat-don't-care-what-you-name-it")
-        My Fur_balls = 0
+        M Fur_balls = 0
 
     ::speak(): null
         print("hisss!")
@@ -4641,9 +4638,9 @@ cat: all_of[animal, [Fur_balls: int]]
         print("CAT ESCAPES DARINGLY!")
 
     # the parent `clone()` method won't work, so override:
-    ::clone(): me
+    ::clone(): m
         # cats are essentially singletons, that cannot have their own name;
-        return me()
+        return m()
 }
 
 Cat: cat()
@@ -4659,7 +4656,7 @@ you can make it simpler like this instead:
 ```
 horse: all_of[animal, [Owner: str]]
 {   # this passes `Name` to the `animal` constructor and sets `Owner` on self:
-    ;;renew(Animal Name: str, My Owner: str, Neigh_times: int = 0)
+    ;;renew(Animal Name: str, M Owner: str, Neigh_times: int = 0)
         range(Neigh_times) each @Unused Int:
             This speak()
 
@@ -4680,7 +4677,7 @@ All abstract methods must be defined for the instance to be created, and if a
 `reset` method is defined on the parent, any arguments passed into the first reset
 (i.e., which is the default constructor) should be defined for the lambda class.
 While these don't look like normal lambda functions, they use the notation `::speak(): null`
-as a shortcut for `speak(My): null`, which works as a lambda.
+as a shortcut for `speak(M): null`, which works as a lambda.
 
 ```
 Weird_animal: animal
@@ -4691,9 +4688,9 @@ Weird_animal: animal
     ::escape(): null
         # to call the parent method `escape()` in here, we can use this:
         animal::escape()
-        print("${My Name} ${I go()} back...")
+        print("${M Name} ${I go()} back...")
         # or we can use this:
-        animal escape(Me)
+        animal escape(M)
 )
 
 Weird_animal escape()    # prints "Waberoo ... meanders ... meanders back ... meanders away!!"
@@ -4706,26 +4703,26 @@ To overload operators for a class, we use the following syntax.
 ```
 # this class checks for overflow/underflow and switches to a "null" (-128) if so.
 flow8: [I8;]
-{   ::!(): bool     # overload `!Me`
-        My I8 == -128 || My I8 == 0
+{   ::!(): bool     # overload `!M`
+        M I8 == -128 || M I8 == 0
 
-    ;;()!: me       # overload `Me!`, i.e., mooting
-        I8: My I8
-        # after mooting `Me!`, we want `!Me` to return true.
-        My I8 = -128
+    ;;()!: m       # overload `Me!`, i.e., mooting
+        I8: M I8
+        # after mooting `M!`, we want `!M` to return true.
+        M I8 = -128
         [I8]
 
     ;;+=(You): null
-        if My I8 == -128
+        if M I8 == -128
             return
         if Your I8 == -128
-            My I8 = -128
+            M I8 = -128
             return
-        I16: My I8 + Your I8
-        My I8 = i8(I16) map({@Ignore $Er, -128})
+        I16: M I8 + Your I8
+        M I8 = i8(I16) map({@Ignore $Er, -128})
 
     ::+(You): flow8
-        Copy; Me
+        Copy; M
         Copy += You
         Copy
 }
@@ -4800,13 +4797,13 @@ You can define methods on your class that work for a variety of types.
 ```
 some_example: [Value: int]
 {   ;;renew(Int): null
-        My Value = Int
+        M Value = Int
 
     # in your own code, prefer adding `t new(Some_example): t`
     # outside of this class body as the more idiomatic way
     # to convert `Some_example` to a different type.
     ::to(): ~t
-        return t(My Value)
+        return t(M Value)
 }
 
 Some_example: some_example(5)
@@ -4852,7 +4849,7 @@ like this: `my_single_generic_class[int] my_class_function(...)` or
 
 ```
 generic_class[id, value]: @Named@ [Id, Value]
-{   ;;renew(My Id: id, My Value: value): Null
+{   ;;renew(M Id: id, M Value: value): Null
 }
 
 # creating an instance using type inference:
@@ -4920,7 +4917,7 @@ You can also have virtual generic methods on generic classes, which is not allow
 ```
 generic[of]: [Value; of]
 {   ::method(~U): u
-        Other_of: of = My Value * (U + 5)
+        Other_of: of = M Value * (U + 5)
         U + u(Other_of) ?? panic()
 }
 
@@ -4929,7 +4926,7 @@ Generic Value = "3"
 print(Generic method(i32(2)))    # prints "3333335" which is i32("3" * (2 + 5)) + 2
 
 specific[of: number]: all_of[generic[of], [Scale; of]]
-{   ;;renew(My Scale; of = 1): Null
+{   ;;renew(M Scale; of = 1): Null
 
     ::method(~U): u
         Parent_result: Generic::method(U)
@@ -5130,22 +5127,22 @@ inside of objects `[Value: value]`.
 
 All classes have a few compiler-provided methods which cannot be overridden.
 
-* `Me;!: me` creates a temporary with the current instance's values, while
+* `(M;)!: m` creates a temporary with the current instance's values, while
     resetting the current instance to a default instance -- i.e., calling `renew()`.
     Internally, this swaps pointers, but not actual data, so this method
     should be faster than copy for types bigger than the processor's word size.
-* `..map(fn(Me.): ~t): t` to easily convert types or otherwise transform
-    the data held in `Me`.  This method consumes `Me`.  You can also overload
+* `..map(fn(M.): ~t): t` to easily convert types or otherwise transform
+    the data held in `M`.  This method consumes `M`.  You can also overload
     `map` to define other useful transformations on your class.
-* `::map(fn(Me): ~t): t` is similar to `..map(fn(Me.): ~t): t`,
-    but this method keeps `Me` constant (readonly).  You can overload as well.
-* `i(...): me` class constructors for any `;;renew(...): null` methods.
-* `i(...): hm[ok: me, er]` class or error constructors for any methods defined as
+* `::map(fn(M): ~t): t` is similar to `..map(fn(M.): ~t): t`,
+    but this method keeps `M` constant (readonly).  You can overload as well.
+* `i(...): m` class constructors for any `;;renew(...): null` methods.
+* `i(...): hm[ok: m, er]` class or error constructors for any methods defined as
     `;;renew(...): hm[ok: i, er]`
-* `;;renew(...): null` for any `i(...): me` class constructors.
+* `;;renew(...): null` for any `i(...): m` class constructors.
     This allows any writable variable to reset without doing `X = x(...)`,
     which may be painful for long type names `x`, and instead do `X renew(...)`.
-* `;;renew(...): hm[er]` for any `i(...): hm[ok: me, er]` construct-or-error class functions
+* `;;renew(...): hm[er]` for any `i(...): hm[ok: m, er]` construct-or-error class functions
     This allows any writable variable to reset without doing `X = x(...) assert()`,
     which may be painful for long type names `x`, and instead do `X renew(...) assert()`.
 * `Xyz;: (xyz;:)` gives a reference to the class instance, where `xyz` is the actual
@@ -5164,7 +5161,7 @@ Awesome_service: all_of
     [Url_base: "http://my/website/address.bazinga"]
 ]
 {   ::get(Id: string): awesome_data 
-        Json: Http get("${My Url_base}/awesome/${Id}") 
+        Json: Http get("${M Url_base}/awesome/${Id}") 
         return awesome_data(Json)
 }
 ```
@@ -5186,10 +5183,10 @@ screen: []
 Sdl_screen: \/../screen screen
 {   ;;draw(Image, Vector2): null
         # actual implementation code:
-        My Sdl_surface draw(Image, Vector2)
+        M Sdl_surface draw(Image, Vector2)
 
     ;;clear(Color: color Black)
-        My Sdl_surface clear(Color)
+        M Sdl_surface clear(Color)
 }
 ### some-other-file.oh ###
 # this is an error if we haven't imported the sdl-screen file somewhere:
@@ -5222,14 +5219,14 @@ using setters.  For example, `/* Java */ MyBuilder.setX(123).setY(456).setZ("gre
 In oh-lang, this is mostly obviated by named arguments: `my_class(X: 123, Y: 456, Z: "great")`
 could do the same thing.  However, there are still situations where it's useful to chain 
 methods on the same class instance, and oh-lang does not recommend returning a reference
-to the class via the return type `(me)`.  More idiomatically, we use sequence building
+to the class via the return type `(m)`.  More idiomatically, we use sequence building
 with all the method calls inside a block.  For example, if we were to implement a builder pattern
 with setters, we could combine a bunch of mutations like this:
 
 ```
 # class definition:
 my_builder: [...]
-{   ;;set(String, Int): null    # no need to return `(me)`
+{   ;;set(String, Int): null    # no need to return `(m)`
 }
 
 # Note, inside the `{}` we allow mutating methods because `my_builder()` is a temporary.
@@ -5376,15 +5373,15 @@ my_class: [X; int]
     i(X; int): [X]
 
     # implicit constructor:
-    ;;renew(My X; int): null
+    ;;renew(M X; int): null
 
     # This was here before...
     # ;;my_deprecated_method(Delta_x: int): null
-    #     My X += Delta_x
+    #     M X += Delta_x
 
     # But we're preferring direct access now:
     @alias ;;my_deprecated_method(Delta_x: int): null
-        My X += Delta_x
+        M X += Delta_x
 }
 
 My_class; my_class(X: 4)
@@ -5419,10 +5416,10 @@ to invoke logic from these external files.
 ```
 # vector2.oh
 vector2: [X: dbl, Y: dbl]
-{   ;;renew(My X: dbl, My Y: dbl): Null
+{   ;;renew(M X: dbl, M Y: dbl): Null
 
     @order_independent
-    ::dot(Vector2: vector2): My X * Vector2 X + My Y * Vector2 Y
+    ::dot(Vector2: vector2): M X * Vector2 X + M Y * Vector2 Y
 }
 
 # main.oh
@@ -5733,16 +5730,16 @@ container[at, of: non_null]: []
     # returns an error if we ran out of memory trying to add the new value.
     ;;swap(At, Of?;): hm[null]
     
-    @alias ::has(At): My[At] != Null
-    @alias ::contains(At): My[At] != Null
+    @alias ::has(At): M[At] != Null
+    @alias ::contains(At): M[At] != Null
 
     # Returns the number of elements in this container.
     ::count(): count
 
     # can implicitly convert to an iterator (with writeable/readonly references).
     # the iterator needs to be returned in an argument object
-    # because it holds a reference to `Me`.
-    (Me;:): (Iterator[(At, Of;:)].)
+    # because it holds a reference to `M`.
+    (M;:): (Iterator[(At, Of;:)].)
 
     # iterate over values.
     ;:values(): (Iterator[(Of;:)].)
@@ -5808,10 +5805,10 @@ hm[of]: hm[ok: of, Array er]
 array[of]: container[id: index, value: of]
 {   # TODO: a lot of these methods need to return `hm[of]`.
     # cast to bool, `::!!(): bool` also works, notice the `!!` before the parentheses.
-    !!(Me): bool
-        return My count() > 0
+    !!(M): bool
+        return M count() > 0
 
-    # Returns the value in the array if `Index < My count()`, otherwise Null.
+    # Returns the value in the array if `Index < M count()`, otherwise Null.
     # If `Index < 0`, take from the end of the array, e.g., `Array[-1]` is the last element
     # and `Array[-2]` is the second-to-last element.  If `Index < -Array count()` then
     # we will also return Null.
@@ -5843,7 +5840,7 @@ array[of]: container[id: index, value: of]
     ;;pop(Index: index = -1): hm[of]
 
     # returns a copy of this array, but sorted.
-    # uses `you` instead of `me` to indicate that `me` doesn't change.
+    # uses `you` instead of `m` to indicate that `m` doesn't change.
     ::sort(): you
 
     # sorts this array in place:
@@ -5853,7 +5850,7 @@ array[of]: container[id: index, value: of]
     # swapper, sets the value at the index, returning the old value in the reference.
     # if the swapped in value is Null but the array value wasn't Null, the array
     # will shrink by one, and any later indexed values will move down one index.
-    # USAGE: `Of ?; = of(...), My[Index] <-> Of`
+    # USAGE: `Of ?; = of(...), M[Index] <-> Of`
     # TODO: is there better notation here?, e.g., `;;[Index] <-> (Of?;): null` or something with `swap`?
     ;;[Index, Of?;]: null
 
@@ -5863,7 +5860,7 @@ array[of]: container[id: index, value: of]
     # passes the current value at the index into the passed-in function by reference (`;`).
     # if Index >= the current count(), then the array count is increased (to Index + 1)
     # and filled with default values so that a valid reference can be passed into the callback.
-    # USAGE: `My[Index] += 5` compiles to `My[Index, (Of;): {Of += 5}]`
+    # USAGE: `M[Index] += 5` compiles to `M[Index, (Of;): {Of += 5}]`
     # TODO: we can probably determine `$Of += 5` as `(Of;): {Of += 5}` because `$Of += 5` requires mutability
     ;;[Index, fn(Of;): ~u]: hm u
 
@@ -5957,8 +5954,8 @@ In oh-lang:
 fixed_count_array[of]: array[of]
 {   @private Fixed_count: count
     ;;renew(Count): null
-        My Fixed_count = Count
-        My count(Count)
+        M Fixed_count = Count
+        M count(Count)
     @hide pop
     @hide add
     @hide erase
@@ -5966,7 +5963,7 @@ fixed_count_array[of]: array[of]
     @hide shift
     @hide reserve
     ;;count(Count): null
-        assert Count == My Fixed_count
+        assert Count == M Fixed_count
         array;;count(Count)
 }
 ```
@@ -6089,7 +6086,7 @@ lot[of, at: hashable]: container[of, at]
     # The element is removed from the lot.
     ;;pop(): hm[of]
 
-    @alias ;;pop(At)?: My[At]!
+    @alias ;;pop(At)?: M[At]!
 
     # always returns a non-null type, adding
     # a default-initialized value if necessary:
@@ -6123,7 +6120,7 @@ lot[of, at: hashable]: container[of, at]
     ;;[At, fn(Of?;): ~t]: hm[ok: t, er: Out_of_memory]
 
     # getter and modifier in one definition, with the `;:` "template mutability" operator:
-    # will return an error for the const lot (`My:`) if `At` is not in the lot.
+    # will return an error for the const lot (`M:`) if `At` is not in the lot.
     ;:[At, fn(Of;:): ~t]: hm[t]
 
     # nullable getter/modifier in one definition, with the `;:` template mutability operator:
@@ -6162,52 +6159,54 @@ insertion_ordered_lot[at, of]: all_of
 ]
 {   # creates a default value if not present at the ID to pass in to the modifier:
     ;;[At;:, fn(Of;): ~t]: t
-        Index?: My At_indices[At]
+        Index?: M At_indices[At]
         return if Index != Null
-            My modify_already_present(Index, fn)
+            M modify_already_present(Index, fn)
         else
-            My need_to_insert_then_modify(At;:, fn)
+            M need_to_insert_then_modify(At;:, fn)
 
     ::[At, fn(Of?): ~t]: t
-        Index?: My At_indices[At]
+        Index?: M At_indices[At]
         return if Index != Null
             assert Index != 0
-            My Indexed_lot[Index, (Indexed_lot_element): t
-                return fn(Indexed_lot_element Of)
+            M Indexed_lot
+            [   Index
+                (Indexed_lot_element): t
+                    fn(Indexed_lot_element Of)
             ]
         else
             fn(Null)
     
     ::each(@Loop fn(At, Of): loop): bool
-        Index; My Indexed_lot[0] Next
+        Index; M Indexed_lot[0] Next
         while Index != 0
-            [Of, At]: My Indexed_lot[Index] ?? panic("broken invariant!")
+            [Of, At]: M Indexed_lot[Index] ?? panic("broken invariant!")
             if @Loop fn(At, Of) == Break
                 return True
-            Index = My Indexed_lot[Index] Next
+            Index = M Indexed_lot[Index] Next
         return False
 
     # modifier for a ID'd value not yet in the lot, need to insert a default first:
     @private
     ;;need_to_insert_then_modify(At;:, fn(Of;): ~t): t
-        New_index: My Next_available_index++ or reshuffle()
-        Previously_last_index: My Indexed_lot[0] Previous
-        My Indexed_lot[New_index] =
+        New_index: M Next_available_index++ or reshuffle()
+        Previously_last_index: M Indexed_lot[0] Previous
+        M Indexed_lot[New_index] =
         [   Previous: Previously_last_index
             Next: 0
             At
             of()
         ]
-        My At_indices[@moot_or_copy(At)] = New_index
-        My Indexed_lot[0] Previous = New_index
-        My Indexed_lot[Previously_last_index] Next = New_index
-        return My modify_already_present(New_index, fn)
+        M At_indices[@moot_or_copy(At)] = New_index
+        M Indexed_lot[0] Previous = New_index
+        M Indexed_lot[Previously_last_index] Next = New_index
+        return M modify_already_present(New_index, fn)
 
     # modifier for an already indexed value in the lot:
     @private
     ;;modify_already_present(Index, fn(Of;): ~t): t
         debug assert(Index != 0)
-        return My Indexed_lot[Index, (Indexed_lot_element?;): t
+        return M Indexed_lot[Index, (Indexed_lot_element?;): t
             assert Indexed_lot_element != Null
             fn(Indexed_lot_element Of;)
         ]
@@ -6268,7 +6267,7 @@ set[of: hashable]: container[id: of, value: true]
     ;;all(Iterator[of].): hm[bool]
 
     # can convert to an iterator.
-    (Me): (Iterator[(Of)].)
+    (M): (Iterator[(Of)].)
 
     @hide ;:values(): (Iterator[(True;:)])
     @hide ;:ids(): (Iterator[(Of)])
@@ -6277,9 +6276,9 @@ set[of: hashable]: container[id: of, value: true]
     # insertion ordered, otherwise any convenient element.
     # Returns an error if there is no element available.
     ;;pop(): hm[of]
-    ;;pop(Of)?: My[Of]!
+    ;;pop(Of)?: M[Of]!
 
-    @alias ;;remove(Of)?: My[Of]!
+    @alias ;;remove(Of)?: M[Of]!
     ...
 }
 ```
@@ -6305,20 +6304,23 @@ and `from` selects multiple (or no) IDs from the set (`k from ids(o)`).
 For example, here is a way to create an iterator over some incrementing values:
 
 ```
-my_range[of: number]: iterator[of]
-{   @private
-    Next_value: of = 0
-
-    ;;renew(Start_at: of = 0, My Less_than: of = 0): null
-        My Next_value = Start_at
+my_range[of: number]: all_of
+[   @private@
+    [   Less_than: of
+        Next_value: of = 0
+    ]
+    iterator[of]
+]
+{   ;;renew(Start_at: of = 0, M Less_than: of = 0): null
+        M Next_value = Start_at
 
     ;;next()?: of
-        if My Next_value < My Less_than
-            return My Next_value++
+        if M Next_value < M Less_than
+            return M Next_value++
         return Null
 
-    ::peak()?: if My Next_value < My Less_than
-        My Next_value 
+    ::peak()?: if M Next_value < M Less_than
+        M Next_value 
     else
         Null
 }
@@ -6358,26 +6360,29 @@ next(Iterator; iterator[t] @becomes(array_iterator[t]), Array: array[~t])?: t
     Iterator;;next(Array)
 
 # TODO: probably can do `(Of;:.)`
-array_iterator[of]: iterator[of]
-{   Next; index
-    ;;renew(Start: index = 0):
-        My Next = Start
+array_iterator[of]: all_of
+[   @private@ 
+    [Next; index]
+    iterator[of]
+]
+{   ;;renew(Start: index = 0):
+        M Next = Start
 
-    ;;next(Array: array[of])?: if My Next < Array count()
-        Array[My Next++]
+    ;;next(Array[of])?: if M Next < Array count()
+        Array[M Next++]
     else
         Null
 
-    ::peak(Array: array[of])?: if My Next < Array count()
-        Array[My Next]
+    ::peak(Array[of])?: if M Next < Array count()
+        Array[M Next]
     else
         Null
     
     # note that this function doesn't technically need to modify this
     # `array_iterator`, but we keep it as `;;` since other container
     # iterators will generally need to update their index/ID.
-    ;;remove(Array; array[of])?: if My Next < Array count()
-        Array remove(My Next)
+    ;;remove(Array[of];)?: if M Next < Array count()
+        Array remove(M Next)
     else
         Null
 }
@@ -6393,20 +6398,20 @@ array[of]: []
 {   # TODO: technically this should be a `Block`, right?
     ::each(fn(Of): loop): null
         # The `count` type has an `each` iterator method:
-        My count() each Index:
-            if fn(My[Index]) == Break
+        M count() each Index:
+            if fn(M[Index]) == Break
                 break
 
     # no-copy iteration, but can mutate the array elements.
     ;;each(fn(Of;): loop): null
-        My count() each Index:
-            if fn(My[Index];) == Break
+        M count() each Index:
+            if fn(M[Index];) == Break
                 break
 
     # mutability template for both of the above:
     ;:each(fn(Of;:): loop): bool
-        My count() each Index:
-            if fn(My[Index];:) == Break
+        M count() each Index:
+            if fn(M[Index];:) == Break
                 return True
         return False
 }
@@ -6576,15 +6581,15 @@ example_class: [Value: int]
     #   if Example_class is Large:
     #       print("was large: ${Large}")
     :;.is(If_block[declaring: (Large:;. int), ~t]): never
-        if My Value > 999
-            If_block then(Declaring: (Large` My Value))
+        if M Value > 999
+            If_block then(Declaring: (Large` M Value))
         else
             If_block else()
 
     # another way to do this
     :;.is(then(Large:;. int): ~t, else(): ~u): flatten[t, u]
-        if My Value > 999
-            then(Large` My Value)
+        if M Value > 999
+            then(Large` M Value)
         else
             # TODO: can we distinguish `else` from `else()` because we always
             #       require parentheses around functions now??
@@ -6664,7 +6669,7 @@ E.g., suppose we have the following:
 ```
 status: one_of[Unknown, Alive, Dead]
 vector3: [X; dbl, Y; dbl, Z; dbl]
-{   ::length(): sqrt(My X^2 + My Y^2 + My Z^2)
+{   ::length(): sqrt(M X^2 + M Y^2 + M Z^2)
 }
 
 update: one_of
@@ -6811,27 +6816,25 @@ here.
 
 ```
 my_vec2: [X; dbl, Y; dbl]
-{   # TODO: we probably can distinguish between each of these functions by
-    #       the arguments.  so don't need namespaces...
-    ::what
-    (   @Q1 fn(QuadrantI. dbl): ~a
-        @Q2 fn(QuadrantII. dbl): ~b
-        @Q3 fn(QuadrantIII. dbl): ~c
-        @Q4 fn(QuadrantIV. dbl): ~d
+{   ::what
+    (   fn(QuadrantI. dbl): ~a
+        fn(QuadrantII. dbl): ~b
+        fn(QuadrantIII. dbl): ~c
+        fn(QuadrantIV. dbl): ~d
         else(): ~e
     ): flatten[a, b, c, d, e]
-        if My X == 0.0 or My Y == 0.0
+        if M X == 0.0 or M Y == 0.0
             else()
-        elif My X > 0.0
-            if My Y > 0.0
-                @Q1 fn(QuadrantI. +X + Y)
+        elif M X > 0.0
+            if M Y > 0.0
+                fn(QuadrantI. +X + Y)
             else
-                @Q4 fn(QuadrantIV. +X - Y)
+                fn(QuadrantIV. +X - Y)
         else
-            if My Y > 0.0
-                @Q1 fn(QuadrantII. -X + Y)
+            if M Y > 0.0
+                fn(QuadrantII. -X + Y)
             else
-                @Q4 fn(QuadrantIII. -X - Y)
+                fn(QuadrantIII. -X - Y)
 }
 ```
 
@@ -6921,13 +6924,13 @@ my_hashable_class: all_of[hashable, [Id: u64, Name; string]]
     # or fast hashes in one definition, depending on what is required.
     # This should automatically be defined for classes with precise fields (e.g., int, u32, string, etc.)!
     ::hash(~Builder;):
-        Builder hash(My Id)       # you can use `hash` via the builder or...
-        My Name hash(Builder;)    # you can use `hash` via the field.
+        Builder hash(M Id)       # you can use `hash` via the builder or...
+        M Name hash(Builder;)    # you can use `hash` via the field.
 
     # equivalent definition via sequence building:
     ::hash(~Builder;): Builder @
-    {   hash(My Id)
-        hash(My Name)
+    {   hash(M Id)
+        hash(M Name)
     }
 }
 
@@ -7089,11 +7092,11 @@ have its own tab stop.  E.g.,
 array[of]: []
 {   ...
     ::print(): null
-        if My count() == 0
+        if M count() == 0
             return print("[]")
         print("[")
         with indent():
-            Me each Of:
+            M each Of:
                 print(Of)
         print("]")
 }
@@ -7259,7 +7262,7 @@ cv[of]: one_of[Cease, Value: of]
 
 co[of]: [resumable(Ci[of]): never]
 {   # TODO: think about how `resumable` works, probably should be `Resumable`
-    ;;renew(My resumable(Ci[of]): never): null
+    ;;renew(M resumable(Ci[of]): never): null
 
     ;;take(): cv[of]
 
@@ -7285,10 +7288,10 @@ ci[of]: resumable[one_of[Cease, Value: of]]
 
 ```
 countdown: co[int]
-{   ;;renew(My Int.): Co renew
+{   ;;renew(M Int.): Co renew
     (   fn(Ci[int];):
-            while My Int > 0
-                Ci give(--My Int)
+            while M Int > 0
+                Ci give(--M Int)
             Ci exit()
     )
 }
@@ -8038,7 +8041,7 @@ caller[of]:
 [   # use `of@` to pass in the mutability of `of` from `caller` into `callee`,
     Callees[ptr[callee[of@]]];
 ]
-{   ::run_callbacks(Of@): for Ptr: in My Callees {Ptr call(Of@)}
+{   ::run_callbacks(Of@): M Callees each Ptr: {Ptr call(Of@)}
 }
 
 audio: caller[array[sample], Mutable]
@@ -8057,8 +8060,8 @@ audio_callee: callee[array[sample];]
     Phase; flt
 
     ;;call(Array[sample];): for Index: index < count(Array)
-        Array[Index] = sample(Mono: \\math sin(2 * \\math Pi * My Phase))
-        Phase += My Frequency * Audio Delta_t
+        Array[Index] = sample(Mono: \\math sin(2 * \\math Pi * M Phase))
+        Phase += M Frequency * Audio Delta_t
 }
 
 some_function(): null
@@ -8175,17 +8178,17 @@ example_class:
 [   A; f32
     B; f32
 ]
-{   ;;renew(My X: i32, My Y: i32):
-        My A = X - Y
-        My B = X + Y
+{   ;;renew(M X: i32, M Y: i32):
+        M A = X - Y
+        M B = X + Y
 
     ::readonly_method(Z: i32): i32
-        My X * My Y - Z
+        M X * M Y - Z
 
     ;;writable_method(Q: f32): f32
-        My A *= Q
-        My B *= 1.0 / (1.0 + abs(Q))
-        My A * My B
+        M A *= Q
+        M B *= 1.0 / (1.0 + abs(Q))
+        M A * M B
 }
 
 example_function(X: i64, A: dbl): [Y: i64, B: dbl]
@@ -8216,12 +8219,12 @@ typedef struct example_class_writable_method_input_Q_t
 {   float Q;
 }   example_class_writable_method_input_Q_t;
 
-void example_class_renew_X_Y(example_class_t *My, example_class_renew_input_X_Y_t input);
+void example_class_renew_X_Y(example_class_t *M, example_class_renew_input_X_Y_t input);
 int32_t example_class_readonly_method_input_Z_output_i32(
-    const example_class_t *My, example_class_readonly_method_input_Z_t input
+    const example_class_t *M, example_class_readonly_method_input_Z_t input
 );
 float example_class_writable_method_input_Q_output_f32(
-    example_class_t *My, example_class_writable_method_input_Q_t input
+    example_class_t *M, example_class_writable_method_input_Q_t input
 );
 
 typedef struct example_function_input_A_X_t
