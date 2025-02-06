@@ -164,7 +164,7 @@ vector3[of: number]: [X; of, Y; of, Z; of]
 
     vector4: vector4[of]
 }
-# replacing `M/My/I` with `M` and `You` with `O`ther.
+# using `M` for self and `O` for other.
 vector3[of: number]: [X; of, Y; of, Z; of]
 {   ::dot(O): of
         M X * O X + M Y * O Y + M Z * O Z
@@ -198,12 +198,12 @@ vector3[of: number]: [X; of, Y; of, Z; of]
 ```
 Technically we only need `;:.` for methods, we could look under the namespace
 of `M` for any variables we don't recognize.  The main thing that I do want
-is for nested types to not require `my` or `i` prefixes, which is annoying.
+is for nested types to not require `m` prefixes, which is annoying.
 ```
 non_negative: [Value; int]
-{   i(Value. int): hm[m]       # instead of `i hm[m]`.
+{   m(Value. int): hm[m]       # instead of `m hm[m]`.
         if Value < 0
-            er Negative         # instead of `i er Negative`
+            er Negative         # instead of `m er Negative`
         else
             [Value]
 
@@ -215,7 +215,10 @@ I think we have to give up on this as it's not consistent with variables and met
 `m hm[m]` isn't that much more verbose than `hm[m]`.  Alternatively you can define
 `hm` in the root scope, which may be desired for generic classes anyway, since you
 don't need to specify the generic.  let's just figure out a good syntax for shortcut
-of `Class_type: m class_type`, e.g., `m Class_type`.
+of `Class_type: m class_type`, e.g., `m Class_type`.  this is a more general problem
+because we'll have class imports like `lib_oh: \/lib, Vector: lib vector` which should
+be something like `lib Vector` but that doesn't look quite right (looks like we're
+referencing a class variable).
 
 Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
@@ -227,7 +230,7 @@ Because we use `::` for readonly methods and `;;` for writable methods, we can
 easily define "const template" methods via `:;` which work in either case `:` or `;`.
 This is mostly useful when you can call a few other methods internally that have specific
 `::` and `;;` overloads, since there's usually some distinct logic for readonly vs. writable.
-E.g., `;:the_method(X;: str): I check(X;:)` where `check` has distinct overloads for `::` and `;;`.
+E.g., `;:the_method(X;: str): M check(X;:)` where `check` has distinct overloads for `::` and `;;`.
 See [const templates](#const-templates) for more details.
 
 oh-lang uses result-passing instead of exception-throwing in order to make it clear
@@ -280,8 +283,8 @@ same for `A + B` and `A - B`.  `A // B` is safe.  However, instead of making oh-
 we will use `multiply(@First~A, @Second A): hm[ok: a, Number_conversion er]` and then have
 `A1 * A2` always give an `a` instance by panicking if we run out of memory.  i.e.,
 ```
-number::*(You): m
-    Result: multiply(M, You)
+number::*(O): m
+    Result: multiply(M, O)
     Result ?? panic()
 ```
 Primitive types will do overflow like in other languages without panicking, but you can use, e.g.,
@@ -677,7 +680,7 @@ vector3: [X: dbl, Y: dbl, Z: dbl]
 # but recommended due to the length of the class body.
 my_class: [X: int]
 {   # here's a class function that's a constructor
-    i(X. int): m
+    m(X. int): m
         ++m Count
         [X]
 
@@ -702,8 +705,8 @@ my_class: [X: int]
 
     # methods which mutate the class use a `;;` prefix
     ;;update(Y: int): null
-        M X = I do_something(Y)
-        # also ok, and more specific since we're requiring `I` readonly:
+        M X = M do_something(Y)
+        # also ok, and more specific since we're requiring `M` readonly:
         # `M X = ::do_something(Y)` or `M X = do_something(Y, M)`
 }
 ```
@@ -726,14 +729,12 @@ Any conditions on the types can be specified via `[the_type: the_condition, ...]
 
 ```
 # default-named generic
-generic[of]: [Of]
+generic[of]: [@private Of]
 {   # you can use inference in functions, so you can use `generic(12)`
     # to create an instance of `generic` with `of: int` inferred.
     # You don't need this definition if `[Of]` is public.
-    # TODO: we might need another identifier instead of `i` for the generic
-    # class *without* its specification.  e.g., `i: generic[of]` and `g: generic`(?)
-    # maybe we can infer this based on whether we're a class function or an instance method.
-    i(~T): i[t]
+    # NOTE: `g` is like `m` for generic classes but without the specification.
+    g(~T): g[t]
         [T] 
 }
 
@@ -1209,7 +1210,7 @@ scaled8:
     @private
     Scale: 32_u8
 
-    i(Flt): hm[ok: m, er: one_of[Negative, Too_big]]
+    m(Flt): hm[ok: m, er: one_of[Negative, Too_big]]
         Scaled_value: round(Flt * m Scale)
         if Scaled_value < 0
             return Negative
@@ -3328,7 +3329,7 @@ my_class[of]: [X; of]
 
     # so `take` would become:
     ;;take(X:;. of):
-        I x(X:;!)
+        M x(X:;!)
 }
 ```
 
@@ -4018,7 +4019,7 @@ and class functions (i.e., static methods in C++/Java) that don't require an ins
 Class definitions must be constant/non-reassignable, so they are declared using
 the `:` symbol.
 
-When defining methods or functions of all kinds, note that you can use `me` (or `i`/`my`)
+When defining methods or functions of all kinds, note that you can use `m`
 to refer to the current class instance type.  E.g.,
 
 ```
@@ -4099,10 +4100,10 @@ example_class: parent_class
     # adding `My` to the arg name will automatically set `My X` to the passed in `X`.
     # TODO: we probably can infer the type as well, e.g., `;;renew(My X.)`
 
-    # create a different constructor.  constructors use the class reference `i` and must
-    # return either an `i` or a `hm[ok: i, er]` for any error type `er`.
-    # this constructor returns `i`:
-    i(K: int): i(X: K * 1000)
+    # create a different constructor.  constructors use the class reference `m` and must
+    # return either an `m` or a `hm[ok: m, er]` for any error type `er`.
+    # this constructor returns `m`:
+    m(K: int): m(X: K * 1000)
 
     # some more examples of class methods:
     # prefix `::` (`;;`) is shorthand for adding `My: my` (`My; my`) as an argument.
@@ -4221,13 +4222,13 @@ destructor_class: [X: int]
         My X = @Debug X!
     # `;;new` will also add methods like this,
     # with a step-up in visibility from whatever `;;new` was.
-    #       i(@Debug X. int): me 
-    #           I;
-    #           I new(@Debug X!)
-    #           I!
+    #       m(@Debug X. int): me 
+    #           M;
+    #           M new(@Debug X!)
+    #           M!
     #       ;;renew(@Debug X. int): null
-    #           I descope()
-    #           I new(@Debug X!)
+    #           M descope()
+    #           M new(@Debug X!)
 
     # you should define the destructor:
     ;;descope(): null
@@ -4299,7 +4300,7 @@ Class constructors can be defined in two ways, either as a method or as a class 
 Class *method* constructors are defined with the function signature (a) `;;renew(Args...): null`
 or (b) `;;renew(Args...): hm[ok: null, er: ...]`, and these methods also allow you to renew an
 existing class instance as long as the variable is writable.  Class *function* constructors
-are defined like (c) `i(Args...): m` or (d) `i(Args...): hm[ok: m, er: ...]`.  In both
+are defined like (c) `m(Args...): m` or (d) `m(Args...): hm[ok: m, er: ...]`.  In both
 (a) and (c) cases, you can use them like `MyVar: myClass(Args...)`, and for (b) and (d)
 you use them like `MyVar: myClass(Args...) assert()`.
 
@@ -4317,8 +4318,8 @@ for an instance of the class, use this syntax:
 ```
 örsted: [...]
 {   # define a custom Upper_camel_case name.
-    I: Örsted 
-    # probably could also parse `Örsted: (I)` as well here.
+    M: Örsted 
+    # probably could also parse `Örsted: (M)` as well here.
 
     ... usual class methods ...
 }
@@ -4592,7 +4593,7 @@ animal: [Name: string]
     # this method is defined, so it's implemented by the base class.
     # derived classes can still change it, though.
     ::escape(): null
-        print("${M Name} ${I go()} away!!")
+        print("${M Name} ${M go()} away!!")
 
     # a method that returns an instance of whatever the class instance
     # type is known to be.  e.g., an animal returns an animal instance,
@@ -4688,7 +4689,7 @@ Weird_animal: animal
     ::escape(): null
         # to call the parent method `escape()` in here, we can use this:
         animal::escape()
-        print("${M Name} ${I go()} back...")
+        print("${M Name} ${M go()} back...")
         # or we can use this:
         animal escape(M)
 )
@@ -4712,18 +4713,18 @@ flow8: [I8;]
         M I8 = -128
         [I8]
 
-    ;;+=(You): null
+    ;;+=(O): null
         if M I8 == -128
             return
-        if Your I8 == -128
+        if O I8 == -128
             M I8 = -128
             return
-        I16: M I8 + Your I8
+        I16: M I8 + O I8
         M I8 = i8(I16) map({@Ignore $Er, -128})
 
-    ::+(You): flow8
+    ::+(O): flow8
         Copy; M
-        Copy += You
+        Copy += O
         Copy
 }
 ```
@@ -5136,13 +5137,13 @@ All classes have a few compiler-provided methods which cannot be overridden.
     `map` to define other useful transformations on your class.
 * `::map(fn(M): ~t): t` is similar to `..map(fn(M.): ~t): t`,
     but this method keeps `M` constant (readonly).  You can overload as well.
-* `i(...): m` class constructors for any `;;renew(...): null` methods.
-* `i(...): hm[ok: m, er]` class or error constructors for any methods defined as
-    `;;renew(...): hm[ok: i, er]`
-* `;;renew(...): null` for any `i(...): m` class constructors.
+* `m(...): m` class constructors for any `;;renew(...): null` methods.
+* `m(...): hm[ok: m, er]` class or error constructors for any methods defined as
+    `;;renew(...): hm[ok: m, er]`
+* `;;renew(...): null` for any `m(...): m` class constructors.
     This allows any writable variable to reset without doing `X = x(...)`,
     which may be painful for long type names `x`, and instead do `X renew(...)`.
-* `;;renew(...): hm[er]` for any `i(...): hm[ok: m, er]` construct-or-error class functions
+* `;;renew(...): hm[er]` for any `m(...): hm[ok: m, er]` construct-or-error class functions
     This allows any writable variable to reset without doing `X = x(...) assert()`,
     which may be painful for long type names `x`, and instead do `X renew(...) assert()`.
 * `Xyz;: (xyz;:)` gives a reference to the class instance, where `xyz` is the actual
@@ -5370,7 +5371,7 @@ Aliases can also be used for more complicated logic and even deprecating code.
 ```
 my_class: [X; int]
 {   # explicit constructor:
-    i(X; int): [X]
+    m(X; int): [X]
 
     # implicit constructor:
     ;;renew(M X; int): null
@@ -5939,7 +5940,7 @@ count is unknown at compile time, the fixed-count array will be defined on the h
 # fixed-array count, which is something like a generic:
 count_up(Count): array[int, Count]
     Result; array[int, Count]
-    range(Count) each I:
+    Count each I: index
         Result[I] = I
     return Result
 
@@ -7266,7 +7267,7 @@ co[of]: [resumable(Ci[of]): never]
 
     ;;take(): cv[of]
 
-    @alias ;;next(): I take()
+    @alias ;;next(): M take()
 }
 
 ci[of]: resumable[one_of[Cease, Value: of]]
@@ -7274,13 +7275,13 @@ ci[of]: resumable[one_of[Cease, Value: of]]
     ::give(Of.): jump
         ::exit(Of!)
 
-    @alias ::yield(Of.): I give(Of.)
+    @alias ::yield(Of.): M give(Of.)
 
     # returns control back to caller of `co;;take` but to `Cease`.
     ::exit(): jump
         ::exit(Cease)
 
-    @alias ::quit(): I exit()
+    @alias ::quit(): M exit()
 
     @hide ::exit(Of.): jump
 }
