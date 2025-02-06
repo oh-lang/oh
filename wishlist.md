@@ -218,7 +218,7 @@ don't need to specify the generic.  let's just figure out a good syntax for shor
 of `Class_type: m class_type`, e.g., `m Class_type`.  this is a more general problem
 because we'll have class imports like `lib_oh: \/lib, Vector: lib vector` which should
 be something like `lib Vector` but that doesn't look quite right (looks like we're
-referencing a class variable).
+referencing a class variable).  maybe `Class_type: m~` or `Class_type: m@` or `@m`.
 
 Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
@@ -266,7 +266,7 @@ we don't need two different keywords to `extend` or `implement` a class or inter
 In fact, we don't use keywords at all; to just add methods (or class functions/variables),
 we use this syntax, `child_class: parent_class { ::extra_methods(): int, ... }`,
 and to add instance variables to the child class we use this notation:
-`child_class: all_of[parentClass, [Child_x: int, Child_y: str]] { ... methods }`.
+`child_class: all_of[parentClass, m: [Child_x: int, Child_y: str]] { ... methods }`.
 
 ## safety
 
@@ -716,10 +716,37 @@ and `m` to scope class variables/functions so that we can distinguish
 between "shadowed" functions like `my_class count()` (which returns the number of
 `my_class` instances) and `count()` (which constructs an instance of the `count` type).
 
+Inheritance of a concrete parent class and implementing an abstract class
+work the same way, by specifying the parent class/interface in an `all_of`
+expression alongside any child instance variables, which should be tucked
+inside an `m` field.
+
 ```
-# combining two classes
-a_or_b: one_of[a, b]
-a_and_b: all_of[a, b]
+parent1: [P1: str]
+{   ::do_p1(): null
+        print("doing p1 ${M P1}")
+}
+
+parent2: [P2: str]
+{   ::do_p2(): null
+        print("doing p2 ${M P2}")
+}
+
+child3: all_of[parent1, parent2, m: [C3: int]]
+{   # this passes P1 to parent1 and C3 to child3 implicitly,
+    # and P2 to parent2 explicitly.
+    ;;renew(Parent1 P1. str, P2. str, M C3. int): null
+        # same as `parent2 renew(M;, P2)` or `parent2;;renew(P2)`.
+        Parent2 renew(P2)
+
+    ::do_p1(): null
+        # this logic repeats `Parent1 do_p1())` `M C3` times.
+        M C3 each @Ignore Int:
+            # same as `parent1 do_p1(M)` or `parent1::do_p1()`.
+            Parent1 do_p1()
+    
+    # do_p2 will be used from parent2 since it is not overridden here.
+}
 ```
 
 ### defining generic classes
@@ -3483,7 +3510,7 @@ Note that we're not allowed to cast... or are we?  we want to be able to easily 
 an iterator into a list, for example.
 
 ```
-countdown(Count): all_of[iterator[count], [Count]]
+countdown(Count): all_of[iterator[count], m: [Count]]
 {   ::next(): one_of[Cease, count]
         if My Count > 0
             return --My Count
@@ -4621,7 +4648,7 @@ Snake escape()  # prints "Fred slithers away!!"
 To define extra instance variables for a child class, you'll use this notation:
 
 ```
-cat: all_of[animal, [Fur_balls: int]]
+cat: all_of[animal, m: [Fur_balls: int]]
 {   # here we define a `renew` method, so the parent `reset` methods
     # become hidden to users of this child class:
     ;;renew(): null
@@ -4655,7 +4682,7 @@ constructor like this `;;renew(Parent_argument): { Parent renew(Parent_argument)
 you can make it simpler like this instead:
 
 ```
-horse: all_of[animal, [Owner: str]]
+horse: all_of[animal, m: [Owner: str]]
 {   # this passes `Name` to the `animal` constructor and sets `Owner` on self:
     ;;renew(Animal Name: str, M Owner: str, Neigh_times: int = 0)
         range(Neigh_times) each @Unused Int:
@@ -4772,7 +4799,7 @@ or specifying `@only i64`.  classes that are `final` would not need to be marked
 ```
 # extra field which will get sliced off when converting from
 # mythological_cat to cat:
-mythological_cat: all_of[cat, [Lives; 9]]
+mythological_cat: all_of[cat, m: [Lives; 9]]
 
 Cat; @only cat
 Mythological_cat; mythological_cat()
@@ -4926,7 +4953,7 @@ Generic; generic[string]
 Generic Value = "3"
 print(Generic method(i32(2)))    # prints "3333335" which is i32("3" * (2 + 5)) + 2
 
-specific[of: number]: all_of[generic[of], [Scale; of]]
+specific[of: number]: all_of[generic[of], m: [Scale; of]]
 {   ;;renew(M Scale; of = 1): Null
 
     ::method(~U): u
@@ -5159,7 +5186,7 @@ by using `Variable_case` when defining it.  Optionally you can use trailing `()`
 ```
 Awesome_service: all_of
 [   parent_class1, parent_class2, #(etc.)#,
-    [Url_base: "http://my/website/address.bazinga"]
+    m: [Url_base: "http://my/website/address.bazinga"]
 ]
 {   ::get(Id: string): awesome_data 
         Json: Http get("${M Url_base}/awesome/${Id}") 
@@ -5210,9 +5237,9 @@ a parenthetical statement, you need to use it everywhere you want the LHS to app
 Why would you need sequence building?
 One reason is that it makes declaring a bunch of private (or protected) variables convenient,
 e.g., `simple_class: @private@ [My_var: int, My_var2: str]` instead of
-`simple_class: [@private My_var: int, @private My_var2: str]`, and
-`my_class: all_of[other_classes..., @private@ [My_var: int, My_var2: str]]` instead
-of `my_class: all_of[other_classes..., [@private My_var: int, @private My_var2: str]]`.
+`simple_class: [@private My_var: int, @private My_var2: str]`.  It's not as useful
+for class inheritance where you can just use
+`my_class: all_of[other_classes..., @private m: [My_var: int, My_var2: str]]`.
 
 Another reason for sequence building:
 some languages use a builder pattern, e.g., Java, where you add fields to an object
@@ -6149,7 +6176,7 @@ indexed_lot_element[at, of]:
 
 insertion_ordered_lot[at, of]: all_of
 [   lot[at, of]
-    @private
+    @private m:
     [   At_indices; @only unordered_lot[at, value: index]
         Indexed_lot; @only unordered_lot
         [   at: index
@@ -6306,7 +6333,7 @@ For example, here is a way to create an iterator over some incrementing values:
 
 ```
 my_range[of: number]: all_of
-[   @private@
+[   @private m:
     [   Less_than: of
         Next_value: of = 0
     ]
@@ -6362,7 +6389,7 @@ next(Iterator; iterator[t] @becomes(array_iterator[t]), Array: array[~t])?: t
 
 # TODO: probably can do `(Of;:.)`
 array_iterator[of]: all_of
-[   @private@ 
+[   @private m:
     [Next; index]
     iterator[of]
 ]
@@ -6920,7 +6947,7 @@ oh-lang will support fast hashes for classes like `int`, `i32`, and `array[u64]`
 and other containers of precise types, as well as recursive containers thereof.
 
 ```
-my_hashable_class: all_of[hashable, [Id: u64, Name; string]]
+my_hashable_class: all_of[hashable, m: [Id: u64, Name; string]]
 {   # we allow a generic hash builder so we can do cryptographically secure hashes
     # or fast hashes in one definition, depending on what is required.
     # This should automatically be defined for classes with precise fields (e.g., int, u32, string, etc.)!
