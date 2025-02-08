@@ -51,10 +51,11 @@
     )
 
     if Ast in_scope("Test")
+        # TODO: for running tests in parallel with the same parent state,
+        # we probably could fork here.  but that's a bit hacky on Windows.
         Ast add(ast statement(Block!))
         return
 
-    Block prepend(ast statement("Test; test_context"))
     # statement, via string, builds something like this:
     # ast statement
     # (   ast binary_operation
@@ -64,7 +65,9 @@
     #     )
     # )
     # `
-    Ast add(Test_block. Block!)
+    Block prepend(ast statement("Test; test_context"))
+
+    Ast add(Test. Block!)
 
 @protected
 test_context: [@protected Printed; array[str], @protected Name; str]
@@ -95,42 +98,42 @@ test[of]: [Of, Oh_line]
     ::==(Of): bool
         if M Of == Of
             return True
-        error("expected ${M Of} == ${Of} at ${M Oh_line}")
+        error("${M Oh_line}: expected ${M Of} == ${Of}")
         panic("expected ${M Of} == ${Of}")
         False
 
     ::!=(Of): bool
         if M Of != Of
             return True
-        error("expected ${M Of} != ${Of} at ${M Oh_line}")
+        error("${M Oh_line}: expected ${M Of} != ${Of}")
         panic("expected ${M Of} != ${Of}")
         False
 
     ::>=(Of): bool
         if M Of >= Of
             return True
-        error("expected ${M Of} >= ${Of} at ${M Oh_line}")
+        error("${M Oh_line}: expected ${M Of} >= ${Of}")
         panic("expected ${M Of} >= ${Of}")
         False
 
     ::<=(Of): bool
         if M Of <= Of
             return True
-        error("expected ${M Of} <= ${Of} at ${M Oh_line}")
+        error("${M Oh_line}: expected ${M Of} <= ${Of}")
         panic("expected ${M Of} <= ${Of}")
         False
         
     ::>(Of): bool
         if M Of > Of
             return True
-        error("expected ${M Of} > ${Of} at ${M Oh_line}")
+        error("${M Oh_line}: expected ${M Of} > ${Of}")
         panic("expected ${M Of} > ${Of}")
         False
 
     ::<(Of): bool
         if M Of < Of
             return True
-        error("expected ${M Of} < ${Of} at ${M Oh_line}")
+        error("${M Oh_line}: expected ${M Of} < ${Of}")
         panic("expected ${M Of} < ${Of}")
         False
 }

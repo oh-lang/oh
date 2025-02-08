@@ -2260,7 +2260,6 @@ Note that we disallow the inverted syntax of `function_name: return_type(...Args
 because this looks like declaring a type (e.g., no parentheses on the left hand side)
 and the right hand side looks like how we call a function and get an instance (not a type).
 See [returning a type](#returning-a-type) for how we'd return a type.
-TODO: we need to go through the entire doc to see if we have any remaining declarations like that.
 
 ## calling a function
 
@@ -2382,10 +2381,11 @@ We can create references using [argument objects](#argument-objects) in the foll
 Note that you can use all the same methods on a reference as the original type.
 
 ```
-My_value: int(1234567890)
+My_value; int(1234567890)
 (My_ref; int) = My_value
+# equivalent: `My_ref: (Int;) = My_value`
 
-# NOTE: `My_ref` needs to be writable (`(My_ref; int)`) for this to work.
+# NOTE: `My_value` needs to be writable for this to work.
 My_ref = 12345
 
 # This is true; `My_value` was updated via the reference `My_ref`
@@ -2401,23 +2401,24 @@ another instance.
 ```
 My_value1: int(1234)
 My_value2: int(765)
-(My_ref: int) = My_value1
-# This works for both `My_ref;` and `My_ref:` declarations.
+My_ref; (Int) = My_value1
+# This works only for `My_ref;` declarations.  The actual data can be readonly,
+# as it is in this case (`My_value1` and `2` are both readonly), or writable.
 (My_ref) = My_value2
-
-# TODO: consider locking down being able to change the reference only
-#       if you do something like this.  this is probably less surprising.
-#       however, it would break destructuring like `(Ref1:, Ref2;, Ref3) = my_references()`.
-Nested; (My_ref: My_value1)
-Nested = (My_ref: My_value2)
 ```
 
-TODO: this logic also seems ok: `My_ref: (Int) = My_referent`.  maybe we allow
-mutable refs via `Mutable_ref; (Int:;)` and readonly refs via `Readonly_ref: (Int:;)`.
-mutable refs can be rewritten via `(Mutable_ref) = New_referent` but readonly refs can't.
-by default, `(My_ref: int) = My_value` should be a readonly ref.
+You can grab a few references at a time using [destructuring](#destructuring)
+notation like this:
 
-See also [destructuring](#destructuring).
+```
+Ref3; (Str) = some_ref()
+# this declares+defines `Ref1` and `Ref2`, and reassigns `Ref3`:
+(Ref1;, Ref2:, Ref3) = some_function_that_returns_refs()
+
+# e.g., with function signature:
+some_function_that_returns_refs(): (Ref2; int, Ref2: dbl, Ref3; str)
+```
+
 
 #### reference lifetimes
 
@@ -2427,6 +2428,7 @@ For example, this is illegal:
 ```
 Original_referent: int = 3
 My_reference: (Int) = Original_referent
+if Some_condition
 {   Nested_referent: int
     # COMPILE ERROR: `Nested_referent` doesn't live as long as `My_reference`
     (My_reference) = Nested_referent

@@ -6,7 +6,7 @@ ast: [tree]
     ;;add(Statement.):
         # TODO
 
-    ;;add(Test_block. block):
+    ;;add(Test. block):
         # TODO: create a unique function name
         # TODO: register the test to be run in test mode
 
