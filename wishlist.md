@@ -598,8 +598,8 @@ to specify the *whole* function [when passing it in as an argument](#functions-a
 
 ```
 # defining a function that returns a lambda function
-make_counter(Counter; int): fn(): int
-    fn(): ++Counter
+make_counter(Counter; int): do(): int
+    do(): ++Counter
 Counter; 123
 counter: make_counter(Counter;)
 print(counter())    # 124
@@ -1612,7 +1612,7 @@ fn(X: int):
 * `@First` - for the first operand in a binary operation (where order matters)
 * `@Second` - for the second operand in a binary operation (where order matters)
 * `@Unused` - for variables that aren't used in this block
-* `@Ignore` - the same as `@Unused`, but usually used for errors, e.g., `Result map(fn(@Ignore Er): -1)`
+* `@Ignore` - the same as `@Unused`, but usually used for errors, e.g., `Result map(an(@Ignore Er): -1)`
     TODO: probably can use a *trailing* underscore to ignore a variable, e.g., `Result map({$Er_, -1})`,
     but i like the purposeful intent behind the `@Ignore` namespace.
 * `@Named` - for identifiers that should be explicitly named in [generic arguments](#argument-type-generics)
@@ -2499,12 +2499,16 @@ f(Int: 7)               # ok but overly verbose
 ```
 
 If passing functions as an argument where the function name doesn't matter,
-the default-named argument for a function is `fn`.
-TODO: consider `f` instead as the default name for a function.
-`q(f(): bool): null`
+there are actually a few options: `a`, `an`, `f`, `fn`, and `do`.
+We recommend `a` and `an` for `map`-like operations with a single argument,
+choosing `an` if the argument name starts with a vowel (and `a` otherwise),
+and `do` for multi-argument functions.  We keep `f` and `fn` around
+mostly to make it easy for developers new to the language.  Note that if
+any functions are defined, including default named functions, no variables
+can shadow their `Initial_upper_snake_case` form.  And vice versa.
 
 ```
-# declaring a function that takes a lambda, note the default name `fn`.
+# declaring a function that takes a lambda, note the default name.
 q(fn(): bool): null
 
 # defining a function that takes a lambda.
@@ -2518,11 +2522,6 @@ q(name_it_what_you_want(): bool
     return True
 )   # should print "function returned true!"
 
-# can pass in functions from outside as well:
-another_test_function(): bool
-    return False
-q(another_test_function)  # should print "function returned false!"
-
 # or you can create a default-named function yourself:
 q
 (   fn(): bool
@@ -2530,8 +2529,10 @@ q
 )   # will print one of the above due to randomness.
 # equivalent to `q(fn(): random() > 0.5)` or `q({random() > 0.5})`
 
-# defining a lambda still requires a name, feel free to use the default:
+# defining a lambda usually requires a name, feel free to use the default:
 q(fn(): True)
+# or you can use this notation, without the name:
+q({True})
 
 # or you can do multiline:
 X; bool
@@ -2644,8 +2645,8 @@ so the compiler must be able to infer it (e.g., via using the lambda function as
 or by using a default name like `$Int` to define an integer).  Some examples:
 
 ```
-run_asdf(fn(J: int, K: str, L: dbl): null): null
-    print(fn(J: 5, K: "hay", L: 3.14))
+run_asdf(do(J: int, K: str, L: dbl): null): null
+    print(do(J: 5, K: "hay", L: 3.14))
 
 # Note that `$K`, `$J`, and `$L` attach to the same lambda based on looking
 # for the first matching `{}`.
@@ -3473,7 +3474,7 @@ it may only be not-writable from your scope's reference to the variable.
 
 In cases where we know the function won't do self-referential logic,
 we can try to optimize and pass by value automatically.  However, we
-do want to support closures like `next_generator(Int; int): (): ++Int`,
+do want to support closures like `next_generator(Int; int): do(): ++Int`,
 which returns a function which increments the passed-in, referenced integer,
 so we can never pass a temporary argument (e.g., `Arg. str`) into `next_generator`.
 
@@ -5192,10 +5193,10 @@ All classes have a few compiler-provided methods which cannot be overridden.
     resetting the current instance to a default instance -- i.e., calling `renew()`.
     Internally, this swaps pointers, but not actual data, so this method
     should be faster than copy for types bigger than the processor's word size.
-* `..map(fn(M.): ~t): t` to easily convert types or otherwise transform
+* `..map(an(M.): ~t): t` to easily convert types or otherwise transform
     the data held in `M`.  This method consumes `M`.  You can also overload
     `map` to define other useful transformations on your class.
-* `::map(fn(M): ~t): t` is similar to `..map(fn(M.): ~t): t`,
+* `::map(an(M): ~t): t` is similar to `..map(an(M.): ~t): t`,
     but this method keeps `M` constant (readonly).  You can overload as well.
 * `m(...): m` class constructors for any `;;renew(...): null` methods.
 * `m(...): hm[ok: m, er]` class or error constructors for any methods defined as
@@ -5213,8 +5214,7 @@ All classes have a few compiler-provided methods which cannot be overridden.
 ## singletons
 
 Defining a singleton class is quite easy, simply by instantiating a class 
-by using `Variable_case` when defining it.  Optionally you can use trailing `()`
-(which may include arguments you need to instantiate):
+by using `Variable_case` when defining it.
 
 ```
 Awesome_service: all_of
@@ -5667,8 +5667,8 @@ if Result is_ok()
     print("ok")
 
 # but it'd be nice to transform `Result` into the `Ok` (or `Er`) value along the way.
-Result is(fn(Ok): print("Ok: ", Ok))
-Result is(fn(Er): print("Er: ", Er))
+Result is(an(Ok): print("Ok: ", Ok))
+Result is(an(Er): print("Er: ", Er))
 
 # or if you're sure it's that thing, or want the program to terminate if not:
 Ok: Result ?? panic("expected `Result` to be non-null!!")
@@ -5730,7 +5730,7 @@ then we can automatically convert its return value into a `one_of[ok, null]`, i.
 a nullable version of the `ok` type.  This is helpful for things like type casting;
 instead of `My_int: what int(My_dbl) {Ok. {Ok}, Er: {-1}}` you can do
 `My_int: int(My_dbl) ?? -1`.  Although, there is another option that
-doesn't use nulls:  `int(My_dbl) map(fn(@Ignore Er): -1)`, or via
+doesn't use nulls:  `int(My_dbl) map(by(@Ignore Er): -1)`, or via
 [lambda functions](#lambda-functions): `int(My_dbl) map({@Ignore $Er, -1})`.
 
 TODO: should this be valid if `ok` is already a nullable type?  e.g.,
@@ -5769,10 +5769,6 @@ container[at, of: non_null]: []
     #   # Get the value at `At: 7` and keep a mutable reference to it:
     #   (Of?;) = Container[At: 5]
     :;[At]: (Of?:;)
-
-    # no-copy getter, which passes in a Null to the callback
-    # if the container does not have the given `At`.
-    ::[At, fn(Of?): ~t]: t
 
     # Returns the value at `At`, if present, while mooting
     # it in the container.  This may remove the `id` from
@@ -5867,7 +5863,7 @@ array[of]: container[id: index, value: of]
 {   # TODO: a lot of these methods need to return `hm[of]`.
     # cast to bool, `::!!(): bool` also works, notice the `!!` before the parentheses.
     !!(M): bool
-        return M count() > 0
+        M count() > 0
 
     # Returns the value in the array if `Index < M count()`, otherwise Null.
     # If `Index < 0`, take from the end of the array, e.g., `Array[-1]` is the last element
@@ -5878,13 +5874,13 @@ array[of]: container[id: index, value: of]
     # Gets the existing value at `Index` if the array count is larger than `Index`,
     # otherwise increases the size of the array with default values and returns the
     # one at `Index`.  This has a possibility of panicking because it requires an increase
-    # in memory; if that's important to check, use `;;at(Index): hm[of]`.
+    # in memory; if that's important to check, ask for a result (see next method).
     ;:[Index]: (Of;:)
 
     # Gets the existing value at `Index` or creates a default if needed.
     # Can return an error if we run out of memory because this method can
     # expand the array if `Index >= ::count()`.
-    ;;at(Index, Put. of): hm[of]
+    ;;[Index]: hm[(Of;)]
 
     # Returns the value at Array[Index] while resetting it to the default value.
     # We don't bring down subsequent values, e.g., `Index+1` to `Index`, (1) for
@@ -5897,12 +5893,12 @@ array[of]: container[id: index, value: of]
 
     ;;append(Of): null
 
-    # returns an error if no element at that index (e.g., array isn't big enough).
-    ;;pop(Index: index = -1): hm[of]
+    # returns a null if no element at that index (e.g., array isn't big enough).
+    ;;pop(Index: index = -1)?: of
 
     # returns a copy of this array, but sorted.
-    # uses `you` instead of `m` to indicate that `m` doesn't change.
-    ::sort(): you
+    # uses `o` instead of `m` to indicate that `m` doesn't change.
+    ::sort(): o
 
     # sorts this array in place:
     ;;sort(): null
@@ -5914,37 +5910,6 @@ array[of]: container[id: index, value: of]
     # USAGE: `Of ?; = of(...), M[Index] <-> Of`
     # TODO: is there better notation here?, e.g., `;;[Index] <-> (Of?;): null` or something with `swap`?
     ;;[Index, Of?;]: null
-
-    # TODO: use `[]` for the unsafe API, `all()` or `put()` for the safe API (returning a `hm`)
-
-    # modifier, allows access to modify the internal value via reference.
-    # passes the current value at the index into the passed-in function by reference (`;`).
-    # if Index >= the current count(), then the array count is increased (to Index + 1)
-    # and filled with default values so that a valid reference can be passed into the callback.
-    # USAGE: `M[Index] += 5` compiles to `M[Index, (Of;): {Of += 5}]`
-    # TODO: we can probably determine `$Of += 5` as `(Of;): {Of += 5}` because `$Of += 5` requires mutability
-    ;;[Index, fn(Of;): ~u]: hm u
-
-    # getter, which returns a Null if index is out of bounds of the array:
-    ::[Index, fn(Of?): ~u]: u
-
-    # getter, which never returns Null, but will return an `er` if the index is out of bounds of the array:
-    ::[Index, fn(Of): ~u]: hm u
-
-    # Note: You can use the `;:` const template for function arguments.
-    # e.g., `my_array[of]: array[of] { ;:[Index, fn(Of;:): ~u]: array;:[Index, fn] }`
-    
-    # nullable modifier, which returns a Null if index is out of bounds of the array.
-    # if the reference to the value in the array (`Of?;`) is null, but you switch to
-    # something non-null, the array will expand to that count (with default values
-    # in between, if necessary).  if you set the reference to Null and it wasn't
-    # Null before, then the array will shrink by one, and all later index values
-    # will move down one.
-    ;;[Index, fn(Of?;): ~u]: u
-
-    # non-nullable modifier, which will increase the count of the array (with default values)
-    # if you are asking for a value at an index out of bounds of the array.
-    ;;[Index, fn(Of;): ~u]: u
 }
 ```
 
@@ -6888,14 +6853,14 @@ my_vec2: [X; dbl, Y; dbl]
             else()
         elif M X > 0.0
             if M Y > 0.0
-                fn(QuadrantI. +X + Y)
+                do(QuadrantI. +X + Y)
             else
-                fn(QuadrantIV. +X - Y)
+                do(QuadrantIV. +X - Y)
         else
             if M Y > 0.0
-                fn(QuadrantII. -X + Y)
+                do(QuadrantII. -X + Y)
             else
-                fn(QuadrantIII. -X - Y)
+                do(QuadrantIII. -X - Y)
 }
 ```
 
