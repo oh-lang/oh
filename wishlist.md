@@ -769,7 +769,7 @@ Generic[int](1)             # shorthand for `Generic: generic[int](1)`.
 My_generic: generic(1.23)   # infers `generic[dbl]` for this type.
 
 # not default named:
-entry[at: hashable, of: number]: [@Named At, Value; of]
+entry[at: hashable, of: number]: [At, Value; of]
 {   ::add(Of): null
         M Value += Of
 }
@@ -1616,7 +1616,6 @@ fn(X: int):
     TODO: probably can use a *trailing* underscore to ignore a variable, e.g., `Result map({$Er_, -1})`,
     but i like the purposeful intent behind the `@Ignore` namespace.
 * `@Named` - for identifiers that should be explicitly named in [generic arguments](#argument-type-generics)
-    or kept for field names in [generic objects](#default-field-names-with-generics).
 
 
 ## member access operators `::`, `;;`, ` `, and subscripts `[]`
@@ -3663,7 +3662,6 @@ encountered when calling the function.  These fields are named to imply that the
 call can do just about anything (including fetching data from a remote server).
 
 ```
-reference[of]: one_of[writable: (Of;), readonly: (Of:)]
 call:
 [   Input; lot[at: str, reference[any]]
     # we need to distinguish between the caller asking for specific fields
@@ -3704,6 +3702,7 @@ call:
     ;;output(Name: string, Value: any): null
         My Output[Name] = Value 
 }
+reference[of]: one_of[writable: (Of;), readonly: (Of:)]
 ```
 
 When passing in a `call` instance to actually call a function, the `Input` field will be treated
@@ -3793,6 +3792,12 @@ overloads you would create with `call`.  Instead, you can create an overload wit
 some_function(My_call; call): null
     print(Call Input["X"]) # OK
 ```
+
+### callable
+
+Taking the `call` idea one step further, we can have a pointer to the function
+already ready so all we need to do is run `Callable call()`.  To specify the overload,
+the input and output variables need to be named inside the `Callable`.
 
 
 ## redefining a function
@@ -5169,7 +5174,13 @@ See also [`new[...]: ...` syntax](#returning-a-type).
 
 ### default field names with generics
 
-Note that generic classes like `generic[of]: [Of]` will have the field named based on
+Note that generic classes like `generic[of]: [Of]` do not work the same way as
+generic arguments in functions like `fn[of](Of)`.  The latter uses a default-
+named argument in an argument object and the former creates an object whose field
+is always named `Of`, regardless of what the generic type `of` is.  Thus
+`fn[of](Of)` can be called with `fn[int](5)` (without `Int: 5` specified), while
+TODO: finish this thought
+
 whatever the specified type is, so that `generic[int]` will be equivalent to `[Int: int]`.
 While it looks like there could be some internal confusion, e.g., if a `lot[at: int, int]`
 stores a list of `[At, Of]` objects, we always know how to refer to them inside the
@@ -6175,67 +6186,32 @@ indexed_lot_element[at, of]:
 insertion_ordered_lot[at, of]: all_of
 [   lot[at, of]
     @private m:
-    [   At_indices; @only unordered_lot[at, value: index]
+    [   At_indices; @only unordered_lot[at, index]
         Indexed_lot; @only unordered_lot
         [   at: index
-            value: indexed_lot_element[at, of]
-        ] = [[At: 0, Of: [Next: 0, at(), of(), Previous: 0]]]
+            indexed_lot_element[at, of]
+        ]
+        (   [At: 0, Of: [Next: 0, at(), of(), Previous: 0]]
+        )
         Next_available_index; index = 1
     ]
 ]
 {   # creates a default value if not present at the ID to pass in to the modifier:
-    ;;[At;:, fn(Of;): ~t]: t
-        Index?: M At_indices[At]
-        return if Index != Null
-            M modify_already_present(Index, fn)
-        else
-            M need_to_insert_then_modify(At;:, fn)
+    ;;[At.]: (Of;)
 
-    ::[At, fn(Of?): ~t]: t
-        Index?: M At_indices[At]
-        return if Index != Null
-            assert Index != 0
-            M Indexed_lot
-            [   Index
-                (Indexed_lot_element): t
-                    fn(Indexed_lot_element Of)
-            ]
-        else
-            fn(Null)
+    ::[At.]: (Of?)
+
+    # TODO: you can create an immediate reference (e.g., ptr??) if you
+    # use an immediate ptr to a key.
     
-    ::each(@Loop fn(At, Of): loop): bool
+    ;:each(@Loop fn(At, Of;:): loop): bool
         Index; M Indexed_lot[0] Next
         while Index != 0
-            [Of, At]: M Indexed_lot[Index] ?? panic("broken invariant!")
-            if @Loop fn(At, Of) == Break
+            (Of;:, At, Next): M Indexed_lot[Index] ?? panic("broken invariant!")
+            if @Loop fn(At, Of;:) == Break
                 return True
-            Index = M Indexed_lot[Index] Next
+            Index = Next
         return False
-
-    # modifier for a ID'd value not yet in the lot, need to insert a default first:
-    @private
-    ;;need_to_insert_then_modify(At;:, fn(Of;): ~t): t
-        New_index: M Next_available_index++ or reshuffle()
-        Previously_last_index: M Indexed_lot[0] Previous
-        M Indexed_lot[New_index] =
-        [   Previous: Previously_last_index
-            Next: 0
-            At
-            of()
-        ]
-        M At_indices[@moot_or_copy(At)] = New_index
-        M Indexed_lot[0] Previous = New_index
-        M Indexed_lot[Previously_last_index] Next = New_index
-        return M modify_already_present(New_index, fn)
-
-    # modifier for an already indexed value in the lot:
-    @private
-    ;;modify_already_present(Index, fn(Of;): ~t): t
-        debug assert(Index != 0)
-        return M Indexed_lot[Index, (Indexed_lot_element?;): t
-            assert Indexed_lot_element != Null
-            fn(Indexed_lot_element Of;)
-        ]
 }
 ```
 
@@ -8189,7 +8165,7 @@ TODO: a general purpose "part of your memory is here, part of your memory is the
 almost sounds like virtual memory with mappings.  that should probably be non-standard/non-core.
 
 TODO: discuss having all instance methods in some special virtual table, e.g., possibly 
-with additional reflection information (for things like `@for method in mutators(my_class)`
+with additional reflection information (for things like `@mutators(my_class) each(Callable;)`
 macro code).
 we also may need to have a fallback table for functions that are defined locally.
 or ideally, we just rely on the global functions so we don't have to specify the vtable
@@ -8286,14 +8262,15 @@ we have
 ```
 check(T?` ~t, Blockable[~u, declaring` t])?: u
     what T
-        # TODO: i think we should be able to support inline definitions in `what`
-        #       e.g., this should also work: T` Blockable block(T`)
         T`
             Blockable block(T`)
         Null: Null
 ```
 without some deep programming, we won't be able to have the option of doing things like
 `return X + Y`, since `return` breaks order of operations.
+We probably can allow it, but restricted to existing operators like `is`.
+But if users want fully custom stuff, they'd need to define their own macros
+that start with `@`.
 
 # implementation
 
