@@ -122,103 +122,37 @@ This parallels `my_class::the_method` in C++, but in oh-lang we can analogously 
 or `..one_temporary_method()` for a method on a temporary `M`, i.e.,
 `one_temporary_method(M.)`.  
 
-While it would be even more concise to omit `M`, we want to support
-overloading keywords such as `pass` or `break`, and to make it clear that
-the overload is requested we need the `M` context.
-TODO: can we get rid of the need for `M` and just use `::the_method` or `;;other_method`
-inside function calls?  that way we wouldn't need to prefix `M X` for instance variables either.
-parent variables would still need to be referenced via `Parent X` or `::X`/`;;X`.
-this would be a reason to switch to *prefix* `;:.` for pre-named arguments, so we could do
-`do_something(;;X)` instead of `do_something(;;X;)`.
-However, I'm not a big fan of this because then we lose some symmetry between
-class methods/variables (`m X`) compared to instance methods/variables
-(`M X`).  It also doesn't look as good for things like
+While it would be even more concise to omit `M`, we want to support adding methods
+which shadow global types (like `count()`), so we need to make it clear that the method
+is being requested (by using the `M` context).  Similarly, if we define a type `my_type`
+on a class, we need to use `m my_type` in order to refer to it in the class body.  Again,
+in the spirit of conciseness, we have a macro that allows default-naming variables much
+simpler: use `My_type: @m` to declare to `My_type: m my_type`.  A worked example:
+
+```
+my_generic[at, of]:
+[   # TODO: we probably could do `Lot; @m` here as well:
+    Lot; insertion_ordered_lot[at, of]
+]
+{   lot: insertion_ordered_lot[at, of]
+
+    # this argument is shorthand for `Lot; m lot`.
+    ;;renew(Lot; @m): null
+        M Lot <-> Lot
+}
+```
+
+Also in the spirit of conciseness, `O` can be used for an *O*ther instance of the same type.
 ```
 vector3[of: number]: [X; of, Y; of, Z; of]
-{   ::dot(O): of
-        ::X * O X + ::Y * O Y + ::Z * O Z
-    ::cross(O): vector3
-    (   X. ::Y * O Z - ::Z * O Y
-        Y. ::Z * O X - ::X * O Z
-        Z. ::X * O Y - ::Y * O X
-    )
-
-    ;;project(Along: vector3): null
-        print(count())  # is this `m count()` or `count()` the type?
-        Dot: ::dot(Along)
-        ;;X = Dot * Along X
-        ;;Y = Dot * Along Y
-        ;;Z = Dot * Along Z
-
-    ::count_nonzero(): count
-        # count(True) == 1 and count(False) == 0:
-        count(::X != 0.0) + count(::Y != 0.0) + count(::Z != 0.0)
-
-    :;[.One_of[0, 1, 2]]: (:;Dbl)
-        what One_of
-            0 {(:;X)}
-            1 {(:;Y)}
-            2 {(:;Z)}
-
-    count(): count(3)
-
-    vector4: vector4[of]
-}
-# using `M` for self and `O` for other.
-vector3[of: number]: [X; of, Y; of, Z; of]
-{   ::dot(O): of
+{   # `g` is used for this generic class without the current specification:
+    new(@First Value: ~value, @Second Value, @Third Value): g[value]
+        [X: @First Value, Y: @Second Value, Z: @Third Value]
+    ::dot(O): of
         M X * O X + M Y * O Y + M Z * O Z
-    
-    ::cross(O): vector3
-    (   X. M Y * O Z - M Z * O Y
-        Y. M Z * O X - M X * O Z
-        Z. M X * O Y - M Y * O X
-    )
-
-    ;;project(Along: vector3): null
-        print(count())  # is this `m count()` or `count()` the type?
-        Dot: dot(M, Along)     # or `Dot: M dot(Along)`
-        M X = Dot * Along X
-        M Y = Dot * Along Y
-        M Z = Dot * Along Z
-
-    # number of non-zero components.
-    ::count_nonzero(): count
-        # count(True) == 1 and count(False) == 0:
-        count(M X != 0.0) + count(M Y != 0.0) + count(M Z != 0.0)
-
-    :;[One_of[0, 1, 2]]: (Dbl:;)
-        what One_of
-            0 {(M X:;)}
-            1 {(M Y:;)}
-            2 {(M Z:;)}
-
-    count(): count(3)
 }
+dot(vector3(1, 2, 3), vector3(-6, 5, 4)) == -6 + 10 + 12
 ```
-Technically we only need `;:.` for methods, we could look under the namespace
-of `M` for any variables we don't recognize.  The main thing that I do want
-is for nested types to not require `m` prefixes, which is annoying.
-```
-non_negative: [Value; int]
-{   m(Value. int): hm[m]       # instead of `m hm[m]`.
-        if Value < 0
-            er Negative         # instead of `m er Negative`
-        else
-            [Value]
-
-    hm[of]: hm[ok: of, er]
-    er: one_of[Negative]
-}
-```
-I think we have to give up on this as it's not consistent with variables and methods.
-`m hm[m]` isn't that much more verbose than `hm[m]`.  Alternatively you can define
-`hm` in the root scope, which may be desired for generic classes anyway, since you
-don't need to specify the generic.  let's just figure out a good syntax for shortcut
-of `Class_type: m class_type`, e.g., `m Class_type`.  this is a more general problem
-because we'll have class imports like `lib_oh: \/lib, Vector: lib vector` which should
-be something like `lib Vector` but that doesn't look quite right (looks like we're
-referencing a class variable).  maybe `Class_type: m~` or `Class_type: m@` or `@m`.
 
 Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
