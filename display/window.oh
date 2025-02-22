@@ -10,11 +10,11 @@ WISHLIST
 #)#
 
 
-Window uh: one_of
+er: select
 [   Invalid_argument
     # TODO...
 ]
-hm[of]: hm[ok: of, Window uh]
+hm[of]: hm[ok: of, er]
 
 window: []
 {   terminal(): terminal_window
@@ -22,14 +22,14 @@ window: []
 
     # Returns the actual window size, i.e., the real-estate available for drawing.
     ::size(): size2
-    # Sets the window size, returning the old value if the attempt was successful.
-    ;;size(Size2): hm[size2]
+    # Sets the window size, swapping in the old value if the attempt was successful.
+    ;;size(Size2;): hm[null]
     # TODO: add these eventually when we think we have a consistent API:
     #(#
     # Sets the minimum window size, i.e., for a resizable window.
-    ;;min_size(Size2): hm[size2]
+    ;;size(Min; size2): hm[null]
     # Sets the maximum window size, i.e., for a resizable window.
-    ;;max_size(Size2): hm[size2]
+    ;;size(Max; size2): hm[null]
     #)#
 
     # Returns the current data in the clipboard,
@@ -45,9 +45,9 @@ window: []
     # Awaits the next window event, with a timeout in case no events occur.
     ;;poll(Timeout: duration): window_event
 
-    # Accumulates window events over a frame.
-    # The `Duration` returned is that since the last `poll` or `frame` call.
-    ;;frame(Desired_fps: f32): [Events: window_event[], Duration]
+    # Accumulates window events over a frame, for a requested duration.
+    # The returned duration is the actual time since this was called.
+    ;;frame(Duration.): [Events: array[window_event], Duration]
 }
 
 terminal_window: all_of[window, l2]
@@ -57,9 +57,8 @@ terminal_window: all_of[window, l2]
 graphics_window: all_of[window, l3]
 {   # Returns true iff the window is fullscreen.
     ::fullscreen(): bool
-    # Sets fullscreen if the passed-in `Bool` is true,
-    # otherwise sets windowed mode.  Returns the previous result if successful.
-    ;;fullscreen(Bool): hm[bool]
+    # Swaps in fullscreen/windowed value.
+    ;;fullscreen(Bool;): hm[null]
 
     ::resolution(): L3 Pixels size()
     ;;resolution(Size2): L3 Pixels size(Size2)
@@ -72,18 +71,18 @@ l2: [@private Pixels;]
 
 l3: [@private Pixels;]
 {   # Function to get pixels to draw to.
-    ;;draw[of: one_of[cpu_pixels, qpu_pixels]](fn(Of;): ~t): fn(My Pixels;)
+    ;;draw[of: one_of[cpu_pixels, qpu_pixels]](fn(~Of;): ~t): fn(My Pixels;)
 }
 
-window_event: one_of
+window_event: select
 [   # A resize event, with the new interior size.
     resize: size2
     # A sequence of runes (e.g., layout and locale included).
     text: string
     # A physical, named key.
-    key: [Key, Modifiers, State: one_of[Pressed, Released, Repeated]]
+    key: [Key, Modifiers, State: select[Pressed, Released, Repeated]]
     # Mouse button, e.g., left mouse button or right mouse button.
-    mouse_button: [Position: vector2i, Button: u8, Modifiers, State: one_of[Pressed, Released]]
+    mouse_button: [Position: vector2i, Button: u8, Modifiers, State: select[Pressed, Released]]
     # The mouse moving.  The position is relative to the top-left of the shown pixels
     # (i.e., in case of letterboxing, coordinates can be < 0 or >= the Window Resolution).
     mouse_move: [Delta: vector2i, Position: vector2i, Modifiers]
@@ -125,11 +124,11 @@ pixels: []
     # Color getter via coordinates.  Can fail if the coordinates are out of bounds (OOB).
     # Can also be expensive if the pixels aren't up-to-date on the CPU.
     @hide_from(gpu_pixels)
-    ::[Coordinates2i, fn(Color): ~t]: hm[ok: t, uh]
+    ::[Coordinates2i, fn(Color): ~t]: hm[t]
 
     # Color check+setter via coordinates.
     @hide_from(gpu_pixels)
-    ;;[Coordinates2i, fn(Color;): ~t]: hm[ok: t, uh]
+    ;;[Coordinates2i, fn(Color;): ~t]: hm[t]
 
     # Color setter (doesn't check the color first).
     ;;draw(Coordinates2i, Color): hm[null]
@@ -249,7 +248,7 @@ vertices[of]:
     # TODO: `..transfer(): of` to become `Gpu_only`
 }
 
-@private state[of]: one_of
+@private state[of]: select
 [   # This object is not represented on the GPU at all.
     Cpu_only
     # This object is not represented on the CPU at all.
@@ -341,7 +340,7 @@ font_options:
     @alias Background_color: Background
 }
 
-font_style: any_or_none_of
+font_style: choose
 [   Bold
     Italic
     Underlined

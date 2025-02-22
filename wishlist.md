@@ -7662,6 +7662,12 @@ e.g., `primitives: one_of[i8, i16], my_generic[of: primitives]: [Of]`
 will only allow specification as `my_generic[i8]` or `my_generic[i16]`.
 TODO: do we need `exactly_one_of` to make sure `of` is not `one_of[i8, i16]`?
 if not, how do we make these distinctions?
+maybe we use `select[a, b]` for it to either be `a` or `b` but not `one_of[a, b]`.
+enums probably need to be done with `select` and not `one_of` though.
+maybe we invert so that `any_or_none_of` could be `choose`, and we use
+`one_of[a, b]` for compiler checks (it can't be a type that's either `a` or `b`,
+it needs to be exactly `a` or exactly `b`), and `select[a, b]` for the enum
+that could be `a` or `b`, or an unknown type that is either `a` or `b`.
 
 Going the other way, you can check check if a `one_of` contains some
 type by using `contains`, e.g., `a_or_b: one_of[a, b], a_or_b contains[x]`
