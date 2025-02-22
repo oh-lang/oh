@@ -5362,7 +5362,7 @@ substitute the preferred name/logic for any aliases found.
 Aliases can be used for simple naming conventions, e.g.:
 
 ```
-options: any_or_none_of
+options: choose
 [   one_of[Align_inherit_x: 0, Align_center_x, Align_left, Align_right]
 ]
 {   @alias Inherit_align_x: Align_inherit_x
@@ -7397,9 +7397,10 @@ TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific in
 
 Enums are by default the smallest standard integral type that holds all values,
 but they can be signed types (in contrast to masks which are unsigned).
-If desired, you can specify the underlying enum type using `i8 one_of[...]` instead
+If desired, you can specify the underlying enum type using `one_of i8[...]` instead
 of `one_of[...]`, but this will be a compile error if the type is not big enough to
-handle all options (or if the enum requires more complicated storage due to non-integer values).
+handle all options.  It will not be a compile warning if the `one_of` includes types
+inside (e.g., `i8 one_of[u32, f32]`); we'll assume you want the tag to be an `i8`.
 
 Here is an example enum with some values that aren't specified.  Even though
 the values aren't specified, they are deterministically chosen.
@@ -7749,20 +7750,20 @@ Masks are generalized from enumerations to allow multiple values held simultaneo
 Each value can also be thought of as a flag or option, which are bitwise OR'd together
 (i.e., `|`) for the variable instance.  Under the hood, these are unsigned integer types.
 Trying to assign a negative value will throw a compiler error.
+Unlike enums which hold only `one_of` the fields at a time, masks hold `any_or_none_of`
+which is a bit too verbose; we use `choose[A, B, C]` to declare a mask which can
+be `A`, `B`, `C`, some combination of all three, or no values at all.
 
 Like with enums, you can specify the integer type that backs the mask, but in this case
-it must be an unsigned type, e.g., `mask u32`.  Note that by default, the `mask_type`
+it must be an unsigned type, e.g., `choose u32[...]`.  Note that by default, the `mask_type`
 is exactly as many bits as it needs to be to fit the desired options, rounded up to
 the nearest standard unsigned type (`u8`, `u16`, `u32`, `u64`, `u128`, etc.).
 We will add a warning if the user is getting into the `u128+` territory.
 
 TODO: is there a good generalization of "any type in an enum" functionality
-that rust provides, for masks?
-TODO: `any_or_none_of` -> `choose`.
+that rust provides, for masks?  e.g., `choose[a, b, c]` for types `a,b,c`?
 
-Since masks can be any or none of the options specified, they are created using
-the `any_or_none_of` function.  Like with `one_of` enumerations, masks don't need
-to specify their values; but unlike `one_of` enumerations, if you do specify them,
+Also like enums, masks don't need to specify their values; unlike enums, if you do specify them,
 they must be powers of two.  Like enums, they have an `is_this_value()` method
 for a `This_value` option, which is true if the mask is exactly equal to `This_value`
 and nothing else.  You can use `has_this_value()` to see if it contains `This_value`,
@@ -7773,7 +7774,7 @@ TODO: should this be `contains_this_value()` to be consistent with containers?
 TODO: is there a way to make this `any_of` and use 0 as the `Null` value?
 
 ```
-food: any_or_none_of
+food: choose
 [   Carrots
     Potatoes
     Tomatoes
@@ -7793,7 +7794,7 @@ And here is an example with specified values.
 
 ```
 # the mask is required to specify types that are powers of two:
-non_mutually_exclusive_type: any_or_none_of
+non_mutually_exclusive_type: choose
 [   X: 1
     Y: 2
     Z: 4
@@ -7829,7 +7830,7 @@ Options has_t()  # True
 We can also create a mask with one or more `one_of` fields, e.g.:
 
 ```
-options: any_or_none_of
+options: choose
 [   one_of[Align_center_x, Align_left, Align_right]
     one_of[Align_center_y, Align_top, Align_bottom]
 
@@ -7873,7 +7874,7 @@ name can thus be chosen for each `one_of`, e.g., `one_of[..., Whatever_name: 0, 
 You can add some named combinations by extending a mask like this.
 
 ```
-my_mask: any_or_none_of[X, Y]
+my_mask: choose[X, Y]
 {   X_and_y: X | Y
 }
 

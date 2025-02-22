@@ -6,7 +6,7 @@ ordinal8: ordinal[wrapping: h8]
 
 @final
 ordinal[wrapping: hoisted_primitive]: all_of
-[   [@private Value; wrapping]
+[   m: [@private Value; wrapping]
     integer
 ]
 {   m(Wrapping. wrapping): hm[m, number er]

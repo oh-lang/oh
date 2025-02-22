@@ -31,6 +31,8 @@ file[Mode]: [@private File_handle]
 
     # appends a byte to the file.
     ;;write[Require: Mode is_writable()](U8): hm[null]
+
+    mode: mode
 }
 
 mode: one_of

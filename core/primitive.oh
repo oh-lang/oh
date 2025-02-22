@@ -14,7 +14,7 @@ bit_count: one_of[8, 16, 32, 64]
 # unsigned primitives represent numbers from `0` to `2^P - 1`, inclusive,
 # where `P` is the number of bits used; i.e., `u8` has `P: 8` and `u64` has `P: 64`.
 # `u8` can thus represent numbers from 0 to 255.
-unsigned_primitive: one_of
+unsigned_primitive: select
 [   u8
     u16
     u32
@@ -37,7 +37,7 @@ signed[u64]: i64
 # signed primitives represent numbers from `-2^(P-1)` to `2^(P-1) - 1`, inclusive,
 # where `P` is the number of bits used; i.e., `i8` has `P: 8` and `i64` has `P: 64`.
 # `i8` can thus represent numbers from -128 to 127.
-signed_primitive: one_of
+signed_primitive: select
 [   i8
     i16
     i32
@@ -67,7 +67,7 @@ hoisted[i64]: h64
 # where `P` is the number of bits used; i.e., `s8` has `P: 8` and `s64` has `P: 64`.
 # `s8` can thus represent numbers from -127 to 127.  they use two's complement but
 # keep `-2^(P-1)` reserved as a `Null` value for when the type is nullable.
-symmetric_primitive: one_of
+symmetric_primitive: select
 [   s8
     s16
     s32
@@ -87,7 +87,7 @@ s16: symmetric[wrapping: i16]
 s8: symmetric[wrapping: i8]
 
 symmetric[wrapping: signed_primitive]: all_of
-[   [@private Value; wrapping]
+[   m: [@private Value; wrapping]
     integer
 ]
 {   m(Wrapping.): hm[number er, m]
@@ -102,7 +102,7 @@ symmetric[wrapping: signed_primitive]: all_of
 # hoisted primitives represent numbers from `-2^(P-1) + 1` to `2^(P-1)`, inclusive,
 # where `P` is the number of bits used; i.e., `h8` has `P: 8` and `h64` has `P: 64`.
 # `h8` can thus represent numbers from -127 to 128.
-hoisted_primitive: one_of
+hoisted_primitive: select
 [   h8
     h16
     h32
@@ -123,7 +123,7 @@ h8: hoisted[wrapping: i8]
 
 # internally a `hoisted` primitive negates the primitive type to represent itself.
 hoisted[wrapping: signed_primitive]: all_of
-[   [@private Negated_value; wrapping]
+[   m: [@private Negated_value; wrapping]
     integer
 ]
 {   m(Wrapping.): hm[number er, ok: m]

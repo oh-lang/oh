@@ -1,3 +1,5 @@
+str: str16
+
 # takes up 16 bytes = 128 bits.
 # has room for 128 bytes efficiently,
 # can fit up to 15 bytes locally if unallocated.
