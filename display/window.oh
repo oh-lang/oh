@@ -10,7 +10,7 @@ WISHLIST
 #)#
 
 
-er: select
+er: one_of
 [   Invalid_argument
     # TODO...
 ]
@@ -71,18 +71,18 @@ l2: [@private Pixels;]
 
 l3: [@private Pixels;]
 {   # Function to get pixels to draw to.
-    ;;draw[of: one_of[cpu_pixels, qpu_pixels]](fn(~Of;): ~t): fn(My Pixels;)
+    ;;draw[of: select[cpu_pixels, qpu_pixels]](fn(~Of;): ~t): fn(My Pixels;)
 }
 
-window_event: select
+window_event: one_of
 [   # A resize event, with the new interior size.
     resize: size2
     # A sequence of runes (e.g., layout and locale included).
     text: string
     # A physical, named key.
-    key: [Key, Modifiers, State: select[Pressed, Released, Repeated]]
+    key: [Key, Modifiers, State: one_of[Pressed, Released, Repeated]]
     # Mouse button, e.g., left mouse button or right mouse button.
-    mouse_button: [Position: vector2i, Button: u8, Modifiers, State: select[Pressed, Released]]
+    mouse_button: [Position: vector2i, Button: u8, Modifiers, State: one_of[Pressed, Released]]
     # The mouse moving.  The position is relative to the top-left of the shown pixels
     # (i.e., in case of letterboxing, coordinates can be < 0 or >= the Window Resolution).
     mouse_move: [Delta: vector2i, Position: vector2i, Modifiers]
@@ -248,7 +248,7 @@ vertices[of]:
     # TODO: `..transfer(): of` to become `Gpu_only`
 }
 
-@private state[of]: select
+@private state[of]: one_of
 [   # This object is not represented on the GPU at all.
     Cpu_only
     # This object is not represented on the CPU at all.

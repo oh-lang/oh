@@ -7397,7 +7397,7 @@ TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific in
 
 Enums are by default the smallest standard integral type that holds all values,
 but they can be signed types (in contrast to masks which are unsigned).
-If desired, you can specify the underlying enum type using `@i8 one_of[...]` instead
+If desired, you can specify the underlying enum type using `i8 one_of[...]` instead
 of `one_of[...]`, but this will be a compile error if the type is not big enough to
 handle all options (or if the enum requires more complicated storage due to non-integer values).
 
@@ -7657,21 +7657,10 @@ is `one_of[c, d, e]`.
 If you want to check if a condition is true for a type,
 you can use notation like `x is one_of[a, b]`.  This is true if `x`
 is `a`, `b`, or even `one_of[a, b]`, and false otherwise.
-This can be used to restrict generics to a list of only certain types,
-e.g., `primitives: one_of[i8, i16], my_generic[of: primitives]: [Of]`
-will only allow specification as `my_generic[i8]` or `my_generic[i16]`.
-TODO: do we need `exactly_one_of` to make sure `of` is not `one_of[i8, i16]`?
-if not, how do we make these distinctions?
-maybe we use `select[a, b]` for it to either be `a` or `b` but not `one_of[a, b]`.
-enums probably need to be done with `select` and not `one_of` though.
-maybe we invert so that `any_or_none_of` could be `choose`, and we use
-`one_of[a, b]` for compiler checks (it can't be a type that's either `a` or `b`,
-it needs to be exactly `a` or exactly `b`), and `select[a, b]` for the enum
-that could be `a` or `b`, or an unknown type that is either `a` or `b`.
-
-Going the other way, you can check check if a `one_of` contains some
-type by using `contains`, e.g., `a_or_b: one_of[a, b], a_or_b contains[x]`
-is true if `x` is `a`, `b`, or `one_of[a, b]`.
+You can also use `contains` to go the opposite direction, e.g.,
+`one_of[a, b] contains(x)` is the same as `x is one_of[a, b]`.
+(Note we use parentheses in `contains(...)` because we return a value,
+i.e., a boolean, not a type.)
 
 ### `one_of`s as function arguments
 
@@ -7716,6 +7705,44 @@ of compile-time known and compile-time unknown arguments.
 TODO: ensure that we can use `Call` or similar to create our own version
 of a `one_of` with metaprogramming or whatever.
 
+## select
+
+If you *don't* want to allow the combined case as an argument, e.g., `one_of[a,b]`,
+you can use `select[a, b]`.  This will only generate overloads with
+the distinct types and not the combined type, like so:
+
+```
+my_fn(Select[int, str]): str
+    "hello ${Select}"
+
+# becomes only these two functions internally:
+my_fn(Int): str
+    "hello ${Int}"
+
+my_fn(Str): str
+    "hello ${Str}"
+
+# when calling:
+my_fn(5)            # OK
+my_fn("world")      # OK
+My_one_of; one_of[int, str](3)
+# ... some logic that might change My_one_of
+my_fn(My_one_of)    # COMPILE ERROR
+```
+
+This can be used to restrict generics to a list of only certain types,
+e.g., `primitives: select[i8, i16], my_generic[of: primitives]: [Of]`
+will only allow specification as `my_generic[i8]` or `my_generic[i16]`,
+and not `my_generic[one_of[i8, i16]]`.
+
+Like with `one_of`, you can check if a `select` contains some type by
+using `contains`, e.g., `a_or_b: select[a, b], a_or_b contains(x)`
+is true if `x` is `a` or `b`, but not `one_of[a, b]`.  Note that
+`select` will expand so that `a_or_b contains(select[a, b])` could
+be true or false depending on the situation.  In this case, it would
+be a compile error because `select[a, b]` needs to be put into a named
+type (e.g., `a_or_b: select[a, b]`) since it is a bit of a meta-type.
+
 ## masks
 
 Masks are generalized from enumerations to allow multiple values held simultaneously.
@@ -7731,6 +7758,7 @@ We will add a warning if the user is getting into the `u128+` territory.
 
 TODO: is there a good generalization of "any type in an enum" functionality
 that rust provides, for masks?
+TODO: `any_or_none_of` -> `choose`.
 
 Since masks can be any or none of the options specified, they are created using
 the `any_or_none_of` function.  Like with `one_of` enumerations, masks don't need
