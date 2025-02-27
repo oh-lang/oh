@@ -235,11 +235,14 @@ Primitive types will do overflow like in other languages without panicking, but 
 * for an argument, `:` is a readonly reference, `;` is a writable reference, and `.` is a temporary
     (i.e., passed by value), see [pass-by-reference or pass-by-value](#pass-by-reference-or-pass-by-value)
 * use `:` to declare readonly things, `;` to declare writable things.
-    * use `A: x` to declare `A` as an instance of type `x`, see [variables](#variables)
+    * use `A: x` to declare `A` as an instance of type `x`, see [variables](#variables),
+        with `A` any `Initial_upper_snake_case` identifier.
     * use `fn(): x` to declare `fn` as a function returning an instance of type `x`, see [functions](#functions),
-        with any arguments inside `()`.
+        with any arguments inside `()`.  `fn` can be renamed to anything `lower_snake_case`, but `fn` is the default.
     * use `a: y` to declare `a` as a constructor that builds instances of type `y`
+        with `a` any `lower_snake_case` identifier.
     * use `new[]: y` to declare `new` as a function returning a type `y`, with any arguments inside `[]`.
+        `new` can be renamed to anything `lower_snake_case`, but `new` is the default.
     * while declaring *and defining* something, you can avoid the type if you want the compiler to infer it,
         e.g., `A: some_expression()`
 * when not declaring things, `:` is not used; e.g., `if` statements do not require a trailing `:` like python
@@ -7982,9 +7985,9 @@ is descoped.
 # function that takes a function as an argument and returns a function
 # example usage:
 #   some_fn(): "hey"
-#   TODO: this actually is a good case for not needing () in function definitions.
-#       is there a way we can determine this isn't a type??
-#   other_fn: wow(some_fn)
+#   TODO: discussion about how this function is defined immediately and not lazily;
+#   e.g., maybe need to use `other_fn(): int { wow(some_fn) }` to be lazy.
+#   other_fn(): int = wow(some_fn)
 #   print(other_fn()) # 3
 wow(Input fn(): string): fn(): int
     return (): int
