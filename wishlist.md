@@ -125,9 +125,10 @@ or `..one_temporary_method()` for a method on a temporary `M`, i.e.,
 While it would be even more concise to omit `M`, we want to support adding methods
 which shadow global types (like `count()`), so we need to make it clear that the method
 is being requested (by using the `M` context).  Similarly, if we define a type `my_type`
-on a class, we need to use `m my_type` in order to refer to it in the class body.  Again,
-in the spirit of conciseness, we have a macro that allows default-naming variables much
-simpler: use `My_type: @m` to declare to `My_type: m my_type`.  A worked example:
+on a class, we need to use `m my_type` in order to refer to it in the class body so that
+we can still refer to `my_type` as a global type.  Again, in the spirit of conciseness,
+we have a macro that allows default-naming variables much simpler: use `My_type: @m`
+to declare `My_type: m my_type`.  A worked example:
 
 ```
 my_generic[at, of]:
@@ -142,15 +143,20 @@ my_generic[at, of]:
 }
 ```
 
-Also in the spirit of conciseness, `O` can be used for an *O*ther instance of the same type.
+Also in the spirit of conciseness, `O` can be used for an *O*ther instance of the same type,
+and `g` can be used for the current generic class (without the specification) while
+`m` always refers to the current class type (including the specification if generic).
+
 ```
 vector3[of: number]: [X; of, Y; of, Z; of]
 {   # `g` is used for this generic class without the current specification:
     new(@First Value: ~value, @Second Value, @Third Value): g[value]
         [X: @First Value, Y: @Second Value, Z: @Third Value]
+
     ::dot(O): of
         M X * O X + M Y * O Y + M Z * O Z
 }
+
 dot(vector3(1, 2, 3), vector3(-6, 5, 4)) == -6 + 10 + 12
 ```
 
@@ -164,7 +170,7 @@ Because we use `::` for readonly methods and `;;` for writable methods, we can
 easily define "const template" methods via `:;` which work in either case `:` or `;`.
 This is mostly useful when you can call a few other methods internally that have specific
 `::` and `;;` overloads, since there's usually some distinct logic for readonly vs. writable.
-E.g., `;:the_method(X;: str): M check(X;:)` where `check` has distinct overloads for `::` and `;;`.
+E.g., `;:the_method(X;: str): {M check(X;:)}` where `check` has distinct overloads for `::` and `;;`.
 See [const templates](#const-templates) for more details.
 
 oh-lang uses result-passing instead of exception-throwing in order to make it clear
@@ -279,6 +285,7 @@ Primitive types will do overflow like in other languages without panicking, but 
         `Results: A@ [x(), Y], print("${Results[0]}, ${Results[1]})`.
 * `{}` for blocks and sequence building
     * `{...}` to effectively indent `...`, e.g., `if Condition {do_thing()} else {do_other_thing(), 5}`
+        * Used for defining a function inline, e.g., `fn(): {do_this(), do_that()}`.
         * Note that braces `{}` are *optional* if you actually go to the next line and indent,
             but they are recommended for long blocks.
     * `A@ {x(), Y}` with [sequence building](#sequence-building), 
@@ -294,6 +301,8 @@ Primitive types will do overflow like in other languages without panicking, but 
             `Array: if Some_condition $[1, 2, 3] else $[4, 5]`
         * `$(...)` as shorthand for a new block defining `(...)`, e.g., an argument object:
             `Result: if X > Y $(Max: X, Min: Y) else $(Min: X, Max: Y)`
+        * `${...}` to define a new unnamed function, see combination with
+            named arguments `$Arg`.
     * `$Arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
         * `My_array map({$Int * 2 + 1})` will iterate over e.g., `My_array: [1, 2, 3, 4]`
             as `[3, 5, 7, 9]`.  The `$` variables attach to the nearest brace/indent as
@@ -477,6 +486,8 @@ See [functions](#functions) for a deeper dive.
 do_something(With: int, X; int, Y; int): null
 
 # defining a void function
+# braces {} are optional (as long as you go to the next line and indent)
+# but recommended for long functions.
 do_something(With: int, X; int, Y; int): null
     # because `X` and `Y` are defined with `;`, they are writable
     # in this scope and their changes will persist back into the
@@ -506,13 +517,15 @@ do_something(With: Mean, X; Mutated_x, Y; Mutated_y)
 # declaring a function that returns other values:
 do_something(X: int, Y: int): [W: int, Z: int]
 
-# defining a function that returns other values
+# defining a function that returns other values.
+# braces are optional as long as you go to the next line and indent.
 do_something(X: int, Y: int): [W: int, Z: int]
-    # option A:
+{   # option A:
     Z = \\math atan(X, Y)
     W = 123
     # option B:
     [Z: \\math atan(X, Y), W: 123]
+}
 ```
 
 ```
@@ -520,11 +533,11 @@ do_something(X: int, Y: int): [W: int, Z: int]
 do_something(you(): str, greet(Name: str): str): str
     greet(Name: you())
 
-# calling a function with some functions as arguments
-my_name(): str
-    "World"
+# calling a function with some functions as arguments:
+# note with this definition inline, braces are required.
+my_name(): {"World"}
 do_something
-(   you(): str = my_name()
+(   you(): str = my_name
     greet(Name: str): str
         "Hello, ${Name}"
 )
@@ -532,11 +545,14 @@ do_something
 
 Note that because we support [function overloading](#function-overloads), we need
 to specify the *whole* function [when passing it in as an argument](#functions-as-arguments).
+We require braces in function definitions so that we can distinguish between passing
+a function as an argument (e.g., `outer_fn(rename_to_this(Args): return_type = use_this_fn)`)
+and defining a function inline (e.g., `defining_fn(Args): {do_this()}`).
 
 ```
 # defining a function that returns a lambda function
 make_counter(Counter; int): do(): int
-    do(): ++Counter
+    do(): {++Counter}
 Counter; 123
 counter: make_counter(Counter;)
 print(counter())    # 124
@@ -633,7 +649,7 @@ my_class: [X: int]
     # or `m count()` inside it.
     count(): count
         Count
-    # for short, `count(): Count`
+    # for short, `count(): {Count}`
 
     # methods which keep the class readonly use a `::` prefix
     ::do_something(Y: int): int
@@ -1945,7 +1961,7 @@ is null on it.  For example, the signed type `s8` defines null as `-128` like th
 ```
 s8: i8 {@Null: -128}
 
-# roughly equivalent to `s8?: s8 { Null: -128_i8, ::is(null): M == -128_i8 }`
+# roughly equivalent to `s8?: s8 { Null: -128_i8, ::is(null): {M == -128_i8} }`
 ```
 
 Similarly, `f32?` and `f64?` indicate that `NaN` is null via `{@Null: NaN, ::is(null): is_nan(M)}`,
@@ -1958,14 +1974,14 @@ do the following:
 
 ```
 my_class: [@private Some_state: int]
-{   ;;renew(M Some_state: int): Null
+{   ;;renew(M Some_state: int): {}
     ::normal_method(): int
         M Some_state + 3
 
     # the nullable definition, inside a class:
     ?: m
     {   Null: [Some_state: -1]
-        ::is_null(): M Some_state < 0
+        ::is_null(): {M Some_state < 0}
 
         ::null_method(): int
             assert(M Some_state >= 0)
@@ -1977,7 +1993,7 @@ my_class: [@private Some_state: int]
 # both internal/external definitions aren't required of course.
 my_class?: my_class
 {   Null: [Some_state: -1]
-    ::is_null(): M Some_state < 0
+    ::is_null(): {M Some_state < 0}
     ::null_method(): int
         assert(M Some_state >= 0)
         M Some_state * 5
@@ -2466,8 +2482,9 @@ q
 # equivalent to `q(fn(): random() > 0.5)` or `q({random() > 0.5})`
 
 # defining a lambda usually requires a name, feel free to use the default:
-q(fn(): True)
+q(fn(): {True})
 # or you can use this notation, without the name:
+# TODO: should we require `q(${True})` or can we distinguish a lambda here?
 q({True})
 
 # or you can do multiline:
@@ -2476,13 +2493,14 @@ q
 (   fn():
         X
 )
-# equivalent to `q(fn(): X)`
-# also equivalent to `q(fn(): {X})`
+# equivalent to `q(fn(): {X})`
 # also equivalent to `q({X})`
 ```
 
-You only really need to use `{X}` if you're also doing a side computation,
-e.g., `{Some_other_calculation, X}`.
+You need to use braces so that we can distinguish function definitions
+from function assignments, i.e., assigning the value of one function to another,
+like `my_mutable_fn(); int {original_definition()}`, followed by
+`my_mutable_fn(); int = some_other_fn`.  See [mutable functions](#mutable-functions).
 
 ### the name of a called function in an argument object
 
@@ -2552,23 +2570,24 @@ detect(greet(Int): string): int
 greet(Int): string
     return "hay"
 # you can use it directly, although you still need to specify which overload you're using,
-detect(greet(Int): greet(Int) String)    # returns -1
-# also ok:
-detect(greet(Int): string = greet(Int))
+detect(greet(Int): string)  # returns -1
+# also ok, but a bit verbose:
+detect(greet(Int): greet(Int) String)
 
 # if your function is not named the same, you can do argument renaming;
 # internally this does not create a new function:
 say_hi(Int): string
     return "hello, world" + "!" * Int
-detect(greet(Int): say_hi(Int) String)  # returns 1
+detect(greet(Int): string = say_hi) # returns 1
 
 # you can also create a function named correctly inline -- the function
 # will not be available outside, after this call (it's scoped to the function arguments).
-detect(greet(Int): string
-    return "hello, world!!!!" substring(Length: Int)
+detect
+(   greet(Int): string
+        "hello, world!!!!" substring(Length: Int)
 )   # returns 13
 
-detect(greet(Int): ["hi", "hey", hello"][Int % 3] + ", world!") # returns 2
+detect(greet(Int): {["hi", "hey", hello"][Int % 3] + ", world!"}) # returns 2
 ```
 
 ### lambda functions
@@ -2623,7 +2642,8 @@ But it would probably be more readable to just define the functions normally in 
 
 There is currently no good way to define the name of a lambda function; we may use
 `@named(whatever_name) {$X + $Y}`, but it's probably more readable to just define
-the function inline as `whatever_name(X, Y): X + Y`.
+the function inline as `whatever_name(X, Y): {X + Y}`.
+TODO: would `$named{$X + $Y}` work??
 
 ### types as arguments
 
@@ -2735,7 +2755,7 @@ that is in method definitions.  Take for example the vector dot product:
 
 ```
 vector2: [X; dbl, Y; dbl]
-{   ;;renew(M X. dbl, M Y. dbl): Null
+{   ;;renew(M X. dbl, M Y. dbl): {}
 
     @order_independent
     ::dot(Vector2): dbl
@@ -2766,7 +2786,7 @@ use `O` as the variable name which in the class body is the same as `@Second M`.
 
 ```
 vector3: [X; dbl, Y; dbl, Z; dbl]
-{   ;;renew(M X. dbl, M Y. dbl, M Z. dbl): Null
+{   ;;renew(M X. dbl, M Y. dbl, M Z. dbl): {}
 
     # defined in the class body, we do it like this:
     ::cross(O): vector3
@@ -3116,7 +3136,7 @@ and (2) child types are allowed to be passed by reference when the function asks
 for a parent type.
 
 Return types are never inferred as references, so one secondary difference between
-`fn(Int.): ++Int` and `fn(Int;): ++Int` is that a copy/temporary is required
+`fn(Int.): {++Int}` and `fn(Int;): {++Int}` is that a copy/temporary is required
 before calling the former and a copy is made for the return type in the latter.
 The primary difference is that the latter will modify the passed-in variable in
 the outer scope.  To avoid dangling references, any calls of `fn(Int;)` with a
@@ -3410,7 +3430,7 @@ it may only be not-writable from your scope's reference to the variable.
 
 In cases where we know the function won't do self-referential logic,
 we can try to optimize and pass by value automatically.  However, we
-do want to support closures like `next_generator(Int; int): do(): ++Int`,
+do want to support closures like `next_generator(Int; int): do(): {++Int}`,
 which returns a function which increments the passed-in, referenced integer,
 so we can never pass a temporary argument (e.g., `Arg. str`) into `next_generator`.
 
@@ -3598,6 +3618,7 @@ of the function, as well as optional `Info`, `Warning`, and `Error` fields for a
 encountered when calling the function.  These fields are named to imply that the function
 call can do just about anything (including fetching data from a remote server).
 
+TODO: some `My` values weren't converted to `M` here.
 ```
 call:
 [   Input; lot[at: str, reference[any]]
@@ -3630,7 +3651,8 @@ call:
     # e.g., `Call output(Field_name: 123)` will ensure
     # `{Field_name}` is defined in the return value, with a
     # default of 123 if `Field_name` is not set in the function.
-    ;;output(~Name: any): My output(Name: @@Name, Value: Name)
+    ;;output(~Name: any):
+        My output(Name: @@Name, Value: Name)
 
     # adds a field to the return type with a default value.
     # e.g., `Call output(Name: "Field_name", Value: 123)` will ensure
@@ -3737,7 +3759,7 @@ already ready so all we need to do is run `Callable call()`.  To specify the ove
 the input and output variables need to be named inside the `Callable`.
 
 
-## redefining a function
+## mutable functions
 
 To declare a reassignable function, use `;` after the arguments.
 
@@ -3755,8 +3777,14 @@ greet(Noun: string); null
 # we're switching from writable to readonly.
 ```
 
-It needs to be clear what function overload is being redefined (i.e., having the same function signature),
-otherwise you're just creating a new overload (and not redefining the function).
+It needs to be clear what function overload is being redefined (i.e., having
+the same function signature), otherwise you're just creating a new overload
+(and not redefining the function).  You can also assign an existing function
+to a mutable function using notation like this:
+`my_mutable_fn(); int {original_definition()}`, followed by
+`my_mutable_fn(); int = some_other_fn`.  Because the overload on `my_mutable_fn`
+is fully specified (e.g., no input arguments, an `int` return value), we know
+to select that overload on `some_other_fn`.
 
 ## nullable functions
 
@@ -4056,7 +4084,7 @@ class first.
 
 ```
 x_and_y: [X: int, Y: dbl]
-{   ::my_method(): My X + round(My Y) Int
+{   ::my_method(): {M X + round(M Y) Int}
 }
 
 my_fn(Int): x_and_y(X: Int + 5, Y: 3.0)
@@ -4099,7 +4127,7 @@ example_class: parent_class
     ;;renew(X. int): null
         Parent_class renew(Name: "Example")
         My X = X!
-    # or short-hand: `;;renew(My X. int): Parent_class renew(Name: "Example")`
+    # or short-hand: `;;renew(My X. int): {Parent_class renew(Name: "Example")}`
     # adding `My` to the arg name will automatically set `My X` to the passed in `X`.
     # TODO: we probably can infer the type as well, e.g., `;;renew(My X.)`
 
@@ -4425,7 +4453,7 @@ example:
         return (M X;)
 
     # copy getter; has lower priority than no-copy getters.
-    ::x(): Str
+    ::x(): str
         return M X
 
     # setter.
@@ -4439,7 +4467,7 @@ example:
 
     # no-copy "take" method.  moves X from this temporary.
     @visibility
-    ..x(): M X!
+    ..x(): {M X!}
 }
 W = example()
 W x(W x() + ", world")
@@ -4586,7 +4614,7 @@ Some examples:
 
 ```
 animal: [Name: string]
-{   ;;renew(M Name: string): Null
+{   ;;renew(M Name: string): {}
 
     # define two methods on `animal`: `speak` and `go`.
     # these are "abstract" methods, i.e., not implemented by this base class.
@@ -4853,7 +4881,7 @@ like this: `my_single_generic_class[int] my_class_function(...)` or
 
 ```
 generic_class[id, value]: @Named@ [Id, Value]
-{   ;;renew(M Id: id, M Value: value): Null
+{   ;;renew(M Id: id, M Value: value): {}
 }
 
 # creating an instance using type inference:
@@ -4930,7 +4958,7 @@ Generic Value = "3"
 print(Generic method(i32(2)))    # prints "3333335" which is i32("3" * (2 + 5)) + 2
 
 specific[of: number]: all_of[generic[of], m: [Scale; of]]
-{   ;;renew(M Scale; of = 1): Null
+{   ;;renew(M Scale; of = 1): {}
 
     ::method(~U): u
         Parent_result: Generic::method(U)
@@ -5425,10 +5453,11 @@ to invoke logic from these external files.
 ```
 # vector2.oh
 vector2: [X: dbl, Y: dbl]
-{   ;;renew(M X: dbl, M Y: dbl): Null
+{   ;;renew(M X: dbl, M Y: dbl): {}
 
     @order_independent
-    ::dot(Vector2: vector2): M X * Vector2 X + M Y * Vector2 Y
+    ::dot(Vector2: vector2): dbl
+        M X * Vector2 X + M Y * Vector2 Y
 }
 
 # main.oh
@@ -5735,8 +5764,8 @@ container[at, of: non_null]: []
     # returns an error if we ran out of memory trying to add the new value.
     ;;swap(At, Of?;): hm[null]
     
-    @alias ::has(At): M[At] != Null
-    @alias ::contains(At): M[At] != Null
+    @alias ::has(At): {M[At] != Null}
+    @alias ::contains(At): {M[At] != Null}
 
     # Returns the number of elements in this container.
     ::count(): count
@@ -6867,10 +6896,11 @@ my_hashable_class: all_of[hashable, m: [Id: u64, Name; string]]
         M Name hash(Builder;)    # you can use `hash` via the field.
 
     # equivalent definition via sequence building:
-    ::hash(~Builder;): Builder @
-    {   hash(M Id)
-        hash(M Name)
-    }
+    ::hash(~Builder;):
+        Builder@
+        {   hash(M Id)
+            hash(M Name)
+        }
 }
 
 # note that defining `::hash(~Builder;)` automatically defines a `fast_hash` like this:
@@ -6890,7 +6920,7 @@ what My_hashable_class
         print("it was something else: ${My_hashable_class}")
 ```
 
-Note that if your `fast_hash` implementation is terrible (e.g., `fast_hash(Salt): Salt`),
+Note that if your `fast_hash` implementation is terrible (e.g., `fast_hash(Salt): {Salt}`),
 then the compiler will error out after a certain number of attempts with different salts.
 
 For sets and lots, we use a hash method that is order-independent (even if the container
@@ -7205,7 +7235,7 @@ co[of]: [resumable(Ci[of]): never]
 
     ;;take(): cv[of]
 
-    @alias ;;next(): M take()
+    @alias ;;next(): {M take()}
 }
 
 ci[of]: resumable[one_of[Cease, Value: of]]
@@ -7213,13 +7243,13 @@ ci[of]: resumable[one_of[Cease, Value: of]]
     ::give(Of.): jump
         ::exit(Of!)
 
-    @alias ::yield(Of.): M give(Of.)
+    @alias ::yield(Of.): {M give(Of.)}
 
     # returns control back to caller of `co;;take` but to `Cease`.
     ::exit(): jump
         ::exit(Cease)
 
-    @alias ::quit(): M exit()
+    @alias ::quit(): {M exit()}
 
     @hide ::exit(Of.): jump
 }
@@ -7227,12 +7257,13 @@ ci[of]: resumable[one_of[Cease, Value: of]]
 
 ```
 countdown: co[int]
-{   ;;renew(M Int.): Co renew
-    (   fn(Ci[int];):
-            while M Int > 0
-                Ci give(--M Int)
-            Ci exit()
-    )
+{   ;;renew(M Int.):
+        Co renew
+        (   fn(Ci[int];):
+                while M Int > 0
+                    Ci give(--M Int)
+                Ci exit()
+        )
 }
 
 # implicit usage
@@ -8015,7 +8046,8 @@ caller[of]:
 [   # use `of@` to pass in the mutability of `of` from `caller` into `callee`,
     Callees[ptr[callee[of@]]];
 ]
-{   ::run_callbacks(Of@): M Callees each Ptr: {Ptr call(Of@)}
+{   ::run_callbacks(Of@):
+        M Callees each Ptr: {Ptr call(Of@)}
 }
 
 audio: caller[array[sample], Mutable]
