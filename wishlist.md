@@ -3501,10 +3501,11 @@ an iterator into a list, for example.
 
 ```
 countdown(Count): all_of[iterator[count], m: [Count]]
-{   ::next(): one_of[Cease, count]
+{   ::next()?: count
         if My Count > 0
-            return --My Count
-        Cease
+            --My Count
+        else
+            Null
 }
 
 My_array: array[count] = countdown(5)
@@ -7227,27 +7228,25 @@ Coroutines use an outer `co[of]` class with an inner `ci[of]` class.  (`i` for i
 coroutine.
 
 ```
-cv[of]: one_of[Cease, Value: of]
-
 co[of]: [resumable(Ci[of]): never]
-{   # TODO: think about how `resumable` works, probably should be `Resumable`
-    ;;renew(M resumable(Ci[of]): never): null
+{   ;;renew(M resumable(Ci[of]): never): null
 
-    ;;take(): cv[of]
+    ;;take()?: of
 
     @alias ;;next(): {M take()}
 }
 
-ci[of]: resumable[one_of[Cease, Value: of]]
+# TODO: should inherit from Block?
+ci[of]: []
 {   # returns control back to caller of `co;;take` with a new value.
     ::give(Of.): jump
-        ::exit(Of!)
+        M exit(Of!)
 
     @alias ::yield(Of.): {M give(Of.)}
 
-    # returns control back to caller of `co;;take` but to `Cease`.
+    # returns control back to caller of `co;;take` but to quit the coroutine.
     ::exit(): jump
-        ::exit(Cease)
+        ::exit()
 
     @alias ::quit(): {M exit()}
 
@@ -7256,10 +7255,11 @@ ci[of]: resumable[one_of[Cease, Value: of]]
 ```
 
 ```
-countdown: co[int]
+countdown: [m: [Int;], co[int]]
 {   ;;renew(M Int.):
         Co renew
-        (   fn(Ci[int];):
+        (   # TODO: is there a better example we can do here?
+            resumable(Ci[int];): never
                 while M Int > 0
                     Ci give(--M Int)
                 Ci exit()
@@ -7267,22 +7267,13 @@ countdown: co[int]
 }
 
 # implicit usage
-countdown(20) each Int:
-    print(Int)      # prints 19, 18, ..., 0
+countdown(20) each Value:
+    print(Value)    # prints 19, 18, ..., 0
 
 # explicit usage
 Co; countdown(20)
-while True
-    what Co take()
-        Value.
-            print(Value)
-        Cease
-            break
-    # also OK:
-    if Co take() is Value.
-        print(Value)
-    else
-        break
+while Co take() is Value.
+    print(Value)
 ```
 
 # futures
@@ -8015,14 +8006,13 @@ is descoped.
 ```
 # function that takes a function as an argument and returns a function
 # example usage:
-#   some_fn(): "hey"
-#   TODO: discussion about how this function is defined immediately and not lazily;
-#   e.g., maybe need to use `other_fn(): int { wow(some_fn) }` to be lazy.
-#   other_fn(): int = wow(some_fn)
+#   some_fn(): {"hey"}
+#   # need to specify the overload
+#   other_fn(): int = wow(fn(): str = some_fn)
 #   print(other_fn()) # 3
 wow(Input fn(): string): fn(): int
-    return (): int
-        return Input fn() count_bytes()
+    (): int
+        Input fn() count_bytes()
 ```
 
 ## handling system callbacks
