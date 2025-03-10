@@ -1568,7 +1568,7 @@ fn(X: int):
 * `@Ignore` - the same as `@Unused`, but usually used for errors, e.g., `Result map(an(@Ignore Er): -1)`
     TODO: probably can use a *trailing* underscore to ignore a variable, e.g., `Result map({$Er_, -1})`,
     but i like the purposeful intent behind the `@Ignore` namespace.
-* `@Named` - for identifiers that should be explicitly named in [generic arguments](#argument-type-generics)
+* `@Named` - for arguments that should be explicitly named in [functions](#defining-generic-functions)
 
 
 ## member access operators `::`, `;;`, ` `, and subscripts `[]`
@@ -4881,7 +4881,7 @@ like this: `my_single_generic_class[int] my_class_function(...)` or
 `my_multi_generic_class[type1: int, type2: str] other_class_function()`.
 
 ```
-generic_class[id, value]: @Named@ [Id, Value]
+generic_class[id, value]: [Id, Value]
 {   ;;renew(M Id: id, M Value: value): {}
 }
 
@@ -5015,7 +5015,7 @@ Here are some examples:
 # Note that in oh-lang we could define this as `pair[@First of, @Second of]`
 # so we don't need to specify `first: int, second: dbl`, but for illustration
 # in the following examples we'll make the generic parameters named.
-pair[first, second]: [@Named First, @Named Second]
+pair[first, second]: [First, Second]
 pair[of]: pair[first: of, second: of]
 
 # examples using pair[of]: ======
@@ -5141,26 +5141,18 @@ See also [`new[...]: ...` syntax](#returning-a-type).
 ### default field names with generics
 
 Note that generic classes like `generic[of]: [Of]` do not work the same way as
-generic arguments in functions like `fn[of](Of)`.  The latter uses a default-
-named argument in an argument object and the former creates an object whose field
+generic arguments in functions like `fn[of](Of)`.  The latter uses a default-named
+argument in an argument object and the former creates an object whose field
 is always named `Of`, regardless of what the generic type `of` is.  Thus
 `fn[of](Of)` can be called with `fn[int](5)` (without `Int: 5` specified), while
-TODO: finish this thought
+creating a generic class `generic[of]: [Of]` will always have the field named as `Of`,
+e.g., `generic[int]: [Of: int]` instead of `generic[int]: [Int: int]`, and which
+should be instanced as `Generic[int]: [Of: 3]`.
 
-whatever the specified type is, so that `generic[int]` will be equivalent to `[Int: int]`.
-While it looks like there could be some internal confusion, e.g., if a `lot[at: int, int]`
-stores a list of `[At, Of]` objects, we always know how to refer to them inside the
-generic class as `My_object At` and `My_object Of`.
-
-If you want to make sure that the name of the type remains, use the namespace `@Named` like
-this: `generic[of]: [@Named Of]`, which will make `generic[int]` equivalent to `[Of: int]`.
-This may also be helpful with internals for a `lot[of, at]`, like `[@Named At, @Named Of]`,
-in case they ever leave the class and could be consumed by someone else.
-
-TODO: are we sure about this?  inconsistency here isn't the worst thing
-if there's some confusion about how this works.  we could make it so that
-default names apply in argument objects, e.g., `(Value: ~value)`, but not
-inside of objects `[Value: value]`.
+There's a slight bit of inconsistency here, but it makes defining generic classes
+much simpler, especially core classes like `hm[ok, er]: one_of[ok, er] { ... #( extra methods )# }`,
+so we always refer to a good value as `Ok` and an error result as `Er`, rather
+than whatever the internal values are.
 
 ## common class methods
 
