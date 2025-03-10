@@ -45,11 +45,11 @@ arguments are passed by reference by default, for consistency.  I.e., on the lef
 hand side of an expression like `X = 5`, we know that we're referring to `X` as a reference,
 and we extend that to function calls like `do_something(X)`.  Note that it's possible
 to pass by value as well; see [passing by reference or by value](#pass-by-reference-or-pass-by-value). 
-However, to avoid most surprises, by default arguments are passed by *readonly* reference.
 See [passing by reference gotchas](#passing-by-reference-gotchas) for the edge cases.
-We make pass-by-constant-reference the default because we don't want to require
-using `:` when calling a method like `count(Container:)`, i.e., to grab the number
-of elements in a container without making a copy of the container.
+For a default (i.e., not using a declaration operator `;`, `:`, or `.`), if the variable
+is readonly, we'll pass as a readonly reference, and if the variable is writable
+(i.e., defined with `;` or `.`), we'll pass as a writable reference.  If there is no
+overload defined with a writable reference, the compiler will retry with a readonly reference.
 
 In oh-lang, determining the number of elements in a container uses the same
 method name for all container types; `count(Container)` or `Container count()`,
@@ -93,25 +93,32 @@ with null, since `call_with_nullable(Some_value?: Null)` is equivalent to
 
 ## concision
 
-When calling a function, we don't need to use `my_function(X: X)` if we have a local
-variable named `X` that shadows the function's argument named `X`.  We can just
-call `my_function(X)` for readonly reference (`X: X`), `other_function(Y;)` for a writable
-reference (`Y; Y`), or `tmp_function(Z!)` to pass in as a temporary `Z. Z!`.  While
-technically we might want the `:;.` on the left-hand side of the variable we're passing in
-(e.g., `other_function(;Y)`), we keep it on the right-hand side for consistency of how
-functions are defined, and to avoid needing to do something like `tmp_function(.Z!)`.
-TODO: we probably could keep it `tmp_function(Z!)` and infer `Z. Z!` like we do with
-things like `tmp_function(z())` which (presumably) creates a tmp value `Z`.
-
 When defining a function, variable arguments that use the default name for a type can
 elide the type name; e.g., `my_function(Int): str` will declare a function that takes 
 an instance of `int`.  See [default-named arguments](#default-name-arguments-in-functions).
 This is also true if namespaces are used, e.g., `my_function(@My_namespace Int): str`.
-We can also omit the readonly-reference declaration (`:`) since it is the default, or
+If a declaration operator (like `;`, `:`, or `.`) is not used, we'll default to creating
+a readonly reference `:` overload but guess at a few weak overloads for `;` and `.` that
+make sense.  These weak overloads can be overridden with explicit `;` and `.` overloads.
+We can use `:` to explicitly only create the readonly reference overload, e.g.,
+`my_function(Int:): str` to create a function which takes a readonly integer reference, or
 you can use `my_function(Int;): str` for a function which can mutate the passed-in integer
-or `my_function(Int.): str` for a function which takes a temporary integer.
+reference or `my_function(Int.): str` for a function which takes a temporary integer.
 This also works for generic classes like `my_generic[of]` where `of` is a template type;
 `my_function(My_generic[int];)` is short for `my_function(My_generic; my_generic[int])`.
+
+When calling a function, we don't need to use `my_function(X: X)` if we have a local
+variable named `X` that shadows the function's argument named `X`.  We can just
+call `my_function(:X)` for readonly reference (`X: X`), `other_function(;Y)` for a writable
+reference (`Y; Y`), or `tmp_function(.Z)` to pass in as a temporary `Z. Z!` and `@hide(Z)`
+so it can't be used in this block afterwards.  (Using `tmp_function(Z!)` will allow `Z`
+to still be used afterwards.)  Note the declaration operator (`.;:`) goes on the left
+when calling a function with an existing variable for an argument, and on the right
+when defining a function and declaring an argument.  I.e., `X;` expands to `X; x`, while
+`;X` expands to `X; X`.  If no declaration operator is used when calling a function, e.g.,
+`my_function(X)`, then we'll infer `:` if `X` is readonly (i.e., defined with `:`)
+and `;` if `X` is writable (i.e., defined with `.` or `;`).  If no writable overload is
+present, the compiler will retry for a readonly overload.
 
 Class methods technically take an argument for `M` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
@@ -160,7 +167,7 @@ vector3[of: number]: [X; of, Y; of, Z; of]
 dot(vector3(1, 2, 3), vector3(-6, 5, 4)) == -6 + 10 + 12
 ```
 
-Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl): null`, but rather
+Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl.): null`, but rather
 just `::x(): dbl` and `;;x(Dbl;.): null` for a private variable `X; dbl`.  This is one
 of the benefits of using `function_case` for functions/methods and `Variable_case`
 for variables; we can easily distinguish intent without additional verbs.
@@ -2555,7 +2562,7 @@ This is also because we allow passing in types as function arguments, so anythin
 `type_case` instead.
 TODO: we could come up with a good syntax for "pass all overloads in"
 and pick what we need based on the body of the function.
-e.g., `my_calling_function(take_all_overloads(Call;))`.
+e.g., `my_calling_function(take_all_overloads(;Call))`.
 
 ```
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
@@ -3693,13 +3700,13 @@ Invalid: some_function(X: 123.4)            # COMPILE ERROR: 123.4 is not refere
 Call; call
 Call input(X: 2)
 # use `Call` with `;` so that `Call;;Output` can be updated.
-some_function(Call;)
+some_function(;Call)
 print(Call Output)  # prints "hihi"
 
 # define a value for the object's Output field to get the other overload:
 Call; call
 Call input(X: "hello")
-some_function(Call;)
+some_function(;Call)
 print(Call Output)  # prints 5
 
 # dynamically determine the function overload:
@@ -3709,7 +3716,7 @@ if some_condition()
 else
     Call {input(X: "hey"), output(-1)}
 
-some_function(Call;)
+some_function(;Call)
 print(Call Output)  # will print "hihihihihi" or 3 depending on `some_condition()`.
 ```
 
@@ -3718,7 +3725,7 @@ be used in the function call.  In this, oh-lang will return an error at run-time
 
 ```
 Call; call() { input(X: "4"), output(Value1: 123), output(Value2: 456) }
-some_function(Call;) assert()    # returns error since there are no overloads with [Value1, Value2]
+some_function(;Call) assert()    # returns error since there are no overloads with [Value1, Value2]
 ```
 
 If compile-time checks are desired, one should use the more specific
@@ -3740,7 +3747,7 @@ This will give a compile error, e.g.:
 
 ```
 # COMPILE ERROR!!  you cannot define a function overload with a default-named `call` argument!
-some_function(Call;): null
+some_function(;Call): null
     print(Call Input["X"])
 ```
 
