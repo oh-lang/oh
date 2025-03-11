@@ -177,7 +177,7 @@ Because we use `::` for readonly methods and `;;` for writable methods, we can
 easily define "const template" methods via `:;` which work in either case `:` or `;`.
 This is mostly useful when you can call a few other methods internally that have specific
 `::` and `;;` overloads, since there's usually some distinct logic for readonly vs. writable.
-E.g., `;:the_method(X;: str): {M check(X;:)}` where `check` has distinct overloads for `::` and `;;`.
+E.g., `;:the_method(X;: str): {M check(;:X)}` where `check` has distinct overloads for `::` and `;;`.
 See [const templates](#const-templates) for more details.
 
 oh-lang uses result-passing instead of exception-throwing in order to make it clear
@@ -221,22 +221,38 @@ oh-lang supports "safe" versions of functions where it's possible that we'd run 
 memory or otherwise throw.  By default, `Array[100] = 123` will increase the size
 of the array if necessary, and this could potentially throw in a memory-constrained
 environment (or if the index was large).  If you need to check for these situations,
-there is a safe API, e.g., `Result: Array at(100, Put: 123)` and `Result` can then
-be checked for `is_er()`, etc.  For convenience for cases where you don't care about
-memory, these safe functions are a bit more verbose than the unchecked functions.
+there is a safe API, e.g., `Hm: (Array[100] = 123)` and the result `Hm` can then
+be checked for `is_er()`, etc.  In order to avoid another syntax for safe assignment,
+we use operator overloading (via return name).  Most of the time you don't want to
+hide errors from other developers, however, but if you do, you should make the
+program panic/terminate rather than continue.  Example code:
 
-Almost all operations should have result-like syntax.  e.g., `A * B` can overflow (or run out of memory for `int`).
-same for `A + B` and `A - B`.  `A // B` is safe.  However, instead of making oh-lang always assert,
-we will use `multiply(@First~A, @Second A): hm[ok: a, Number_conversion er]` and then have
-`A1 * A2` always give an `a` instance by panicking if we run out of memory.  i.e.,
 ```
-number::*(O): m
-    Result: multiply(M, O)
-    Result ?? panic()
-```
-Primitive types will do overflow like in other languages without panicking, but you can use, e.g.,
-`multiply(@One U32, @Another U32)` to return an error if it overflows.
+# TODO: do we even need a generic like `repeated[10, of]` or can we do
+# something like `X: 10 * of`?
+custom_container[of]: [Repeated; repeated[10, of]]
+{   M[Ordinal]:; hm[ok: (Of:;), er: str]
+        if Ordinal > 10
+            er("index too high")
+        else
+            ok((M Repeated[Ordinal]))
 
+    M[Ordinal]:; (Of:;)
+        M[Ordinal] Hm ?? panic(Er)
+}
+```
+
+Almost all operations similarly have a result-like syntax, because they can fail.
+E.g., `A * B` can overflow for fixed-width integers (or run out of memory for `int`).
+Similarly for `A + B` and `A - B`.  (`A // B` is safe for fixed-width, but could
+potentially OOM for `int`.)  If overflow/underflow is desired, use the overload
+which returns a variable named `Wrap`, e.g., `X: (A + B) Wrap` or `Wrap: A + B`.
+Otherwise `A + B` will panic on overflow and terminate the program.  The alternative
+is to handle the error explicitly: `Hm: A + B` then something like this:
+`what Hm {Ok: {print(Ok)}, Er: {print("got error: ${Er})}}`.
+
+TODO: do we want primitive types to NOT panic on overflow, but types like `count`
+to panic?
 
 # general syntax
 
@@ -260,7 +276,7 @@ Primitive types will do overflow like in other languages without panicking, but 
         e.g., `A: some_expression()`
 * when not declaring things, `:` is not used; e.g., `if` statements do not require a trailing `:` like python
 * commas `,` are equivalent to a line break at the current tab and vice versa
-    * `do_something(), do_something_else()` executes both functions sequencially
+    * `do_something(), do_something_else()` executes both functions sequentially 
     * see [line continuations](#line-continuations) for how commas can be elided across newlines for e.g., array elements
 * `()` for argument objects, organization, and function calls/declarations
     * `(W: str = "hello", X: dbl, Y; dbl, Z. dbl)` to declare an argument object type, `W` is an optional field
