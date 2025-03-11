@@ -150,13 +150,10 @@ my_generic[at, of]:
 }
 ```
 
-TODO: we can use `some_type: my_generic[at, of] lot`, but can we also use
-`some_type: lot[my_generic[at, of]]`?  maybe require a `m` field like 
-`lot[m: my_generic[at, of]]` in case of collisions we don't want?
-i think we want the latter because we might want to define
-`my_class[of]: [] {array: array[of]}` and then be able to use
-`array[my_class[of]]` to still refer to a regular array and
-`my_class array` or `array[m: my_class[of]]` to refer to the new one.
+In the example above, we can use `some_type: my_generic[at, of] lot` to refer to the
+nested type, but can we also use `some_type: lot[m: my_generic[at, of]]`.  We don't
+allow `lot[my_generic[at, of]]` because a single type might be an override of `lot[of]`.
+See [type manipulation](#type-manipulation) for more details.
 
 Also in the spirit of conciseness, `O` can be used for an *O*ther instance of the same type,
 and `g` can be used for the current generic class (without the specification) while
@@ -1333,20 +1330,21 @@ or a container, e.g., to convert an array or object to one containing futures.
 
 ```
 # base case, needs specialization.
-nest[@Nest_in of, new[nested]: of]: disallowed
+nest[m, new[of]: ~n]: disallowed
 
 # container specialization.
-# e.g., `nest[array[int], {um[$nested]}] == array[um[int]]`,
-# or you can do `array[int] nest[{um[$nested]}]` for the same effect.
-nest[container[of: ~nested, ~at], new[nested]: of]: container[of: new[nested], at]
+# TODO: can we do `nest[$um]` instead of `nest[{um[$of]}]`?
+# e.g., `array[int] nest[{um[$of]}] == array[um[int]]`,
+# or you can do `nest[m: array[int], {um[$of]}]` for the same effect.
+nest[c: container, m: ~c[of: ~nested, ~at], new[of]: ~n]: c[of: new[nested], at]
 
 # object specialization.
-# e.g., `nest[{hm[ok: $nested, er: some_er]}, [X: int, Y: str]]`
+# e.g., `[X: int, Y: str] nest[{hm[ok: $of, er: some_er]}]`
+# or you can do `nest[{hm[ok: $of, er: some_er]}, m: [X: int, Y: str]]` for the same effect.
 # to make `[X: hm[ok: int, er: some_er], Y: hm[ok: str, er: some_er]]`,
-# or you can do `[X: int, Y: str] nest[{hm[ok: $nested, er: some_er]}]` for the same effect.
-nest[object, new[nested]: of]: merge
-[   object fields()
-    {[$Field Name: new[nested: $Field value]]}
+nest[m: object, new[of]: ~n]: merge
+[   m fields()
+    {[$Field Name: new[$Field value]]}
 ]
 ```
 
@@ -1390,6 +1388,7 @@ Here is some nullable type manipulation:
 #   nullable(one_of[dbl, int, str]) == False
 #   nullable(one_of[dbl, int, null]) == True
 #   nullable(one_of[int, null]) == True
+#   nullable(one_of[null]) == False
 #   nullable(null) == False
 nullable(of): of contains(not[null], null)
 
@@ -7302,35 +7301,30 @@ parallelism.  Here are two examples, one using an array of futures
 and one using an object of futures:
 
 ```
-after(Seconds: int, Return: string): string
+# you don't even need to type your function as `um[~]`, but it's highly recommended:
+after(Seconds: int, Return: string): um[string]
     sleep(Seconds)
     Return
 
 Futures_array; array[um[string]]
-# no need to use `um(after(...))` here since `Futures_array`
+# no need to use `after(...) Um` here since `Futures_array`
 # elements are already typed as `um[string]`:
 Futures_array append(after(Seconds: 2, Return: "hello"))
 Futures_array append(after(Seconds: 1, Return: "world"))
+print("this executes immediately.  deciding futures now...")
 Results_array: decide(Futures_array)
-print(Results_array) # prints `["hello", "world"]`
+print(Results_array) # prints `["hello", "world"]` after 2ish seconds.
 
 # here we put them all in at once.
 # notice you can use `Field: um[type] = fn()` or `Field: fn() Um`.
 Futures_object:
 [   Greeting: after(Seconds: 2, Return: "hello") Um
-    Noun: um[str] = after(Seconds: 1, Return: "world")
+    Noun: um[string] = after(Seconds: 1, Return: "world")
 ]
 print(decide(Futures_object)) # prints `[Greeting: "hello", Noun: "world"]`
 
 # if your field types are already futures, you don't need to be
 # explicit with `Um`.
-# TODO: we should have a nice way to nest types, e.g.,
-#       `[X: str, Y: int] um` should define `[X: um[str], Y: um[int]]`.
-#       e.g., for each object class, we can define
-#       `[X: str, Y: int] apply[{um[$of]}]`
-#       TODO: do we even need `{um[$of]}`?  isn't `um` already functable as an `um[of]`?
-#       or `[X: str, Y: int] nest[um]`
-#       or `[X: str, Y: int] invoke[um]` with `revoke` as the opposite.
 future_type: [Greeting: um[str], Noun: um[str]]
 # note that we need to explicitly type this via `the_type(Args...)`
 # so that the compiler knows that the arguments are futures and should
