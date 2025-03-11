@@ -295,6 +295,8 @@ to panic?
     * `[X: dbl, Y: dbl]` to declare a plain-old-data class with two double-precision fields, `X` and `Y`
     * `[X: 1.2, Y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `X` and `Y`
     * `"My String interpolation is $[X, Y]"` to add `[*value-of-X*, *value-of-Y*]` to the string.
+    * `some_class[A: int, of]: some_other_class[Count: A, at: int, of]` to define a class type
+        `some_class` being related to `some_other_class`.
     * For generic/template classes, e.g., classes like `array[Count, of]` for a fixed array of size
         `Count` with elements of type `of`, or `lot[int, at: str]` to create a map/dictionary
         of strings mapped to integers.  See [generic/template classes](#generictemplate-classes).
@@ -1438,7 +1440,7 @@ e.g., `my_function(A: 3, B: 2, ...My_object)` will call `my_function(A: 3, B: 4,
 |   11      |   `=`     | assignment                | binary: `A = B`   | LTR           |
 |           |  `???=`   | compound assignment       | binary: `A += B`  |               |
 |           |   `<->`   | swap                      | binary: `A <-> B` |               |
-|   12      |   `|>`    | hat                       | binary: `A |> B`  | LTR           |
+|   12      |   `->`    | ergo                      | binary: `A -> B`  | LTR           |
 |   13      |   `,`     | comma                     | binary/postfix    | LTR           |
 
 
@@ -1855,19 +1857,19 @@ for the shorthand notation `Some_class X <-> 1234`.
 TODO: make all "swappers" have the same function signature, not `swap` but
 `;;x(X.): x`.  could also use `;;x(X;): null` as the function signature.
 
-## hat operator
+## ergo operator
 
-`|>` is called the "hat operator" and is used in conditional logic for
+`->` is called the "ergo operator" and is used in conditional logic for
 more fine-grained flow control to define a `then` instance which can
 break out of loops in more interesting (possibly *less readable*) ways.
 Use sparingly.
 
 ```
-X: if Some_condition |> Then:
+X: if Some_condition -> Then:
     if Other_condition
         Then exit(5)
     Then exit(7)
-else |> Then:
+else -> Then:
     Then exit(10)
 
 # the above is equivalent to the following:
@@ -6420,28 +6422,28 @@ and similarly for `what` statements (similar to
 ## then statements
 
 We can rewrite conditionals to accept an additional `then` "argument".  For `if`/`elif`
-statements, the syntax is `if Expression |> Then:` to have the compiler infer the `then`'s
-return type, or `elif Expression |> Whatever_name: then[whatever_type]` to explicitly provide it
+statements, the syntax is `if Expression -> Then:` to have the compiler infer the `then`'s
+return type, or `elif Expression -> Whatever_name: then[whatever_type]` to explicitly provide it
 and also rename `Then` to `Whatever_name`.  Similarly for `what` statements, e.g.,
-`what Expression |> Whatever_name: then[whatever]` or `what Expression |> Then:`.  `else`
-statements also use the `|>` expression, e.g., `else |> Then:` or `else |> Whatever: then[else_type]`.
+`what Expression -> Whatever_name: then[whatever]` or `what Expression -> Then:`.  `else`
+statements also use the `->` expression, e.g., `else -> Then:` or `else -> Whatever: then[else_type]`.
 Note that we use a `:` here because we're declaring an instance of `then`; if we don't use
 `then` logic we don't use `:` for conditionals.  Also note that `then` is a thin wrapper
 around the [`block`](#blocks) class (i.e., a reference that removes the `::loop()` method that
 doesn't make sense for a `then`).  If you want to just give the type without renaming,
-you can do `if Whatever |> Then[my_if_block_type]:`.
+you can do `if Whatever -> Then[my_if_block_type]:`.
 
 ```
-if Some_condition |> Then:
+if Some_condition -> Then:
     # do stuff
-    if Some_other_condition |> @Some_namespace Then:
+    if Some_other_condition -> @Some_namespace Then:
         if Something_else1
             Then exit()
         if Something_else2
             @Some_namespace Then exit()
     # do other stuff
 
-Result: what Some_value |> Then[str]:
+Result: what Some_value -> Then[str]:
     5
         ...
         if Other_condition
@@ -6454,7 +6456,7 @@ if
 (       Some Long Condition
     &&  Some Other_fact
     &&  Need_this Too
-) |> Then:
+) -> Then:
     print("good")
     ...
 
@@ -6462,7 +6464,7 @@ if
 if Some Long Condition
     &&  Some Other_fact
     &&  Need_this Too
-    |>  Then:
+->      Then:
     print("good")
     ...
 ```
@@ -6948,8 +6950,8 @@ insertion order, but same contents).
 ## for-each loops
 
 TODO: Can we write other conditionals/loops/etc. in terms of `indent/block` to make it easier to compile
-from fewer primitives?  E.g., `while Condition |> Do: {... Do exit(3) ...}`, where
-`do` is a thin wrapper over `block`?  or maybe `do |> Loop: {... Loop exit(3) ...}`
+from fewer primitives?  E.g., `while Condition -> Do: {... Do exit(3) ...}`, where
+`do` is a thin wrapper over `block`?  or maybe `do -> Loop: {... Loop exit(3) ...}`
 
 oh-lang doesn't have `for` loops but instead uses `each` syntax on an iterator.
 The usual syntax is `Iterator each Iterand;:. {do_something(Iterand)}`.  If your
@@ -7176,7 +7178,7 @@ even that probably could be better served by pulling out a function to call in
 both blocks.
 
 ```
-if Some_condition |> Then[str]:
+if Some_condition -> Then[str]:
     if Other_condition
         if Nested_condition
             Then exit(X)
@@ -7190,19 +7192,18 @@ My_then: then[str]
     ... complicated logic ...
     exit("made it")
 
-Result: if Some_condition |> My_then
+Result: if Some_condition -> My_then
 elif Some_thing_else
     print("don't use `My_then` here")
     "no"
-else |> My_then
+else -> My_then
 ```
 
 ### function blocks
 
 Similar to conditionals, we allow defining functions with `block` in order
 to allow low-level flow control.  Declarations like `my_function(X: int): str`,
-however, will be equivalent to `my_function(X: int), Block: block[str]` or
-the more raw form `my_function(X: int, Block: block[str]): never`.  Thus
+however, will be equivalent to `my_function(X: int, Block[str]): never`.  Thus
 there is no way to overload a function defined with `block` statements compared
 to one that is not defined explicitly with `block`.
 
@@ -7220,21 +7221,7 @@ my_function(X: int, Block[str]): never
     range(X) each Y:
         inner_function(Y)
     Block exit("normal exit")
-
-# this definition essentially is syntactical sugar for the one above.
-my_function(X: int) |> Block[str]:
-    inner_function(Y: int): dbl
-        if Y == 123
-            Block exit("123")    # early return from `my_function`
-        Y dbl() ?? panic()
-    range(X) each Y:
-        inner_function(Y)
-    "normal exit"
 ```
-
-We'll need to use look ahead for these cases to see that the function
-is being declared/defined, since there is no `:` immediately after
-`my_function`.
 
 ## coroutines
 
@@ -7371,7 +7358,7 @@ print(decide(Futures_object)) # prints `[Greeting: "hello", Noun: "world"]`
 # if your field types are already futures, you don't need to be
 # explicit with `Um`.
 # TODO: we should have a nice way to nest types, e.g.,
-#       `um |> [X: str, Y: int]` should define `[X: um[str], Y: um[int]]`.
+#       `um -> [X: str, Y: int]` should define `[X: um[str], Y: um[int]]`.
 #       or maybe `apply[um, over: [X: str, Y: int]]` or `into: [X...]`
 #       or `nest[um, within: [X: str, Y: int]]`
 #       or `[X: str, Y: int] nest(um)`
