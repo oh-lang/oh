@@ -7234,58 +7234,8 @@ my_function(X: int, Block[str]): never
 
 ## coroutines
 
-Coroutines use an outer `co[of]` class with an inner `ci[of]` class.  (`i` for inner and
-`o` for outer.)  The outer class has methods to grab the next value from the inner
-coroutine.
-
-```
-co[of]: [resumable(Ci[of]): never]
-{   ;;renew(M resumable(Ci[of]): never): null
-
-    ;;take()?: of
-
-    @alias ;;next(): {M take()}
-}
-
-# TODO: should inherit from Block?
-ci[of]: []
-{   # returns control back to caller of `co;;take` with a new value.
-    ::give(Of.): jump
-        M exit(Of!)
-
-    @alias ::yield(Of.): {M give(Of.)}
-
-    # returns control back to caller of `co;;take` but to quit the coroutine.
-    ::exit(): jump
-        ::exit()
-
-    @alias ::quit(): {M exit()}
-
-    @hide ::exit(Of.): jump
-}
-```
-
-```
-countdown: [m: [Int;], co[int]]
-{   ;;renew(M Int.):
-        Co renew
-        (   # TODO: is there a better example we can do here?
-            resumable(Ci[int];): never
-                while M Int > 0
-                    Ci give(--M Int)
-                Ci exit()
-        )
-}
-
-# implicit usage
-countdown(20) each Value:
-    print(Value)    # prints 19, 18, ..., 0
-
-# explicit usage
-Co; countdown(20)
-while Co take() is Value.
-    print(Value)
-```
+We'll reserve `co[of]` for a coroutine for now, but I think futures are all
+that is necessary.
 
 # futures
 
