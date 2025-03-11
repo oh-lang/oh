@@ -325,9 +325,15 @@ to panic?
         calling `A x()` and `A Y`, returning `A` if it's a temporary otherwise `A Y`
     * `"My String Interpolation is ${missing(), X}"` to add `X` to the string.
         Note that only the last element in the `${}` is added, but `missing()` will still be evaluated.
-* `~` to infer a template type within a function, e.g., `my_generic_function(Value: ~u): u` to declare
-    a function that takes a generic type `u` and returns it.  For more details, see
-    [generic/template functions](#generictemplate-functions).
+* `~` to infer or generalize a type
+    * `my_generic_function(Value: ~u): u` to declare a function that takes a generic type `u`
+        and returns it.  For more details, see [generic/template functions](#generictemplate-functions).
+    * `My_result; array[~] = do_stuff()` is essentially equivalent to `My_result; do_stuff() Array`, i.e.,
+        asking for the first array return-type overload.  This infers an inner type but doesn't name it.
+    * `Named_inner; array[~infer_this] = do_stuff()` asks for the first array return-type overload,
+        but defines the inner type so it can be used later in the same block, e.g.,
+        `First_value; infer_this = Named_inner[0]`.
+        Any `lower_snake_case` identifier can be used for `infer_this`.
 * `$` for inline block and lambda arguments
     * [inline blocks](#block-parentheses-and-commas) include:
         * `$[...]` as shorthand for a new block defining `[...]`, e.g., for a return value:
@@ -7259,8 +7265,9 @@ where `of` is the default overload's return type.  You can also type the
 variable explicitly as `um[of]`, e.g., `F: um[of] = f()`.  Note that
 `F: um(f())` is a compile error because casting to a future would still run
 `f()` serially.  You can use `F: um(Immediate: 123)` to create an "immediate
-future"; `F: um(Immediate: g())` similarly will run `g()` serially (it should
-not be expensive) and put its result into the immediate future.
+future"; `F: um(Immediate: h())` similarly will run `h()` serially and put
+its result into the immediate future.  If `h` takes a long time to run, prefer
+`F: h() Um` of course.
 
 ```
 some_very_long_running_function(Int): string
@@ -7270,18 +7277,19 @@ some_very_long_running_function(Int): string
         Result += str(@New Int)
     Result
 
-# this uses the default `string` return value:
+# this approach calls the default `string` return overload, which blocks:
 print("starting a long running function...")
 My_name: some_very_long_running_function(10)
 print("the result is ${My_name} many seconds later")
 
-# this does it as a future
+# this approach calls the function as a future:
 print("starting a future, won't make progress unless polled")
 # `Future` here has the type `um[string]`:
 Future: some_very_long_running_function(10) Um
 # Also ok: `Future: um[string] = some_very_long_running_function(10)`
-# TODO: can `~` by itself count as the `auto` keyword?
-# probably also ok: `Future: um[~] = some_very_long_running_function(10)`
+# Also ok: `Future: um[~] = some_very_long_running_function(10)` (infers the inner type)
+# Also ok: `Future: um[~inner] = some_very_long_running_function(10)` (infers inner type and gives it a name)
+# which is useful if you want to use the `inner` type later in this block.
 print("this `print` executes right away")
 Result: string = Future
 print("the result is ${Result} many seconds later")

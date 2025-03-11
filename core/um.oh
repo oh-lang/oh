@@ -1,0 +1,9 @@
+# futures
+um[of, er]: um[hm[of, er]]
+
+um[of]: []
+{   # TODO: by default, should we include `of` as a field on this type,
+    # so that we can do `My_future: whatever_fn() Um, Result; My_future of = My_future decide()`?
+    # we could do this by default for all generics, or only if we do this:
+    of: of
+}
