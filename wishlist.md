@@ -7251,7 +7251,7 @@ your function takes a long time to run by returning the `um[of]` type,
 where `of` is the type that the future `um` will resolve to, but callers
 will not be required to acknowledge this.  If you define some overload
 `my_overload(X: str): um[int]`, an overload `my_overload(X: str): int`
-will be defined for you that comes before your async definition, so that
+will be defined for you that comes *before* your async definition, so that
 the default type of `Value` in `Value: my_overload(X: "asdf")` is `int`.
 We generally recommend a timeout `er` being present, however, so for
 convenience, we define `um[of, er]: um[hm[ok: of, er]]`.
