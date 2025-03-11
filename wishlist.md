@@ -150,6 +150,14 @@ my_generic[at, of]:
 }
 ```
 
+TODO: we can use `some_type: my_generic[at, of] lot`, but can we also use
+`some_type: lot[my_generic[at, of]]`?  maybe require a `m` field like 
+`lot[m: my_generic[at, of]]` in case of collisions we don't want?
+i think we want the latter because we might want to define
+`my_class[of]: [] {array: array[of]}` and then be able to use
+`array[my_class[of]]` to still refer to a regular array and
+`my_class array` or `array[m: my_class[of]]` to refer to the new one.
+
 Also in the spirit of conciseness, `O` can be used for an *O*ther instance of the same type,
 and `g` can be used for the current generic class (without the specification) while
 `m` always refers to the current class type (including the specification if generic).
@@ -1312,6 +1320,7 @@ object == merge[object fields(), {[$Field Name: $Field value]}]
 TODO: good ways to do keys and values for an object type (e.g., like TypeScript).
 see if there's a better way to do it, e.g., `object valued[{um[$value]}]`, so
 it's easy to see that all field names are the same, just values that change.
+TODO: do we even need `{um[$of]}`?  isn't `um` already functable as an `um[of]`?
 
 Here are some examples of changing the nested fields on an object
 or a container, e.g., to convert an array or object to one containing futures.
@@ -7358,15 +7367,12 @@ print(decide(Futures_object)) # prints `[Greeting: "hello", Noun: "world"]`
 # if your field types are already futures, you don't need to be
 # explicit with `Um`.
 # TODO: we should have a nice way to nest types, e.g.,
-#       `um -> [X: str, Y: int]` should define `[X: um[str], Y: um[int]]`.
-#       or maybe `apply[um, over: [X: str, Y: int]]` or `into: [X...]`
-#       or `nest[um, within: [X: str, Y: int]]`
-#       or `[X: str, Y: int] nest(um)`
-#       or `box[um, in: [X: str, Y: int]]`
-#       it'd be nice to have a good antonym for `unbox` or `unnest` or `unapply`
-#       `invoke[of, over]` and `revoke[of, from]` also seem ok, but
-#       `box` and `unbox` seem the most natural apart from `nest` and `drop`.
-#       it's nice that `box`/`unbox` are related words.
+#       `[X: str, Y: int] um` should define `[X: um[str], Y: um[int]]`.
+#       e.g., for each object class, we can define
+#       `[X: str, Y: int] apply[{um[$of]}]`
+#       TODO: do we even need `{um[$of]}`?  isn't `um` already functable as an `um[of]`?
+#       or `[X: str, Y: int] nest[um]`
+#       or `[X: str, Y: int] invoke[um]` with `revoke` as the opposite.
 future_type: [Greeting: um[str], Noun: um[str]]
 # note that we need to explicitly type this via `the_type(Args...)`
 # so that the compiler knows that the arguments are futures and should
