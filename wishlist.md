@@ -1280,7 +1280,7 @@ Note that the `type_case` version of the `Variable_case` name does not have
 any information about the instance, so `x` is `one_of[int, dbl]` in the above
 example and `Y` is an instance of the same `one_of[int, dbl]` type.  For 
 ways to handle different types differently within a `one_of`, see 
-[this](#declaring-more-complicated-types-via-one_of).
+[this](#one_of-types).
 
 Some more examples:
 
@@ -7167,8 +7167,6 @@ block[of, declaring: null]:
 }
 ```
 
-TODO: can we use an `um` internally inside `block`?
-
 ### blocks to define a variable
 
 ```
@@ -7269,7 +7267,8 @@ its result into the immediate future.  If `h` takes a long time to run, prefer
 `F: h() Um` of course.
 
 ```
-some_very_long_running_function(Int): string
+# you don't even need to type your function as `um[~]`, but it's highly recommended:
+some_very_long_running_function(Int): um[string]
     Result; ""
     range(Int) each @New Int:
         sleep(Seconds: @New Int)
@@ -7372,20 +7371,14 @@ The syntax is `type_case: one_of` followed by a list of named values
 are mutually exclusive -- no two values may be held simultaneously.  See
 masks for a similar class type that allows multiple options at once.
 
-TODO: what's the difference between `one_of[Dbl, Int]` and `one_of[dbl, int]`?
-probably nothing??  but `one_of[New_identifier: 0, Other_identifier: 3]` would
-be different than `one_of[new_identifier: 0, other_identifier: 3]`? or not??
-in both cases, it seems like `0` and `3` are specifying the tag.  but would
-`one_of[new_id: [X: dbl], other_id: [Y: str]]` be different than
-`one_of[New_id: [X: dbl], Other_id: [Y: str]]`?...  maybe we just force lowercase.
-TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific instances.
-
 Enums are by default the smallest standard integral type that holds all values,
 but they can be signed types (in contrast to masks which are unsigned).
 If desired, you can specify the underlying enum type using `one_of i8[...]` instead
 of `one_of[...]`, but this will be a compile error if the type is not big enough to
 handle all options.  It will not be a compile warning if the `one_of` includes types
-inside (e.g., `i8 one_of[u32, f32]`); we'll assume you want the tag to be an `i8`.
+inside (e.g., `one_of i8[u32, f32]`); we'll assume you want the tag to be an `i8`.
+However, it should be clear that the full type will be at least the size of the
+tag plus the largest element in the `one_of`; possibly more to alikely chieve alignment.
 
 Here is an example enum with some values that aren't specified.  Even though
 the values aren't specified, they are deterministically chosen.
@@ -7480,14 +7473,11 @@ print(weird max())     # prints 9
 
 ### default values for a `one_of`
 
-Note that the default value for a `one_of` is the first value, unless `null` is an option.
-E.g., `one_of[Option_a, Option_b]` defaults to `Option_a` but `one_of[Option_c, Null]` would
-default to `Null` and `one_of[type1, type2, null]` defaults to the `null` type.  Nulls are
-highly encouraged to come last in a `one_of`, because they will match any input, so
-casting like this: `one_of[null, int](1234)` would actually become `Null` rather than
-the expected value `1234`, since casts are attempted in order of the `one_of` types.
-Note that `one_of[Null, X]` does not collapse to `one_of[X]` because `[]` acts more like
-an array in this case, and arrays can contain `Null`.
+Note that the default value for a `one_of` is the first value, unless zero is an option
+(and it's not the first value), unless `null` is an option -- in increasing precedence.
+E.g., `one_of[Option_a, Option_b]` defaults to `Option_a`, `one_of[A: -1, B: 0, C: 1]` 
+defaults to `B`, and `one_of[Option_c, Null]` defaults to `Null`, and
+`one_of[A: -1, B: 0, C: 1, Null]` also defaults to `Null`.
 
 ### testing enums with lots of values
 
@@ -7533,13 +7523,20 @@ Note that we don't have to do `option Not_a_good_option` (and similarly for othe
 along with the cases.  The compiler knows that since `Option1` is of type `option`,
 that you are looking at the different values for `option` in the different cases.
 
-### Default value of an enumeration
+## one_of types
 
-Defaults to whatever value is 0 (the first, if no values are specified).
+TODO: what's the difference between `one_of[Dbl, Int]` and `one_of[dbl, int]`?
+probably nothing??  but `one_of[New_identifier: 0, Other_identifier: 3]` would
+be different than `one_of[new_identifier: 0, other_identifier: 3]`? or not??
+in both cases, it seems like `0` and `3` are specifying the tag.  but would
+`one_of[new_id: [X: dbl], other_id: [Y: str]]` be different than
+`one_of[New_id: [X: dbl], Other_id: [Y: str]]`?...  maybe we just force lowercase.
+TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific instances.
 
-If no value is zero, then the first specified value is default.
-
-## declaring more complicated types via `one_of`
+Nulls are
+highly encouraged to come last in a `one_of`, because they will match any input, so
+casting like this: `one_of[null, int](1234)` would actually become `Null` rather than
+the expected value `1234`, since casts are attempted in order of the `one_of` types.
 
 Take this example `one_of`.
 
@@ -7693,7 +7690,7 @@ of a `one_of` with metaprogramming or whatever.
 
 ## select
 
-If you *don't* want to allow the combined case as an argument, e.g., `one_of[a,b]`,
+If you *don't* want to allow the combined case as an argument, e.g., `one_of[a, b]`,
 you can use `select[a, b]`.  This will only generate overloads with
 the distinct types and not the combined type, like so:
 
