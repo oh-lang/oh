@@ -3,7 +3,25 @@ um[of, er]: um[hm[of, er]]
 
 um[of]: []
 {   # TODO: by default, should we include `of` as a field on this type,
-    # so that we can do `My_future: whatever_fn() Um, Result; My_future of = My_future decide()`?
+    # so that we can do `My_future; whatever_fn() Um, Result; my_future of = My_future decide()`?
     # we could do this by default for all generics, or only if we do this:
     of: of
+
+    g(~T.): disallowed
+    [       "use `um(Immediate. Abc)` if you want to create a future with `Abc`"
+        &   "or `some_long_running_fn() Um` to get the future from `some_long_running_fn()`"
+    ]
+
+    g(Immediate. ~t): g[t]
+
+    ;;decide(): of
 }
+
+@test "um(X) gives a compile error"
+    Lines; ["um(123)"]
+    Hm; compile(;Lines)
+    test(Lines) == [
+        "X: um(123)"
+        "#@!^ use `um(Immediate. Abc)` if you want to create a future with `Abc` or `some_running_fn() Um` to get the future from `song_long_running_fn()`
+    ]
+    Hm is_er() assert("expected an error")

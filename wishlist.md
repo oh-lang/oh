@@ -2144,9 +2144,13 @@ Readonly_mix Ro -= 1                    # COMPILE ERROR, Readonly_mix is readonl
 # NOTE that in general, calling a function with variables defined by `;` is a different
 # overload than calling with `:`.  Mutable argument variables imply that the arguments will
 # be mutated inside the function, and because they are passed by reference, escape the function
-# block with changes.  Data classes have overloads with writable arguments, which imply that
-# the data class will take over the argument (via moot).  This implies a move (not copy) operation.
-My_mix_match: mix_match(Wr; 5, Ro; 3)      # `;` is useful for taking arguments via a move.
+# block with changes.  Data classes have overloads with writable arguments, which indicate
+# the data class will swap out the argument (e.g., giving you the old version while taking
+# what's passed in).  In case of a constructor, the old value is the default value.
+Wr; 123
+Ro; 567
+My_mix_match: mix_match(;Wr, ;Ro)   # `;` is useful for taking arguments via a swap.
+print("got updated to ${Wr}, ${Ro}") # "got updated to 0, 0"
 # see section on writable/readonly arguments for more information.
 ```
 
@@ -2297,6 +2301,8 @@ from `Result` that checks if `Result` is non-null before any dereferencing.  The
 above example can be checked by the compiler, but if `Result` was itself a reference
 path then we'd need to recheck any dereferences of `Non_null`.
 
+TODO: let's rename argument objects; they're more general than arguments.
+Maybe just references or reference objects.
 
 In oh-lang, parentheses can be used to define argument objects, both as types
 and instances.  As a type, `(X: dbl, Y; int, Z. str)` differs from the object
