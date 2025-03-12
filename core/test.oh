@@ -71,21 +71,23 @@
 
 @protected
 test_context: [@protected Printed; array[str], @protected Name; str]
-{   m()
-    {   print
-    }
-    # TODO
-
-    ;;run(Str: str, 
-
-    @private
-    ;;push(Str: str):
-        M Name &= Str
+{   ;;run(Str, Block[~value]): value
+        (String): Str strip()
+        M push(String)
+        Value: Block run()
+        M pop(String)
+        Value
+        # TODO: check `Value` for being OK and not an error.
+        # that is, if we're in a normal test.  in a test_panics, check for error.
 
     @private
-    ;;pop(Str: str):
-        assert(M Name ends_with(Str)) ?? panic("test_context needs to match push/pop")
-        M Name count(M Name count() - Str count())
+    ;;push(String):
+        M Name &= String
+
+    @private
+    ;;pop(String):
+        assert(M Name ends_with(String)) ?? panic("test_context needs to match push/pop")
+        M Name count(M Name count() - String count())
         if M Name ends_with(' ')
             M Name pop()
 }
