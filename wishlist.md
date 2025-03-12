@@ -2289,6 +2289,15 @@ if Result is Non_null:
     print(Non_null)
 ```
 
+Alternatively, we pass around "full references" whenever we can't determine that
+borrowing can be done with just a pointer.  Full references include a path from
+a safely-borrowed pointer, with checks at each nested value for any additions
+that need to be made.  In the above example, we need `Non_null` to be a pointer
+from `Result` that checks if `Result` is non-null before any dereferencing.  The
+above example can be checked by the compiler, but if `Result` was itself a reference
+path then we'd need to recheck any dereferences of `Non_null`.
+
+
 In oh-lang, parentheses can be used to define argument objects, both as types
 and instances.  As a type, `(X: dbl, Y; int, Z. str)` differs from the object
 type `[X: dbl, Y; int, Z; str]`, for more than just the reason that `.` is invalid
@@ -7568,7 +7577,7 @@ if Tree is_leaf()
 # narrowing to a `leaf` type that is readonly, while retaining a reference
 # to the original `Tree` variable.  the nested function only executes if
 # `Tree` is internally of type `leaf`:
-Tree is(fn(Leaf): print(Leaf))
+Tree is(fn(Leaf): {print(Leaf)})
 
 # narrowing to a `branch` type that is writable.  `Tree` was writable, so `Branch` can be.
 # the nested function only executes if `Tree` is internally of type `branch`:
