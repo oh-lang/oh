@@ -337,8 +337,8 @@ to panic?
             `Array: if Some_condition $[1, 2, 3] else $[4, 5]`
         * `$(...)` as shorthand for a new block defining `(...)`, e.g., an argument object:
             `Result: if X > Y $(Max: X, Min: Y) else $(Min: X, Max: Y)`
-        * `${...}` to define a new unnamed function, see combination with
-            named arguments `$Arg`.
+        * `${...}` is almost always equivalent to `{...}`, except inside of string interpolation,
+            so we'll likely alias `${...}` to `{...}` outside of strings.
     * `$Arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
         * `My_array map({$Int * 2 + 1})` will iterate over e.g., `My_array: [1, 2, 3, 4]`
             as `[3, 5, 7, 9]`.  The `$` variables attach to the nearest brace/indent as
@@ -354,8 +354,8 @@ to panic?
 * operators that diverge from some common languages:
     * `**` and `^` for exponentiation
     * `&|` at the start of each text slice to create a multiline string.
-    * `<>` for bit flips on integer types
-    * `><` for bitwise xor on integer types
+    * `<>` for bit flips on integer types (instead of `~`)
+    * `><` for bitwise xor on integer types (instead of `^`)
 * see [operator overloading](#operator-overloading) for how to overload operators.
 
 ## defining variables
@@ -2003,13 +2003,13 @@ s8: i8 {@Null: -128}
 # roughly equivalent to `s8?: s8 { Null: -128_i8, ::is(null): {M == -128_i8} }`
 ```
 
-Similarly, `f32?` and `f64?` indicate that `NaN` is null via `{@Null: NaN, ::is(null): is_nan(M)}`,
+Similarly, `f32?` and `f64?` indicate that `NaN` is null via `{@Null: NaN, ::is(null): {is_nan(M)}}`,
 so that you can define e.g. a nullable `f32` in exactly 32 bits.  To get this functionality,
 you must declare your variable as type `s8?` or `f32?`, so that the nullable checks
 kick in.
 
 If you are defining a class and want to also declare the nullable at the same time, you
-do the following:
+can do one of the following:
 
 ```
 my_class: [@private Some_state: int]
@@ -2538,7 +2538,6 @@ q
 # defining a lambda usually requires a name, feel free to use the default:
 q(fn(): {True})
 # or you can use this notation, without the name:
-# TODO: should we require `q(${True})` or can we distinguish a lambda here?
 q({True})
 
 # or you can do multiline:
