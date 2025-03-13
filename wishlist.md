@@ -402,8 +402,7 @@ Important_items:
         &|Cheese
 # this is the same as `Important_items: "Fridge\nPancakes and syrup\nCheese\n"`
 
-# TODO: consider making the last line not have a newline.
-# a single-line multiline string includes a newline at the end.
+# a single-line multiline string still includes a newline at the end.
 Just_one_line: &|This is a 'line' "you know"
 # this is equivalent to `Just_one_line: "This is a 'line' \"you know\"\n"
 
@@ -1972,7 +1971,7 @@ some_class: []{ ::some_method(): int }
 
 Nullable?; some_class = Null
 
-Value?: Nullable some_method()   # `Value` has type `one_of[int, null]` now,
+Value?: Nullable some_method()  # `Value` has type `one_of[int, null]` now,
                                 # so it needs to be defined with `?`
 
 # eventually we want to support things like this, where the compiler
@@ -1988,7 +1987,6 @@ e.g., `Value: int(Nullable some_method())`.  Note that `whatever_type(Null)` is
 the same as `whatever_type()`, and number types (e.g., `int()` or `flt()`)  default
 to 0.
 
-TODO: maybe don't allow optional functions.
 Optional functions are defined in a similar way (cf. section on nullable functions),
 with the `?` just after the function name, e.g., `some_function?(...Args): return_type`.
 
@@ -2606,9 +2604,6 @@ fully specified.  (E.g., this is not allowed: `greet(Int): "hello" + "!" * Int, 
 This is also because we allow passing in types as function arguments, so anything that is
 `function_case` without a subsequent parenthesized argument list `(Args...)` will be considered
 `type_case` instead.
-TODO: we could come up with a good syntax for "pass all overloads in"
-and pick what we need based on the body of the function.
-e.g., `my_calling_function(take_all_overloads(;Call))`.
 
 ```
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
@@ -3180,7 +3175,6 @@ writable argument variables inside the function definition, and (3) any
 modifications to a writable argument variable inside the function block persist
 in the outer scope.  Note that pass-by-constant-reference arguments are the default,
 so `fn(Int): null` is the same as `fn(Int: int): null`.
-TODO: maybe autogenerate a `fn(Int.): null` function for default arguments.
 
 When passing by reference for `:` and `;` variables, we cannot automatically 
 cast to the correct type.  Two exceptions: (1) if the variable is a temporary
@@ -4150,26 +4144,30 @@ my_fn(Int): x_and_y(X: Int + 5, Y: 3.0)
 parent_class: [Name: str]
 
 # example class definition
-example_class: parent_class
-[   # instance variables can be defined in this `[...]` block.
-    # if they are public, a public constructor like `example_class(X;:. int)` will be created.
-    X; int
+example_class: all_of
+[   parent_class
+    m:
+    [   # given the inheritance with `parent_class`,
+        # child instance variables should be defined in this `m: [...]` block.
+        # if they are public, a public constructor like `example_class(X;:. int)` will be created.
+        X; int
 
-    # instance functions can also be defined here.  they can be set 
-    # individually for each class instance, unlike a class function/method
-    # which is shared.
-    # we define a default for this function but you could change its definition in a constructor.
-    # NOTE: instance functions can use `M` as necessary.
-    #       even though we could use the notation `::instance_function()` here,
-    #       we prefer to keep that for methods, to make it more clear that
-    #       this is different in principle.
-    instance_function(M): null
-        print("hello ${M X}!")
+        # instance functions can also be defined here.  they can be set 
+        # individually for each class instance, unlike a class function/method
+        # which is shared.
+        # we define a default for this function but you could change its definition in a constructor.
+        # NOTE: instance functions can use `M` as necessary.
+        #       even though we could use the notation `::instance_function()` here,
+        #       we prefer to keep that for methods, to make it more clear that
+        #       this is different in principle.
+        instance_function(M): null
+            print("hello ${M X}!")
 
-    # this class instance function can be changed after the instance has been created
-    # (due to being declared with `;`), as long as the instance is mutable.
-    some_mutable_pure_function(); null
-        print("hello!")
+        # this class instance function can be changed after the instance has been created
+        # (due to being declared with `;`), as long as the instance is mutable.
+        some_mutable_pure_function(); null
+            print("hello!")
+    ]
 ]
 {   # classes must be resettable to a blank state, or to whatever is specified
     # as the starting value based on a `renew` function.  this is true even
@@ -5746,6 +5744,11 @@ in the debug binary, use `debug assert`, which has the same signature as `assert
 `debug assert` is not recommended, except to enforce the caller contract of private/protected
 methods.  For public methods, `assert` should always be used to check arguments.
 
+Note that for functions that return results, i.e., `hm[ok, er]`, `assert` will automatically
+return early with an `er` based on the error the `assert` encountered.  If a function does
+*not* return a result, then using `assert` will be a run-time panic.
+TODO: we might want to annotate such functions as `@panics` or `@can_panic`.
+
 ## automatically converting errors to null
 
 If a function returns a `hm` type, e.g., `my_function(...): hm[ok, er]`,
@@ -5783,7 +5786,7 @@ hm[of]: hm[ok: of, er]
 
 container[at, of: non_null]: []
 {   # Returns `Null` if `At` is not in this container,
-    # otherwise the `value` instance at that `At`.
+    # otherwise the `of` instance at that `At`.
     # This is wrapped in an argument object to enable passing by reference.
     # TODO: do we like this?  it looks a bit like SFO logic that we killed off.
     # USAGE:
@@ -5798,7 +5801,7 @@ container[at, of: non_null]: []
     # the container or may set its linked value to the default.
     # (Which depends on the child container implementation.)
     # Returns Null if not present.
-    ;;[At]!?: value
+    ;;[At]!?: of
 
     # safe setter.
     # returns an error if we ran out of memory trying to add the new value.
@@ -5817,16 +5820,13 @@ container[at, of: non_null]: []
     ::count(): count
 
     # can implicitly convert to an iterator (with writeable/readonly references).
-    # the iterator needs to be returned in an argument object
-    # because it holds a reference to `M`.
-    (M;:): (Iterator[(At, Of;:)].)
+    ;:iterator(): iterator[(At:, Of;:)]
 
     # iterate over values.
-    ;:values(): (Iterator[(Of;:)].)
+    ;:ofs(): iterator[(Of;:)]
 
     # iterate over IDs.
-    ::ids(): (Iterator[(At)].)
-
+    ::ats(): iterator[(At:)]
 }
 ```
 
@@ -6023,7 +6023,9 @@ A `lot` is oh-lang's version of a map (or `dict` in python).  Instead of mapping
 to a `value` type, lots link an `at` to an `of`.  This change from convention is mostly
 to avoid overloading the term `map` which is used when transforming values such as `hm`, but also
 because `map`, `key`, and `value` have little to do with each other; we don't "unlock" anything
-with a C++ `map`'s key: we identify which value we want.
+with a C++ `map`'s key, we locate an instance.  Thus we use `at` for a locator
+and `of` for the default-named type in `lot`.
+The class definition is [here](https://github.com/oh-lang/oh/blob/main/core/lot.oh).
 
 A lot can look up, insert, and delete elements by key quickly (ideally amortized
 at `O(1)` or at worst `O(lg(N)`).  You can use this way to define a lot, e.g.,
@@ -6106,126 +6108,14 @@ I.e., the object is defined as if with a `:`.  This is because we need ID
 stability inside a container; we're not allowed to change the ID or it could
 change places inside the lot and/or collide with an existing ID.
 
-Some relevant pieces of the class definition:
-
-```
-er: one_of
-[   Out_of_memory
-    Missing_id
-    # etc...
-]
-hm[of]: hm[ok: of, er]
-
-lot[of, at: hashable]: container[of, at]
-{   # Returns Null if `At` is not in the lot.
-    ::[At]?: of
-
-    # Gets the existing value at `At` if present,
-    # otherwise inserts a default `of` into the lot and returns it.
-    ;;[At]: hm[of]
-
-    # Ejects the possibly null value at `At` and returns it.
-    # A subsequent, immediate call to `::[At]` returns Null.
-    ;;[At]!?: of
-
-    ::count(): count
-
-    # Returns the last element added to the lot if the lot is
-    # insertion ordered, otherwise returns any convenient element.
-    # The element is removed from the lot.
-    ;;pop(): hm[of]
-
-    @alias ;;pop(At)?: M[At]!
-
-    # always returns a non-null type, adding
-    # a default-initialized value if necessary:
-    # returns a copy of the value at ID, too.
-    ;;[At]: hm[of]
-
-    # no-copy getter: which will create a default value instance if it's not present at At.
-    ;;[At, fn(Of): ~t]: t
-
-    # copy getter: which will return a copy of the value at ID;
-    # returns a Null if ID is not in the lot.
-    ::[At]?: of
-
-    # no-copy getter: which will pass back a Null if the ID is not in the lot.
-    ::[At, fn(Of?): ~t]: t
-
-    # swapper: sets the value at the ID, returning the old value:
-    ;;[At, Of.]: of
-
-    # modifier, allows access to modify the internal value via reference.
-    # passes the current value at the ID into the passed-in function by reference (`;`).
-    # the return value of the passed-in function will become the new value at the ID.
-    # if a value at `At` is not already present, a default `Value` will be created.
-    ;;[At, fn(Of;): ~t]: t
-
-    # nullable modifier, which returns a Null if the ID is not in the lot.
-    # if the value wasn't Null, but becomes Null via the passed-in function,
-    # the ID will be deleted from the lot.  conversely, if the value was Null, but
-    # the passed-in function turns it into something non-null, the ID/value will be added
-    # to the lot.
-    ;;[At, fn(Of?;): ~t]: hm[ok: t, er: Out_of_memory]
-
-    # getter and modifier in one definition, with the `;:` "template mutability" operator:
-    # will return an error for the const lot (`M:`) if `At` is not in the lot.
-    ;:[At, fn(Of;:): ~t]: hm[t]
-
-    # nullable getter/modifier in one definition, with the `;:` template mutability operator:
-    ;:[At, fn(Of?;:): ~t]: hm[ok: t, er: Out_of_memory]
-}
-```
-
 The default lot type is `insertion_ordered_lot`, which means that the order of elements
 is preserved based on insertion; i.e., new IDs come after old IDs when iterating.
+(Equality checking doesn't care about insertion order, however.)
 Other notable lots include `at_ordered_lot`, which will iterate over elements in order
 of their sorted IDs, and `unordered_lot`, which has an unpredictable iteration order.
 Note that `at_ordered_lot` has `O(lg(N))` complexity for look up, insert, and delete,
 while `insertion_ordered_lot` has some extra overhead but is `O(1)` for these operations,
 like `unordered_lot`.
-
-```
-@private
-indexed_lot_element[at, of]:
-[   Next; index
-    Previous; index
-    # ID needs to be constant.
-    At: at
-    Of; of
-]
-
-insertion_ordered_lot[at, of]: all_of
-[   lot[at, of]
-    @private m:
-    [   At_indices; @only unordered_lot[at, index]
-        Indexed_lot; @only unordered_lot
-        [   at: index
-            indexed_lot_element[at, of]
-        ]
-        (   [At: 0, Of: [Next: 0, at(), of(), Previous: 0]]
-        )
-        Next_available_index; index = 1
-    ]
-]
-{   # creates a default value if not present at the ID to pass in to the modifier:
-    ;;[At.]: (Of;)
-
-    ::[At.]: (Of?)
-
-    # TODO: you can create an immediate reference (e.g., ptr??) if you
-    # use an immediate ptr to a key.
-    
-    ;:each(@Loop fn(At, Of;:): loop): bool
-        Index; M Indexed_lot[0] Next
-        while Index != 0
-            (Of;:, At, Next): M Indexed_lot[Index] ?? panic("broken invariant!")
-            if @Loop fn(At, Of;:) == Break
-                return True
-            Index = Next
-        return False
-}
-```
 
 ## sets
 
@@ -6281,16 +6171,16 @@ set[of: hashable]: container[id: of, value: true]
     ;;all(Iterator[of].): hm[bool]
 
     # can convert to an iterator.
-    (M): (Iterator[(Of)].)
+    ::iterator(): iterator[(Of:)]
 
-    @hide ;:values(): (Iterator[(True;:)])
-    @hide ;:ids(): (Iterator[(Of)])
+    @hide ;:ofs(): iterator[(True;:)]
+    @hide ;:ats(): iterator[(Of)]
 
     # Removes the last element added to the set if this set is
     # insertion ordered, otherwise any convenient element.
     # Returns an error if there is no element available.
     ;;pop(): hm[of]
-    ;;pop(Of)?: M[Of]!
+    ;;pop(Of)?: {M[Of]!}
 
     @alias ;;remove(Of)?: M[Of]!
     ...

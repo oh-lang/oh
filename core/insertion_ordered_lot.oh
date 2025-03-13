@@ -1,0 +1,48 @@
+insertion_ordered_lot[at, of]: all_of
+[   lot[at, of]
+    @private m:
+    [   At_indices; @only unordered_lot[at, index]
+        Indexed_dll; @only stack[m indexed_element]()
+        Used_root; [Next; index = -1, Previous; index = -1]
+        Free_root; [Next; index = -1, Previous; index = -1]
+    ]
+]
+{   # creates a default value if not present at the ID to pass in to the modifier:
+    ;;[At`]: (Of;)
+        refer
+        (   M
+            @hide At`
+            get(O;, At:): (Of;)
+                Index: O At_indices::[At] ?? O add_default(At)
+                # i don't think we need to `refer` this because this
+                # getter is considered an `instant` use.
+                (;O Indexed_dll[Index] Of)
+        )
+
+    ::[At]: (Of?:)
+
+    ;:each(@Loop fn(At, Of;:): loop): bool
+        Index; M Indexed_lot[0] Next
+        while Index != 0
+            (Of;:, At, Next): M Indexed_lot[Index] ?? panic("broken invariant!")
+            if @Loop fn(At, Of;:) == Break
+                return True
+            Index = Next
+        return False
+
+    @private
+    ;;add_default(At): index
+
+    @private
+    indexed_element: indexed_lot_element[at, of]
+}
+
+@private
+indexed_lot_element[at, of]:
+[   Next; index
+    Previous; index
+    # ID needs to be constant.
+    At: at
+    Of; of
+]
+

@@ -1,0 +1,32 @@
+
+er: one_of
+[   Out_of_memory
+    # etc...
+]
+hm[of]: hm[ok: of, er]
+
+lot[of, at: hashable]: container[of, at]
+{   # Returns Null if `At` is not in the lot.
+    ::[At]: (Of?:)
+
+    # Gets the existing value at `At` if present,
+    # otherwise inserts a default `of` into the lot and returns it.
+    ;;[At]: hm[(Of;)]
+
+    @can_panic
+    ;;[At]: (Of;)
+        M[At] Hm assert()
+
+    # Ejects the (possibly null) value at `At` and returns it.
+    # A subsequent, immediate call to `::[At]` returns Null.
+    ;;[At]!?: of
+
+    ::count(): count
+
+    # Returns the last element added to the lot if the lot is
+    # insertion ordered, otherwise returns any convenient element.
+    # The element is removed from the lot.
+    ;;pop(): hm[of]
+
+    @alias ;;pop(At)?: {M[At]!}
+}
