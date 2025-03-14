@@ -3,46 +3,101 @@ insertion_ordered_lot[at, of]: all_of
     @private m:
     [   At_indices; @only unordered_lot[at, index]
         Indexed_dll; @only stack[m indexed_element]()
+        Count;
         Used_root; [Next; index = -1, Previous; index = -1]
-        Free_root; [Next; index = -1, Previous; index = -1]
+        # Free nodes are indexed as a SLL, i.e., only in the forward direction.
+        Next_free_index; index = -1
     ]
 ]
-{   # creates a default value if not present at the ID to pass in to the modifier:
-    ;;[At`]: (Of;)
+{   # creates a default value if not present at `At` to pass in to the modifier:
+    ;;[At`]: hm[(Of;)]
         refer
         (   M
-            @hide At`
-            get(O;, At:): (Of;)
-                Index: O At_indices::[At] ?? O add_default(At)
+            @hide `At
+            get(O;, At`): (Of;)
+                Index: O At_indices::[At] ?? O add_default(`At) assert()
                 # i don't think we need to `refer` this because this
                 # getter is considered an `instant` use.
                 (;O Indexed_dll[Index] Of)
         )
 
-    ::[At]: (Of?:)
+    ;;[At`]: (Of;)
+        M[At`]
 
-    ;:each(@Loop fn(At, Of;:): loop): bool
-        Index; M Indexed_lot[0] Next
-        while Index != 0
-            (Of;:, At, Next): M Indexed_lot[Index] ?? panic("broken invariant!")
-            if @Loop fn(At, Of;:) == Break
+    ::[At]: (Of?:)
+        refer
+        (   M
+            @hide At`
+            get(O:, At:): (Of?:)
+                if O At_indices[At] is Index:
+                    (:O Indexed_dll[Index] Of)
+                else
+                    (Null)
+        )
+
+    ;:each(fn(At:, Of;:): loop): bool
+        Index; M Used_root Next
+        while Index >= 0
+            (Of;:, At:, Next:) = M Indexed_dll[Index] ?? panic("broken invariant!")
+            if fn(At, Of;:) == Break
                 return True
             Index = Next
         return False
 
     @private
-    ;;add_default(At): index
+    ;;add_default(At`): hm[index]
+        if M count_free() == 0
+            M expand() assert()
+        Index: M Next_free_index
+        (M At_indices[At] = Index) Hm assert()
+        M Count += 1
+        debug assert(Index >= 0)
+        M Next_free_index = M Indexed_dll[Index] Next
+        M Indexed_dll[Index] At = @moot_or_copy(At)
+        ;;fix_links
+        (   Previous: M Used_root Previous
+            Index
+            Next: -1
+        )
+
+    @private
+    ;;fix_links(Previous: index, Index, Next: index): null
+        if Previous == -1
+            M Used_root Next = Index
+        else
+            M Indexed_dll[Previous] Next = Index
+
+        M Indexed_dll[Index] Previous = Previous
+        M Indexed_dll[Index] Next = Next
+
+        if Next == -1
+            M Used_root Previous = Index
+        else
+            M Indexed_dll[Next] Previous = Index
+
+    @private
+    ;;count_free(): count
+        M Indexed_dll count() - M Count
 
     @private
     indexed_element: indexed_lot_element[at, of]
 }
 
+er: one_of
+[   out_of_memory
+]
+
+hm[of]: hm[ok: of, er]
+
 @private
 indexed_lot_element[at, of]:
-[   Next; index
-    Previous; index
-    # ID needs to be constant.
+[   # `At` needs to be constant.
     At: at
-    Of; of
+    Of; of()
+    # DLL for used indices (using `Next` and `Previous`),
+    # and also as a SLL for free indices (using just `Next`)
+    Next; index
+    Previous; index
+    
 ]
 
