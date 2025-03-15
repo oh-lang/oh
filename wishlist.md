@@ -1487,6 +1487,9 @@ $curried_function{some_function(X: 5, Y; 2.4, $Z.)}:
 
 ## namespaces
 
+TODO: rename "namespacing" to "variable renaming".  This should be helpful
+in destructuring as well.  E.g., `@Outer X: int` becomes `Outer` in all future references.
+
 Namespaces are used to avoid conflicts between two variable names that should be called
 the same, i.e., for function convenience.  oh-lang doesn't support shadowing, so something
 like this would break:
@@ -1506,12 +1509,13 @@ my_function(X: int): int
     X // 8
 ```
 
-The way to get around this is to use a namespace for one or both conflicts.
+There are two ways to get around this; one is [hiding variables](#hiding-variables).
+In the above example, the best way is to use a namespace for one or both conflicts.
 Namespaces look like `Variable_case` annotations with a field name, e.g.,
 `@My_namespace My_variable_name`, where `My_namespace` is some unrestricted
 name.  You normally use these in function arguments, but they can
 annotate any variable that you're declaring.  Any future references to the
-variable require using the namespace as well.  It is recommended to namespace
+variable just use the namespace `My_namespace`.  It is recommended to namespace
 the "outer" variable so you don't accidentally use it in the inner scope.
 
 ```
@@ -1520,6 +1524,7 @@ my_function(@Outer X: int): int
     do_stuff(X: int): null
         # inner scope, any usage of `@Outer X` would be clearly intentional.
         print(X)
+    # TODO: don't use `@Outer X`, just use `Outer`
     do_stuff(@Outer X)
     do_stuff(X: @Outer X // 2)
     do_stuff(X: @Outer X // 4)
@@ -1586,16 +1591,6 @@ some_function(X)     # note that we don't need to call as `some_function(Index: 
 You can use the same namespace for multiple variables, e.g., `@Input Rune` and `@Input String`,
 as long as the variable names don't overlap.  Like the member access operators below, the
 namespace operator binds left to right.
-
-TODO: i don't like shadowing multiple variables (e.g., from function arguments), but *transmuting*
-variables into a different type does feel nice in Rust's shadowing.  we probably want to support
-something explicit like this
-
-```
-fn(X: int):
-    # TODO: `@transmute` or something else might be better.
-    @shadow X: flt(X)
-```
 
 ### full list of reserved namespaces
 
@@ -2185,7 +2180,7 @@ print(X)    # will either be 7 (if Some_condition was true) or 4 (if !Some_condi
 X += 5      # can modify X back in this block; there are no constraints here.
 ```
 
-## hiding variables for the remainder of the block
+## hiding variables
 
 We can hide a variable from the current block by using `@hide` before the variable name.
 This doesn't descope the variable, but it does prevent the variable from being used by
@@ -2202,6 +2197,14 @@ Date: date(@hide Date_string)
 # if the underlying class makes use of that same type variable internally, e.g.:
 Date: date(@hide Date_string!)
 # see discussion on `moot` for more information.
+```
+
+In fact, hiding variables make it possible to shadow identifiers; i.e.,
+for variable renaming.  See the following example:
+
+```
+do_something(Date: str("2023-01-01")):
+    Date: date(@hide Date!)
 ```
 
 # functions
@@ -5736,9 +5739,9 @@ If you want to customize the return error for an assert, pass it an explicit
 `Er` argument, e.g., `assert(My_value, Er: "Was expecting that to be true")`;
 and note that asserts can be called like `My_value assert()` or `Positive assert(Er: "oops")`.
 
-Note that `assert` logic is always run, even in non-debug code.  To only check statements
-in the debug binary, use `debug assert`, which has the same signature as `assert`.  Using
-`debug assert` is not recommended, except to enforce the caller contract of private/protected
+Note that `assert` logic is always run, even in non-debug code.  To only check statements in the
+debug binary, use `assert(Debug_only, ...)`, which otherwise has the same signature as `assert(...)`.
+Using debug asserts is not recommended, except to enforce the caller contract of private/protected
 methods.  For public methods, `assert` should always be used to check arguments.
 
 Note that for functions that return results, i.e., `hm[ok, er]`, `assert` will automatically

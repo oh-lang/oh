@@ -8,46 +8,56 @@ indexable_sequence[of: not[null]]: container[of, at: index]
     :;[In_bounds.]: (Of:;)
 
     # nullable getter; returns null if `Index` is outside the bounds of the array.
-    ::[@Input Index.]: (Of?) = refer
-    (   M
-        At. @hide @Input Index
-        # TODO: maybe allow shadowing if you specifically `@hide` the
-        #       previous instance before you declare the next one.
-        get(O, Index.)?: (Of)
-            In_bounds: O in_bounds(@hide Index) ?? return Null
-            O[In_bounds]
-    )
+    ::[Index.]: (Of?)
+        refer
+        (   M
+            At. @hide Index
+            get(O, Index.): (Of?)
+                In_bounds: O in_bounds(@hide Index) ?? return Null
+                O[In_bounds]
+        )
 
     # nullable getter/setter; resizes the array if necessary when setting.
-    ;;[Index.]: (Of?;) = refer
-    (   M
-        At. @hide @Input Index
-        # TODO: maybe allow shadowing if you specifically `@hide` the
-        #       previous instance before you declare the next one.
-        get(O, Index.)?: (Of;)
-            In_bounds: O in_bounds(@hide Index) ?? return Null
-            O[In_bounds]
-        set(O;, Index., Of?.): null
-            In_bounds: O in_bounds(@hide Index) ?? panic()
-            if Of is NonNull.
-                O[In_bounds] = NonNull!
-            else
-                O pop(In_bounds)
-    )
+    ;;[Index.]: hm[(Of?;)]
+        refer
+        (   M
+            At. @hide Index
+            get(O:, Index.): (Of?;)
+                In_bounds: O in_bounds(Index) ?? return Null
+                O[In_bounds]
+            set(O;, Index., Of?.): hm[null]
+                In_bounds: O in_bounds(Index) assert()
+                if Of is NonNull.
+                    O[In_bounds] = NonNull!
+                else
+                    O pop(In_bounds)
+        )
+
+    @can_panic
+    ;;[Index.]: (Of?;)
+        # TODO: is there better syntax here because `refer` in the `hm` overload
+        # is evaluated lazily.  the point is do we want something like
+        # `Last_element: Array[-1]` to always point to the last element, e.g., after
+        # `Array append(New_last_element)`.
+        M[Index] Hm assert()
+        # TODO: actually, we should be able to make error-returning functions templateable.
+        # e.g., `;;[Index.]: hm_or_panic[(Of?;)]` which generates a `...: hm[(Of?;)]`
+        # overload and a `@can_panic ...: (Of?;)` overload.  probably should be a macro.
 
     # non-nullable getter/setter; resizes the array if necessary when getting or setting.
-    ;;[Index.]: (Of;) = refer
-    (   M
-        At. @hide @Input Index
-        # TODO: maybe allow shadowing if you specifically `@hide` the
-        #       previous instance before you declare the next one.
-        get(O;, Index.): (Of;)
-            In_bounds: O in_bounds(@hide Index) ?? panic()
-            O[In_bounds]
-        set(O;, Index., Of.): null
-            In_bounds: O in_bounds(@hide Index) ?? panic()
-            O[In_bounds] = Of!
-    )
+    ;;[Index.]: hm[(Of;)]
+        refer
+        (   M
+            At. @hide Index
+            get(O;, Index.): hm[(Of;)]
+                In_bounds: O in_bounds(@hide Index) assert()
+                O[In_bounds]
+            set(O;, Index., Of.): hm[null]
+                In_bounds: O in_bounds(@hide Index) assert()
+                O[In_bounds] = Of!
+        )
+
+    # TODO: panic-able version of the above.
 
     @protected
     ::in_bounds(Index.): hm[in_bounds]
