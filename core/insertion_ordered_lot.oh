@@ -80,6 +80,10 @@ insertion_ordered_lot[at, of]: all_of
         M Indexed_dll count() - M Count
 
     @private
+    ;;expand(): hm[null]
+        # TODO 
+
+    @private
     indexed_element: indexed_lot_element[at, of]
 }
 

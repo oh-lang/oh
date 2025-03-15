@@ -1394,7 +1394,6 @@ nullable(of): of contains(not[null], null)
 # examples
 #   unnull[int] == int
 #   unnull[int?] == int
-#   unnull[array[int?]] == array[int?]
 #   unnull[one_of[array[int], set[dbl], null]] == one_of[array[int], set[dbl]]
 unnull[of]: if nullable(of) {unnest[of]} else {of}
 
@@ -1690,9 +1689,7 @@ The `?` operator binds strongly, but less so than member access, so `x a?` is eq
 to `one_of[x a, null]` and not `x one_of[a, null]`.  This is for nested classes, e.g.,
 `x: [...] {a: int}`, so that we don't need to use `(x a)?` to represent `x one_of[a, null]`.
 Generally speaking, if you want your entire variable to be nullable,
-it should be defined as `X?: int`.  If you have generic classes (like `array[element_type]`),
-then `X: array[int?]` would define an array of nullable integers,
-and `X?: array[int]` would declare a nullable array of integers.
+it should be defined as `X?: int`.
 
 Prefix `?` can be used to short-circuit function evaluation if an argument is null.
 for a function like `do_something(X?: int)`, we can use `do_something(?X: My_value_for_x)`
@@ -7382,6 +7379,12 @@ Note that the default value for a `one_of` is the first value, unless zero is an
 E.g., `one_of[Option_a, Option_b]` defaults to `Option_a`, `one_of[A: -1, B: 0, C: 1]` 
 defaults to `B`, and `one_of[Option_c, Null]` defaults to `Null`, and
 `one_of[A: -1, B: 0, C: 1, Null]` also defaults to `Null`.
+TODO: `[Null]` should collapse to `[]` based on how containers work.  Null is
+always the absence of a value and should never be considered present.  we can make
+`one_of` a macro but that might be a pain to be consistent (and use `@one_of` everywhere).
+maybe require using `?` for these sorts of things
+like `tye_type: one_of[A: -1, B: 0, C: 1]?` or `the_type?: one_of[A: -1, B: 0, C: 1]`
+otherwise `one_of[a, b, c, null]` is ok because `null` is a type.
 
 ### testing enums with lots of values
 
