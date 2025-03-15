@@ -3,8 +3,13 @@
 indexable_sequence[of: not[null]]: container[of, at: index]
 {   ;;count(@Resize_to Count): null 
 
+    # requires a positive (or zero) index passed in.
+    # will return an error if `In_bounds >= M count()`.
+    :;[In_bounds.]: hm[(Of:;)]
+
     # in-bounds reference, which is unsafe to call unless `In_bounds` is 
     # within the range `[0, M count())`.
+    @can_panic
     :;[In_bounds.]: (Of:;)
 
     # nullable getter; returns null if `Index` is outside the bounds of the array.
@@ -22,7 +27,7 @@ indexable_sequence[of: not[null]]: container[of, at: index]
         refer
         (   M
             At. @hide Index
-            get(O:, Index.): (Of?;)
+            get(O:, Index.): hm[(Of?;)]
                 In_bounds: O in_bounds(Index) ?? return Null
                 O[In_bounds]
             set(O;, Index., Of?.): hm[null]
@@ -43,6 +48,7 @@ indexable_sequence[of: not[null]]: container[of, at: index]
         # TODO: actually, we should be able to make error-returning functions templateable.
         # e.g., `;;[Index.]: hm_or_panic[(Of?;)]` which generates a `...: hm[(Of?;)]`
         # overload and a `@can_panic ...: (Of?;)` overload.  probably should be a macro.
+        # internally you'd use `@hm_or[(Of?;)]` for return values.
 
     # non-nullable getter/setter; resizes the array if necessary when getting or setting.
     ;;[Index.]: hm[(Of;)]
