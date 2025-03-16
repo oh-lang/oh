@@ -1493,10 +1493,16 @@ curried_function(Z. str): some_function(X: 5, Y; 2.4, Z.)
 $curried_function{some_function(X: 5, Y; 2.4, $Z.)}:
 ```
 
-## namespaces
+## macros
 
-TODO: rename "namespacing" to "variable renaming".  This should be helpful
-in destructuring as well.  E.g., `@Outer X: int` becomes `Outer` in all future references.
+TODO: discussion on how to code up macros.
+
+List of existing macros.
+
+* `@unused` - aliases to `@Unused` namespace
+* `@ignore` - aliases to `@Ignore` namespace
+
+## namespaces
 
 Namespaces are used to avoid conflicts between two variable names that should be called
 the same, i.e., for function convenience.  oh-lang doesn't support shadowing, so something
@@ -1532,7 +1538,6 @@ my_function(@Outer X: int): int
     do_stuff(X: int): null
         # inner scope, any usage of `@Outer X` would be clearly intentional.
         print(X)
-    # TODO: don't use `@Outer X`, just use `Outer`
     do_stuff(@Outer X)
     do_stuff(X: @Outer X // 2)
     do_stuff(X: @Outer X // 4)
@@ -1600,6 +1605,12 @@ You can use the same namespace for multiple variables, e.g., `@Input Rune` and `
 as long as the variable names don't overlap.  Like the member access operators below, the
 namespace operator binds left to right.
 
+One final note, we don't consider namespacing as renaming, e.g., `@Outer Int: int`, and then referring
+to it as `Outer` internally -- we need the full `@Outer Int` to refer to it.  This is because we also
+want namespacing to work with functions, e.g., `@Outer fn`.  We also don't want to introduce another
+way to rename things, e.g., in destructuring.
+TODO: we could use `@Outer fn` and then `outer(...)` to call the function.
+
 ### full list of reserved namespaces
 
 * `@First` - for the first operand in a binary operation (where order matters)
@@ -1609,7 +1620,6 @@ namespace operator binds left to right.
     TODO: probably can use a *trailing* underscore to ignore a variable, e.g., `Result map({$Er_, -1})`,
     but i like the purposeful intent behind the `@Ignore` namespace.
 * `@Named` - for arguments that should be explicitly named in [functions](#defining-generic-functions)
-
 
 ## member access operators `::`, `;;`, ` `, and subscripts `[]`
 
