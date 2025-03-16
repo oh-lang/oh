@@ -2,33 +2,26 @@ insertion_ordered_lot[at, of]: all_of
 [   lot[at, of]
     @private m:
     [   At_indices; @only unordered_lot[at, index]
-        Indexed_dll; @only stack[m indexed_element]()
-        Count;
-        Used_root; [Next; index = -1, Previous; index = -1]
-        # Free nodes are indexed as a SLL, i.e., only in the forward direction.
-        Next_free_index; index = -1
+        Indexed_dll; @only dll[m element]()
     ]
 ]
 {   # creates a default value if not present at `At` to pass in to the modifier:
-    ;;[At`]: hm[(Of;)]
+    ;;[At`]: @hm_or_panic[(Of;)]
         refer
         (   M
             @hide `At
-            get(O;, At`): (Of;)
+            fn(O;, At`): @hm_or_panic[(Of;)]
                 Index: O At_indices::[At] ?? O add_default(`At) assert()
                 # i don't think we need to `refer` this because this
                 # getter is considered an `instant` use.
                 (;O Indexed_dll[Index] Of)
         )
 
-    ;;[At`]: (Of;)
-        M[At`]
-
     ::[At]: (Of?:)
         refer
         (   M
             @hide At`
-            get(O:, At:): (Of?:)
+            fn(O:, At:): (Of?:)
                 if O At_indices[At] is Index:
                     (:O Indexed_dll[Index] Of)
                 else
@@ -84,7 +77,7 @@ insertion_ordered_lot[at, of]: all_of
         # TODO 
 
     @private
-    indexed_element: indexed_lot_element[at, of]
+    element: lot_element[at, of]
 }
 
 er: one_of
@@ -94,14 +87,9 @@ er: one_of
 hm[of]: hm[ok: of, er]
 
 @private
-indexed_lot_element[at, of]:
+lot_element[at, of]:
 [   # `At` needs to be constant.
     At: at
-    Of; of()
-    # DLL for used indices (using `Next` and `Previous`),
-    # and also as a SLL for free indices (using just `Next`)
-    Next; index
-    Previous; index
-    
+    Of; of() 
 ]
 

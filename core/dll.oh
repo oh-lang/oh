@@ -1,0 +1,70 @@
+dll[of]: all_of
+[   @private m:
+    [   Stack: @only stack[m element]
+        Count;
+        Used_root; [Next; index = -1, Previous; index = -1]
+        # Free nodes are indexed as a SLL, i.e., only in the forward direction.
+        Next_free_index; index = -1
+    ]
+]
+{   # returns the index you can use to refer to this element.
+    # like a pointer, but indexed from this `dll`.  if you erase
+    # this element in the future, you'll invalidate its index 
+    # but no one else's.  (i.e., nothing will be at the index
+    # initially, but a new element might reuse the index later.)
+    ;;append(Of.): hm[index]
+        if M count_free() == 0
+            M expand() assert()
+        Index: M Next_free_index
+        debug assert(Index >= 0)
+        M Count += 1
+        M Next_free_index = M Stack[Index] Next
+        M Stack[Index] Of = Of!
+        ;;fix_links
+        (   Previous: M Used_root Previous
+            Index
+            Next: -1
+        )
+
+    # TODO: `prepend`
+
+    # TODO: `defrag` which reorders indices in iteration order.
+    # probably can have a parameter like "Keep_capacity" or "Optimize_capacity"
+
+    # TODO: pop
+
+    @private
+    ;;fix_links(Previous: index, Index, Next: index): null
+        if Previous == -1
+            M Used_root Next = Index
+        else
+            M Stack[Previous] Next = Index
+
+        M Stack[Index] Previous = Previous
+        M Stack[Index] Next = Next
+
+        if Next == -1
+            M Used_root Previous = Index
+        else
+            M Stack[Next] Previous = Index
+
+    @private
+    ;;count_free(): count
+        M Stack count() - M Count
+
+    @private
+    ;;expand(): hm[null]
+        # TODO 
+
+    @private
+    element: dll_element[of]
+}
+
+@private
+dll_element[of]:
+[   Of; of()
+    # DLL for used indices (using `Next` and `Previous`),
+    # and also as a SLL for free indices (using just `Next`)
+    Next; index
+    Previous; index 
+]
