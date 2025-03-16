@@ -240,10 +240,18 @@ custom_container[of]: [Repeated; repeated[10, of]]
         if Ordinal > 10
             er("index too high")
         else
-            ok((M Repeated[Ordinal]))
+            ok((Of:; M Repeated[Ordinal]))
 
     M[Ordinal]:; (Of:;)
         M[Ordinal] Hm ?? panic(Er)
+
+    # for short, you can use this `@hm_or_panic` macro, which will essentially
+    # inline the logic into both methods.
+    M[Ordinal]:; @hm_or_panic[ok: (Of:;), er: str]
+        if Ordinal > 10
+            er("index too high")
+        else
+            ok((Of:; M Repeated[Ordinal]))
 }
 ```
 
@@ -2456,17 +2464,25 @@ My_array == [1, 2, 3, 4, 105, 6]    # should be true
 
 #### refer function
 
-You can create a reference via getters and setters using the `refer` function, which
+If you need some special logic before returning a reference, e.g., to create a default,
+you can use the `refer` function with the following signature: `refer(~R;, fn(R;): (~T;)`
+and similarly for a constant reference (swap `;` with `:` everywhere).  There's also a
+key-like interface (e.g., for arrays or lots):
+
+```
+# if `At` is passed as a temporary, it should be easily copyable.
+refer(~R;:, At` ~k, fn(R;:, K:): (~T;:)): (T;:)`
+```
+
+You can also create a reference via getters and setters using the `refer` function, which
 has the following signature: `refer(~R;, @Getter fn(R): ~t, @Setter fn(R;, T.): null): (T;)`.
 It extends a base reference to `R` to provide a reference to a `t` instance.
 There's also a key-like interface (e.g., for arrays or lots):
 
 ```
 # if `At` is passed as a temporary, it should be easily copyable.
-refer(~R, At` ~k, @Getter fn(R, K`): ~t, @Setter fn(R;, K`, T.): null): (T;)`
+refer(~R;:, At` ~k, @Getter fn(R:, K:): ~t, @Setter fn(R;:, K:, T.): null): (T;)`
 ```
-
-There are also overloads without setters that return a `(T:)` instead.
 
 When calling `refer`, we want the getters and setters to be known at compile time,
 so that we can elide the reference object creation when possible.
