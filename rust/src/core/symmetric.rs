@@ -86,11 +86,15 @@ mod test {
         assert_eq!(min, SymmetricN::<i8>(-127));
         assert_eq!(min.to_i64(), Some(-127));
         assert_eq!(min.to_u64(), None);
+        assert_eq!(min.is_null(), false);
+        assert_eq!(min.is_not_null(), true);
 
         let null = Symmetric8::NULL;
         assert_eq!(null, SymmetricN::<i8>(-128));
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
+        assert_eq!(null.is_null(), true);
+        assert_eq!(null.is_not_null(), false);
     }
 
     #[test]
@@ -113,11 +117,15 @@ mod test {
         assert_eq!(min, SymmetricN::<i16>(-32767));
         assert_eq!(min.to_i64(), Some(-32767));
         assert_eq!(min.to_u64(), None);
+        assert_eq!(min.is_null(), false);
+        assert_eq!(min.is_not_null(), true);
 
         let null = Symmetric16::NULL;
         assert_eq!(null, SymmetricN::<i16>(-32768));
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
+        assert_eq!(null.is_null(), true);
+        assert_eq!(null.is_not_null(), false);
     }
 
     #[test]
@@ -140,11 +148,15 @@ mod test {
         assert_eq!(min, SymmetricN::<i32>(-2147483647));
         assert_eq!(min.to_i64(), Some(-2147483647));
         assert_eq!(min.to_u64(), None);
+        assert_eq!(min.is_null(), false);
+        assert_eq!(min.is_not_null(), true);
 
         let null = Symmetric32::NULL;
         assert_eq!(null, SymmetricN::<i32>(-2147483648));
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
+        assert_eq!(null.is_null(), true);
+        assert_eq!(null.is_not_null(), false);
     }
 
     #[test]
@@ -167,10 +179,14 @@ mod test {
         assert_eq!(min, SymmetricN::<i64>(-9223372036854775807));
         assert_eq!(min.to_i64(), Some(-9223372036854775807));
         assert_eq!(min.to_u64(), None);
+        assert_eq!(min.is_null(), false);
+        assert_eq!(min.is_not_null(), true);
 
         let null = Symmetric64::NULL;
         assert_eq!(null, SymmetricN::<i64>(-9223372036854775808));
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
+        assert_eq!(null.is_null(), true);
+        assert_eq!(null.is_not_null(), false);
     }
 }
