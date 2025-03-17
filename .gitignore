@@ -1,4 +1,4 @@
 *.swp
-zig-out/
-.zig-cache/
-
+zig/zig-out/
+zig/.zig-cache/
+rust/target/
