@@ -150,6 +150,19 @@ impl<T: SignedPrimitive> SubAssign<T> for SymmetricN<T> {
     }
 }
 
+impl<T: SignedPrimitive> Neg for SymmetricN<T> {
+    type Output = SymmetricN<T>;
+
+    fn neg(self) -> Self::Output {
+        if self.is_null() {
+            cold();
+            self
+        } else {
+            Self(-self.0)
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -403,5 +416,20 @@ mod test {
         let mut sixteen = Symmetric16::MAX;
         sixteen -= Symmetric16::of(-1);
         assert_eq!(sixteen, Symmetric16::NULL);
+    }
+
+    #[test]
+    fn negate() {
+        assert_eq!(-Symmetric64::NULL, Symmetric64::NULL);
+        assert_eq!(-Symmetric64::of(300), Symmetric64::of(-300));
+
+        assert_eq!(-Symmetric32::NULL, Symmetric32::NULL);
+        assert_eq!(-Symmetric32::of(-3000), Symmetric32::of(3000));
+
+        assert_eq!(-Symmetric16::NULL, Symmetric16::NULL);
+        assert_eq!(-Symmetric16::of(30000), Symmetric16::of(-30000));
+
+        assert_eq!(-Symmetric8::NULL, Symmetric8::NULL);
+        assert_eq!(-Symmetric8::of(3), Symmetric8::of(-3));
     }
 }
