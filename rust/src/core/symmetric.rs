@@ -66,9 +66,34 @@ where
     }
 }
 
+impl<T: SignedPrimitive> AddAssign<Self> for SymmetricN<T> {
+    fn add_assign(&mut self, other: Self) {
+        if other.is_null() {
+            cold();
+            self.0 = T::MIN;
+        } else {
+            *self += other.0;
+        }
+    }
+}
+
+impl<T: SignedPrimitive> AddAssign<T> for SymmetricN<T> {
+    fn add_assign(&mut self, other: T) {
+        if self.is_null() {
+            cold();
+        } else if let Some(value) = self.0.checked_add(&other) {
+            self.0 = value;
+        } else {
+            cold();
+            self.0 = T::MIN;
+        }
+    }
+}
+
 impl<T: SignedPrimitive> SubAssign<Self> for SymmetricN<T> {
     fn sub_assign(&mut self, other: Self) {
-        if unlikely(other.is_null()) {
+        if other.is_null() {
+            cold();
             self.0 = T::MIN;
         } else {
             *self -= other.0;
@@ -78,10 +103,12 @@ impl<T: SignedPrimitive> SubAssign<Self> for SymmetricN<T> {
 
 impl<T: SignedPrimitive> SubAssign<T> for SymmetricN<T> {
     fn sub_assign(&mut self, other: T) {
-        if unlikely(self.is_null()) {
+        if self.is_null() {
+            cold();
         } else if let Some(value) = self.0.checked_sub(&other) {
             self.0 = value;
         } else {
+            cold();
             self.0 = T::MIN;
         }
     }
@@ -233,7 +260,29 @@ mod test {
         assert_eq!(thirty_two, Symmetric32::NULL);
 
         let mut sixteen = Symmetric16::MAX;
-        sixteen -= -1;
+        sixteen -= Symmetric16::of(-1);
+        assert_eq!(sixteen, Symmetric16::NULL);
+    }
+
+    #[test]
+    fn add_assign() {
+        let mut sixty_four = Symmetric64::NULL;
+        sixty_four += 123;
+        assert_eq!(sixty_four.is_null(), true);
+
+        let mut eight = Symmetric8::default();
+        eight += 123;
+        assert_eq!(eight, Symmetric8::of(123));
+
+        eight += Symmetric8::NULL;
+        assert_eq!(eight, Symmetric8::NULL);
+
+        let mut thirty_two = Symmetric32::MAX;
+        thirty_two += 1;
+        assert_eq!(thirty_two, Symmetric32::NULL);
+
+        let mut sixteen = Symmetric16::min();
+        sixteen += Symmetric16::of(-1);
         assert_eq!(sixteen, Symmetric16::NULL);
     }
 }

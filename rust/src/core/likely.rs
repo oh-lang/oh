@@ -1,6 +1,6 @@
 #[inline]
 #[cold]
-fn cold() {}
+pub fn cold() {}
 
 #[inline]
 pub fn likely(b: bool) -> bool {
