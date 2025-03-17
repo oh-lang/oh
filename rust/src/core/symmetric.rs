@@ -66,6 +66,15 @@ where
     }
 }
 
+impl<T: SignedPrimitive> Add<Self> for SymmetricN<T> {
+    type Output = SymmetricN<T>;
+
+    fn add(mut self, other: Self) -> Self::Output {
+        self += other;
+        self
+    }
+}
+
 impl<T: SignedPrimitive> AddAssign<Self> for SymmetricN<T> {
     fn add_assign(&mut self, other: Self) {
         if other.is_null() {
@@ -74,6 +83,15 @@ impl<T: SignedPrimitive> AddAssign<Self> for SymmetricN<T> {
         } else {
             *self += other.0;
         }
+    }
+}
+
+impl<T: SignedPrimitive> Add<T> for SymmetricN<T> {
+    type Output = SymmetricN<T>;
+
+    fn add(mut self, other: T) -> Self::Output {
+        self += other;
+        self
     }
 }
 
@@ -90,6 +108,15 @@ impl<T: SignedPrimitive> AddAssign<T> for SymmetricN<T> {
     }
 }
 
+impl<T: SignedPrimitive> Sub<Self> for SymmetricN<T> {
+    type Output = SymmetricN<T>;
+
+    fn sub(mut self, other: Self) -> Self::Output {
+        self -= other;
+        self
+    }
+}
+
 impl<T: SignedPrimitive> SubAssign<Self> for SymmetricN<T> {
     fn sub_assign(&mut self, other: Self) {
         if other.is_null() {
@@ -98,6 +125,15 @@ impl<T: SignedPrimitive> SubAssign<Self> for SymmetricN<T> {
         } else {
             *self -= other.0;
         }
+    }
+}
+
+impl<T: SignedPrimitive> Sub<T> for SymmetricN<T> {
+    type Output = SymmetricN<T>;
+
+    fn sub(mut self, other: T) -> Self::Output {
+        self -= other;
+        self
     }
 }
 
@@ -243,25 +279,48 @@ mod test {
     }
 
     #[test]
-    fn sub_assign() {
-        let mut sixty_four = Symmetric64::NULL;
-        sixty_four -= 123;
-        assert_eq!(sixty_four.is_null(), true);
+    fn add() {
+        assert_eq!(Symmetric64::of(51) + 23, Symmetric64::of(74));
+        assert_eq!(
+            Symmetric64::MAX + Symmetric64::of(-1),
+            Symmetric64::of(9223372036854775806)
+        );
+        assert_eq!(Symmetric64::MAX + 23, Symmetric64::NULL);
+        assert_eq!(Symmetric64::min() + Symmetric64::of(-23), Symmetric64::NULL);
+        assert_eq!(
+            Symmetric64::min() + Symmetric64::of(1),
+            Symmetric64::of(-9223372036854775806)
+        );
 
-        let mut eight = Symmetric8::default();
-        eight -= 123;
-        assert_eq!(eight, Symmetric8::of(-123));
+        assert_eq!(Symmetric32::of(61) + 7, Symmetric32::of(68));
+        assert_eq!(
+            Symmetric32::MAX + Symmetric32::of(-1),
+            Symmetric32::of(2147483646)
+        );
+        assert_eq!(Symmetric32::MAX + 1, Symmetric32::NULL);
+        assert_eq!(Symmetric32::min() + Symmetric32::of(-1), Symmetric32::NULL);
+        assert_eq!(
+            Symmetric32::min() + Symmetric32::of(1),
+            Symmetric32::of(-2147483646)
+        );
 
-        eight -= Symmetric8::NULL;
-        assert_eq!(eight, Symmetric8::NULL);
+        assert_eq!(Symmetric16::of(-3) + -4, Symmetric16::of(-7));
+        assert_eq!(
+            Symmetric16::MAX + Symmetric16::of(-1),
+            Symmetric16::of(32766)
+        );
+        assert_eq!(Symmetric16::MAX + 1, Symmetric16::NULL);
+        assert_eq!(Symmetric16::min() + Symmetric16::of(-1), Symmetric16::NULL);
+        assert_eq!(
+            Symmetric16::min() + Symmetric16::of(1),
+            Symmetric16::of(-32766)
+        );
 
-        let mut thirty_two = Symmetric32::min();
-        thirty_two -= 1;
-        assert_eq!(thirty_two, Symmetric32::NULL);
-
-        let mut sixteen = Symmetric16::MAX;
-        sixteen -= Symmetric16::of(-1);
-        assert_eq!(sixteen, Symmetric16::NULL);
+        assert_eq!(Symmetric8::of(-3) + 4, Symmetric8::of(1));
+        assert_eq!(Symmetric8::MAX + Symmetric8::of(-1), Symmetric8::of(126));
+        assert_eq!(Symmetric8::MAX + 1, Symmetric8::NULL);
+        assert_eq!(Symmetric8::min() + Symmetric8::of(-1), Symmetric8::NULL);
+        assert_eq!(Symmetric8::min() + Symmetric8::of(1), Symmetric8::of(-126));
     }
 
     #[test]
@@ -273,7 +332,8 @@ mod test {
         let mut eight = Symmetric8::default();
         eight += 123;
         assert_eq!(eight, Symmetric8::of(123));
-
+        eight += Symmetric8::of(-3);
+        assert_eq!(eight, Symmetric8::of(120));
         eight += Symmetric8::NULL;
         assert_eq!(eight, Symmetric8::NULL);
 
@@ -283,6 +343,65 @@ mod test {
 
         let mut sixteen = Symmetric16::min();
         sixteen += Symmetric16::of(-1);
+        assert_eq!(sixteen, Symmetric16::NULL);
+    }
+
+    #[test]
+    fn sub() {
+        assert_eq!(Symmetric64::of(51) - 23, Symmetric64::of(28));
+        assert_eq!(Symmetric64::MAX - 1, Symmetric64::of(9223372036854775806));
+        assert_eq!(Symmetric64::MAX - Symmetric64::of(-1), Symmetric64::NULL);
+        assert_eq!(Symmetric64::min() - 7, Symmetric64::NULL);
+        assert_eq!(
+            Symmetric64::min() - Symmetric64::of(-1),
+            Symmetric64::of(-9223372036854775806)
+        );
+
+        assert_eq!(Symmetric32::of(61) - 7, Symmetric32::of(54));
+        assert_eq!(Symmetric32::MAX - 1, Symmetric32::of(2147483646));
+        assert_eq!(Symmetric32::MAX - Symmetric32::of(-1), Symmetric32::NULL);
+        assert_eq!(Symmetric32::min() - 1, Symmetric32::NULL);
+        assert_eq!(
+            Symmetric32::min() - Symmetric32::of(-1),
+            Symmetric32::of(-2147483646)
+        );
+
+        assert_eq!(Symmetric16::of(-3) - 4, Symmetric16::of(-7));
+        assert_eq!(Symmetric16::MAX - 1, Symmetric16::of(32766));
+        assert_eq!(Symmetric16::MAX - Symmetric16::of(-1), Symmetric16::NULL);
+        assert_eq!(Symmetric16::min() - 1, Symmetric16::NULL);
+        assert_eq!(
+            Symmetric16::min() - Symmetric16::of(-1),
+            Symmetric16::of(-32766)
+        );
+
+        assert_eq!(Symmetric8::of(-3) - 4, Symmetric8::of(-7));
+        assert_eq!(Symmetric8::MAX - 1, Symmetric8::of(126));
+        assert_eq!(Symmetric8::MAX - Symmetric8::of(-17), Symmetric8::NULL);
+        assert_eq!(Symmetric8::min() - 17, Symmetric8::NULL);
+        assert_eq!(Symmetric8::min() - Symmetric8::of(-1), Symmetric8::of(-126));
+    }
+
+    #[test]
+    fn sub_assign() {
+        let mut sixty_four = Symmetric64::NULL;
+        sixty_four -= 123;
+        assert_eq!(sixty_four.is_null(), true);
+
+        let mut eight = Symmetric8::default();
+        eight -= 123;
+        assert_eq!(eight, Symmetric8::of(-123));
+        eight -= Symmetric8::of(-3);
+        assert_eq!(eight, Symmetric8::of(-120));
+        eight -= Symmetric8::NULL;
+        assert_eq!(eight, Symmetric8::NULL);
+
+        let mut thirty_two = Symmetric32::min();
+        thirty_two -= 1;
+        assert_eq!(thirty_two, Symmetric32::NULL);
+
+        let mut sixteen = Symmetric16::MAX;
+        sixteen -= Symmetric16::of(-1);
         assert_eq!(sixteen, Symmetric16::NULL);
     }
 }
