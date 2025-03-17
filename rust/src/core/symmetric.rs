@@ -2,8 +2,6 @@ use crate::core::likely::*;
 use crate::core::number::*;
 use crate::core::signed::*;
 
-use std::convert::From;
-
 pub type Symmetric64 = SymmetricN<i64>;
 pub type Symmetric32 = SymmetricN<i32>;
 pub type Symmetric16 = SymmetricN<i16>;
