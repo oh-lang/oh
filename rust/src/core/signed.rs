@@ -1,5 +1,4 @@
-use num_traits::{AsPrimitive, Num, PrimInt, Signed, ToPrimitive};
-use std::ops::{Add, AddAssign, Sub, SubAssign};
+use crate::core::number::*;
 
 pub type Signed64 = i64;
 pub type Signed32 = i32;
@@ -8,6 +7,7 @@ pub type Signed8 = i8;
 
 pub trait SignedPrimitive:
     PrimInt
+    + TryFrom<i64>
     + ToPrimitive
     + AsPrimitive<i64>
     + Signed
@@ -15,9 +15,9 @@ pub trait SignedPrimitive:
     + Add<Output = Self>
     + SubAssign
     + Sub<Output = Self>
-    + std::cmp::PartialOrd
+    + PartialOrd
     + Sized
-    + std::ops::Neg
+    + Neg
     + Num
 {
     const MIN: Self;
