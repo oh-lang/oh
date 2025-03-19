@@ -5,15 +5,15 @@ use crate::core::signed::*;
 use std::fmt::{self, Debug, Formatter};
 use std::num::Wrapping;
 
-pub type Count64 = CountN<i64>;
-pub type Count32 = CountN<i32>;
-pub type Count16 = CountN<i16>;
-pub type Count8 = CountN<i8>;
+pub type Count64 = Count<i64>;
+pub type Count32 = Count<i32>;
+pub type Count16 = Count<i16>;
+pub type Count8 = Count<i8>;
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
-pub struct CountN<T: SignedPrimitive>(T);
+pub struct Count<T: SignedPrimitive>(T);
 
-impl<T> CountN<T>
+impl<T> Count<T>
 where
     T: SignedPrimitive,
 {
@@ -60,7 +60,7 @@ where
     }
 }
 
-impl<T> Debug for CountN<T>
+impl<T> Debug for Count<T>
 where
     T: SignedPrimitive,
 {
@@ -74,7 +74,7 @@ where
     }
 }
 
-impl<T> Default for CountN<T>
+impl<T> Default for Count<T>
 where
     T: SignedPrimitive,
 {
@@ -83,7 +83,7 @@ where
     }
 }
 
-impl<T> ToPrimitive for CountN<T>
+impl<T> ToPrimitive for Count<T>
 where
     T: SignedPrimitive,
 {
@@ -104,8 +104,8 @@ where
     }
 }
 
-impl<T: SignedPrimitive> Add<Self> for CountN<T> {
-    type Output = CountN<T>;
+impl<T: SignedPrimitive> Add<Self> for Count<T> {
+    type Output = Count<T>;
 
     fn add(mut self, other: Self) -> Self::Output {
         self += other;
@@ -113,7 +113,7 @@ impl<T: SignedPrimitive> Add<Self> for CountN<T> {
     }
 }
 
-impl<T: SignedPrimitive> AddAssign<Self> for CountN<T> {
+impl<T: SignedPrimitive> AddAssign<Self> for Count<T> {
     fn add_assign(&mut self, other: Self) {
         if other.is_null() {
             cold();
@@ -124,8 +124,8 @@ impl<T: SignedPrimitive> AddAssign<Self> for CountN<T> {
     }
 }
 
-impl<T: SignedPrimitive> Add<T> for CountN<T> {
-    type Output = CountN<T>;
+impl<T: SignedPrimitive> Add<T> for Count<T> {
+    type Output = Count<T>;
 
     fn add(mut self, other: T) -> Self::Output {
         self += other;
@@ -133,7 +133,7 @@ impl<T: SignedPrimitive> Add<T> for CountN<T> {
     }
 }
 
-impl<T: SignedPrimitive> AddAssign<T> for CountN<T> {
+impl<T: SignedPrimitive> AddAssign<T> for Count<T> {
     fn add_assign(&mut self, other: T) {
         if self.is_null() {
             cold();
@@ -151,8 +151,8 @@ impl<T: SignedPrimitive> AddAssign<T> for CountN<T> {
     }
 }
 
-impl<T: SignedPrimitive> Sub<Self> for CountN<T> {
-    type Output = CountN<T>;
+impl<T: SignedPrimitive> Sub<Self> for Count<T> {
+    type Output = Count<T>;
 
     fn sub(mut self, other: Self) -> Self::Output {
         self -= other;
@@ -160,7 +160,7 @@ impl<T: SignedPrimitive> Sub<Self> for CountN<T> {
     }
 }
 
-impl<T: SignedPrimitive> SubAssign<Self> for CountN<T> {
+impl<T: SignedPrimitive> SubAssign<Self> for Count<T> {
     fn sub_assign(&mut self, other: Self) {
         if other.is_null() {
             cold();
@@ -171,8 +171,8 @@ impl<T: SignedPrimitive> SubAssign<Self> for CountN<T> {
     }
 }
 
-impl<T: SignedPrimitive> Sub<T> for CountN<T> {
-    type Output = CountN<T>;
+impl<T: SignedPrimitive> Sub<T> for Count<T> {
+    type Output = Count<T>;
 
     fn sub(mut self, other: T) -> Self::Output {
         self -= other;
@@ -180,7 +180,7 @@ impl<T: SignedPrimitive> Sub<T> for CountN<T> {
     }
 }
 
-impl<T: SignedPrimitive> SubAssign<T> for CountN<T> {
+impl<T: SignedPrimitive> SubAssign<T> for Count<T> {
     fn sub_assign(&mut self, other: T) {
         if self.is_null() {
             cold();
