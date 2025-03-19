@@ -51,6 +51,12 @@ where
         }
     }
 
+    /// Returns true iff Count is not null and Count > 0.
+    pub fn is_positive(self) -> bool {
+        // Remember that we're negated internally.
+        !(self.0 >= T::ZERO)
+    }
+
     pub fn is_null(self: Self) -> bool {
         unlikely(self.0 > T::ZERO)
     }
@@ -208,17 +214,20 @@ mod test {
         assert_eq!(zero.to_i64(), Some(0));
         assert_eq!(zero.to_u64(), Some(0));
         assert_eq!(zero.to_highest_index(), -1);
+        assert_eq!(zero.is_positive(), false);
 
         let one = Count8::of(1).expect("ok");
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
         assert_eq!(one.to_highest_index(), 0);
+        assert_eq!(one.is_positive(), true);
 
         let max = Count8::MAX;
         assert_eq!(max, Count8::of(128).expect("ok"));
         assert_eq!(max.to_i64(), Some(128));
         assert_eq!(max.to_u64(), Some(128));
         assert_eq!(max.to_highest_index(), 127);
+        assert_eq!(max.is_positive(), true);
 
         let min = Count8::MIN;
         assert_eq!(min, Count8::of(0).expect("ok"));
@@ -234,12 +243,14 @@ mod test {
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
         assert_eq!(null.to_highest_index(), -2);
+        assert_eq!(null.is_positive(), false);
         null.0 = 15; // doesn't matter which positive value we use, still null.
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
         assert_eq!(null.to_highest_index(), -16);
+        assert_eq!(null.is_positive(), false);
     }
 
     #[test]
@@ -249,17 +260,20 @@ mod test {
         assert_eq!(zero.to_i64(), Some(0));
         assert_eq!(zero.to_u64(), Some(0));
         assert_eq!(zero.to_highest_index(), -1);
+        assert_eq!(zero.is_positive(), false);
 
         let one = Count16::of(1).expect("ok");
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
         assert_eq!(one.to_highest_index(), 0);
+        assert_eq!(one.is_positive(), true);
 
         let max = Count16::MAX;
         assert_eq!(max, Count16::of(32768).expect("ok"));
         assert_eq!(max.to_i64(), Some(32768));
         assert_eq!(max.to_u64(), Some(32768));
         assert_eq!(max.to_highest_index(), 32767);
+        assert_eq!(max.is_positive(), true);
 
         let min = Count16::MIN;
         assert_eq!(min, Count16::of(0).expect("ok"));
@@ -275,12 +289,14 @@ mod test {
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
         assert_eq!(null.to_highest_index(), -2);
+        assert_eq!(null.is_positive(), false);
         null.0 = 15; // doesn't matter which positive value we use, still null.
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
         assert_eq!(null.to_highest_index(), -16);
+        assert_eq!(null.is_positive(), false);
     }
 
     #[test]
