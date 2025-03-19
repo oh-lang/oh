@@ -291,6 +291,9 @@ mod test {
 
     #[test]
     fn add() {
+        assert_eq!(Symmetric64::of(51) + Symmetric64::NULL, Symmetric64::NULL);
+        assert_eq!(Symmetric64::NULL + Symmetric64::of(52), Symmetric64::NULL);
+
         assert_eq!(Symmetric64::of(51) + 23, Symmetric64::of(74));
         assert_eq!(
             Symmetric64::MAX + Symmetric64::of(-1),
@@ -359,6 +362,9 @@ mod test {
 
     #[test]
     fn sub() {
+        assert_eq!(Symmetric64::of(51) - Symmetric64::NULL, Symmetric64::NULL);
+        assert_eq!(Symmetric64::NULL - Symmetric64::of(52), Symmetric64::NULL);
+
         assert_eq!(Symmetric64::of(51) - 23, Symmetric64::of(28));
         assert_eq!(Symmetric64::MAX - 1, Symmetric64::of(9223372036854775806));
         assert_eq!(Symmetric64::MAX - Symmetric64::of(-1), Symmetric64::NULL);

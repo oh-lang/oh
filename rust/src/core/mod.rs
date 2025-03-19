@@ -1,3 +1,6 @@
+pub mod count;
+pub use count::*;
+
 pub mod likely;
 pub use likely::*;
 

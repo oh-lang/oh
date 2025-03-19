@@ -25,6 +25,7 @@ pub trait SignedPrimitive:
     const ZERO: Self;
     const ONE: Self;
     const TWO: Self;
+    const BITS: u64;
 }
 
 impl SignedPrimitive for i64 {
@@ -33,6 +34,7 @@ impl SignedPrimitive for i64 {
     const ZERO: Self = 0;
     const ONE: Self = 1;
     const TWO: Self = 2;
+    const BITS: u64 = 64;
 }
 
 impl SignedPrimitive for i32 {
@@ -41,6 +43,7 @@ impl SignedPrimitive for i32 {
     const ZERO: Self = 0;
     const ONE: Self = 1;
     const TWO: Self = 2;
+    const BITS: u64 = 32;
 }
 
 impl SignedPrimitive for i16 {
@@ -49,6 +52,7 @@ impl SignedPrimitive for i16 {
     const ZERO: Self = 0;
     const ONE: Self = 1;
     const TWO: Self = 2;
+    const BITS: u64 = 16;
 }
 
 impl SignedPrimitive for i8 {
@@ -57,6 +61,7 @@ impl SignedPrimitive for i8 {
     const ZERO: Self = 0;
     const ONE: Self = 1;
     const TWO: Self = 2;
+    const BITS: u64 = 8;
 }
 
 #[cfg(test)]
