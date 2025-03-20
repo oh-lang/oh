@@ -9,7 +9,7 @@ pub type Signed16 = Signed<i16>;
 pub type Signed8 = Signed<i8>;
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
-pub struct Signed<T: SignedPrimitive>(T);
+pub struct Signed<T: SignedPrimitive>(pub(crate) T);
 
 impl<T> Signed<T>
 where

@@ -1,11 +1,17 @@
 pub mod count;
 pub use count::*;
 
+pub mod index;
+pub use index::*;
+
 pub mod likely;
 pub use likely::*;
 
 pub mod number;
 pub use number::*;
+
+pub mod offset;
+pub use offset::*;
 
 pub mod signed;
 pub use signed::*;

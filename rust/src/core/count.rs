@@ -1,5 +1,7 @@
+use crate::core::index::*;
 use crate::core::likely::*;
 use crate::core::number::*;
+use crate::core::offset::*;
 use crate::core::signed::*;
 
 use std::fmt::{self, Debug, Formatter};
@@ -9,6 +11,11 @@ pub type Count64 = Count<i64>;
 pub type Count32 = Count<i32>;
 pub type Count16 = Count<i16>;
 pub type Count8 = Count<i8>;
+
+pub type Contains64 = Contains<i64>;
+pub type Contains32 = Contains<i32>;
+pub type Contains16 = Contains<i16>;
+pub type Contains8 = Contains<i8>;
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
 pub struct Count<T: SignedPrimitive>(T);
@@ -33,6 +40,34 @@ where
             Self(T::ZERO)
         } else {
             Self(-index - T::ONE)
+        }
+    }
+
+    pub fn contains(&self, contains: Contains<T>) -> bool {
+        if self.is_null() {
+            return false;
+        }
+        match contains {
+            Contains::<T>::Offset(offset) => {
+                if offset.0 < T::ZERO {
+                    cold();
+                    false
+                } else {
+                    self.0 + offset.0 < T::ZERO
+                }
+            }
+            Contains::<T>::Index(index) => {
+                if index.0 >= T::ZERO {
+                    // if count == 100, self.0 = -100
+                    // then an index of 0 would give -100 < 0 (true)
+                    // and an index of 99 would give -1 < 0 (true)
+                    // but an index of 100 would give 0 < 0 (false)
+                    self.0 + index.0 < T::ZERO
+                } else {
+                    // The LHS here is the actual offset.
+                    index.0 - self.0 >= T::ZERO
+                }
+            }
         }
     }
 
@@ -64,6 +99,11 @@ where
     pub fn is_not_null(self: Self) -> bool {
         likely(self.0 <= T::ZERO)
     }
+}
+
+pub enum Contains<T: SignedPrimitive> {
+    Offset(Offset<T>),
+    Index(Index<T>),
 }
 
 impl<T> Debug for Count<T>
@@ -521,5 +561,157 @@ mod test {
         let mut sixteen = Count16::MAX;
         sixteen -= -1;
         assert_eq!(sixteen, Count16::NULL);
+    }
+
+    #[test]
+    fn contains_offset() {
+        assert_eq!(
+            Count8::negating(-10).contains(Contains8::Offset(Offset8::of(-1))),
+            false
+        );
+        assert_eq!(
+            Count8::negating(-10).contains(Contains8::Offset(Offset8::of(0))),
+            true
+        );
+        assert_eq!(
+            Count8::negating(-10).contains(Contains8::Offset(Offset8::of(3))),
+            true
+        );
+        assert_eq!(
+            Count8::negating(-10).contains(Contains8::Offset(Offset8::of(9))),
+            true
+        );
+        assert_eq!(
+            Count8::negating(-10).contains(Contains8::Offset(Offset8::of(10))),
+            false
+        );
+        assert_eq!(
+            Count8::negating(-10).contains(Contains8::Offset(Offset8::of(100))),
+            false
+        );
+
+        assert_eq!(
+            Count16::negating(-10).contains(Contains16::Offset(Offset16::of(-1))),
+            false
+        );
+        assert_eq!(
+            Count16::negating(-10).contains(Contains16::Offset(Offset16::of(0))),
+            true
+        );
+        assert_eq!(
+            Count16::negating(-10).contains(Contains16::Offset(Offset16::of(3))),
+            true
+        );
+        assert_eq!(
+            Count16::negating(-10).contains(Contains16::Offset(Offset16::of(9))),
+            true
+        );
+        assert_eq!(
+            Count16::negating(-10).contains(Contains16::Offset(Offset16::of(10))),
+            false
+        );
+        assert_eq!(
+            Count16::negating(-10).contains(Contains16::Offset(Offset16::of(100))),
+            false
+        );
+
+        assert_eq!(
+            Count32::negating(0).contains(Contains32::Offset(Offset32::of(-1))),
+            false
+        );
+        assert_eq!(
+            Count32::negating(0).contains(Contains32::Offset(Offset32::of(0))),
+            false
+        );
+
+        // count is null:
+        assert_eq!(
+            Count64::negating(1).contains(Contains64::Offset(Offset64::of(0))),
+            false
+        );
+    }
+
+    #[test]
+    fn contains_index() {
+        assert_eq!(
+            Count8::negating(0).contains(Contains8::Index(Index8::of(-1))),
+            false
+        );
+        assert_eq!(
+            Count8::negating(0).contains(Contains8::Index(Index8::of(0))),
+            false
+        );
+
+        // count is null:
+        assert_eq!(
+            Count16::negating(1).contains(Contains16::Index(Index16::of(0))),
+            false
+        );
+
+        assert_eq!(
+            Count32::negating(-10).contains(Contains32::Index(Index32::of(-11))), // wrap around, too far
+            false
+        );
+        assert_eq!(
+            Count32::negating(-10).contains(Contains32::Index(Index32::of(-10))), // wrap around
+            true
+        );
+        assert_eq!(
+            Count32::negating(-10).contains(Contains32::Index(Index32::of(-1))), // wrap around
+            true
+        );
+        assert_eq!(
+            Count32::negating(-10).contains(Contains32::Index(Index32::of(0))),
+            true
+        );
+        assert_eq!(
+            Count32::negating(-10).contains(Contains32::Index(Index32::of(3))),
+            true
+        );
+        assert_eq!(
+            Count32::negating(-10).contains(Contains32::Index(Index32::of(9))),
+            true
+        );
+        assert_eq!(
+            Count32::negating(-10).contains(Contains32::Index(Index32::of(10))),
+            false
+        );
+        assert_eq!(
+            Count32::negating(-10).contains(Contains32::Index(Index32::of(100))),
+            false
+        );
+
+        assert_eq!(
+            Count64::negating(-10).contains(Contains64::Index(Index64::of(-11))), // wrap around, too far
+            false
+        );
+        assert_eq!(
+            Count64::negating(-10).contains(Contains64::Index(Index64::of(-10))), // wrap around
+            true
+        );
+        assert_eq!(
+            Count64::negating(-10).contains(Contains64::Index(Index64::of(-1))), // wrap around
+            true
+        );
+        assert_eq!(
+            Count64::negating(-10).contains(Contains64::Index(Index64::of(0))),
+            true
+        );
+        assert_eq!(
+            Count64::negating(-10).contains(Contains64::Index(Index64::of(3))),
+            true
+        );
+        assert_eq!(
+            Count64::negating(-10).contains(Contains64::Index(Index64::of(9))),
+            true
+        );
+        assert_eq!(
+            Count64::negating(-10).contains(Contains64::Index(Index64::of(10))),
+            false
+        );
+        assert_eq!(
+            Count64::negating(-10).contains(Contains64::Index(Index64::of(100))),
+            false
+        );
     }
 }
