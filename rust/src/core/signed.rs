@@ -1,16 +1,68 @@
 use crate::core::number::*;
 
-pub type Signed64 = i64;
-pub type Signed32 = i32;
-pub type Signed16 = i16;
-pub type Signed8 = i8;
+use std::fmt::{self, Debug, Formatter};
+use std::ops::{Deref, DerefMut};
+
+pub type Signed64 = Signed<i64>;
+pub type Signed32 = Signed<i32>;
+pub type Signed16 = Signed<i16>;
+pub type Signed8 = Signed<i8>;
+
+#[derive(Eq, PartialEq, Copy, Clone, Hash)]
+pub struct Signed<T: SignedPrimitive>(T);
+
+impl<T> Signed<T>
+where
+    T: SignedPrimitive,
+{
+    pub const MAX: Self = Self(T::MAX);
+    pub const MIN: Self = Self(T::MIN);
+
+    pub fn of(t: T) -> Self {
+        Self(t)
+    }
+}
+
+impl<T> Deref for Signed<T>
+where
+    T: SignedPrimitive,
+{
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+
+impl<T> DerefMut for Signed<T>
+where
+    T: SignedPrimitive,
+{
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+}
+
+impl<T> Debug for Signed<T>
+where
+    T: SignedPrimitive,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "Signed{}::", T::BITS)?;
+        if let Some(value) = self.to_u64() {
+            write!(f, "of({})", value)
+        } else {
+            write!(f, "NULL")
+        }
+    }
+}
 
 pub trait SignedPrimitive:
     PrimInt
     + TryFrom<i64>
     + ToPrimitive
     + AsPrimitive<i64>
-    + Signed
+    + HasSign
     + AddAssign
     + Add<Output = Self>
     + SubAssign
@@ -75,6 +127,8 @@ mod test {
         assert_eq!(i8::TWO, 2);
         assert_eq!(i8::MIN, -128);
         assert_eq!(i8::MAX, 127);
+        assert_eq!(Signed8::MIN, Signed8::of(-128));
+        assert_eq!(Signed8::MAX, Signed8::of(127));
     }
 
     #[test]
@@ -84,6 +138,8 @@ mod test {
         assert_eq!(i16::TWO, 2);
         assert_eq!(i16::MIN, -32768);
         assert_eq!(i16::MAX, 32767);
+        assert_eq!(Signed16::MIN, Signed16::of(-32768));
+        assert_eq!(Signed16::MAX, Signed16::of(32767));
     }
 
     #[test]
@@ -93,6 +149,8 @@ mod test {
         assert_eq!(i32::TWO, 2);
         assert_eq!(i32::MIN, -2147483648);
         assert_eq!(i32::MAX, 2147483647);
+        assert_eq!(Signed32::MIN, Signed32::of(-2147483648));
+        assert_eq!(Signed32::MAX, Signed32::of(2147483647));
     }
 
     #[test]
@@ -102,5 +160,7 @@ mod test {
         assert_eq!(i64::TWO, 2);
         assert_eq!(i64::MIN, -9223372036854775808);
         assert_eq!(i64::MAX, 9223372036854775807);
+        assert_eq!(Signed64::MIN, Signed64::of(-9223372036854775808));
+        assert_eq!(Signed64::MAX, Signed64::of(9223372036854775807));
     }
 }
