@@ -43,6 +43,17 @@ where
         }
     }
 
+    pub fn double_or_at_least(self, at_least: T) -> Self {
+        if self.0 <= T::MIN / T::TWO {
+            // doubling would overflow, just return max.
+            Self::MAX
+        } else {
+            debug_assert!(at_least > T::ZERO);
+            // We negate things, so max -> min.
+            Self((-at_least).min(T::TWO * self.0))
+        }
+    }
+
     pub fn contains(&self, contains: Contains<T>) -> bool {
         if self.is_null() {
             return false;
@@ -79,6 +90,7 @@ where
 
     pub fn of(value: usize) -> Result<Self, NumberError> {
         if value > T::MAX.to_u64().unwrap() as usize + 1 {
+            cold();
             Err(NumberError::Unrepresentable)
         } else {
             let negated_value: i64 = (-(Wrapping(value as i64) - Wrapping(1)) - Wrapping(1)).0;
@@ -561,6 +573,70 @@ mod test {
         let mut sixteen = Count16::MAX;
         sixteen -= -1;
         assert_eq!(sixteen, Count16::NULL);
+    }
+
+    #[test]
+    fn double_or_at_least() {
+        assert_eq!(
+            Count8::negating(-10).double_or_at_least(5),
+            Count8::negating(-20)
+        );
+        assert_eq!(
+            Count16::negating(-100).double_or_at_least(5),
+            Count16::negating(-200)
+        );
+        assert_eq!(
+            Count32::negating(-1000).double_or_at_least(5),
+            Count32::negating(-2000)
+        );
+        assert_eq!(
+            Count64::negating(-10000).double_or_at_least(5),
+            Count64::negating(-20000)
+        );
+
+        assert_eq!(
+            Count8::negating(-1).double_or_at_least(5),
+            Count8::negating(-5)
+        );
+        assert_eq!(
+            Count16::negating(0).double_or_at_least(5),
+            Count16::negating(-5)
+        );
+        assert_eq!(
+            Count32::negating(-2).double_or_at_least(5),
+            Count32::negating(-5)
+        );
+        assert_eq!(
+            Count64::negating(-5).double_or_at_least(11),
+            Count64::negating(-11)
+        );
+
+        // Near the max.
+        assert_eq!(
+            Count8::negating(-128).double_or_at_least(5),
+            Count8::negating(-128)
+        );
+        assert_eq!(
+            Count8::negating(-127).double_or_at_least(5),
+            Count8::negating(-128)
+        );
+        assert_eq!(
+            Count8::negating(-65).double_or_at_least(5),
+            Count8::negating(-128)
+        );
+
+        assert_eq!(
+            Count16::negating(-32768).double_or_at_least(5),
+            Count16::negating(-32768)
+        );
+        assert_eq!(
+            Count16::negating(-32767).double_or_at_least(5),
+            Count16::negating(-32768)
+        );
+        assert_eq!(
+            Count16::negating(-16385).double_or_at_least(5),
+            Count16::negating(-32768)
+        );
     }
 
     #[test]
