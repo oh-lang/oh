@@ -162,6 +162,12 @@ where
     }
 }
 
+impl<T: SignedPrimitive> PartialOrd for Count<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.0.partial_cmp(&other.0).unwrap().reverse())
+    }
+}
+
 impl<T: SignedPrimitive> Add<Self> for Count<T> {
     type Output = Count<T>;
 
@@ -787,6 +793,26 @@ mod test {
         );
         assert_eq!(
             Count64::negating(-10).contains(Contains64::Index(Index64::of(100))),
+            false
+        );
+    }
+
+    #[test]
+    fn ordering() {
+        assert_eq!(
+            Count64::of(30).expect("ok") < Count64::of(31).expect("ok"),
+            true
+        );
+        assert_eq!(
+            Count32::of(30).expect("ok") < Count32::of(30).expect("ok"),
+            false
+        );
+        assert_eq!(
+            Count16::of(30).expect("ok") <= Count16::of(30).expect("ok"),
+            true
+        );
+        assert_eq!(
+            Count8::of(31).expect("ok") <= Count8::of(30).expect("ok"),
             false
         );
     }
