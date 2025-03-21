@@ -46,7 +46,7 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
 
     /// Looking for `fn add`?  use `append`:
     pub fn append(&mut self, value: T) -> Containered {
-        if self.allocation.capacity() == self.count {
+        if self.capacity() == self.count {
             self.grow()?;
         }
         self.count += S::ONE;
@@ -94,6 +94,7 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
         assert!(self.count == Count::<S>::default());
     }
 
+    #[inline]
     pub fn capacity(&self) -> Count<S> {
         self.allocation.capacity()
     }
@@ -101,7 +102,7 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
     /// Will reallocate to exactly this capacity.
     /// Will delete items if `new_capacity < self.count()`
     pub fn set_capacity(&mut self, new_capacity: Count<S>) -> Containered {
-        if new_capacity == self.allocation.capacity() {
+        if new_capacity == self.capacity() {
             return Ok(());
         }
         while self.count > new_capacity {
@@ -128,7 +129,7 @@ impl<S: SignedPrimitive, T: std::default::Default> NonLocalArrayCount<S, T> {
                 _ = self.remove(Remove::Last);
             }
         } else if new_count > self.count {
-            if new_count > self.allocation.capacity() {
+            if new_count > self.capacity() {
                 self.set_capacity(new_count)?;
             }
             while self.count < new_count {

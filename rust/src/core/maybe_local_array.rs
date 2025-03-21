@@ -87,25 +87,40 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
     }
 
     pub fn count(&self) -> CountMax {
-        if self.special_count <= S::ZERO {
-            // optimized_allocation case
-            Count::<S>::negating(self.special_count).to_max()
-        } else if self.special_count < Self::max_array_count() {
-            // unallocated_buffer case
-            Count::<S>::negating(-(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT))
-                .to_max()
-        } else {
-            cold();
-            // This is needed because the union is packed, but Rust isn't
-            // smart enough to know that `self` is aligned and therefore the union is.
-            let ptr = unsafe { std::ptr::addr_of!(self.maybe_allocated.max_array) };
-            let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
-            ptr.count()
+        match self.memory() {
+            Memory::UnallocatedBuffer => {
+                Count::<S>::negating(-(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT))
+                    .to_max()
+            }
+            Memory::OptimizedAllocation => Count::<S>::negating(self.special_count).to_max(),
+            Memory::MaxArray => {
+                // This is needed because the union is packed, but Rust isn't
+                // smart enough to know that `self` is aligned and therefore the union is.
+                let ptr = unsafe { std::ptr::addr_of!(self.maybe_allocated.max_array) };
+                let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
+                ptr.count()
+            }
+        }
+    }
+
+    pub fn capacity(&self) -> CountMax {
+        match self.memory() {
+            Memory::UnallocatedBuffer => CountMax::of(N_LOCAL).expect("ok"),
+            Memory::OptimizedAllocation => {
+                let ptr = unsafe { std::ptr::addr_of!(self.maybe_allocated.optimized_allocation) };
+                let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
+                ptr.capacity().to_max()
+            }
+            Memory::MaxArray => {
+                let ptr = unsafe { std::ptr::addr_of!(self.maybe_allocated.max_array) };
+                let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
+                ptr.capacity()
+            }
         }
     }
 
     /// Some of the elements in the slice might NOT be initialized.  You've been warned.
-    /// Things should be initialized up to `count()`.
+    /// Things should be initialized up to `count()` (see `deref()` implementation).
     pub(crate) fn fully_allocated_slice(&self) -> &[T] {
         match self.memory() {
             Memory::UnallocatedBuffer => {
@@ -127,7 +142,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
     }
 
     /// Some of the elements in the slice might NOT be initialized.  You've been warned.
-    /// Things should be initialized up to `count()`.
+    /// Things should be initialized up to `count()` (see `deref_mut()` implementation).
     pub(crate) fn fully_allocated_slice_mut(&mut self) -> &mut [T] {
         match self.memory() {
             Memory::UnallocatedBuffer => {
