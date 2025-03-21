@@ -8,7 +8,7 @@ use crate::core::signed::*;
 use crate::core::traits::*;
 
 use std::mem::ManuallyDrop;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 pub type MaybeLocalArrayOptimized64<const N_LOCAL: usize, T> =
     MaybeLocalArrayOptimized<i64, N_LOCAL, T>;
@@ -96,13 +96,11 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
                 .to_max()
         } else {
             cold();
-            unsafe {
-                // This is needed because the union is packed, but Rust isn't
-                // smart enough to know that `self` is aligned and therefore the union is.
-                let ptr = std::ptr::addr_of!(self.maybe_allocated.max_array);
-                let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
-                ptr.count()
-            }
+            // This is needed because the union is packed, but Rust isn't
+            // smart enough to know that `self` is aligned and therefore the union is.
+            let ptr = unsafe { std::ptr::addr_of!(self.maybe_allocated.max_array) };
+            let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
+            ptr.count()
         }
     }
 
@@ -127,6 +125,30 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
             }
         }
     }
+
+    /// Some of the elements in the slice might NOT be initialized.  You've been warned.
+    /// Things should be initialized up to `count()`.
+    pub(crate) fn fully_allocated_slice_mut(&mut self) -> &mut [T] {
+        match self.memory() {
+            Memory::UnallocatedBuffer => {
+                let ptr =
+                    unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.unallocated_buffer[0]) };
+                // We'll assume ManuallyDrop<T> is a very thin wrapper around T.
+                unsafe { std::slice::from_raw_parts_mut(ptr as *mut T, N_LOCAL) }
+            }
+            Memory::OptimizedAllocation => {
+                let ptr =
+                    unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.optimized_allocation) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.deref_mut()
+            }
+            Memory::MaxArray => {
+                let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.allocation.deref_mut()
+            }
+        }
+    }
 }
 
 impl<S: SignedPrimitive, const N_LOCAL: usize, T> std::ops::Deref
@@ -138,9 +160,11 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> std::ops::Deref
     }
 }
 
-//impl<S: SignedPrimitive, const N_LOCAL: usize, T> std::ops::DerefMut for MaybeLocalArrayOptimized<S, N_LOCAL, T> {
-//    fn deref_mut(&mut self) -> &mut [T] {
-//        let count = self.count().into();
-//        &mut self.fully_allocated_slice_mut()[0..count]
-//    }
-//}
+impl<S: SignedPrimitive, const N_LOCAL: usize, T> std::ops::DerefMut
+    for MaybeLocalArrayOptimized<S, N_LOCAL, T>
+{
+    fn deref_mut(&mut self) -> &mut [T] {
+        let count = self.count().to_usize();
+        &mut self.fully_allocated_slice_mut()[0..count]
+    }
+}
