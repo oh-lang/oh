@@ -26,6 +26,9 @@ pub struct AllocationCount<S: SignedPrimitive, T> {
     capacity: Count<S>,
 }
 
+// TODO: allow passing in an allocator, defaulting to Global.
+// https://doc.rust-lang.org/std/alloc/trait.Allocator.html
+// pass up through Array, etc.
 impl<S: SignedPrimitive, T> AllocationCount<S, T> {
     pub fn capacity(&self) -> Count<S> {
         self.capacity

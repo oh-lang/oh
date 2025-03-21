@@ -4,6 +4,11 @@ use crate::core::count::*;
 use crate::core::signed::*;
 use crate::core::traits::*;
 
+/// The largest array that this platform can support,
+/// in terms of max memory it can hold.
+// TODO: on a 32 bit platform, go to NonLocalArrayCount32 instead.
+pub type NonLocalArrayMax<T> = NonLocalArrayCount64<T>;
+
 pub type NonLocalArrayCount64<T> = NonLocalArrayCount<i64, T>;
 pub type NonLocalArrayCount32<T> = NonLocalArrayCount<i32, T>;
 pub type NonLocalArrayCount16<T> = NonLocalArrayCount<i16, T>;
@@ -13,6 +18,7 @@ pub type NonLocalArrayCount8<T> = NonLocalArrayCount<i8, T>;
 /// If there are more than that, e.g., if S = i8 and count == 128,
 /// then more insertions will fail.  Changing `S` has marginal
 /// impact on this array size, and allows making indices more compact.
+/// It is "non-local" because it always stores elements on the heap.
 // TODO: we probably could relax the `align(8)` restriction but we
 // could only support offsets that get `ptr` (inside `allocation`)
 // aligned on a word boundary, e.g., `ptr, capacity, count` or `count, ptr, capacity`.
@@ -20,6 +26,15 @@ pub type NonLocalArrayCount8<T> = NonLocalArrayCount<i8, T>;
 pub struct NonLocalArrayCount<S: SignedPrimitive, T> {
     allocation: AllocationCount<S, T>,
     count: Count<S>,
+}
+
+impl<S: SignedPrimitive, T> Default for NonLocalArrayCount<S, T> {
+    fn default() -> Self {
+        Self {
+            allocation: AllocationCount::<S, T>::default(),
+            count: Count::<S>::default(),
+        }
+    }
 }
 
 // TODO: implement #[derive(Debug, Hash)]
@@ -178,15 +193,6 @@ impl<S: SignedPrimitive, T: std::fmt::Debug> std::fmt::Debug for NonLocalArrayCo
             write!(f, "{:?}, ", self[i])?;
         }
         write!(f, "])")
-    }
-}
-
-impl<S: SignedPrimitive, T> Default for NonLocalArrayCount<S, T> {
-    fn default() -> Self {
-        Self {
-            allocation: AllocationCount::<S, T>::default(),
-            count: Count::<S>::default(),
-        }
     }
 }
 

@@ -16,6 +16,9 @@ pub use index::*;
 pub mod likely;
 pub use likely::*;
 
+pub mod maybe_local_array;
+pub use maybe_local_array::*;
+
 pub mod non_local_array;
 pub use non_local_array::*;
 

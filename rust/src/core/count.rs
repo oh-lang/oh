@@ -7,6 +7,10 @@ use crate::core::signed::*;
 use std::fmt::{self, Debug, Formatter};
 use std::num::Wrapping;
 
+/// The largest count that this platform can support.
+// TODO: on a 32 bit platform, go to Count32 instead.
+pub type CountMax = Count64;
+
 pub type Count64 = Count<i64>;
 pub type Count32 = Count<i32>;
 pub type Count16 = Count<i16>;
