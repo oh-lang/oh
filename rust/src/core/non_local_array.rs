@@ -24,7 +24,7 @@ pub type NonLocalArrayCount8<T> = NonLocalArrayCount<i8, T>;
 // aligned on a word boundary, e.g., `ptr, capacity, count` or `count, ptr, capacity`.
 #[repr(C, align(8))]
 pub struct NonLocalArrayCount<S: SignedPrimitive, T> {
-    allocation: AllocationCount<S, T>,
+    pub(crate) allocation: AllocationCount<S, T>,
     count: Count<S>,
 }
 

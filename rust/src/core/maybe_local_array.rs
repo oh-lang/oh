@@ -3,6 +3,7 @@ use crate::core::container::*;
 use crate::core::count::*;
 use crate::core::likely::*;
 use crate::core::non_local_array::*;
+use crate::core::number::*;
 use crate::core::signed::*;
 use crate::core::traits::*;
 
@@ -73,6 +74,18 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
             .expect("need N_LOCAL+2 as a special value to distinguish the max_array case")
     }
 
+    #[inline]
+    fn memory(&self) -> Memory {
+        if self.special_count <= S::ZERO {
+            Memory::OptimizedAllocation
+        } else if self.special_count < Self::max_array_count() {
+            Memory::UnallocatedBuffer
+        } else {
+            cold();
+            Memory::MaxArray
+        }
+    }
+
     pub fn count(&self) -> CountMax {
         if self.special_count <= S::ZERO {
             // optimized_allocation case
@@ -86,20 +99,48 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
             unsafe {
                 // This is needed because the union is packed, but Rust isn't
                 // smart enough to know that `self` is aligned and therefore the union is.
-                let max_array_ptr = std::ptr::addr_of!(self.maybe_allocated.max_array);
-                max_array_ptr.read_unaligned().count()
+                let ptr = std::ptr::addr_of!(self.maybe_allocated.max_array);
+                let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
+                ptr.count()
             }
         }
     }
 
-    fn memory(&self) -> Memory {
-        if self.special_count <= S::ZERO {
-            Memory::OptimizedAllocation
-        } else if self.special_count < Self::max_array_count() {
-            Memory::UnallocatedBuffer
-        } else {
-            cold();
-            Memory::MaxArray
+    /// Some of the elements in the slice might NOT be initialized.  You've been warned.
+    /// Things should be initialized up to `count()`.
+    pub(crate) fn fully_allocated_slice(&self) -> &[T] {
+        match self.memory() {
+            Memory::UnallocatedBuffer => {
+                let ptr = unsafe { std::ptr::addr_of!(self.maybe_allocated.unallocated_buffer[0]) };
+                // We'll assume ManuallyDrop<T> is a very thin wrapper around T.
+                unsafe { std::slice::from_raw_parts(ptr as *const T, N_LOCAL) }
+            }
+            Memory::OptimizedAllocation => {
+                let ptr = unsafe { std::ptr::addr_of!(self.maybe_allocated.optimized_allocation) };
+                let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
+                ptr.deref()
+            }
+            Memory::MaxArray => {
+                let ptr = unsafe { std::ptr::addr_of!(self.maybe_allocated.max_array) };
+                let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
+                ptr.allocation.deref()
+            }
         }
     }
 }
+
+impl<S: SignedPrimitive, const N_LOCAL: usize, T> std::ops::Deref
+    for MaybeLocalArrayOptimized<S, N_LOCAL, T>
+{
+    type Target = [T];
+    fn deref(&self) -> &[T] {
+        &self.fully_allocated_slice()[0..self.count().to_usize()]
+    }
+}
+
+//impl<S: SignedPrimitive, const N_LOCAL: usize, T> std::ops::DerefMut for MaybeLocalArrayOptimized<S, N_LOCAL, T> {
+//    fn deref_mut(&mut self) -> &mut [T] {
+//        let count = self.count().into();
+//        &mut self.fully_allocated_slice_mut()[0..count]
+//    }
+//}
