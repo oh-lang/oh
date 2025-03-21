@@ -25,7 +25,7 @@ pub type NonLocalArrayCount8<T> = NonLocalArrayCount<i8, T>;
 #[repr(C, align(8))]
 pub struct NonLocalArrayCount<S: SignedPrimitive, T> {
     pub(crate) allocation: AllocationCount<S, T>,
-    count: Count<S>,
+    pub(crate) count: Count<S>,
 }
 
 impl<S: SignedPrimitive, T> Default for NonLocalArrayCount<S, T> {
@@ -41,7 +41,7 @@ impl<S: SignedPrimitive, T> Default for NonLocalArrayCount<S, T> {
 impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
     // TODO: this should be a Countable Trait
     pub fn count(&self) -> Count<S> {
-        return self.count;
+        self.count
     }
 
     /// Looking for `fn add`?  use `append`:

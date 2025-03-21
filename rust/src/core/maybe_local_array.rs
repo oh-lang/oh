@@ -103,6 +103,24 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         }
     }
 
+    pub(crate) fn only_set_count(&mut self, new_count: CountMax) {
+        debug_assert!(new_count <= self.capacity());
+        match self.memory() {
+            Memory::UnallocatedBuffer => {
+                self.special_count = Self::UNALLOCATED_ZERO_SPECIAL_COUNT
+                    + S::from(new_count.to_usize()).expect("ok");
+            }
+            Memory::OptimizedAllocation => {
+                self.special_count = S::from(new_count.as_negated()).expect("ok");
+            }
+            Memory::MaxArray => {
+                let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.count = new_count;
+            }
+        }
+    }
+
     pub fn capacity(&self) -> CountMax {
         match self.memory() {
             Memory::UnallocatedBuffer => CountMax::of(N_LOCAL).expect("ok"),

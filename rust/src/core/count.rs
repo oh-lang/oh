@@ -37,6 +37,10 @@ where
         Self(t)
     }
 
+    pub fn as_negated(self) -> T {
+        self.0
+    }
+
     pub fn to_max(self) -> CountMax {
         // TODO: fix for when we support i32 in CountMax on 32bit platforms
         CountMax::negating(self.to_i64().unwrap_or(0))
