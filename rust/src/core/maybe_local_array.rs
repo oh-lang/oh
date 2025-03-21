@@ -49,6 +49,7 @@ union MaybeAllocated<S: SignedPrimitive, const N_LOCAL: usize, T> {
     max_array: ManuallyDrop<Box<NonLocalArrayMax<T>>>,
 }
 
+#[derive(Eq, PartialEq, Copy, Clone, Debug, Hash)]
 enum Memory {
     UnallocatedBuffer,
     OptimizedAllocation,
@@ -134,6 +135,46 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
                 let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
                 ptr.capacity()
             }
+        }
+    }
+
+    pub fn set_capacity(&mut self, new_capacity: CountMax) -> Containered {
+        // Because there are three cases for self.memory() and three cases for future_self.memory(),
+        // it's easier to just allocate a new array with the correct capacity and copy in, unless
+        // the memory requirements are the same.
+        let current_memory = self.memory();
+        let required_memory = Self::required_memory(new_capacity);
+        if current_memory == required_memory {
+            match current_memory {
+                Memory::UnallocatedBuffer => Ok(()), // no-op, already OK
+                Memory::OptimizedAllocation => {
+                    let ptr = unsafe {
+                        std::ptr::addr_of_mut!(self.maybe_allocated.optimized_allocation)
+                    };
+                    let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                    ptr.set_capacity(Count::<S>::of(new_capacity.to_usize()).expect("OK"))
+                }
+                Memory::MaxArray => {
+                    let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
+                    let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                    ptr.set_capacity(new_capacity)
+                }
+            }
+        } else {
+            // TODO
+            Ok(())
+        }
+    }
+
+    fn required_memory(for_count: CountMax) -> Memory {
+        let for_count = for_count.to_usize();
+        if for_count <= N_LOCAL {
+            Memory::UnallocatedBuffer
+        } else if Count::<S>::of(for_count).is_ok() {
+            Memory::UnallocatedBuffer
+        } else {
+            cold();
+            Memory::MaxArray
         }
     }
 
