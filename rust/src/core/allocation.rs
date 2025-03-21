@@ -17,7 +17,7 @@ pub type AllocationCount8<T> = AllocationCount<i8, T>;
 /// with a capacity up to Count::<S>::MAX elements.
 /// You need to keep track of which elements are initialized, etc.
 /// Because of that, you need to MANUALLY drop this allocation after
-/// freeing any initialized elements, by calling `mut_capacity(Count::of(0))`
+/// freeing any initialized elements, by calling `set_capacity(Count::of(0))`
 /// WARNING! because this is packed, you may need to wrap it in `Aligned(...)`
 /// in order to ensure that `ptr` is on an aligned boundary.
 #[repr(C, packed)]
@@ -41,7 +41,7 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
     /// Caller MUST ensure that they've already dropped elements that you might delete here
     /// if the new capacity is less than the old.  The old capacity will be updated
     /// iff the capacity change succeeds.
-    pub fn mut_capacity(&mut self, new_capacity: Count<S>) -> Containered {
+    pub fn set_capacity(&mut self, new_capacity: Count<S>) -> Containered {
         let old_capacity = self.capacity;
         if !new_capacity.is_positive() {
             if old_capacity > Count::<S>::default() {
@@ -112,7 +112,7 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
         if desired_capacity <= capacity {
             return ContainerError::OutOfMemory.err();
         }
-        self.mut_capacity(desired_capacity)
+        self.set_capacity(desired_capacity)
     }
 
     fn roughly_double_capacity(capacity: Count<S>) -> Count<S> {
@@ -211,7 +211,7 @@ mod test {
         // We can be a bit more nonchalant here because u8s don't need to be initialized.
         let mut allocation = Aligned(AllocationCount16::<u8>::new());
         allocation
-            .mut_capacity(Count16::of(13).expect("ok"))
+            .set_capacity(Count16::of(13).expect("ok"))
             .expect("small alloc");
         allocation
             .deref_mut()

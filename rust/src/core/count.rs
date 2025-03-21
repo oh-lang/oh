@@ -88,6 +88,11 @@ where
         -(self.0 + T::ONE)
     }
 
+    /// WARNING: Converts null into 0.
+    pub fn to_usize(self) -> usize {
+        self.to_u64().unwrap_or(0) as usize
+    }
+
     pub fn of(value: usize) -> Result<Self, NumberError> {
         if value > T::MAX.to_u64().unwrap() as usize + 1 {
             cold();
@@ -271,12 +276,14 @@ mod test {
         assert_eq!(zero, Count8::of(0).expect("ok"));
         assert_eq!(zero.to_i64(), Some(0));
         assert_eq!(zero.to_u64(), Some(0));
+        assert_eq!(zero.to_usize(), 0);
         assert_eq!(zero.to_highest_index(), -1);
         assert_eq!(zero.is_positive(), false);
 
         let one = Count8::of(1).expect("ok");
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
+        assert_eq!(one.to_usize(), 1);
         assert_eq!(one.to_highest_index(), 0);
         assert_eq!(one.is_positive(), true);
 
@@ -284,6 +291,7 @@ mod test {
         assert_eq!(max, Count8::of(128).expect("ok"));
         assert_eq!(max.to_i64(), Some(128));
         assert_eq!(max.to_u64(), Some(128));
+        assert_eq!(max.to_usize(), 128);
         assert_eq!(max.to_highest_index(), 127);
         assert_eq!(max.is_positive(), true);
 
@@ -291,6 +299,7 @@ mod test {
         assert_eq!(min, Count8::of(0).expect("ok"));
         assert_eq!(min.to_i64(), Some(0));
         assert_eq!(min.to_u64(), Some(0));
+        assert_eq!(min.to_usize(), 0);
         assert_eq!(min.to_highest_index(), -1);
         assert_eq!(min.is_null(), false);
         assert_eq!(min.is_not_null(), true);
@@ -298,6 +307,7 @@ mod test {
         let mut null = Count8::NULL;
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
+        assert_eq!(null.to_usize(), 0);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
         assert_eq!(null.to_highest_index(), -2);
@@ -305,6 +315,7 @@ mod test {
         null.0 = 15; // doesn't matter which positive value we use, still null.
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
+        assert_eq!(null.to_usize(), 0);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
         assert_eq!(null.to_highest_index(), -16);
