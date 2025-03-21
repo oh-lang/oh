@@ -37,6 +37,11 @@ where
         Self(t)
     }
 
+    pub fn to_max(self) -> CountMax {
+        // TODO: fix for when we support i32 in CountMax on 32bit platforms
+        CountMax::negating(self.to_i64().unwrap_or(0))
+    }
+
     pub fn double_or_at_least(self, at_least: T) -> Self {
         if self.0 <= T::MIN / T::TWO {
             // doubling would overflow, just return max.
