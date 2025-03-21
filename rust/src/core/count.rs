@@ -33,16 +33,6 @@ where
         Self(t)
     }
 
-    /// Essentially `count = index + 1`.
-    /// `index < 0` will be considered empty, returning `count = 0`.
-    pub fn from_highest_index(index: T) -> Self {
-        if index < T::ZERO {
-            Self(T::ZERO)
-        } else {
-            Self(-index - T::ONE)
-        }
-    }
-
     pub fn double_or_at_least(self, at_least: T) -> Self {
         if self.0 <= T::MIN / T::TWO {
             // doubling would overflow, just return max.
@@ -84,8 +74,22 @@ where
 
     /// Essentially `index = count - 1`.
     /// `index < 0` should be considered empty (count == 0 or count == null).
-    pub fn to_highest_index(self) -> T {
-        -(self.0 + T::ONE)
+    pub fn to_highest_offset(self) -> Offset<T> {
+        Offset::<T>::of(-(self.0 + T::ONE))
+    }
+
+    // TODO: these should probably be `from`/`into` methods for
+    // more general `Ordinal` vs. `Signed` classes.  `Count` comes from `Ordinal`,
+    // `Offset` comes from `Signed`.
+    /// Essentially `count = offset + 1`.
+    /// `offset < 0` will be considered empty, returning `count = 0`.
+    /// Note `offset == 0` corresponds to `count == 1`!
+    pub fn from_highest_offset(offset: Offset<T>) -> Self {
+        if offset.0 < T::ZERO {
+            Self(T::ZERO)
+        } else {
+            Self(-offset.0 - T::ONE)
+        }
     }
 
     /// WARNING: Converts null into 0.
@@ -277,14 +281,14 @@ mod test {
         assert_eq!(zero.to_i64(), Some(0));
         assert_eq!(zero.to_u64(), Some(0));
         assert_eq!(zero.to_usize(), 0);
-        assert_eq!(zero.to_highest_index(), -1);
+        assert_eq!(zero.to_highest_offset(), Offset8::of(-1));
         assert_eq!(zero.is_positive(), false);
 
         let one = Count8::of(1).expect("ok");
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
         assert_eq!(one.to_usize(), 1);
-        assert_eq!(one.to_highest_index(), 0);
+        assert_eq!(one.to_highest_offset(), Offset8::of(0));
         assert_eq!(one.is_positive(), true);
 
         let max = Count8::MAX;
@@ -292,7 +296,7 @@ mod test {
         assert_eq!(max.to_i64(), Some(128));
         assert_eq!(max.to_u64(), Some(128));
         assert_eq!(max.to_usize(), 128);
-        assert_eq!(max.to_highest_index(), 127);
+        assert_eq!(max.to_highest_offset(), Offset8::of(127));
         assert_eq!(max.is_positive(), true);
 
         let min = Count8::MIN;
@@ -300,7 +304,7 @@ mod test {
         assert_eq!(min.to_i64(), Some(0));
         assert_eq!(min.to_u64(), Some(0));
         assert_eq!(min.to_usize(), 0);
-        assert_eq!(min.to_highest_index(), -1);
+        assert_eq!(min.to_highest_offset(), Offset8::of(-1));
         assert_eq!(min.is_null(), false);
         assert_eq!(min.is_not_null(), true);
 
@@ -310,7 +314,7 @@ mod test {
         assert_eq!(null.to_usize(), 0);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
-        assert_eq!(null.to_highest_index(), -2);
+        assert_eq!(null.to_highest_offset(), Offset8::of(-2));
         assert_eq!(null.is_positive(), false);
         null.0 = 15; // doesn't matter which positive value we use, still null.
         assert_eq!(null.to_i64(), None);
@@ -318,7 +322,7 @@ mod test {
         assert_eq!(null.to_usize(), 0);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
-        assert_eq!(null.to_highest_index(), -16);
+        assert_eq!(null.to_highest_offset(), Offset8::of(-16));
         assert_eq!(null.is_positive(), false);
     }
 
@@ -328,27 +332,27 @@ mod test {
         assert_eq!(zero, Count16::of(0).expect("ok"));
         assert_eq!(zero.to_i64(), Some(0));
         assert_eq!(zero.to_u64(), Some(0));
-        assert_eq!(zero.to_highest_index(), -1);
+        assert_eq!(zero.to_highest_offset(), Offset16::of(-1));
         assert_eq!(zero.is_positive(), false);
 
         let one = Count16::of(1).expect("ok");
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
-        assert_eq!(one.to_highest_index(), 0);
+        assert_eq!(one.to_highest_offset(), Offset16::of(0));
         assert_eq!(one.is_positive(), true);
 
         let max = Count16::MAX;
         assert_eq!(max, Count16::of(32768).expect("ok"));
         assert_eq!(max.to_i64(), Some(32768));
         assert_eq!(max.to_u64(), Some(32768));
-        assert_eq!(max.to_highest_index(), 32767);
+        assert_eq!(max.to_highest_offset(), Offset16::of(32767));
         assert_eq!(max.is_positive(), true);
 
         let min = Count16::MIN;
         assert_eq!(min, Count16::of(0).expect("ok"));
         assert_eq!(min.to_i64(), Some(0));
         assert_eq!(min.to_u64(), Some(0));
-        assert_eq!(min.to_highest_index(), -1);
+        assert_eq!(min.to_highest_offset(), Offset16::of(-1));
         assert_eq!(min.is_null(), false);
         assert_eq!(min.is_not_null(), true);
 
@@ -357,14 +361,14 @@ mod test {
         assert_eq!(null.to_u64(), None);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
-        assert_eq!(null.to_highest_index(), -2);
+        assert_eq!(null.to_highest_offset(), Offset16::of(-2));
         assert_eq!(null.is_positive(), false);
         null.0 = 15; // doesn't matter which positive value we use, still null.
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
-        assert_eq!(null.to_highest_index(), -16);
+        assert_eq!(null.to_highest_offset(), Offset16::of(-16));
         assert_eq!(null.is_positive(), false);
     }
 
@@ -374,24 +378,24 @@ mod test {
         assert_eq!(zero, Count32::of(0).expect("ok"));
         assert_eq!(zero.to_i64(), Some(0));
         assert_eq!(zero.to_u64(), Some(0));
-        assert_eq!(zero.to_highest_index(), -1);
+        assert_eq!(zero.to_highest_offset(), Offset32::of(-1));
 
         let one = Count32::of(1).expect("ok");
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
-        assert_eq!(one.to_highest_index(), 0);
+        assert_eq!(one.to_highest_offset(), Offset32::of(0));
 
         let max = Count32::MAX;
         assert_eq!(max, Count32::of(2147483648).expect("ok"));
         assert_eq!(max.to_i64(), Some(2147483648));
         assert_eq!(max.to_u64(), Some(2147483648));
-        assert_eq!(max.to_highest_index(), 2147483647);
+        assert_eq!(max.to_highest_offset(), Offset32::of(2147483647));
 
         let min = Count32::MIN;
         assert_eq!(min, Count32::of(0).expect("ok"));
         assert_eq!(min.to_i64(), Some(0));
         assert_eq!(min.to_u64(), Some(0));
-        assert_eq!(min.to_highest_index(), -1);
+        assert_eq!(min.to_highest_offset(), Offset32::of(-1));
         assert_eq!(min.is_null(), false);
         assert_eq!(min.is_not_null(), true);
 
@@ -400,13 +404,13 @@ mod test {
         assert_eq!(null.to_u64(), None);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
-        assert_eq!(null.to_highest_index(), -2);
+        assert_eq!(null.to_highest_offset(), Offset32::of(-2));
         null.0 = 15; // doesn't matter which positive value we use, still null.
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
-        assert_eq!(null.to_highest_index(), -16);
+        assert_eq!(null.to_highest_offset(), Offset32::of(-16));
     }
 
     #[test]
@@ -415,24 +419,24 @@ mod test {
         assert_eq!(zero, Count64::of(0).expect("ok"));
         assert_eq!(zero.to_i64(), Some(0));
         assert_eq!(zero.to_u64(), Some(0));
-        assert_eq!(zero.to_highest_index(), -1);
+        assert_eq!(zero.to_highest_offset(), Offset64::of(-1));
 
         let one = Count64::of(1).expect("ok");
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
-        assert_eq!(one.to_highest_index(), 0);
+        assert_eq!(one.to_highest_offset(), Offset64::of(0));
 
         let max = Count64::MAX;
         assert_eq!(max, Count64::of(9223372036854775808).expect("ok"));
         assert_eq!(max.to_i64(), None); // unrepresentable
         assert_eq!(max.to_u64(), Some(9223372036854775808));
-        assert_eq!(max.to_highest_index(), 9223372036854775807);
+        assert_eq!(max.to_highest_offset(), Offset64::of(9223372036854775807));
 
         let min = Count64::MIN;
         assert_eq!(min, Count64::of(0).expect("ok"));
         assert_eq!(min.to_i64(), Some(0));
         assert_eq!(min.to_u64(), Some(0));
-        assert_eq!(min.to_highest_index(), -1);
+        assert_eq!(min.to_highest_offset(), Offset64::of(-1));
         assert_eq!(min.is_null(), false);
         assert_eq!(min.is_not_null(), true);
 
@@ -441,13 +445,13 @@ mod test {
         assert_eq!(null.to_u64(), None);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
-        assert_eq!(null.to_highest_index(), -2);
+        assert_eq!(null.to_highest_offset(), Offset64::of(-2));
         null.0 = 15; // doesn't matter which positive value we use, still null.
         assert_eq!(null.to_i64(), None);
         assert_eq!(null.to_u64(), None);
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
-        assert_eq!(null.to_highest_index(), -16);
+        assert_eq!(null.to_highest_offset(), Offset64::of(-16));
     }
 
     #[test]

@@ -16,6 +16,9 @@ pub use index::*;
 pub mod likely;
 pub use likely::*;
 
+pub mod non_local_array;
+pub use non_local_array::*;
+
 pub mod number;
 pub use number::*;
 
@@ -27,3 +30,6 @@ pub use signed::*;
 
 pub mod symmetric;
 pub use symmetric::*;
+
+pub mod traits;
+pub use traits::*;

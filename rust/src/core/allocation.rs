@@ -27,13 +27,6 @@ pub struct AllocationCount<S: SignedPrimitive, T> {
 }
 
 impl<S: SignedPrimitive, T> AllocationCount<S, T> {
-    pub fn new() -> Self {
-        Self {
-            ptr: NonNull::dangling(),
-            capacity: Count::<S>::default(),
-        }
-    }
-
     pub fn capacity(&self) -> Count<S> {
         self.capacity
     }
@@ -159,7 +152,10 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
 
 impl<S: SignedPrimitive, T> Default for AllocationCount<S, T> {
     fn default() -> Self {
-        return Self::new();
+        Self {
+            ptr: NonNull::dangling(),
+            capacity: Count::<S>::default(),
+        }
     }
 }
 
@@ -200,7 +196,7 @@ mod test {
 
     #[test]
     fn allocation_internal_offsets() {
-        let allocation = AllocationCount8::<u8>::new();
+        let allocation = AllocationCount8::<u8>::default();
         let allocation_ptr = std::ptr::addr_of!(allocation);
         let ptr_ptr = std::ptr::addr_of!(allocation.ptr);
         assert_eq!(ptr_ptr as usize, allocation_ptr as usize);
@@ -209,7 +205,7 @@ mod test {
     #[test]
     fn allocation_deref() {
         // We can be a bit more nonchalant here because u8s don't need to be initialized.
-        let mut allocation = Aligned(AllocationCount16::<u8>::new());
+        let mut allocation = Aligned(AllocationCount16::<u8>::default());
         allocation
             .set_capacity(Count16::of(13).expect("ok"))
             .expect("small alloc");
