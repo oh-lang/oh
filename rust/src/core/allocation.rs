@@ -98,7 +98,7 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
 
     /// Reads at the offset, and from now on, that offset should be considered
     /// uninitialized.
-    pub fn read_deinitializing(&mut self, offset: Offset<S>) -> ContainerResult<T> {
+    pub fn read_destructively(&mut self, offset: Offset<S>) -> ContainerResult<T> {
         let capacity = self.capacity;
         if !capacity.contains(Contains::<S>::Offset(offset)) {
             return Err(ContainerError::InvalidAt);
