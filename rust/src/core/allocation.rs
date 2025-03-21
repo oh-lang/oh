@@ -23,10 +23,10 @@ impl AllocationError {
 pub type Allocated = AllocationResult<()>;
 pub type AllocationResult<T> = Result<T, AllocationError>;
 
-pub type AllocationCount64<T> = AllocationCount<T, i64>;
-pub type AllocationCount32<T> = AllocationCount<T, i32>;
-pub type AllocationCount16<T> = AllocationCount<T, i16>;
-pub type AllocationCount8<T> = AllocationCount<T, i8>;
+pub type AllocationCount64<T> = AllocationCount<i64, T>;
+pub type AllocationCount32<T> = AllocationCount<i32, T>;
+pub type AllocationCount16<T> = AllocationCount<i16, T>;
+pub type AllocationCount8<T> = AllocationCount<i8, T>;
 
 /// Low-level structure that has a pointer to contiguous memory,
 /// with a capacity up to Count::<S>::MAX elements.
@@ -36,12 +36,12 @@ pub type AllocationCount8<T> = AllocationCount<T, i8>;
 /// WARNING! because this is packed, you may need to wrap it in `Aligned(...)`
 /// in order to ensure that `ptr` is on an aligned boundary.
 #[repr(C, packed)]
-pub struct AllocationCount<T, S: SignedPrimitive> {
+pub struct AllocationCount<S: SignedPrimitive, T> {
     ptr: NonNull<T>,
     capacity: Count<S>,
 }
 
-impl<T, S: SignedPrimitive> AllocationCount<T, S> {
+impl<S: SignedPrimitive, T> AllocationCount<S, T> {
     pub fn new() -> Self {
         Self {
             ptr: NonNull::dangling(),
@@ -172,13 +172,13 @@ impl<T, S: SignedPrimitive> AllocationCount<T, S> {
     }
 }
 
-impl<T, S: SignedPrimitive> Default for AllocationCount<T, S> {
+impl<S: SignedPrimitive, T> Default for AllocationCount<S, T> {
     fn default() -> Self {
         return Self::new();
     }
 }
 
-impl<T, S: SignedPrimitive> std::ops::Deref for AllocationCount<T, S> {
+impl<S: SignedPrimitive, T> std::ops::Deref for AllocationCount<S, T> {
     type Target = [T];
     /// Caller is responsible for only accessing initialized values.
     fn deref(&self) -> &[T] {
@@ -192,7 +192,7 @@ impl<T, S: SignedPrimitive> std::ops::Deref for AllocationCount<T, S> {
     }
 }
 
-impl<T, S: SignedPrimitive> std::ops::DerefMut for AllocationCount<T, S> {
+impl<S: SignedPrimitive, T> std::ops::DerefMut for AllocationCount<S, T> {
     /// Caller is responsible for only accessing initialized values.
     fn deref_mut(&mut self) -> &mut [T] {
         let capacity = self.capacity;
