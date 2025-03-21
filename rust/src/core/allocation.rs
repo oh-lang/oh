@@ -1,3 +1,4 @@
+use crate::core::container::*;
 use crate::core::count::*;
 use crate::core::likely::*;
 use crate::core::number::*;
@@ -6,22 +7,6 @@ use crate::core::signed::*;
 
 use std::alloc;
 use std::ptr::{self, NonNull};
-
-#[derive(Eq, PartialEq, Copy, Clone, Default, Debug, Hash)]
-pub enum AllocationError {
-    #[default]
-    OutOfMemory,
-    InvalidOffset,
-}
-
-impl AllocationError {
-    pub fn err(self) -> Allocated {
-        return Err(self);
-    }
-}
-
-pub type Allocated = AllocationResult<()>;
-pub type AllocationResult<T> = Result<T, AllocationError>;
 
 pub type AllocationCount64<T> = AllocationCount<i64, T>;
 pub type AllocationCount32<T> = AllocationCount<i32, T>;
@@ -56,7 +41,7 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
     /// Caller MUST ensure that they've already dropped elements that you might delete here
     /// if the new capacity is less than the old.  The old capacity will be updated
     /// iff the capacity change succeeds.
-    pub fn mut_capacity(&mut self, new_capacity: Count<S>) -> Allocated {
+    pub fn mut_capacity(&mut self, new_capacity: Count<S>) -> Containered {
         let old_capacity = self.capacity;
         if !new_capacity.is_positive() {
             if old_capacity > Count::<S>::default() {
@@ -93,17 +78,17 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
             }
             None => {
                 cold();
-                AllocationError::OutOfMemory.err()
+                ContainerError::OutOfMemory.err()
             }
         }
     }
 
     /// Writes to an offset that should *not* be initialized until *after* this call.
     /// I.e., it is uninitialized before calling this.
-    pub fn write_initializing(&mut self, offset: Offset<S>, value: T) -> Allocated {
+    pub fn write_initializing(&mut self, offset: Offset<S>, value: T) -> Containered {
         let capacity = self.capacity;
         if !capacity.contains(Contains::<S>::Offset(offset)) {
-            return AllocationError::InvalidOffset.err();
+            return ContainerError::InvalidAt.err();
         }
         unsafe {
             ptr::write(self.as_ptr_mut().add(offset.0.as_() as usize), value);
@@ -113,19 +98,19 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
 
     /// Reads at the offset, and from now on, that offset should be considered
     /// uninitialized.
-    pub fn read_deinitializing(&mut self, offset: Offset<S>) -> AllocationResult<T> {
+    pub fn read_deinitializing(&mut self, offset: Offset<S>) -> ContainerResult<T> {
         let capacity = self.capacity;
         if !capacity.contains(Contains::<S>::Offset(offset)) {
-            return Err(AllocationError::InvalidOffset);
+            return Err(ContainerError::InvalidAt);
         }
         Ok(unsafe { ptr::read(self.as_ptr_mut().add(offset.0.as_() as usize)) })
     }
 
-    pub fn grow(&mut self) -> Allocated {
+    pub fn grow(&mut self) -> Containered {
         let capacity = self.capacity;
         let desired_capacity = Self::roughly_double_capacity(capacity);
         if desired_capacity <= capacity {
-            return AllocationError::OutOfMemory.err();
+            return ContainerError::OutOfMemory.err();
         }
         self.mut_capacity(desired_capacity)
     }
@@ -141,12 +126,12 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
         capacity.double_or_at_least(S::from(starting_alloc).unwrap())
     }
 
-    fn layout_of(capacity: Count<S>) -> AllocationResult<alloc::Layout> {
+    fn layout_of(capacity: Count<S>) -> ContainerResult<alloc::Layout> {
         if let Some(capacity) = capacity.to_u64() {
-            alloc::Layout::array::<T>(capacity as usize).or(Err(AllocationError::OutOfMemory))
+            alloc::Layout::array::<T>(capacity as usize).or(Err(ContainerError::OutOfMemory))
         } else {
             cold();
-            Err(AllocationError::InvalidOffset)
+            Err(ContainerError::InvalidAt)
         }
     }
 
