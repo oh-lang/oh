@@ -4,6 +4,7 @@ use crate::core::count::*;
 use crate::core::likely::*;
 use crate::core::non_local_array::*;
 use crate::core::number::*;
+use crate::core::offset::*;
 use crate::core::signed::*;
 use crate::core::traits::*;
 
@@ -67,6 +68,29 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> Default
     }
 }
 
+impl<S: SignedPrimitive, const N_LOCAL: usize, T> Drop for MaybeLocalArrayOptimized<S, N_LOCAL, T> {
+    fn drop(&mut self) {
+        match self.memory() {
+            Memory::UnallocatedBuffer => {} // Nothing to do, stack allocated
+            Memory::OptimizedAllocation => {
+                let ptr =
+                    unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.optimized_allocation) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.set_capacity(Count::<S>::default())
+                    .expect("should be able to drop");
+            }
+            Memory::MaxArray => {
+                let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.set_capacity(CountMax::default())
+                    .expect("should be able to drop");
+            }
+        }
+        // Not really needed for a drop but useful for a move-reset.
+        self.special_count = Self::UNALLOCATED_ZERO_SPECIAL_COUNT;
+    }
+}
+
 impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_LOCAL, T> {
     const UNALLOCATED_ZERO_SPECIAL_COUNT: S = S::ONE;
 
@@ -115,6 +139,8 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
                 self.special_count = S::from(new_count.as_negated()).expect("ok");
             }
             Memory::MaxArray => {
+                // We don't need to update `self.special_count` here
+                // because it's already telling us that we're a MaxArray.
                 let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
                 let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
                 ptr.count = new_count;
@@ -138,13 +164,27 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         }
     }
 
+    /// Can end up dropping elements if `new_capacity < self.count()`
     pub fn set_capacity(&mut self, new_capacity: CountMax) -> Containered {
+        let new_capacity = if new_capacity.is_null() {
+            CountMax::default()
+        } else {
+            new_capacity
+        };
         // Because there are three cases for self.memory() and three cases for future_self.memory(),
         // it's easier to just allocate a new array with the correct capacity and copy in, unless
         // the memory requirements are the same.
         let current_memory = self.memory();
         let required_memory = Self::required_memory(new_capacity);
         if current_memory == required_memory {
+            // First check if we need to remove any elements.
+            let mut count = self.count();
+            debug_assert!(count.is_not_null());
+            while new_capacity < count {
+                let was_present = self.remove(Remove::Last).is_some();
+                debug_assert!(was_present);
+                count -= CountMax::negating(-1);
+            }
             match current_memory {
                 Memory::UnallocatedBuffer => Ok(()), // no-op, already OK
                 Memory::OptimizedAllocation => {
@@ -222,6 +262,47 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
                 ptr.allocation.deref_mut()
             }
         }
+    }
+
+    pub fn remove(&mut self, remove: Remove) -> Option<T> {
+        match remove {
+            Remove::Last => self.remove_last(),
+        }
+    }
+
+    pub(crate) fn remove_last(&mut self) -> Option<T> {
+        let count = self.count();
+        if count == CountMax::default() {
+            return None;
+        }
+        let offset = count.to_highest_offset();
+        // This function doesn't update any buffers (or change `self.memory()`),
+        // so we're still ok to grab the element at `offset` later in this method.
+        self.only_set_count(count - CountMax::negating(-1));
+        let result = match self.memory() {
+            Memory::UnallocatedBuffer => {
+                let ptr = unsafe {
+                    std::ptr::addr_of_mut!(
+                        self.maybe_allocated.unallocated_buffer[offset.0 as usize]
+                    )
+                };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                unsafe { std::mem::ManuallyDrop::take(ptr) }
+            }
+            Memory::OptimizedAllocation => {
+                let ptr =
+                    unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.optimized_allocation) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.read_destructively(Offset::<S>::of(S::from(offset.to_inner()).expect("OK")))
+                    .expect("OK")
+            }
+            Memory::MaxArray => {
+                let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.allocation.read_destructively(offset).expect("OK")
+            }
+        };
+        Some(result)
     }
 }
 

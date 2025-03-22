@@ -21,6 +21,10 @@ where
     pub fn of(t: T) -> Self {
         Self(t)
     }
+
+    pub fn to_inner(self) -> T {
+        self.0
+    }
 }
 
 impl<T> Deref for Signed<T>

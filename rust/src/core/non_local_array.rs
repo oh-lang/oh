@@ -67,7 +67,7 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
         }
     }
 
-    fn remove_last(&mut self) -> Option<T> {
+    pub(crate) fn remove_last(&mut self) -> Option<T> {
         if self.count <= Count::<S>::default() {
             return None;
         }
@@ -203,6 +203,7 @@ impl<S: SignedPrimitive, T> Drop for NonLocalArrayCount<S, T> {
     }
 }
 
+// TODO: move these into an `array.rs` file which gives the traits.
 #[derive(Eq, PartialEq, Copy, Clone, Debug, Default, Hash)]
 pub enum Clear {
     #[default]
@@ -210,6 +211,7 @@ pub enum Clear {
     DroppingCapacity,
 }
 
+// TODO: this should probably be `OrderedRemove`
 #[derive(Eq, PartialEq, Copy, Clone, Debug, Default, Hash)]
 pub enum Remove {
     #[default]
