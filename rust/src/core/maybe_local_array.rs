@@ -195,6 +195,8 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
             debug_assert!(was_present);
             count -= 1;
         }
+        // TODO: switch to a `match (current_memory, required_memory) { (Unallocated, Optimized) => {...} ...}`
+        // which should make the transition more readable and less nested.
         if current_memory == required_memory {
             match current_memory {
                 Memory::UnallocatedBuffer => Ok(()), // no-op, already OK
@@ -245,6 +247,53 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
                     self.set_count_unallocated_buffer(count);
                     Ok(())
                 }
+                Memory::OptimizedAllocation => {
+                    // Need to make a local allocation first to copy values into,
+                    // then move the allocation into place; otherwise we'd obliterate
+                    // values we need from max_array or unallocated_buffer.
+                    let mut new_allocation = AllocationCount::<S, T>::default();
+                    new_allocation.set_capacity(Count::negating(
+                        S::from(new_capacity.as_negated()).expect("ok"),
+                    ))?;
+                    match current_memory {
+                        Memory::UnallocatedBuffer => {
+                            Self::copy_bytes(
+                                unsafe {
+                                    std::ptr::addr_of!(self.maybe_allocated.unallocated_buffer[0])
+                                        as *const T // ManuallyDrop is a thin wrapper around T
+                                },
+                                std::ptr::addr_of_mut!(new_allocation[0]),
+                                count,
+                            );
+                        }
+                        Memory::OptimizedAllocation => {
+                            panic!("already taken care of");
+                        }
+                        Memory::MaxArray => {
+                            // Dropping from MaxArray to OptimizedArray:
+                            let max_array =
+                                unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
+                            let max_array = unsafe { &mut *max_array }; // Creating a reference (OK because we're aligned)
+                            // Need to grab the `Box` so it will get freed at the end of this block.
+                            let mut max_array = unsafe { ManuallyDrop::take(max_array) };
+                            // Because we're going into the max_array and messing around with things directly,
+                            // make sure we don't free the copied `T`s:
+                            max_array.count = Count::default();
+                            Self::copy_bytes_and_release_allocation(
+                                &mut max_array.allocation,
+                                std::ptr::addr_of_mut!(new_allocation[0]),
+                                count,
+                            );
+                        }
+                    }
+                    eprintln!(
+                        "getting new allocation with capacity {:?}",
+                        new_allocation.capacity()
+                    );
+                    self.maybe_allocated.optimized_allocation = ManuallyDrop::new(new_allocation);
+                    self.set_count_optimized_allocation(count);
+                    Ok(())
+                }
                 _ => {
                     // TODO
                     ContainerError::OutOfMemory.err()
@@ -272,12 +321,17 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         // In order to copy the bytes, we need to make a local copy of the allocation.
         // This is because the current allocation's location shares bytes with the `to` buffer.
         let allocation = unsafe { &mut *allocation }; // Creating a reference (OK because we're aligned)
-        let count = count.to_usize();
-        unsafe {
-            std::ptr::copy_nonoverlapping(std::ptr::addr_of!(allocation[0]), to, count);
-        }
+        Self::copy_bytes(std::ptr::addr_of!(allocation[0]), to, count);
         // Manually drop the old allocation:
         allocation.set_capacity(Count::default()).expect("ok");
+    }
+
+    #[inline]
+    fn copy_bytes(from: *const T, to: *mut T, count: CountMax) {
+        let count = count.to_usize();
+        unsafe {
+            std::ptr::copy_nonoverlapping(from, to, count);
+        }
     }
 
     fn required_memory(for_count: CountMax) -> Memory {
