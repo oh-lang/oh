@@ -43,7 +43,7 @@ where
 
     pub fn to_max(self) -> CountMax {
         // TODO: fix for when we support i32 in CountMax on 32bit platforms
-        CountMax::negating(self.to_i64().unwrap_or(0))
+        CountMax::negating(self.0.as_())
     }
 
     pub fn double_or_at_least(self, at_least: T) -> Self {
@@ -296,13 +296,16 @@ mod test {
         assert_eq!(zero.to_usize(), 0);
         assert_eq!(zero.to_highest_offset(), Offset8::of(-1));
         assert_eq!(zero.is_positive(), false);
+        assert_eq!(zero.to_max(), CountMax::negating(0));
 
         let one = Count8::of(1).expect("ok");
+        assert_eq!(one, Count8::negating(-1));
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
         assert_eq!(one.to_usize(), 1);
         assert_eq!(one.to_highest_offset(), Offset8::of(0));
         assert_eq!(one.is_positive(), true);
+        assert_eq!(one.to_max(), CountMax::negating(-1));
 
         let max = Count8::MAX;
         assert_eq!(max, Count8::of(128).expect("ok"));
@@ -311,6 +314,7 @@ mod test {
         assert_eq!(max.to_usize(), 128);
         assert_eq!(max.to_highest_offset(), Offset8::of(127));
         assert_eq!(max.is_positive(), true);
+        assert_eq!(max.to_max(), CountMax::negating(-128));
 
         let min = Count8::MIN;
         assert_eq!(min, Count8::of(0).expect("ok"));
@@ -320,6 +324,7 @@ mod test {
         assert_eq!(min.to_highest_offset(), Offset8::of(-1));
         assert_eq!(min.is_null(), false);
         assert_eq!(min.is_not_null(), true);
+        assert_eq!(min.to_max(), CountMax::negating(0));
 
         let mut null = Count8::NULL;
         assert_eq!(null.to_i64(), None);
@@ -337,6 +342,7 @@ mod test {
         assert_eq!(null.is_not_null(), false);
         assert_eq!(null.to_highest_offset(), Offset8::of(-16));
         assert_eq!(null.is_positive(), false);
+        assert_eq!(null.to_max(), CountMax::negating(15));
     }
 
     #[test]
@@ -347,12 +353,14 @@ mod test {
         assert_eq!(zero.to_u64(), Some(0));
         assert_eq!(zero.to_highest_offset(), Offset16::of(-1));
         assert_eq!(zero.is_positive(), false);
+        assert_eq!(zero.to_max(), CountMax::negating(0));
 
         let one = Count16::of(1).expect("ok");
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
         assert_eq!(one.to_highest_offset(), Offset16::of(0));
         assert_eq!(one.is_positive(), true);
+        assert_eq!(one.to_max(), CountMax::negating(-1));
 
         let max = Count16::MAX;
         assert_eq!(max, Count16::of(32768).expect("ok"));
@@ -360,6 +368,7 @@ mod test {
         assert_eq!(max.to_u64(), Some(32768));
         assert_eq!(max.to_highest_offset(), Offset16::of(32767));
         assert_eq!(max.is_positive(), true);
+        assert_eq!(max.to_max(), CountMax::negating(-32768));
 
         let min = Count16::MIN;
         assert_eq!(min, Count16::of(0).expect("ok"));
@@ -368,6 +377,7 @@ mod test {
         assert_eq!(min.to_highest_offset(), Offset16::of(-1));
         assert_eq!(min.is_null(), false);
         assert_eq!(min.is_not_null(), true);
+        assert_eq!(min.to_max(), CountMax::negating(0));
 
         let mut null = Count16::NULL;
         assert_eq!(null.to_i64(), None);
@@ -383,6 +393,7 @@ mod test {
         assert_eq!(null.is_not_null(), false);
         assert_eq!(null.to_highest_offset(), Offset16::of(-16));
         assert_eq!(null.is_positive(), false);
+        assert_eq!(null.to_max(), CountMax::negating(15));
     }
 
     #[test]
@@ -392,17 +403,20 @@ mod test {
         assert_eq!(zero.to_i64(), Some(0));
         assert_eq!(zero.to_u64(), Some(0));
         assert_eq!(zero.to_highest_offset(), Offset32::of(-1));
+        assert_eq!(zero.to_max(), CountMax::negating(0));
 
         let one = Count32::of(1).expect("ok");
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
         assert_eq!(one.to_highest_offset(), Offset32::of(0));
+        assert_eq!(one.to_max(), CountMax::negating(-1));
 
         let max = Count32::MAX;
         assert_eq!(max, Count32::of(2147483648).expect("ok"));
         assert_eq!(max.to_i64(), Some(2147483648));
         assert_eq!(max.to_u64(), Some(2147483648));
         assert_eq!(max.to_highest_offset(), Offset32::of(2147483647));
+        assert_eq!(max.to_max(), CountMax::negating(-2147483648));
 
         let min = Count32::MIN;
         assert_eq!(min, Count32::of(0).expect("ok"));
@@ -411,6 +425,7 @@ mod test {
         assert_eq!(min.to_highest_offset(), Offset32::of(-1));
         assert_eq!(min.is_null(), false);
         assert_eq!(min.is_not_null(), true);
+        assert_eq!(min.to_max(), CountMax::negating(0));
 
         let mut null = Count32::NULL;
         assert_eq!(null.to_i64(), None);
@@ -424,6 +439,7 @@ mod test {
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
         assert_eq!(null.to_highest_offset(), Offset32::of(-16));
+        assert_eq!(null.to_max(), CountMax::negating(15));
     }
 
     #[test]
@@ -433,17 +449,20 @@ mod test {
         assert_eq!(zero.to_i64(), Some(0));
         assert_eq!(zero.to_u64(), Some(0));
         assert_eq!(zero.to_highest_offset(), Offset64::of(-1));
+        assert_eq!(zero.to_max(), zero);
 
         let one = Count64::of(1).expect("ok");
         assert_eq!(one.to_i64(), Some(1));
         assert_eq!(one.to_u64(), Some(1));
         assert_eq!(one.to_highest_offset(), Offset64::of(0));
+        assert_eq!(one.to_max(), one);
 
         let max = Count64::MAX;
         assert_eq!(max, Count64::of(9223372036854775808).expect("ok"));
         assert_eq!(max.to_i64(), None); // unrepresentable
         assert_eq!(max.to_u64(), Some(9223372036854775808));
         assert_eq!(max.to_highest_offset(), Offset64::of(9223372036854775807));
+        assert_eq!(max.to_max(), max);
 
         let min = Count64::MIN;
         assert_eq!(min, Count64::of(0).expect("ok"));
@@ -452,6 +471,7 @@ mod test {
         assert_eq!(min.to_highest_offset(), Offset64::of(-1));
         assert_eq!(min.is_null(), false);
         assert_eq!(min.is_not_null(), true);
+        assert_eq!(min.to_max(), min);
 
         let mut null = Count64::NULL;
         assert_eq!(null.to_i64(), None);
@@ -465,6 +485,7 @@ mod test {
         assert_eq!(null.is_null(), true);
         assert_eq!(null.is_not_null(), false);
         assert_eq!(null.to_highest_offset(), Offset64::of(-16));
+        assert_eq!(null.to_max(), null);
     }
 
     #[test]

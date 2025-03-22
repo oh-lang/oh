@@ -114,13 +114,17 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
     pub fn count(&self) -> CountMax {
         match self.memory() {
             Memory::UnallocatedBuffer => {
+                let result = Count::<S>::negating(
+                    -(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT),
+                )
+                .to_max();
                 eprintln!(
-                    "special count {} -> negated {}",
+                    "special count {} -> negated {}: {:?}",
                     self.special_count,
-                    -(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT)
+                    -(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT),
+                    result
                 );
-                Count::<S>::negating(-(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT))
-                    .to_max()
+                result
             }
             Memory::OptimizedAllocation => Count::<S>::negating(self.special_count).to_max(),
             Memory::MaxArray => {
