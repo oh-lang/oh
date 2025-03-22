@@ -627,8 +627,8 @@ mod test {
         for i in 0..7 {
             array.append(19 + i as u8).expect("already allocked");
         }
-        assert_eq!(array.capacity(), Count::of(13).expect("ok"));
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
+        assert_eq!(array.capacity(), Count::of(13).expect("ok"));
         assert_eq!(array.count(), Count::of(7).expect("ok"));
 
         array.set_capacity(Count::of(5).expect("ok")).expect("ok");
@@ -648,15 +648,15 @@ mod test {
         for i in 0..8 {
             array.append(29 + i as u8).expect("already allocked");
         }
-        assert_eq!(array.capacity(), Count::of(13).expect("ok"));
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
+        assert_eq!(array.capacity(), Count::of(13).expect("ok"));
         assert_eq!(array.count(), Count::of(8).expect("ok"));
 
         array.set_capacity(Count::of(13).expect("ok")).expect("ok");
 
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
-        assert_eq!(array.count(), Count::of(8).expect("ok"));
         assert_eq!(array.capacity(), Count::of(13).expect("ok"));
+        assert_eq!(array.count(), Count::of(8).expect("ok"));
         for i in 0..8 {
             assert_eq!(array[i], 29 + i as u8);
         }
@@ -672,16 +672,18 @@ mod test {
         array
             .set_capacity(Count::of(50).expect("ok"))
             .expect("small alloc");
-        assert_eq!(array.capacity(), Count::of(50).expect("ok"));
-        assert_eq!(array.memory(), Memory::OptimizedAllocation);
-        assert_eq!(array.count(), Count::of(0).expect("ok"));
         for i in 0..50 {
             array.append(49 - i as u8).expect("already allocked");
         }
-        array.set_capacity(Count::of(11).expect("ok")).expect("ok");
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
-        assert_eq!(array.count(), Count::of(11).expect("ok"));
+        assert_eq!(array.capacity(), Count::of(50).expect("ok"));
+        assert_eq!(array.count(), Count::of(50).expect("ok"));
+
+        array.set_capacity(Count::of(11).expect("ok")).expect("ok");
+
+        assert_eq!(array.memory(), Memory::OptimizedAllocation);
         assert_eq!(array.capacity(), Count::of(11).expect("ok"));
+        assert_eq!(array.count(), Count::of(11).expect("ok"));
         for i in 0..11 {
             assert_eq!(array[i], 49 - i as u8);
         }
@@ -694,16 +696,18 @@ mod test {
         array
             .set_capacity(Count::of(50).expect("ok"))
             .expect("small alloc");
-        assert_eq!(array.capacity(), Count::of(50).expect("ok"));
-        assert_eq!(array.memory(), Memory::OptimizedAllocation);
-        assert_eq!(array.count(), Count::of(0).expect("ok"));
         for i in 0..50 {
             array.append(49 - i as u8).expect("already allocked");
         }
-        array.set_capacity(Count::of(123).expect("ok")).expect("ok");
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
+        assert_eq!(array.capacity(), Count::of(50).expect("ok"));
         assert_eq!(array.count(), Count::of(50).expect("ok"));
+
+        array.set_capacity(Count::of(123).expect("ok")).expect("ok");
+
+        assert_eq!(array.memory(), Memory::OptimizedAllocation);
         assert_eq!(array.capacity(), Count::of(123).expect("ok"));
+        assert_eq!(array.count(), Count::of(50).expect("ok"));
         for i in 0..50 {
             assert_eq!(array[i], 49 - i as u8);
         }
@@ -713,24 +717,98 @@ mod test {
     // Starting with max_array
     // =======================
     #[test]
+    fn set_capacity_truncating_max_array() {
+        // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
+        let mut array = MaybeLocalArrayOptimized8::<5, u8>::default();
+        array
+            .set_capacity(Count::of(200).expect("ok"))
+            .expect("small alloc");
+        for i in 0..200 {
+            array.append(3 + i as u8).expect("already allocked");
+        }
+        assert_eq!(array.memory(), Memory::MaxArray);
+        assert_eq!(array.capacity(), Count::of(200).expect("ok"));
+        assert_eq!(array.count(), Count::of(200).expect("ok"));
+
+        array.set_capacity(Count::of(150).expect("ok")).expect("ok");
+
+        assert_eq!(array.memory(), Memory::MaxArray);
+        assert_eq!(array.capacity(), Count::of(150).expect("ok"));
+        assert_eq!(array.count(), Count::of(150).expect("ok"));
+        for i in 0..150 {
+            assert_eq!(array[i], 3 + i as u8);
+        }
+    }
+
+    #[test]
+    fn set_capacity_expanding_max_array() {
+        // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
+        let mut array = MaybeLocalArrayOptimized8::<15, u8>::default();
+        array
+            .set_capacity(Count::of(150).expect("ok"))
+            .expect("small alloc");
+        for i in 0..150 {
+            array.append(8 + i as u8).expect("already allocked");
+        }
+        assert_eq!(array.memory(), Memory::MaxArray);
+        assert_eq!(array.capacity(), Count::of(150).expect("ok"));
+        assert_eq!(array.count(), Count::of(150).expect("ok"));
+
+        array.set_capacity(Count::of(200).expect("ok")).expect("ok");
+
+        assert_eq!(array.memory(), Memory::MaxArray);
+        assert_eq!(array.capacity(), Count::of(200).expect("ok"));
+        assert_eq!(array.count(), Count::of(150).expect("ok"));
+        for i in 0..150 {
+            assert_eq!(array[i], 8 + i as u8);
+        }
+    }
+
+    #[test]
     fn set_capacity_truncating_big_max_array_to_unallocated_buffer() {
         // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
         let mut array = MaybeLocalArrayOptimized8::<5, u8>::default();
         array
             .set_capacity(Count::of(192).expect("ok"))
             .expect("small alloc");
-        assert_eq!(array.capacity(), Count::of(192).expect("ok"));
-        assert_eq!(array.memory(), Memory::MaxArray);
-        assert_eq!(array.count(), Count::of(0).expect("ok"));
         for i in 0..192 {
             array.append(i as u8).expect("already allocked");
         }
+        assert_eq!(array.memory(), Memory::MaxArray);
+        assert_eq!(array.capacity(), Count::of(192).expect("ok"));
+        assert_eq!(array.count(), Count::of(192).expect("ok"));
+
         array.set_capacity(Count::of(4).expect("ok")).expect("ok");
+
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
+        assert_eq!(array.capacity(), Count::of(5).expect("ok")); // set_capacity is semi-ignored...
         assert_eq!(array.count(), Count::of(4).expect("ok")); // note count is less than capacity
-        assert_eq!(array.capacity(), Count::of(5).expect("ok")); // only time when set_capacity is ignored...
         for i in 0..4 {
             assert_eq!(array[i], i as u8);
+        }
+    }
+
+    #[test]
+    fn set_capacity_truncating_small_max_array_to_unallocated_buffer() {
+        // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
+        let mut array = MaybeLocalArrayOptimized8::<6, u8>::default();
+        array
+            .set_capacity(Count::of(192).expect("ok"))
+            .expect("small alloc");
+        for i in 0..3 {
+            array.append(100 - i as u8).expect("already allocked");
+        }
+        assert_eq!(array.memory(), Memory::MaxArray);
+        assert_eq!(array.capacity(), Count::of(192).expect("ok"));
+        assert_eq!(array.count(), Count::of(3).expect("ok"));
+
+        array.set_capacity(Count::of(2).expect("ok")).expect("ok");
+
+        assert_eq!(array.memory(), Memory::UnallocatedBuffer);
+        assert_eq!(array.capacity(), Count::of(6).expect("ok")); // set_capacity is semi-ignored...
+        assert_eq!(array.count(), Count::of(2).expect("ok")); // note count is less than capacity
+        for i in 0..2 {
+            assert_eq!(array[i], 100 - i as u8);
         }
     }
 
@@ -741,16 +819,18 @@ mod test {
         array
             .set_capacity(Count::of(150).expect("ok"))
             .expect("small alloc");
-        assert_eq!(array.capacity(), Count::of(150).expect("ok"));
-        assert_eq!(array.memory(), Memory::MaxArray);
-        assert_eq!(array.count(), Count::of(0).expect("ok"));
         for i in 0..50 {
             array.append(49 - i as u8).expect("already allocked");
         }
+        assert_eq!(array.memory(), Memory::MaxArray);
+        assert_eq!(array.capacity(), Count::of(150).expect("ok"));
+        assert_eq!(array.count(), Count::of(50).expect("ok"));
+
         array.set_capacity(Count::of(11).expect("ok")).expect("ok");
+
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
-        assert_eq!(array.count(), Count::of(11).expect("ok"));
         assert_eq!(array.capacity(), Count::of(11).expect("ok"));
+        assert_eq!(array.count(), Count::of(11).expect("ok"));
         for i in 0..11 {
             assert_eq!(array[i], 49 - i as u8);
         }
