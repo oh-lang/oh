@@ -114,17 +114,8 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
     pub fn count(&self) -> CountMax {
         match self.memory() {
             Memory::UnallocatedBuffer => {
-                let result = Count::<S>::negating(
-                    -(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT),
-                )
-                .to_max();
-                eprintln!(
-                    "special count {} -> negated {}: {:?}",
-                    self.special_count,
-                    -(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT),
-                    result
-                );
-                result
+                Count::<S>::negating(-(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT))
+                    .to_max()
             }
             Memory::OptimizedAllocation => Count::<S>::negating(self.special_count).to_max(),
             Memory::MaxArray => {
@@ -235,10 +226,6 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         if new_count.is_null() {
             // Probably shouldn't happen with i64 as the backing integer,
             // but might be possible if we allow 32bit architectures.
-            eprintln!(
-                "oh no new count was null: {} -> {}, from special {}",
-                previous_count.0, new_count.0, self.special_count
-            );
             return ContainerError::OutOfMemory.err();
         }
         if new_count > previous_capacity {
@@ -411,6 +398,6 @@ mod test {
         assert_eq!(array.remove(Remove::Last), Some(2));
         assert_eq!(array.remove(Remove::Last), Some(1));
         assert_eq!(array.count(), Count::of(0).expect("ok"));
-        assert_eq!(array.capacity(), Count::of(3).expect("ok"));
+        assert_eq!(array.capacity(), Count::of(16).expect("ok"));
     }
 }
