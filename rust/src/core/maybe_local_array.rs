@@ -662,9 +662,75 @@ mod test {
         }
     }
 
+    #[test]
+    fn set_capacity_expanding_unallocated_buffer_to_optimized_allocation() {
+        // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
+        let mut array = MaybeLocalArrayOptimized64::<13, u8>::default();
+        for i in 0..13 {
+            array.append(200 + i as u8).expect("already allocked");
+        }
+        assert_eq!(array.memory(), Memory::UnallocatedBuffer);
+        assert_eq!(array.capacity(), Count::of(13).expect("ok"));
+        assert_eq!(array.count(), Count::of(13).expect("ok"));
+
+        array.set_capacity(Count::of(28).expect("ok")).expect("ok");
+
+        assert_eq!(array.memory(), Memory::OptimizedAllocation);
+        assert_eq!(array.capacity(), Count::of(28).expect("ok"));
+        assert_eq!(array.count(), Count::of(13).expect("ok"));
+        for i in 0..13 {
+            assert_eq!(array[i], 200 + i as u8);
+        }
+    }
+
+    #[test]
+    fn set_capacity_expanding_unallocated_buffer_to_max_array() {
+        // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
+        let mut array = MaybeLocalArrayOptimized8::<13, u8>::default();
+        for i in 0..12 {
+            array.append(200 + i as u8).expect("already allocked");
+        }
+        assert_eq!(array.memory(), Memory::UnallocatedBuffer);
+        assert_eq!(array.capacity(), Count::of(13).expect("ok"));
+        assert_eq!(array.count(), Count::of(12).expect("ok"));
+
+        array.set_capacity(Count::of(200).expect("ok")).expect("ok");
+
+        assert_eq!(array.memory(), Memory::MaxArray);
+        assert_eq!(array.capacity(), Count::of(200).expect("ok"));
+        assert_eq!(array.count(), Count::of(12).expect("ok"));
+        for i in 0..12 {
+            assert_eq!(array[i], 200 + i as u8);
+        }
+    }
+
     // ==================================
     // Starting with optimized_allocation
     // ==================================
+    #[test]
+    fn set_capacity_truncating_optimized_allocation_to_unallocated_buffer() {
+        // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
+        let mut array = MaybeLocalArrayOptimized16::<10, u8>::default();
+        array
+            .set_capacity(Count::of(50).expect("ok"))
+            .expect("small alloc");
+        for i in 0..50 {
+            array.append(49 - i as u8).expect("already allocked");
+        }
+        assert_eq!(array.memory(), Memory::OptimizedAllocation);
+        assert_eq!(array.capacity(), Count::of(50).expect("ok"));
+        assert_eq!(array.count(), Count::of(50).expect("ok"));
+
+        array.set_capacity(Count::of(10).expect("ok")).expect("ok");
+
+        assert_eq!(array.memory(), Memory::UnallocatedBuffer);
+        assert_eq!(array.capacity(), Count::of(10).expect("ok"));
+        assert_eq!(array.count(), Count::of(10).expect("ok"));
+        for i in 0..10 {
+            assert_eq!(array[i], 49 - i as u8);
+        }
+    }
+
     #[test]
     fn set_capacity_truncating_optimized_allocation() {
         // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
@@ -707,6 +773,30 @@ mod test {
 
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
         assert_eq!(array.capacity(), Count::of(123).expect("ok"));
+        assert_eq!(array.count(), Count::of(50).expect("ok"));
+        for i in 0..50 {
+            assert_eq!(array[i], 49 - i as u8);
+        }
+    }
+
+    #[test]
+    fn set_capacity_expanding_optimized_allocation_to_max_array() {
+        // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
+        let mut array = MaybeLocalArrayOptimized8::<10, u8>::default();
+        array
+            .set_capacity(Count::of(50).expect("ok"))
+            .expect("small alloc");
+        for i in 0..50 {
+            array.append(49 - i as u8).expect("already allocked");
+        }
+        assert_eq!(array.memory(), Memory::OptimizedAllocation);
+        assert_eq!(array.capacity(), Count::of(50).expect("ok"));
+        assert_eq!(array.count(), Count::of(50).expect("ok"));
+
+        array.set_capacity(Count::of(130).expect("ok")).expect("ok");
+
+        assert_eq!(array.memory(), Memory::MaxArray);
+        assert_eq!(array.capacity(), Count::of(130).expect("ok"));
         assert_eq!(array.count(), Count::of(50).expect("ok"));
         for i in 0..50 {
             assert_eq!(array[i], 49 - i as u8);
