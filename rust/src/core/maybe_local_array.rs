@@ -1,3 +1,4 @@
+use crate::core::aligned::*;
 use crate::core::allocation::*;
 use crate::core::container::*;
 use crate::core::count::*;
@@ -132,20 +133,33 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         debug_assert!(new_count <= self.capacity());
         match self.memory() {
             Memory::UnallocatedBuffer => {
-                self.special_count = Self::UNALLOCATED_ZERO_SPECIAL_COUNT
-                    + S::from(new_count.to_usize()).expect("ok");
+                self.set_count_unallocated_buffer(new_count);
             }
-            Memory::OptimizedAllocation => {
-                self.special_count = S::from(new_count.as_negated()).expect("ok");
-            }
+            Memory::OptimizedAllocation => self.set_count_optimized_allocation(new_count),
             Memory::MaxArray => {
-                // We don't need to update `self.special_count` here
-                // because it's already telling us that we're a MaxArray.
-                let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
-                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
-                ptr.count = new_count;
+                self.set_count_max_array(new_count);
             }
         }
+    }
+
+    #[inline]
+    fn set_count_unallocated_buffer(&mut self, new_count: CountMax) {
+        self.special_count =
+            Self::UNALLOCATED_ZERO_SPECIAL_COUNT + S::from(new_count.to_usize()).expect("ok");
+    }
+
+    #[inline]
+    fn set_count_optimized_allocation(&mut self, new_count: CountMax) {
+        self.special_count = S::from(new_count.as_negated()).expect("ok");
+    }
+
+    #[inline]
+    fn set_count_max_array(&mut self, new_count: CountMax) {
+        self.special_count = Self::max_array_count();
+
+        let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
+        let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+        ptr.count = new_count;
     }
 
     pub fn capacity(&self) -> CountMax {
@@ -171,20 +185,17 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         } else {
             new_capacity
         };
-        // Because there are three cases for self.memory() and three cases for future_self.memory(),
-        // it's easier to just allocate a new array with the correct capacity and copy in, unless
-        // the memory requirements are the same.
         let current_memory = self.memory();
         let required_memory = Self::required_memory(new_capacity);
+        // First check if we need to remove any elements.
+        let mut count = self.count();
+        debug_assert!(count.is_not_null());
+        while new_capacity < count {
+            let was_present = self.remove(Remove::Last).is_some();
+            debug_assert!(was_present);
+            count -= 1;
+        }
         if current_memory == required_memory {
-            // First check if we need to remove any elements.
-            let mut count = self.count();
-            debug_assert!(count.is_not_null());
-            while new_capacity < count {
-                let was_present = self.remove(Remove::Last).is_some();
-                debug_assert!(was_present);
-                count -= CountMax::negating(-1);
-            }
             match current_memory {
                 Memory::UnallocatedBuffer => Ok(()), // no-op, already OK
                 Memory::OptimizedAllocation => {
@@ -201,9 +212,72 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
                 }
             }
         } else {
-            // TODO
-            Ok(())
+            match required_memory {
+                Memory::UnallocatedBuffer => {
+                    match current_memory {
+                        Memory::UnallocatedBuffer => {
+                            panic!("already taken care of");
+                        }
+                        Memory::OptimizedAllocation => {
+                            // Dropping from OptimizedAllocation to UnallocatedBuffer:
+                            let from_allocation = unsafe {
+                                std::ptr::addr_of_mut!(self.maybe_allocated.optimized_allocation)
+                            }
+                                as *mut AllocationCount<S, T>;
+                            self.copy_bytes_locally_and_release_allocation(from_allocation, count);
+                        }
+                        Memory::MaxArray => {
+                            // Dropping from MaxArray to UnallocatedBuffer:
+                            let max_array =
+                                unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
+                            let max_array = unsafe { &mut *max_array }; // Creating a reference (OK because we're aligned)
+                            // Need to grab the `Box` so it will get freed at the end of this block.
+                            let mut max_array = unsafe { ManuallyDrop::take(max_array) };
+                            // Because we're going into the allocation and messing around with things directly,
+                            // make sure we don't free the copied `T`s:
+                            max_array.count = Count::default();
+                            self.copy_bytes_locally_and_release_allocation(
+                                &mut max_array.allocation,
+                                count,
+                            );
+                        }
+                    }
+                    self.set_count_unallocated_buffer(count);
+                    Ok(())
+                }
+                _ => {
+                    // TODO
+                    ContainerError::OutOfMemory.err()
+                }
+            }
         }
+    }
+
+    fn copy_bytes_locally_and_release_allocation<S2: SignedPrimitive>(
+        &mut self,
+        allocation: *mut AllocationCount<S2, T>,
+        count: CountMax,
+    ) {
+        let to = unsafe {
+            std::ptr::addr_of_mut!(self.maybe_allocated.unallocated_buffer[0]) as *mut T // Assume ManuallyDrop is a thin wrapper around T
+        };
+        Self::copy_bytes_and_release_allocation(allocation, to, count);
+    }
+
+    fn copy_bytes_and_release_allocation<S2: SignedPrimitive>(
+        allocation: *mut AllocationCount<S2, T>,
+        to: *mut T,
+        count: CountMax,
+    ) {
+        // In order to copy the bytes, we need to make a local copy of the allocation.
+        // This is because the current allocation's location shares bytes with the `to` buffer.
+        let allocation = unsafe { &mut *allocation }; // Creating a reference (OK because we're aligned)
+        let count = count.to_usize();
+        unsafe {
+            std::ptr::copy_nonoverlapping(std::ptr::addr_of!(allocation[0]), to, count);
+        }
+        // Manually drop the old allocation:
+        allocation.set_capacity(Count::default()).expect("ok");
     }
 
     fn required_memory(for_count: CountMax) -> Memory {
@@ -390,6 +464,7 @@ mod test {
             .set_capacity(Count::of(3).expect("ok"))
             .expect("small alloc");
         assert_eq!(array.capacity(), Count::of(16).expect("ok"));
+        assert_eq!(array.memory(), Memory::UnallocatedBuffer);
         array.append(1).expect("already allocked");
         array.append(2).expect("already allocked");
         array.append(3).expect("already allocked");
@@ -399,5 +474,28 @@ mod test {
         assert_eq!(array.remove(Remove::Last), Some(1));
         assert_eq!(array.count(), Count::of(0).expect("ok"));
         assert_eq!(array.capacity(), Count::of(16).expect("ok"));
+        assert_eq!(array.memory(), Memory::UnallocatedBuffer);
+    }
+
+    #[test]
+    fn append_and_remove_optimized_array() {
+        let mut array = MaybeLocalArrayOptimized32::<8, u8>::default();
+        array
+            .set_capacity(Count::of(100).expect("ok"))
+            .expect("small alloc");
+        assert_eq!(array.capacity(), Count::of(100).expect("ok"));
+        assert_eq!(array.memory(), Memory::OptimizedAllocation);
+        for i in 0..100 {
+            array.append(i as u8).expect("already allocked");
+        }
+        assert_eq!(array.count(), Count::of(100).expect("ok"));
+        assert_eq!(array.capacity(), Count::of(100).expect("ok"));
+        for j in 0..100 {
+            let i = 99 - j;
+            assert_eq!(array.remove(Remove::Last), Some(i as u8));
+            assert_eq!(array.count(), Count::of(i).expect("ok"));
+        }
+        assert_eq!(array.capacity(), Count::of(100).expect("ok"));
+        assert_eq!(array.memory(), Memory::OptimizedAllocation);
     }
 }
