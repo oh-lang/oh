@@ -75,6 +75,7 @@ pub trait SignedPrimitive:
     + Sized
     + Neg
     + Num
+    + std::fmt::Display
 {
     const MIN: Self;
     const MAX: Self;

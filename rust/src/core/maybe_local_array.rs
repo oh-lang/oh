@@ -114,6 +114,11 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
     pub fn count(&self) -> CountMax {
         match self.memory() {
             Memory::UnallocatedBuffer => {
+                eprintln!(
+                    "special count {} -> negated {}",
+                    self.special_count,
+                    -(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT)
+                );
                 Count::<S>::negating(-(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT))
                     .to_max()
             }
@@ -216,6 +221,65 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
             cold();
             Memory::MaxArray
         }
+    }
+
+    /// Looking for `fn add`?  use `append`:
+    pub fn append(&mut self, value: T) -> Containered {
+        let previous_capacity = self.capacity();
+        let previous_count = self.count();
+        let new_count = previous_count + 1;
+        if new_count.is_null() {
+            // Probably shouldn't happen with i64 as the backing integer,
+            // but might be possible if we allow 32bit architectures.
+            eprintln!(
+                "oh no new count was null: {} -> {}, from special {}",
+                previous_count.0, new_count.0, self.special_count
+            );
+            return ContainerError::OutOfMemory.err();
+        }
+        if new_count > previous_capacity {
+            self.grow_from(previous_capacity)?;
+        }
+        let offset = new_count.to_highest_offset();
+        match self.memory() {
+            Memory::UnallocatedBuffer => {
+                let ptr = unsafe {
+                    std::ptr::addr_of_mut!(
+                        self.maybe_allocated.unallocated_buffer[offset.to_inner() as usize]
+                    )
+                };
+                // Destructively write here, don't drop existing value, it wasn't initialized properly anyway.
+                unsafe { std::ptr::write(ptr, ManuallyDrop::new(value)) };
+            }
+            Memory::OptimizedAllocation => {
+                let ptr =
+                    unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.optimized_allocation) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.write_initializing(Offset::of(S::from(offset.to_inner()).expect("OK")), value)
+                    .expect("should have the correct capacity");
+            }
+            Memory::MaxArray => {
+                let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.allocation
+                    .write_initializing(offset, value)
+                    .expect("should have the correct capacity");
+            }
+        }
+        self.only_set_count(new_count);
+        return Ok(());
+    }
+
+    fn grow_from(&mut self, current_capacity: CountMax) -> Containered {
+        let desired_capacity = current_capacity.double_or_at_least((N_LOCAL * 2).min(1) as i64);
+        if desired_capacity <= current_capacity {
+            return ContainerError::OutOfMemory.err();
+        }
+        self.set_capacity(desired_capacity)
+    }
+
+    fn grow(&mut self) -> Containered {
+        self.grow_from(self.capacity())
     }
 
     /// Some of the elements in the slice might NOT be initialized.  You've been warned.
@@ -321,5 +385,28 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> std::ops::DerefMut
     fn deref_mut(&mut self) -> &mut [T] {
         let count = self.count().to_usize();
         &mut self.fully_allocated_slice_mut()[0..count]
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn append_and_remove_unallocated_array() {
+        let mut array = MaybeLocalArrayOptimized64::<16, u8>::default();
+        array
+            .set_capacity(Count::of(3).expect("ok"))
+            .expect("small alloc");
+        assert_eq!(array.capacity(), Count::of(16).expect("ok"));
+        array.append(1).expect("already allocked");
+        array.append(2).expect("already allocked");
+        array.append(3).expect("already allocked");
+        assert_eq!(array.count(), Count::of(3).expect("ok"));
+        assert_eq!(array.remove(Remove::Last), Some(3));
+        assert_eq!(array.remove(Remove::Last), Some(2));
+        assert_eq!(array.remove(Remove::Last), Some(1));
+        assert_eq!(array.count(), Count::of(0).expect("ok"));
+        assert_eq!(array.capacity(), Count::of(3).expect("ok"));
     }
 }

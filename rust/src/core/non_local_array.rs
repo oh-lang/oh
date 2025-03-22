@@ -45,15 +45,19 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
     }
 
     /// Looking for `fn add`?  use `append`:
+    // TODO: add test for getting to end of S::MAX
     pub fn append(&mut self, value: T) -> Containered {
-        if self.capacity() == self.count {
+        let new_count = self.count + S::ONE;
+        if new_count.is_null() {
+            return ContainerError::OutOfMemory.err();
+        }
+        if new_count > self.capacity() {
             self.grow()?;
         }
-        self.count += S::ONE;
-        debug_assert!(self.count.is_not_null());
         self.allocation
-            .write_initializing(self.count.to_highest_offset(), value)
+            .write_initializing(new_count.to_highest_offset(), value)
             .expect("should be in bounds");
+        self.count = new_count;
         return Ok(());
     }
 
@@ -116,7 +120,7 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
         self.allocation.set_capacity(new_capacity)
     }
 
-    pub fn grow(&mut self) -> Containered {
+    fn grow(&mut self) -> Containered {
         self.allocation.grow()
     }
 }
@@ -270,8 +274,16 @@ mod test {
         array
             .set_capacity(Count::of(10).expect("ok"))
             .expect("small alloc");
-        // TODO
+        array
+            .set_count(Count::of(5).expect("ok"))
+            .expect("already allocked");
         assert_eq!(array.capacity(), Count::of(10).expect("ok"));
+        assert_eq!(array.count(), Count::of(5).expect("ok"));
+
+        array.clear(Clear::KeepingCapacity);
+
+        assert_eq!(array.capacity(), Count::of(10).expect("ok"));
+        assert_eq!(array.count(), Count::of(0).expect("ok"));
     }
 
     #[test]

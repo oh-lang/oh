@@ -83,7 +83,7 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
     /// I.e., it is uninitialized before calling this.
     pub fn write_initializing(&mut self, offset: Offset<S>, value: T) -> Containered {
         let capacity = self.capacity;
-        if !capacity.contains(Contains::<S>::Offset(offset)) {
+        if !capacity.contains(Contains::Offset(offset)) {
             return ContainerError::InvalidAt.err();
         }
         unsafe {

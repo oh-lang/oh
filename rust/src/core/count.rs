@@ -22,7 +22,7 @@ pub type Contains16 = Contains<i16>;
 pub type Contains8 = Contains<i8>;
 
 #[derive(Eq, PartialEq, Copy, Clone, Hash)]
-pub struct Count<T: SignedPrimitive>(T);
+pub struct Count<T: SignedPrimitive>(pub(crate) T);
 
 impl<T> Count<T>
 where
