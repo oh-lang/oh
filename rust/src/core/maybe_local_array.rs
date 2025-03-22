@@ -195,7 +195,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
             debug_assert!(was_present);
             count -= 1;
         }
-        // TODO: switch to a `match (current_memory, required_memory) { (Unallocated, Optimized) => {...} ...}`
+        // TODO: maybe switch to a `match (current_memory, required_memory) { (Unallocated, Optimized) => {...} ...}`
         // which should make the transition more readable and less nested.
         if current_memory == required_memory {
             match current_memory {
@@ -251,7 +251,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
                     // Need to make a local allocation first to copy values into,
                     // then move the allocation into place; otherwise we'd obliterate
                     // values we need from max_array or unallocated_buffer.
-                    let mut new_allocation = AllocationCount::<S, T>::default();
+                    let mut new_allocation = Aligned(AllocationCount::<S, T>::default());
                     new_allocation.set_capacity(Count::negating(
                         S::from(new_capacity.as_negated()).expect("ok"),
                     ))?;
@@ -286,11 +286,8 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
                             );
                         }
                     }
-                    eprintln!(
-                        "getting new allocation with capacity {:?}",
-                        new_allocation.capacity()
-                    );
-                    self.maybe_allocated.optimized_allocation = ManuallyDrop::new(new_allocation);
+                    self.maybe_allocated.optimized_allocation =
+                        ManuallyDrop::new(new_allocation.unalign());
                     self.set_count_optimized_allocation(count);
                     Ok(())
                 }
@@ -339,7 +336,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         if for_count <= N_LOCAL {
             Memory::UnallocatedBuffer
         } else if Count::<S>::of(for_count).is_ok() {
-            Memory::UnallocatedBuffer
+            Memory::OptimizedAllocation
         } else {
             cold();
             Memory::MaxArray
@@ -514,11 +511,14 @@ mod test {
     #[test]
     fn append_and_remove_unallocated_array() {
         let mut array = MaybeLocalArrayOptimized64::<16, u8>::default();
+        assert_eq!(array.capacity(), Count::of(16).expect("ok"));
+        assert_eq!(array.memory(), Memory::UnallocatedBuffer);
         array
             .set_capacity(Count::of(3).expect("ok"))
             .expect("small alloc");
         assert_eq!(array.capacity(), Count::of(16).expect("ok"));
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
+        assert_eq!(array.count(), Count::of(0).expect("ok"));
         array.append(1).expect("already allocked");
         array.append(2).expect("already allocked");
         array.append(3).expect("already allocked");
@@ -534,11 +534,14 @@ mod test {
     #[test]
     fn append_and_remove_optimized_array() {
         let mut array = MaybeLocalArrayOptimized32::<8, u8>::default();
+        assert_eq!(array.capacity(), Count::of(8).expect("ok"));
+        assert_eq!(array.memory(), Memory::UnallocatedBuffer);
         array
             .set_capacity(Count::of(100).expect("ok"))
             .expect("small alloc");
         assert_eq!(array.capacity(), Count::of(100).expect("ok"));
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
+        assert_eq!(array.count(), Count::of(0).expect("ok"));
         for i in 0..100 {
             array.append(i as u8).expect("already allocked");
         }
