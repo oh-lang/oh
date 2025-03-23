@@ -1,3 +1,4 @@
+use crate::core::container::*;
 use crate::core::count::*;
 use crate::core::maybe_local_array::*;
 use crate::core::signed::*;
@@ -33,6 +34,21 @@ impl<S: SignedPrimitive, const N_LOCAL: usize> std::ops::DerefMut for ShtickOpti
     }
 }
 
+impl<S: SignedPrimitive, const N_LOCAL: usize> TryFrom<&str> for ShtickOptimized<S, N_LOCAL> {
+    type Error = ContainerError;
+
+    fn try_from(value: &str) -> ContainerResult<Self> {
+        let mut result = ShtickOptimized::default();
+        let count = Count::of(value.len()).map_err(|_| ContainerError::OutOfMemory)?;
+        result.set_capacity(count)?;
+        // In case `capacity > count`, e.g., for the `unallocated_buffer`,
+        // we need to limit the slice to the correct size.
+        result.fully_allocated_slice_mut()[0..value.len()].copy_from_slice(value.as_bytes());
+        result.only_set_count(count);
+        Ok(result)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -53,5 +69,17 @@ mod test {
         assert_eq!(shtick.count(), Count::of(2).expect("ok"));
         assert_eq!(shtick.capacity(), Count::of(15).expect("ok"));
         assert_eq!(&shtick[..], b"hi");
+        shtick[0] = b'o';
+        shtick[1] = b'h';
+        assert_eq!(&shtick[..], b"oh");
+    }
+
+    #[test]
+    fn shtick_optimized_8_can_initialize_from_string() {
+        let mut shtick = ShtickOptimized8::try_from("hello world").expect("ok");
+        assert_eq!(&shtick[..], b"hello world");
+
+        shtick = ShtickOptimized8::try_from("let's make something that is more bytes").expect("ok");
+        assert_eq!(&shtick[..], b"let's make something that is more bytes");
     }
 }
