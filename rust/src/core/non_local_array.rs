@@ -14,14 +14,14 @@ pub type NonLocalArrayCount32<T> = NonLocalArrayCount<i32, T>;
 pub type NonLocalArrayCount16<T> = NonLocalArrayCount<i16, T>;
 pub type NonLocalArrayCount8<T> = NonLocalArrayCount<i8, T>;
 
+// TODO: it would be nice to create NonLocalArrayOptimizedX structs which
+// switch to a max_array type if count is null.  Optimized64 would be an alias to Count64
+// because there's no reason to go to max_array with a 64-bit type.
 /// Array that can store only up to `Count::<S>::MAX` elements.
 /// If there are more than that, e.g., if S = i8 and count == 128,
 /// then more insertions will fail.  Changing `S` has marginal
 /// impact on this array size, and allows making indices more compact.
 /// It is "non-local" because it always stores elements on the heap.
-// TODO: we probably could relax the `align(8)` restriction but we
-// could only support offsets that get `ptr` (inside `allocation`)
-// aligned on a word boundary, e.g., `ptr, capacity, count` or `count, ptr, capacity`.
 #[repr(C, align(8))]
 pub struct NonLocalArrayCount<S: SignedPrimitive, T> {
     pub(crate) allocation: AllocationCount<S, T>,

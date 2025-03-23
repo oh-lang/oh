@@ -13,6 +13,9 @@ pub use count::*;
 pub mod index;
 pub use index::*;
 
+pub mod in_memory_file;
+pub use in_memory_file::*;
+
 pub mod likely;
 pub use likely::*;
 
@@ -30,6 +33,9 @@ pub use offset::*;
 
 pub mod signed;
 pub use signed::*;
+
+pub mod shtick;
+pub use shtick::*;
 
 pub mod symmetric;
 pub use symmetric::*;

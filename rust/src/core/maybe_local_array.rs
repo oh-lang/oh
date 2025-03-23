@@ -12,6 +12,9 @@ use crate::core::traits::*;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 
+// TODO: it would be nice to create MaybeLocalArrayCountX structs which
+// do not go to the max_array type.  Optimized64 would be an alias to Count64
+// because there's no reason to go to max_array with a 64-bit type.
 pub type MaybeLocalArrayOptimized64<const N_LOCAL: usize, T> =
     MaybeLocalArrayOptimized<i64, N_LOCAL, T>;
 pub type MaybeLocalArrayOptimized32<const N_LOCAL: usize, T> =
