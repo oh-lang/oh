@@ -40,5 +40,8 @@ pub use shtick::*;
 pub mod symmetric;
 pub use symmetric::*;
 
+pub mod testing;
+pub use testing::*;
+
 pub mod traits;
 pub use traits::*;

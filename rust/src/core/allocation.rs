@@ -4,6 +4,7 @@ use crate::core::likely::*;
 use crate::core::number::*;
 use crate::core::offset::*;
 use crate::core::signed::*;
+use crate::core::testing::*;
 
 use std::alloc;
 use std::ptr::{self, NonNull};

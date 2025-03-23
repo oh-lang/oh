@@ -41,7 +41,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize> TryFrom<&str> for ShtickOptimized
         let mut result = ShtickOptimized::default();
         let count = Count::of(value.len()).map_err(|_| ContainerError::OutOfMemory)?;
         result.set_capacity(count)?;
-        // In case `capacity > count`, e.g., for the `unallocated_buffer`,
+        // In case `result.capacity() > count`, e.g., for the `unallocated_buffer`,
         // we need to limit the slice to the correct size.
         result.fully_allocated_slice_mut()[0..value.len()].copy_from_slice(value.as_bytes());
         result.only_set_count(count);
