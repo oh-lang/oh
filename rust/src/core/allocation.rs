@@ -7,7 +7,6 @@ use crate::core::signed::*;
 use crate::core::testing::*;
 
 use std::alloc;
-use std::ptr::{self, NonNull};
 
 pub type AllocationCount64<T> = AllocationCount<i64, T>;
 pub type AllocationCount32<T> = AllocationCount<i32, T>;
@@ -23,8 +22,17 @@ pub type AllocationCount8<T> = AllocationCount<i8, T>;
 /// in order to ensure that `ptr` is on an aligned boundary.
 #[repr(C, packed)]
 pub struct AllocationCount<S: SignedPrimitive, T> {
-    ptr: NonNull<T>,
+    ptr: *mut T,
     capacity: Count<S>,
+}
+
+impl<S: SignedPrimitive, T> Default for AllocationCount<S, T> {
+    fn default() -> Self {
+        Self {
+            ptr: std::ptr::null_mut(),
+            capacity: Count::<S>::default(),
+        }
+    }
 }
 
 // TODO: allow passing in an allocator, defaulting to Global.
@@ -40,15 +48,17 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
     /// iff the capacity change succeeds.
     pub fn set_capacity(&mut self, new_capacity: Count<S>) -> Containered {
         let old_capacity = self.capacity;
+        let old_ptr = self.as_ptr_mut() as *mut u8;
         if !new_capacity.is_positive() {
             if old_capacity > Count::<S>::default() {
                 unsafe {
                     alloc::dealloc(
-                        self.as_ptr_mut() as *mut u8,
+                        old_ptr,
                         Self::layout_of(old_capacity).expect("already allocked"),
                     );
                 }
-                self.ptr = NonNull::dangling();
+                testing_unname_pointer(old_ptr);
+                self.ptr = std::ptr::null_mut();
                 self.capacity = Count::<S>::default();
             }
             return Ok(());
@@ -59,7 +69,7 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
         let new_ptr = unsafe {
             if old_capacity.is_positive() {
                 alloc::realloc(
-                    self.as_ptr_mut() as *mut u8,
+                    old_ptr,
                     Self::layout_of(old_capacity).expect("already allocked"),
                     new_layout.size(),
                 )
@@ -67,16 +77,17 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
                 alloc::alloc(new_layout)
             }
         } as *mut T;
-        match NonNull::new(new_ptr) {
-            Some(new_ptr) => {
-                self.ptr = new_ptr;
-                self.capacity = new_capacity;
-                Ok(())
+        if new_ptr != std::ptr::null_mut() {
+            if old_ptr != std::ptr::null_mut() {
+                testing_unname_pointer(old_ptr);
             }
-            None => {
-                cold();
-                ContainerError::OutOfMemory.err()
-            }
+            testing_name_pointer(new_ptr);
+            self.ptr = new_ptr;
+            self.capacity = new_capacity;
+            Ok(())
+        } else {
+            cold();
+            ContainerError::OutOfMemory.err()
         }
     }
 
@@ -88,7 +99,7 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
             return ContainerError::InvalidAt.err();
         }
         unsafe {
-            ptr::write(self.as_ptr_mut().add(offset.0.as_() as usize), value);
+            std::ptr::write(self.as_ptr_mut().add(offset.0.as_() as usize), value);
         }
         Ok(())
     }
@@ -100,7 +111,7 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
         if !capacity.contains(Contains::<S>::Offset(offset)) {
             return Err(ContainerError::InvalidAt);
         }
-        Ok(unsafe { ptr::read(self.as_ptr_mut().add(offset.0.as_() as usize)) })
+        Ok(unsafe { std::ptr::read(self.as_ptr_mut().add(offset.0.as_() as usize)) })
     }
 
     pub fn grow(&mut self) -> Containered {
@@ -132,34 +143,12 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
         }
     }
 
-    fn as_non_null_ptr(&self) -> &NonNull<T> {
-        let ptr = std::ptr::addr_of!(self.ptr);
-        assert_eq!((ptr as usize) % 8, 0);
-        unsafe { &*ptr }
-    }
-
-    fn as_non_null_ptr_mut(&mut self) -> &mut NonNull<T> {
-        let ptr = std::ptr::addr_of_mut!(self.ptr);
-        assert_eq!((std::ptr::addr_of!(*self) as usize) % 8, 0);
-        assert_eq!((ptr as usize) % 8, 0);
-        unsafe { &mut *ptr }
-    }
-
     fn as_ptr(&self) -> *const T {
-        self.as_non_null_ptr().as_ptr()
+        self.ptr
     }
 
     fn as_ptr_mut(&mut self) -> *mut T {
-        self.as_non_null_ptr_mut().as_ptr()
-    }
-}
-
-impl<S: SignedPrimitive, T> Default for AllocationCount<S, T> {
-    fn default() -> Self {
-        Self {
-            ptr: NonNull::dangling(),
-            capacity: Count::<S>::default(),
-        }
+        self.ptr
     }
 }
 
@@ -282,4 +271,7 @@ mod test {
             Count32::negating(-1)
         );
     }
+
+    #[test]
+    fn handles_pointers_correctly() {}
 }
