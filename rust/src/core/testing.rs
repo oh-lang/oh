@@ -202,7 +202,7 @@ mod test {
         testing_unprint(vec![
             Vec::from(b"create(A)"),
             Vec::from(b"create(B)"),
-            Vec::from(b"delete(B)"),
+            Vec::from(b"delete(A)"),
             Vec::from(b"create(C)"),
         ]);
     }
