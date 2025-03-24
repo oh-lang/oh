@@ -81,7 +81,7 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
             if old_ptr != std::ptr::null_mut() {
                 testing_unname_pointer(old_ptr);
             }
-            testing_name_pointer(new_ptr);
+            testing_name_pointer(TestingPointer::Count(new_ptr, new_capacity));
             self.ptr = new_ptr;
             self.capacity = new_capacity;
             Ok(())
@@ -188,6 +188,18 @@ mod test {
     use std::ops::{Deref, DerefMut};
 
     #[test]
+    fn handles_pointers_correctly() {
+        let mut allocation = AllocationCount8::<u8>::default();
+        testing_unprint(vec![]); // no allocs in a default allocation.
+
+        allocation
+            .set_capacity(Count::of(100).expect("ok"))
+            .expect("ok");
+
+        testing_unprint(vec![Vec::from(b"create(A: 100)")]); // no allocs in a default allocation.
+    }
+
+    #[test]
     fn allocation_internal_offsets() {
         let allocation = AllocationCount8::<u8>::default();
         let allocation_ptr = std::ptr::addr_of!(allocation);
@@ -271,7 +283,4 @@ mod test {
             Count32::negating(-1)
         );
     }
-
-    #[test]
-    fn handles_pointers_correctly() {}
 }
