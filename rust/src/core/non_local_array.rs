@@ -237,6 +237,42 @@ mod test {
     use crate::core::testing::*;
 
     #[test]
+    fn drop_frees_allocation() {
+        {
+            let mut array = NonLocalArrayCount8::<TestingNoisy>::default();
+            array
+                .set_capacity(Count::of(7).expect("ok"))
+                .expect("small alloc");
+            testing_unprint(vec![Vec::from("create(A: 7)")]);
+            for i in 1..=7 {
+                array
+                    .append(TestingNoisy::new(i as i32))
+                    .expect("already allocked");
+            }
+            assert_eq!(array.count(), Count::of(7).expect("ok"));
+            testing_unprint(vec![
+                Vec::from("noisy_new(1)"),
+                Vec::from("noisy_new(2)"),
+                Vec::from("noisy_new(3)"),
+                Vec::from("noisy_new(4)"),
+                Vec::from("noisy_new(5)"),
+                Vec::from("noisy_new(6)"),
+                Vec::from("noisy_new(7)"),
+            ]);
+        }
+        testing_unprint(vec![
+            Vec::from("noisy_drop(7)"),
+            Vec::from("noisy_drop(6)"),
+            Vec::from("noisy_drop(5)"),
+            Vec::from("noisy_drop(4)"),
+            Vec::from("noisy_drop(3)"),
+            Vec::from("noisy_drop(2)"),
+            Vec::from("noisy_drop(1)"),
+            Vec::from("delete(A)"),
+        ]);
+    }
+
+    #[test]
     fn append_and_remove() {
         let mut array = NonLocalArrayCount64::<u32>::default();
         array
@@ -303,20 +339,36 @@ mod test {
 
     #[test]
     fn clone_adds_all_values() {
-        let mut array = NonLocalArrayCount32::<i32>::default();
-        array.append(1).expect("ok");
-        array.append(100).expect("ok");
-        array.append(40).expect("ok");
-        array.append(-771).expect("ok");
-        array.append(6).expect("ok");
+        let mut array = NonLocalArrayCount32::<TestingNoisy>::default();
+        array.append(TestingNoisy::new(1)).expect("ok");
+        array.append(TestingNoisy::new(100)).expect("ok");
+        array.append(TestingNoisy::new(40)).expect("ok");
+        array.append(TestingNoisy::new(-771)).expect("ok");
+        array.append(TestingNoisy::new(6)).expect("ok");
         assert_eq!(array.capacity(), Count::of(14).expect("ok"));
+        testing_unprint(vec![
+            Vec::from(b"noisy_new(1)"),
+            Vec::from(b"create(A: 14)"),
+            Vec::from(b"noisy_new(100)"),
+            Vec::from(b"noisy_new(40)"),
+            Vec::from(b"noisy_new(-771)"),
+            Vec::from(b"noisy_new(6)"),
+        ]);
 
         let clone = array.try_clone().expect("ok");
         assert_eq!(clone.count(), Count::of(5).expect("ok"));
         assert_eq!(clone.capacity(), Count::of(5).expect("ok"));
         assert_eq!(array, clone);
-        assert_eq!(clone[1], 100);
-        assert_eq!(clone[2], 40);
-        assert_eq!(clone[3], -771);
+        assert_eq!(clone[1].value(), 100);
+        assert_eq!(clone[2].value(), 40);
+        assert_eq!(clone[3].value(), -771);
+        testing_unprint(vec![
+            Vec::from(b"create(B: 5)"),
+            Vec::from(b"noisy_clone(1)"),
+            Vec::from(b"noisy_clone(100)"),
+            Vec::from(b"noisy_clone(40)"),
+            Vec::from(b"noisy_clone(-771)"),
+            Vec::from(b"noisy_clone(6)"),
+        ]);
     }
 }

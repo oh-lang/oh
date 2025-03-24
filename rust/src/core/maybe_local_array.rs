@@ -543,9 +543,70 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> std::ops::DerefMut
     }
 }
 
+// TODO: we should have a better ArrayEquality trait.
+impl<S: SignedPrimitive, const N_LOCAL: usize, T: std::cmp::PartialEq> PartialEq<Self>
+    for MaybeLocalArrayOptimized<S, N_LOCAL, T>
+{
+    fn eq(&self, other: &Self) -> bool {
+        let count = self.count();
+        if count != other.count() {
+            return false;
+        }
+        for i in 0..count.to_usize() {
+            let i = i as usize;
+            if self[i] != other[i] {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
+// TODO: we should add a non-debug Array formatter which just uses [] and not the type.
+impl<S: SignedPrimitive, const N_LOCAL: usize, T: std::fmt::Debug> std::fmt::Debug
+    for MaybeLocalArrayOptimized<S, N_LOCAL, T>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "MaybeLocalArrayOptimized{}::<{}, _>::from([",
+            S::BITS,
+            N_LOCAL
+        )?;
+        for i in 0..self.count().to_usize() {
+            write!(f, "{:?}, ", self[i])?;
+        }
+        write!(f, "])")
+    }
+}
+
+impl<S: SignedPrimitive, const N_LOCAL: usize, T: std::cmp::Eq> Eq
+    for MaybeLocalArrayOptimized<S, N_LOCAL, T>
+{
+}
+
+impl<S: SignedPrimitive, const N_LOCAL: usize, T: TryClone> TryClone
+    for MaybeLocalArrayOptimized<S, N_LOCAL, T>
+{
+    type Error = ContainerError;
+
+    fn try_clone(&self) -> Result<Self, ContainerError> {
+        let mut result = Self::default();
+        // Only need to clone up to `count`, not the full `capacity`.
+        let count = self.count();
+        result.set_capacity(count)?;
+        for i in 0..count.to_usize() {
+            let clone = self[i].try_clone().map_err(|_| ContainerError::Unknown)?;
+            result.append(clone).expect("already at necessary capacity");
+        }
+        Ok(result)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::core::testing::*;
 
     #[test]
     fn append_and_remove_unallocated_buffer() {
@@ -927,5 +988,40 @@ mod test {
         for i in 0..11 {
             assert_eq!(array[i], 49 - i as u8);
         }
+    }
+
+    #[test]
+    fn clone_adds_all_values() {
+        let mut array = MaybeLocalArrayOptimized32::<4, TestingNoisy>::default();
+        array.set_capacity(Count::of(5).expect("ok"));
+        array.append(TestingNoisy::new(1)).expect("ok");
+        array.append(TestingNoisy::new(100)).expect("ok");
+        array.append(TestingNoisy::new(40)).expect("ok");
+        array.append(TestingNoisy::new(-771)).expect("ok");
+        array.append(TestingNoisy::new(6)).expect("ok");
+        testing_unprint(vec![
+            Vec::from(b"create(A: 5)"),
+            Vec::from(b"noisy_new(1)"),
+            Vec::from(b"noisy_new(100)"),
+            Vec::from(b"noisy_new(40)"),
+            Vec::from(b"noisy_new(-771)"),
+            Vec::from(b"noisy_new(6)"),
+        ]);
+
+        let clone = array.try_clone().expect("ok");
+        assert_eq!(clone.count(), Count::of(5).expect("ok"));
+        assert_eq!(clone.capacity(), Count::of(5).expect("ok"));
+        assert_eq!(array, clone);
+        assert_eq!(clone[1].value(), 100);
+        assert_eq!(clone[2].value(), 40);
+        assert_eq!(clone[3].value(), -771);
+        testing_unprint(vec![
+            Vec::from(b"create(B: 5)"),
+            Vec::from(b"noisy_clone(1)"),
+            Vec::from(b"noisy_clone(100)"),
+            Vec::from(b"noisy_clone(40)"),
+            Vec::from(b"noisy_clone(-771)"),
+            Vec::from(b"noisy_clone(6)"),
+        ]);
     }
 }

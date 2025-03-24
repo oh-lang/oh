@@ -5,6 +5,7 @@ use crate::core::signed::*;
 use std::cell::RefCell;
 use std::collections::hash_map::HashMap;
 
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct TestingNoisy {
     value: i32,
 }
@@ -14,6 +15,18 @@ impl TestingNoisy {
         let string = format!("noisy_new({})", value);
         testing_print(<String as AsRef<[u8]>>::as_ref(&string));
         Self { value }
+    }
+
+    pub fn value(&self) -> i32 {
+        self.value
+    }
+}
+
+impl Clone for TestingNoisy {
+    fn clone(&self) -> Self {
+        let string = format!("noisy_clone({})", self.value);
+        testing_print(<String as AsRef<[u8]>>::as_ref(&string));
+        Self { value: self.value }
     }
 }
 
@@ -232,7 +245,7 @@ mod test {
     #[test]
     fn noisy_makes_noise() {
         {
-            let a = TestingNoisy::new(123);
+            let _a = TestingNoisy::new(123);
         }
         testing_unprint(vec![
             Vec::from(b"noisy_new(123)"),
