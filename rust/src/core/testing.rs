@@ -17,6 +17,12 @@ impl TestingNoisy {
     }
 }
 
+impl Default for TestingNoisy {
+    fn default() -> Self {
+        Self::new(256)
+    }
+}
+
 impl std::ops::Drop for TestingNoisy {
     fn drop(&mut self) {
         let string = format!("noisy_drop({})", self.value);

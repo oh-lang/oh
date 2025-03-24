@@ -234,6 +234,7 @@ pub enum Sort {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::core::testing::*;
 
     #[test]
     fn append_and_remove() {
@@ -269,21 +270,35 @@ mod test {
 
     #[test]
     fn clear_keep_capacity() {
-        // TODO: switch to noisy
-        let mut array = NonLocalArrayCount8::<u8>::default();
+        let mut array = NonLocalArrayCount8::<TestingNoisy>::default();
         array
             .set_capacity(Count::of(10).expect("ok"))
             .expect("small alloc");
+        testing_unprint(vec![Vec::from("create(A: 10)")]);
         array
             .set_count(Count::of(5).expect("ok"))
             .expect("already allocked");
         assert_eq!(array.capacity(), Count::of(10).expect("ok"));
         assert_eq!(array.count(), Count::of(5).expect("ok"));
+        testing_unprint(vec![
+            Vec::from("noisy_new(256)"),
+            Vec::from("noisy_new(256)"),
+            Vec::from("noisy_new(256)"),
+            Vec::from("noisy_new(256)"),
+            Vec::from("noisy_new(256)"),
+        ]);
 
         array.clear(Clear::KeepingCapacity);
 
         assert_eq!(array.capacity(), Count::of(10).expect("ok"));
         assert_eq!(array.count(), Count::of(0).expect("ok"));
+        testing_unprint(vec![
+            Vec::from("noisy_drop(256)"),
+            Vec::from("noisy_drop(256)"),
+            Vec::from("noisy_drop(256)"),
+            Vec::from("noisy_drop(256)"),
+            Vec::from("noisy_drop(256)"),
+        ]);
     }
 
     #[test]
