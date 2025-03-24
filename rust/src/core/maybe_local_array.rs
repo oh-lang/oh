@@ -9,6 +9,8 @@ use crate::core::offset::*;
 use crate::core::signed::*;
 use crate::core::traits::*;
 
+pub use crate::core::traits::{GetCount, SetCount};
+
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 
@@ -95,6 +97,51 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> Drop for MaybeLocalArrayOptimi
     }
 }
 
+impl<S: SignedPrimitive, const N_LOCAL: usize, T> GetCount<i64>
+    for MaybeLocalArrayOptimized<S, N_LOCAL, T>
+{
+    fn count(&self) -> CountMax {
+        match self.memory() {
+            Memory::UnallocatedBuffer => {
+                Count::<S>::negating(-(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT))
+                    .to_max()
+            }
+            Memory::OptimizedAllocation => Count::<S>::negating(self.special_count).to_max(),
+            Memory::MaxArray => {
+                // This is needed because the union is packed, but Rust isn't
+                // smart enough to know that `self` is aligned and therefore the union is.
+                let ptr = unsafe { std::ptr::addr_of!(self.maybe_allocated.max_array) };
+                let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
+                ptr.count()
+            }
+        }
+    }
+}
+
+impl<S: SignedPrimitive, const N_LOCAL: usize, T: std::default::Default> SetCount<i64>
+    for MaybeLocalArrayOptimized<S, N_LOCAL, T>
+{
+    type Error = ContainerError;
+
+    fn set_count(&mut self, new_count: Count<i64>) -> Containered {
+        let old_count = self.count();
+        if new_count < old_count {
+            for _ in 0..(old_count - new_count).to_usize() {
+                _ = self.remove(Remove::Last);
+            }
+        } else if new_count > old_count {
+            if new_count > self.capacity() {
+                self.set_capacity(new_count)?;
+            }
+            for _ in 0..(new_count - old_count).to_usize() {
+                self.append(Default::default())
+                    .expect("already allocated enough above");
+            }
+        }
+        return Ok(());
+    }
+}
+
 impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_LOCAL, T> {
     const UNALLOCATED_ZERO_SPECIAL_COUNT: S = S::ONE;
 
@@ -112,23 +159,6 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         } else {
             cold();
             Memory::MaxArray
-        }
-    }
-
-    pub fn count(&self) -> CountMax {
-        match self.memory() {
-            Memory::UnallocatedBuffer => {
-                Count::<S>::negating(-(self.special_count - Self::UNALLOCATED_ZERO_SPECIAL_COUNT))
-                    .to_max()
-            }
-            Memory::OptimizedAllocation => Count::<S>::negating(self.special_count).to_max(),
-            Memory::MaxArray => {
-                // This is needed because the union is packed, but Rust isn't
-                // smart enough to know that `self` is aligned and therefore the union is.
-                let ptr = unsafe { std::ptr::addr_of!(self.maybe_allocated.max_array) };
-                let ptr = unsafe { &*ptr }; // Creating a reference (OK because we're aligned)
-                ptr.count()
-            }
         }
     }
 
@@ -1022,6 +1052,80 @@ mod test {
             Vec::from(b"noisy_clone(40)"),
             Vec::from(b"noisy_clone(-771)"),
             Vec::from(b"noisy_clone(6)"),
+        ]);
+    }
+
+    #[test]
+    fn set_count_works_for_same_count() {
+        let mut array = MaybeLocalArrayOptimized32::<4, TestingNoisy>::default();
+        array.set_count(Count::of(4).expect("ok")).expect("ok");
+        assert_eq!(array.count(), Count::of(4).expect("ok"));
+
+        testing_unprint(vec![
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+        ]);
+
+        array.set_count(Count::of(4).expect("ok")).expect("ok");
+        assert_eq!(array.count(), Count::of(4).expect("ok"));
+        testing_unprint(vec![]);
+
+        array.append(TestingNoisy::new(77)).expect("ok");
+        testing_unprint(vec![
+            Vec::from(b"noisy_new(77)"),
+            Vec::from(b"create(A: 8)"),
+        ]);
+        assert_eq!(array.capacity(), Count::of(8).expect("ok"));
+
+        array.set_count(Count::of(5).expect("ok")).expect("ok");
+        assert_eq!(array.count(), Count::of(5).expect("ok"));
+        assert_eq!(array.capacity(), Count::of(8).expect("ok")); // doesn't change this.
+        testing_unprint(vec![]);
+    }
+
+    #[test]
+    fn set_count_works_to_expand_count() {
+        let mut array = MaybeLocalArrayOptimized32::<4, TestingNoisy>::default();
+        array.set_count(Count::of(10).expect("ok")).expect("ok");
+        assert_eq!(array.count(), Count::of(10).expect("ok"));
+        assert_eq!(array.capacity(), Count::of(10).expect("ok"));
+
+        testing_unprint(vec![
+            Vec::from(b"create(A: 10)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+            Vec::from(b"noisy_new(256)"),
+        ]);
+    }
+
+    #[test]
+    fn set_count_works_to_truncate_count() {
+        let mut array = MaybeLocalArrayOptimized32::<4, TestingNoisy>::default();
+        array.set_capacity(Count::of(10).expect("ok")).expect("ok");
+        for i in 1..=10 {
+            array.append(TestingNoisy::new(i as i32));
+        }
+        assert_eq!(array.count(), Count::of(10).expect("ok"));
+        _ = testing_prints(); // ignore noise before truncation
+
+        array.set_count(Count::of(5).expect("ok")).expect("ok");
+        assert_eq!(array.capacity(), Count::of(10).expect("ok")); // doesn't change this.
+
+        testing_unprint(vec![
+            Vec::from(b"noisy_drop(10)"),
+            Vec::from(b"noisy_drop(9)"),
+            Vec::from(b"noisy_drop(8)"),
+            Vec::from(b"noisy_drop(7)"),
+            Vec::from(b"noisy_drop(6)"),
         ]);
     }
 }

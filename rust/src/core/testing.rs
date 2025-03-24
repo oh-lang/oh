@@ -78,13 +78,17 @@ pub fn testing_print(bytes: &[u8]) {
 pub fn testing_print(_bytes: &[u8]) {}
 
 #[cfg(test)]
-#[inline]
-pub fn testing_unprint(mut expected_values: Vec<Vec<u8>>) {
-    let mut actual_values = TESTING_DATA.with_borrow_mut(|t| {
+pub fn testing_prints() -> Vec<Vec<u8>> {
+    TESTING_DATA.with_borrow_mut(|t| {
         let mut result = vec![];
         std::mem::swap(&mut result, &mut t.prints);
         result
-    });
+    })
+}
+
+#[cfg(test)]
+pub fn testing_unprint(mut expected_values: Vec<Vec<u8>>) {
+    let mut actual_values = testing_prints();
     let same_len = actual_values.len() == expected_values.len();
     let mut first_bad_i: i64 = -1;
     for i in 0..actual_values.len().min(expected_values.len()) {

@@ -4,6 +4,8 @@ use crate::core::count::*;
 use crate::core::signed::*;
 use crate::core::traits::*;
 
+pub use crate::core::traits::{GetCount, SetCount};
+
 /// The largest array that this platform can support,
 /// in terms of max memory it can hold.
 // TODO: on a 32 bit platform, go to NonLocalArrayCount32 instead.
@@ -39,11 +41,6 @@ impl<S: SignedPrimitive, T> Default for NonLocalArrayCount<S, T> {
 
 // TODO: implement #[derive(Debug, Hash)]
 impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
-    // TODO: this should be a Countable Trait
-    pub fn count(&self) -> Count<S> {
-        self.count
-    }
-
     /// Looking for `fn add`?  use `append`:
     // TODO: add test for getting to end of S::MAX
     pub fn append(&mut self, value: T) -> Containered {
@@ -125,9 +122,16 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
     }
 }
 
-impl<S: SignedPrimitive, T: std::default::Default> NonLocalArrayCount<S, T> {
-    // TODO: this should be a Countable Trait for default-constructable T
-    pub fn set_count(&mut self, new_count: Count<S>) -> Containered {
+impl<S: SignedPrimitive, T> GetCount<S> for NonLocalArrayCount<S, T> {
+    fn count(&self) -> Count<S> {
+        self.count
+    }
+}
+
+impl<S: SignedPrimitive, T: std::default::Default> SetCount<S> for NonLocalArrayCount<S, T> {
+    type Error = ContainerError;
+
+    fn set_count(&mut self, new_count: Count<S>) -> Containered {
         if new_count < self.count {
             while self.count > new_count {
                 _ = self.remove(Remove::Last);
