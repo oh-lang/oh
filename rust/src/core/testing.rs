@@ -38,7 +38,7 @@ impl Testing {
     }
 
     #[inline]
-    pub fn name_pointer<T>(&mut self, pointer: *mut T) {
+    pub fn name_pointer<T>(&mut self, pointer: *const T) {
         let pointer = pointer as usize;
         if self.pointer_names.contains_key(&pointer) {
             panic!("already created a name for pointer {}", pointer);
@@ -49,7 +49,7 @@ impl Testing {
     }
 
     #[inline]
-    pub fn unname_pointer<T>(&mut self, pointer: *mut T) {
+    pub fn unname_pointer<T>(&mut self, pointer: *const T) {
         let pointer = pointer as usize;
         let removed = self.pointer_names.remove(&pointer);
         if removed.is_none() {
@@ -61,13 +61,13 @@ impl Testing {
     }
 
     #[inline]
-    pub fn pointer_name<T>(&self, pointer: *mut T) -> Vec<u8> {
+    pub fn pointer_name<T>(&self, pointer: *const T) -> Vec<u8> {
         let pointer = pointer as usize;
         if let Some(name_index) = self.pointer_names.get(&pointer) {
             let name_index = *name_index as u64;
             let abc_index = (name_index % 26) as u8;
             let abc_count = name_index / 26;
-            return vec![b'A' + abc_index; abc_count as usize];
+            return vec![b'A' + abc_index; 1 + abc_count as usize];
         } else {
             panic!(
                 "pointer {} does not have a name yet, call `name_pointer` first",
@@ -88,13 +88,13 @@ impl Testing {
     }
 
     #[inline]
-    pub fn name_pointer<T>(&mut self, _pointer: *mut T) {}
+    pub fn name_pointer<T>(&mut self, _pointer: *const T) {}
 
     #[inline]
-    pub fn unname_pointer<T>(&mut self, _pointer: *mut T) {}
+    pub fn unname_pointer<T>(&mut self, _pointer: *const T) {}
 
     #[inline]
-    pub fn pointer_name<T>(&self, _pointer: *mut T) -> Vec<u8> {
+    pub fn pointer_name<T>(&self, _pointer: *const T) -> Vec<u8> {
         panic!("test only");
     }
 }
@@ -136,5 +136,40 @@ mod test {
             ]
         );
         assert_eq!(TESTING.with_borrow_mut(|t| t.unprint()).len(), 0);
+    }
+
+    #[test]
+    fn naming_pointers_works() {
+        let x: u8 = 13;
+        let y: u16 = 15;
+        let z: u32 = 17;
+        TESTING.with_borrow_mut(|t| {
+            t.name_pointer(&x);
+            assert_eq!(t.pointer_name(&x), Vec::from(b"A"));
+            t.name_pointer(&y);
+            assert_eq!(t.pointer_name(&y), Vec::from(b"B"));
+            // Don't re-use pointer names after unnaming:
+            t.unname_pointer(&x);
+            t.name_pointer(&z);
+            assert_eq!(t.pointer_name(&z), Vec::from(b"C"));
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn getting_pointer_names_fails_without_first_naming() {
+        let x: u8 = 13;
+        TESTING.with_borrow_mut(|t| {
+            t.pointer_name(&x);
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn unname_pointer_fails_without_first_naming() {
+        let x: u8 = 13;
+        TESTING.with_borrow_mut(|t| {
+            t.unname_pointer(&x);
+        });
     }
 }
