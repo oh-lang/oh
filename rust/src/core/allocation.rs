@@ -79,6 +79,10 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
         } as *mut T;
         if new_ptr != std::ptr::null_mut() {
             if old_ptr != std::ptr::null_mut() {
+                // We unname first in case the allocator re-uses the same location
+                // (in which case re-naming it would panic), even though conceptually
+                // we create the new pointer and copy over the data to the new pointer
+                // before deleting the old pointer.
                 testing_unname_pointer(old_ptr);
             }
             testing_name_pointer(TestingPointer::Count(new_ptr, new_capacity));
@@ -195,8 +199,15 @@ mod test {
         allocation
             .set_capacity(Count::of(100).expect("ok"))
             .expect("ok");
+        testing_unprint(vec![Vec::from(b"create(A: 100)")]);
 
-        testing_unprint(vec![Vec::from(b"create(A: 100)")]); // no allocs in a default allocation.
+        allocation
+            .set_capacity(Count::of(50).expect("ok"))
+            .expect("ok");
+        testing_unprint(vec![Vec::from(b"delete(A)"), Vec::from(b"create(B: 50)")]);
+
+        allocation.set_capacity(Count::default()).expect("ok");
+        testing_unprint(vec![Vec::from(b"delete(B)")]);
     }
 
     #[test]

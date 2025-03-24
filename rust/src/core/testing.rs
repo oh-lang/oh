@@ -82,6 +82,13 @@ pub fn testing_unprint(mut expected_values: Vec<Vec<u8>>) {
         if first_bad_i >= 0 {
             eprintln!("first different at index {}", first_bad_i);
         }
+        if !same_len {
+            eprintln!(
+                "left (actual) had count {} and right (expected) had count {}",
+                actual_values.len(),
+                expected_values.len()
+            );
+        }
         panic!("left (actual) was not equal to right (expected)");
     }
 }
