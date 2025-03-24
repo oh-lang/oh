@@ -5,6 +5,26 @@ use crate::core::signed::*;
 use std::cell::RefCell;
 use std::collections::hash_map::HashMap;
 
+pub struct TestingNoisy {
+    value: i32,
+}
+
+impl TestingNoisy {
+    pub fn new(value: i32) -> Self {
+        let string = format!("noisy_new({})", value);
+        testing_print(<String as AsRef<[u8]>>::as_ref(&string));
+        Self { value }
+    }
+}
+
+impl std::ops::Drop for TestingNoisy {
+    fn drop(&mut self) {
+        let string = format!("noisy_drop({})", self.value);
+        testing_print(<String as AsRef<[u8]>>::as_ref(&string));
+        self.value *= -1;
+    }
+}
+
 thread_local! {
     /// use `TESTING_DATA.with_borrow_mut(|t| t.print(b"whatever"))` to add debug things to test in unit tests, etc.
     static TESTING_DATA: RefCell<TestingData> = RefCell::new(TestingData::default());
@@ -202,6 +222,17 @@ fn u64_name(name_index: u64) -> Vec<u8> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn noisy_makes_noise() {
+        {
+            let a = TestingNoisy::new(123);
+        }
+        testing_unprint(vec![
+            Vec::from(b"noisy_new(123)"),
+            Vec::from(b"noisy_drop(123)"),
+        ]);
+    }
 
     #[test]
     fn printing_works_thread_a() {
