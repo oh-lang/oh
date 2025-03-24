@@ -57,7 +57,7 @@ pub fn testing_unprint(mut expected_values: Vec<Vec<u8>>) {
     if !same_len || first_bad_i >= 0 {
         eprintln!("left (actual) was not equal to right (expected)");
         for i in 0..actual_values.len().max(expected_values.len()) {
-            eprint!("{:02}: ", i);
+            eprint!("{:02} ", i);
             let left = if i < actual_values.len() {
                 moot(&mut actual_values[i])
             } else {
@@ -69,14 +69,14 @@ pub fn testing_unprint(mut expected_values: Vec<Vec<u8>>) {
                 Vec::from(b"{missing}")
             };
             if let Ok(left) = std::str::from_utf8(&left) {
-                eprint!("[a] {}    <-> ", left);
+                eprint!("[actual]: {}    <->", left);
             } else {
-                eprint!("[a] {:?}    <-> ", left);
+                eprint!("[actual]: {:?}    <->", left);
             }
             if let Ok(right) = std::str::from_utf8(&right) {
-                eprintln!("[e] {}", right);
+                eprintln!("    [expected]: {}", right);
             } else {
-                eprintln!("[e] {:?}", right);
+                eprintln!("    [expected]: {:?}", right);
             }
         }
         if first_bad_i >= 0 {
