@@ -42,9 +42,16 @@ impl<S: SignedPrimitive, T> Default for NonLocalArrayCount<S, T> {
 
 // TODO: implement #[derive(Debug, Hash)]
 impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
-    /// Looking for `fn add`?  use `append`:
+    /// Looking for `fn add(t)` or `fn append(t)`?  use `insert(OrderedInsert::AtEnd(t))`
     // TODO: add test for getting to end of S::MAX
-    pub fn append(&mut self, value: T) -> Containered {
+    pub fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
+        match insert {
+            OrderedInsert::AtEnd(t) => self.insert_at_end(t),
+            OrderedInsert::SliceAtEnd(_) => todo!(),
+        }
+    }
+
+    fn insert_at_end(&mut self, t: T) -> Containered {
         let new_count = self.count + S::ONE;
         if new_count.is_null() {
             return ContainerError::OutOfMemory.err();
@@ -53,7 +60,7 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
             self.grow()?;
         }
         self.allocation
-            .write_initializing(new_count.to_highest_offset(), value)
+            .write_initializing(new_count.to_highest_offset(), t)
             .expect("should be in bounds");
         self.count = new_count;
         return Ok(());
@@ -142,7 +149,7 @@ impl<S: SignedPrimitive, T: std::default::Default> SetCount<S> for NonLocalArray
                 self.set_capacity(new_count)?;
             }
             while self.count < new_count {
-                self.append(Default::default())
+                self.insert_at_end(Default::default())
                     .expect("already allocated enough above");
             }
         }
@@ -190,7 +197,9 @@ impl<S: SignedPrimitive, T: TryClone> TryClone for NonLocalArrayCount<S, T> {
         result.set_capacity(self.count())?;
         for i in 0..self.count.to_usize() {
             let clone = self[i].try_clone().map_err(|_| ContainerError::Unknown)?;
-            result.append(clone).expect("already at necessary capacity");
+            result
+                .insert_at_end(clone)
+                .expect("already at necessary capacity");
         }
         Ok(result)
     }
@@ -227,7 +236,7 @@ mod test {
             testing_unprint(vec![Vec::from("create(A: 7)")]);
             for i in 1..=7 {
                 array
-                    .append(TestingNoisy::new(i as i32))
+                    .insert(OrderedInsert::AtEnd(TestingNoisy::new(i as i32)))
                     .expect("already allocked");
             }
             assert_eq!(array.count(), Count::of(7).expect("ok"));
@@ -259,9 +268,15 @@ mod test {
         array
             .set_capacity(Count::of(3).expect("ok"))
             .expect("small alloc");
-        array.append(1).expect("already allocked");
-        array.append(2).expect("already allocked");
-        array.append(3).expect("already allocked");
+        array
+            .insert(OrderedInsert::AtEnd(1))
+            .expect("already allocked");
+        array
+            .insert(OrderedInsert::AtEnd(2))
+            .expect("already allocked");
+        array
+            .insert(OrderedInsert::AtEnd(3))
+            .expect("already allocked");
         assert_eq!(array.count(), Count::of(3).expect("ok"));
         assert_eq!(array.remove(Remove::Last), Some(3));
         assert_eq!(array.remove(Remove::Last), Some(2));
@@ -321,11 +336,21 @@ mod test {
     #[test]
     fn clone_adds_all_values() {
         let mut array = NonLocalArrayCount32::<TestingNoisy>::default();
-        array.append(TestingNoisy::new(1)).expect("ok");
-        array.append(TestingNoisy::new(100)).expect("ok");
-        array.append(TestingNoisy::new(40)).expect("ok");
-        array.append(TestingNoisy::new(-771)).expect("ok");
-        array.append(TestingNoisy::new(6)).expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(1)))
+            .expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(100)))
+            .expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(40)))
+            .expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(-771)))
+            .expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(6)))
+            .expect("ok");
         assert_eq!(array.capacity(), Count::of(14).expect("ok"));
         testing_unprint(vec![
             Vec::from(b"noisy_new(1)"),
