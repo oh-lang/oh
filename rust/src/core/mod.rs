@@ -4,6 +4,9 @@ pub use aligned::*;
 pub mod allocation;
 pub use allocation::*;
 
+pub mod array;
+pub use array::*;
+
 pub mod container;
 pub use container::*;
 
@@ -13,8 +16,8 @@ pub use count::*;
 pub mod index;
 pub use index::*;
 
-pub mod in_memory_file;
-pub use in_memory_file::*;
+//pub mod in_memory_file;
+//pub use in_memory_file::*;
 
 pub mod likely;
 pub use likely::*;

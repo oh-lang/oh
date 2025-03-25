@@ -4,6 +4,7 @@ use crate::core::count::*;
 use crate::core::signed::*;
 use crate::core::traits::*;
 
+pub use crate::core::array::*;
 pub use crate::core::traits::{GetCount, SetCount};
 
 /// The largest array that this platform can support,
@@ -209,30 +210,6 @@ impl<S: SignedPrimitive, T> Drop for NonLocalArrayCount<S, T> {
     fn drop(&mut self) {
         self.clear(Clear::DroppingCapacity);
     }
-}
-
-// TODO: move these into an `array.rs` file which gives the traits.
-#[derive(Eq, PartialEq, Copy, Clone, Debug, Default, Hash)]
-pub enum Clear {
-    #[default]
-    KeepingCapacity,
-    DroppingCapacity,
-}
-
-// TODO: this should probably be `OrderedRemove`
-#[derive(Eq, PartialEq, Copy, Clone, Debug, Default, Hash)]
-pub enum Remove {
-    #[default]
-    Last,
-    // TODO
-    //First,
-    //Index(Index),
-}
-
-#[derive(Eq, PartialEq, Copy, Clone, Debug, Default, Hash)]
-pub enum Sort {
-    #[default]
-    Default,
 }
 
 #[cfg(test)]

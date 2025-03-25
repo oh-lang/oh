@@ -52,6 +52,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize> TryFrom<&str> for ShtickOptimized
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::core::testing::*;
 
     #[test]
     fn shtick_optimized_x_is_correct_size() {
@@ -64,8 +65,8 @@ mod test {
     #[test]
     fn shtick_optimized_8_works_with_array_deref() {
         let mut shtick = ShtickOptimized8::default();
-        shtick.append(b'h').expect("ok");
-        shtick.append(b'i').expect("ok");
+        shtick.insert(OrderedInsert::AtEnd(b'h')).expect("ok");
+        shtick.insert(OrderedInsert::AtEnd(b'i')).expect("ok");
         assert_eq!(shtick.count(), Count::of(2).expect("ok"));
         assert_eq!(shtick.capacity(), Count::of(15).expect("ok"));
         assert_eq!(&shtick[..], b"hi");
@@ -76,10 +77,15 @@ mod test {
 
     #[test]
     fn shtick_optimized_8_can_initialize_from_string() {
-        let mut shtick = ShtickOptimized8::try_from("hello world").expect("ok");
-        assert_eq!(&shtick[..], b"hello world");
+        {
+            let mut shtick = ShtickOptimized8::try_from("hello world").expect("ok");
+            assert_eq!(&shtick[..], b"hello world");
 
-        shtick = ShtickOptimized8::try_from("let's make something that is more bytes").expect("ok");
-        assert_eq!(&shtick[..], b"let's make something that is more bytes");
+            shtick =
+                ShtickOptimized8::try_from("let's make something that is more bytes").expect("ok");
+            assert_eq!(&shtick[..], b"let's make something that is more bytes");
+            testing_unprint(vec![Vec::from(b"create(A: 39)")]);
+        }
+        testing_unprint(vec![Vec::from(b"delete(A)")]);
     }
 }

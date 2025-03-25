@@ -4,11 +4,11 @@ use crate::core::container::*;
 use crate::core::count::*;
 use crate::core::likely::*;
 use crate::core::non_local_array::*;
-use crate::core::number::*;
 use crate::core::offset::*;
 use crate::core::signed::*;
 use crate::core::traits::*;
 
+pub use crate::core::array::*;
 pub use crate::core::traits::{GetCount, SetCount};
 
 use std::mem::ManuallyDrop;
@@ -134,7 +134,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T: std::default::Default> SetCoun
                 self.set_capacity(new_count)?;
             }
             for _ in 0..(new_count - old_count).to_usize() {
-                self.append(Default::default())
+                self.insert_at_end(Default::default())
                     .expect("already allocated enough above");
             }
         }
@@ -412,8 +412,15 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         }
     }
 
-    /// Looking for `fn add`?  use `append`:
-    pub fn append(&mut self, value: T) -> Containered {
+    /// Looking for `fn add(t)` or `fn append(t)`?  use `insert(OrderedInsert::AtEnd(t))`:
+    pub fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
+        match insert {
+            OrderedInsert::AtEnd(t) => self.insert_at_end(t),
+            OrderedInsert::SliceAtEnd(_) => todo!(),
+        }
+    }
+
+    fn insert_at_end(&mut self, value: T) -> Containered {
         let previous_capacity = self.capacity();
         let previous_count = self.count();
         let new_count = previous_count + 1;
@@ -423,7 +430,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
             return ContainerError::OutOfMemory.err();
         }
         if new_count > previous_capacity {
-            self.grow_from(previous_capacity)?;
+            self.grow()?;
         }
         let offset = new_count.to_highest_offset();
         match self.memory() {
@@ -455,16 +462,13 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         return Ok(());
     }
 
-    fn grow_from(&mut self, current_capacity: CountMax) -> Containered {
+    fn grow(&mut self) -> Containered {
+        let current_capacity = self.capacity();
         let desired_capacity = current_capacity.double_or_at_least((N_LOCAL * 2).min(1) as i64);
         if desired_capacity <= current_capacity {
             return ContainerError::OutOfMemory.err();
         }
         self.set_capacity(desired_capacity)
-    }
-
-    fn grow(&mut self) -> Containered {
-        self.grow_from(self.capacity())
     }
 
     /// Some of the elements in the slice might NOT be initialized.  You've been warned.
@@ -627,7 +631,9 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T: TryClone> TryClone
         result.set_capacity(count)?;
         for i in 0..count.to_usize() {
             let clone = self[i].try_clone().map_err(|_| ContainerError::Unknown)?;
-            result.append(clone).expect("already at necessary capacity");
+            result
+                .insert_at_end(clone)
+                .expect("already at necessary capacity");
         }
         Ok(result)
     }
@@ -649,9 +655,15 @@ mod test {
         assert_eq!(array.capacity(), Count::of(16).expect("ok"));
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
         assert_eq!(array.count(), Count::of(0).expect("ok"));
-        array.append(1).expect("already allocked");
-        array.append(2).expect("already allocked");
-        array.append(3).expect("already allocked");
+        array
+            .insert(OrderedInsert::AtEnd(1))
+            .expect("already allocked");
+        array
+            .insert(OrderedInsert::AtEnd(2))
+            .expect("already allocked");
+        array
+            .insert(OrderedInsert::AtEnd(3))
+            .expect("already allocked");
         assert_eq!(array.count(), Count::of(3).expect("ok"));
         assert_eq!(array.remove(Remove::Last), Some(3));
         assert_eq!(array.remove(Remove::Last), Some(2));
@@ -673,7 +685,9 @@ mod test {
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
         assert_eq!(array.count(), Count::of(0).expect("ok"));
         for i in 0..100 {
-            array.append(i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.count(), Count::of(100).expect("ok"));
         assert_eq!(array.capacity(), Count::of(100).expect("ok"));
@@ -698,7 +712,9 @@ mod test {
         assert_eq!(array.memory(), Memory::MaxArray);
         assert_eq!(array.count(), Count::of(0).expect("ok"));
         for i in 0..200 {
-            array.append(i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.count(), Count::of(200).expect("ok"));
         assert_eq!(array.capacity(), Count::of(200).expect("ok"));
@@ -719,7 +735,9 @@ mod test {
         // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
         let mut array = MaybeLocalArrayOptimized64::<13, u8>::default();
         for i in 0..7 {
-            array.append(19 + i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(19 + i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
         assert_eq!(array.capacity(), Count::of(13).expect("ok"));
@@ -740,7 +758,9 @@ mod test {
         // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
         let mut array = MaybeLocalArrayOptimized32::<13, u8>::default();
         for i in 0..8 {
-            array.append(29 + i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(29 + i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
         assert_eq!(array.capacity(), Count::of(13).expect("ok"));
@@ -761,7 +781,9 @@ mod test {
         // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
         let mut array = MaybeLocalArrayOptimized64::<13, u8>::default();
         for i in 0..13 {
-            array.append(200 + i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(200 + i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
         assert_eq!(array.capacity(), Count::of(13).expect("ok"));
@@ -782,7 +804,9 @@ mod test {
         // TODO: use `Noisy` instead of `u8` so that we can verify they get freed.
         let mut array = MaybeLocalArrayOptimized8::<13, u8>::default();
         for i in 0..12 {
-            array.append(200 + i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(200 + i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
         assert_eq!(array.capacity(), Count::of(13).expect("ok"));
@@ -809,7 +833,9 @@ mod test {
             .set_capacity(Count::of(50).expect("ok"))
             .expect("small alloc");
         for i in 0..50 {
-            array.append(49 - i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(49 - i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
         assert_eq!(array.capacity(), Count::of(50).expect("ok"));
@@ -833,7 +859,9 @@ mod test {
             .set_capacity(Count::of(50).expect("ok"))
             .expect("small alloc");
         for i in 0..50 {
-            array.append(49 - i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(49 - i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
         assert_eq!(array.capacity(), Count::of(50).expect("ok"));
@@ -857,7 +885,9 @@ mod test {
             .set_capacity(Count::of(50).expect("ok"))
             .expect("small alloc");
         for i in 0..50 {
-            array.append(49 - i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(49 - i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
         assert_eq!(array.capacity(), Count::of(50).expect("ok"));
@@ -881,7 +911,9 @@ mod test {
             .set_capacity(Count::of(50).expect("ok"))
             .expect("small alloc");
         for i in 0..50 {
-            array.append(49 - i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(49 - i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
         assert_eq!(array.capacity(), Count::of(50).expect("ok"));
@@ -908,7 +940,9 @@ mod test {
             .set_capacity(Count::of(200).expect("ok"))
             .expect("small alloc");
         for i in 0..200 {
-            array.append(3 + i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(3 + i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::MaxArray);
         assert_eq!(array.capacity(), Count::of(200).expect("ok"));
@@ -932,7 +966,9 @@ mod test {
             .set_capacity(Count::of(150).expect("ok"))
             .expect("small alloc");
         for i in 0..150 {
-            array.append(8 + i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(8 + i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::MaxArray);
         assert_eq!(array.capacity(), Count::of(150).expect("ok"));
@@ -956,7 +992,9 @@ mod test {
             .set_capacity(Count::of(192).expect("ok"))
             .expect("small alloc");
         for i in 0..192 {
-            array.append(i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::MaxArray);
         assert_eq!(array.capacity(), Count::of(192).expect("ok"));
@@ -980,7 +1018,9 @@ mod test {
             .set_capacity(Count::of(192).expect("ok"))
             .expect("small alloc");
         for i in 0..3 {
-            array.append(100 - i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(100 - i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::MaxArray);
         assert_eq!(array.capacity(), Count::of(192).expect("ok"));
@@ -1004,7 +1044,9 @@ mod test {
             .set_capacity(Count::of(150).expect("ok"))
             .expect("small alloc");
         for i in 0..50 {
-            array.append(49 - i as u8).expect("already allocked");
+            array
+                .insert(OrderedInsert::AtEnd(49 - i as u8))
+                .expect("already allocked");
         }
         assert_eq!(array.memory(), Memory::MaxArray);
         assert_eq!(array.capacity(), Count::of(150).expect("ok"));
@@ -1023,12 +1065,22 @@ mod test {
     #[test]
     fn clone_adds_all_values() {
         let mut array = MaybeLocalArrayOptimized32::<4, TestingNoisy>::default();
-        array.set_capacity(Count::of(5).expect("ok"));
-        array.append(TestingNoisy::new(1)).expect("ok");
-        array.append(TestingNoisy::new(100)).expect("ok");
-        array.append(TestingNoisy::new(40)).expect("ok");
-        array.append(TestingNoisy::new(-771)).expect("ok");
-        array.append(TestingNoisy::new(6)).expect("ok");
+        array.set_capacity(Count::of(5).expect("ok")).expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(1)))
+            .expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(100)))
+            .expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(40)))
+            .expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(-771)))
+            .expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(6)))
+            .expect("ok");
         testing_unprint(vec![
             Vec::from(b"create(A: 5)"),
             Vec::from(b"noisy_new(1)"),
@@ -1072,7 +1124,9 @@ mod test {
         assert_eq!(array.count(), Count::of(4).expect("ok"));
         testing_unprint(vec![]);
 
-        array.append(TestingNoisy::new(77)).expect("ok");
+        array
+            .insert(OrderedInsert::AtEnd(TestingNoisy::new(77)))
+            .expect("ok");
         testing_unprint(vec![
             Vec::from(b"noisy_new(77)"),
             Vec::from(b"create(A: 8)"),
@@ -1112,7 +1166,9 @@ mod test {
         let mut array = MaybeLocalArrayOptimized32::<4, TestingNoisy>::default();
         array.set_capacity(Count::of(10).expect("ok")).expect("ok");
         for i in 1..=10 {
-            array.append(TestingNoisy::new(i as i32));
+            array
+                .insert(OrderedInsert::AtEnd(TestingNoisy::new(i as i32)))
+                .expect("ok");
         }
         assert_eq!(array.count(), Count::of(10).expect("ok"));
         _ = testing_prints(); // ignore noise before truncation
