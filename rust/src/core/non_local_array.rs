@@ -1,11 +1,6 @@
 use crate::core::allocation::*;
-use crate::core::container::*;
-use crate::core::count::*;
-use crate::core::signed::*;
-use crate::core::traits::*;
 
 pub use crate::core::array::*;
-pub use crate::core::traits::{GetCount, SetCount};
 
 /// The largest array that this platform can support,
 /// in terms of max memory it can hold.

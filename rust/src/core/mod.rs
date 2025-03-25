@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 pub mod aligned;
 pub use aligned::*;
 

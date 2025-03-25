@@ -1,16 +1,11 @@
 use crate::core::aligned::*;
 use crate::core::allocation::*;
-use crate::core::container::*;
-use crate::core::count::*;
 use crate::core::likely::*;
 use crate::core::moot::*;
 use crate::core::non_local_array::*;
 use crate::core::offset::*;
-use crate::core::signed::*;
-use crate::core::traits::*;
 
 pub use crate::core::array::*;
-pub use crate::core::traits::{GetCount, SetCount};
 
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
@@ -555,17 +550,19 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
     }
 }
 
-/// We require `Default` for insertions mostly because I'm lazy and want to be able
-/// to `moot` elements out of slices.  (See, e.g., `insert_slice_at_end`)
-impl<S: SignedPrimitive, const N_LOCAL: usize, T: Default> MaybeLocalArrayOptimized<S, N_LOCAL, T> {
+impl<S: SignedPrimitive, const N_LOCAL: usize, T: Default + TryClone> Array<T>
+    for MaybeLocalArrayOptimized<S, N_LOCAL, T>
+{
     /// Looking for `fn add(t)` or `fn append(t)`?  use `insert(OrderedInsert::AtEnd(t))`:
-    pub fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
+    fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
         match insert {
             OrderedInsert::AtEnd(t) => self.insert_at_end(t),
             OrderedInsert::SliceAtEnd(ts) => self.insert_slice_at_end(ts),
         }
     }
+}
 
+impl<S: SignedPrimitive, const N_LOCAL: usize, T: Default> MaybeLocalArrayOptimized<S, N_LOCAL, T> {
     pub(crate) fn insert_slice_at_end(&mut self, values: &mut [T]) -> Containered {
         // TODO: we need tests for this and `insert_at_end` which ensure that we grow capacity
         // correctly.  i.e., we don't always double capacity and we don't always just reallocate
