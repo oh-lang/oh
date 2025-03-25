@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use crate::core::count::*;
+use crate::core::moot::*;
 use crate::core::signed::*;
 
 use std::cell::RefCell;
@@ -134,12 +135,6 @@ pub fn testing_unprint(mut expected_values: Vec<Vec<u8>>) {
         }
         panic!("left (actual) was not equal to right (expected)");
     }
-}
-
-fn moot<T: Default>(t: &mut T) -> T {
-    let mut result = T::default();
-    std::mem::swap(&mut result, t);
-    result
 }
 
 pub enum TestingPointer<S: SignedPrimitive, T> {

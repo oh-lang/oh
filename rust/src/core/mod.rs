@@ -25,6 +25,9 @@ pub use likely::*;
 pub mod maybe_local_array;
 pub use maybe_local_array::*;
 
+pub mod moot;
+pub use moot::*;
+
 pub mod non_local_array;
 pub use non_local_array::*;
 

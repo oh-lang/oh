@@ -3,6 +3,7 @@ use crate::core::allocation::*;
 use crate::core::container::*;
 use crate::core::count::*;
 use crate::core::likely::*;
+use crate::core::moot::*;
 use crate::core::non_local_array::*;
 use crate::core::offset::*;
 use crate::core::signed::*;
@@ -118,7 +119,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> GetCount<i64>
     }
 }
 
-impl<S: SignedPrimitive, const N_LOCAL: usize, T: std::default::Default> SetCount<i64>
+impl<S: SignedPrimitive, const N_LOCAL: usize, T: Default> SetCount<i64>
     for MaybeLocalArrayOptimized<S, N_LOCAL, T>
 {
     type Error = ContainerError;
@@ -412,80 +413,12 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         }
     }
 
-    /// Looking for `fn add(t)` or `fn append(t)`?  use `insert(OrderedInsert::AtEnd(t))`:
-    pub fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
-        match insert {
-            OrderedInsert::AtEnd(t) => self.insert_at_end(t),
-            OrderedInsert::SliceAtEnd(ts) => self.insert_slice_at_end(ts),
-        }
-    }
-
-    fn insert_at_end(&mut self, value: T) -> Containered {
-        let previous_capacity = self.capacity();
-        let previous_count = self.count();
-        let new_count = previous_count + 1;
-        if new_count.is_null() {
-            // Probably shouldn't happen with i64 as the backing integer,
-            // but might be possible if we allow 32bit architectures.
-            return ContainerError::OutOfMemory.err();
-        }
-        if new_count > previous_capacity {
-            self.grow()?;
-        }
-        unsafe { self.append_with_required_capacity_ready(new_count, value) }
-    }
-
-    fn insert_slice_at_end(&mut self, values: &mut [T]) -> Containered {
-        // TODO
-        return ContainerError::OutOfMemory.err();
-    }
-
-    unsafe fn append_with_required_capacity_ready(
-        &mut self,
-        new_count: CountMax,
-        value: T,
-    ) -> Containered {
-        let offset = new_count.to_highest_offset();
-        match self.memory() {
-            Memory::UnallocatedBuffer => {
-                let ptr = unsafe {
-                    std::ptr::addr_of_mut!(
-                        self.maybe_allocated.unallocated_buffer[offset.to_inner() as usize]
-                    )
-                };
-                // Destructively write here, don't drop existing value, it wasn't initialized properly anyway.
-                unsafe { std::ptr::write(ptr, ManuallyDrop::new(value)) };
-            }
-            Memory::OptimizedAllocation => {
-                let ptr =
-                    unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.optimized_allocation) };
-                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
-                ptr.write_initializing(Offset::of(S::from(offset.to_inner()).expect("OK")), value)
-                    .expect("should have the correct capacity");
-            }
-            Memory::MaxArray => {
-                let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
-                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
-                ptr.allocation
-                    .write_initializing(offset, value)
-                    .expect("should have the correct capacity");
-            }
-        }
-        self.only_set_count(new_count);
-        return Ok(());
-    }
-
     fn grow_to_at_least(&mut self, required_capacity: CountMax) -> Containered {
         let desired_capacity = self
             .capacity()
             .double_or_at_least(required_capacity)
             .map_err(|_| ContainerError::OutOfMemory)?;
         self.set_capacity(desired_capacity)
-    }
-
-    #[inline]
-    fn grow(&mut self) -> Containered {
-        self.grow_to_at_least(CountMax::negating(-((N_LOCAL * 2).min(1) as i64)))
     }
 
     /// Some of the elements in the slice might NOT be initialized.  You've been warned.
@@ -573,6 +506,90 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
             }
         };
         Some(result)
+    }
+
+    pub(crate) fn insert_at_end(&mut self, value: T) -> Containered {
+        let previous_capacity = self.capacity();
+        let previous_count = self.count();
+        let new_count = previous_count + 1;
+        if new_count.is_null() {
+            // Probably shouldn't happen with i64 as the backing integer,
+            // but might be possible if we allow 32bit architectures.
+            return ContainerError::OutOfMemory.err();
+        }
+        if new_count > previous_capacity {
+            self.grow_to_at_least(new_count)?;
+        }
+        unsafe { self.append_with_required_capacity_ready(new_count, value) };
+        Ok(())
+    }
+
+    unsafe fn append_with_required_capacity_ready(&mut self, new_count: CountMax, value: T) {
+        let offset = new_count.to_highest_offset();
+        match self.memory() {
+            Memory::UnallocatedBuffer => {
+                let ptr = unsafe {
+                    std::ptr::addr_of_mut!(
+                        self.maybe_allocated.unallocated_buffer[offset.to_inner() as usize]
+                    )
+                };
+                // Destructively write here, don't drop existing value, it wasn't initialized properly anyway.
+                unsafe { std::ptr::write(ptr, ManuallyDrop::new(value)) };
+            }
+            Memory::OptimizedAllocation => {
+                let ptr =
+                    unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.optimized_allocation) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.write_initializing(Offset::of(S::from(offset.to_inner()).expect("OK")), value)
+                    .expect("should have the correct capacity");
+            }
+            Memory::MaxArray => {
+                let ptr = unsafe { std::ptr::addr_of_mut!(self.maybe_allocated.max_array) };
+                let ptr = unsafe { &mut *ptr }; // Creating a reference (OK because we're aligned)
+                ptr.allocation
+                    .write_initializing(offset, value)
+                    .expect("should have the correct capacity");
+            }
+        }
+        self.only_set_count(new_count);
+    }
+}
+
+/// We require `Default` for insertions mostly because I'm lazy and want to be able
+/// to `moot` elements out of slices.  (See, e.g., `insert_slice_at_end`)
+impl<S: SignedPrimitive, const N_LOCAL: usize, T: Default> MaybeLocalArrayOptimized<S, N_LOCAL, T> {
+    /// Looking for `fn add(t)` or `fn append(t)`?  use `insert(OrderedInsert::AtEnd(t))`:
+    pub fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
+        match insert {
+            OrderedInsert::AtEnd(t) => self.insert_at_end(t),
+            OrderedInsert::SliceAtEnd(ts) => self.insert_slice_at_end(ts),
+        }
+    }
+
+    pub(crate) fn insert_slice_at_end(&mut self, values: &mut [T]) -> Containered {
+        // TODO: we need tests for this and `insert_at_end` which ensure that we grow capacity
+        // correctly.  i.e., we don't always double capacity and we don't always just reallocate
+        // to the next amount we need (we double only when we'd run out of space).
+        let previous_capacity = self.capacity();
+        let previous_count = self.count();
+        let new_count =
+            previous_count + Count::of(values.len()).map_err(|_| ContainerError::OutOfMemory)?;
+        if new_count.is_null() {
+            // Probably shouldn't happen with i64 as the backing integer,
+            // but might be possible if we allow 32bit architectures.
+            return ContainerError::OutOfMemory.err();
+        }
+        if new_count > previous_capacity {
+            self.grow_to_at_least(new_count)?;
+        }
+        let mut intermediate_count = previous_count;
+        for i in 0..values.len() {
+            intermediate_count += 1;
+            unsafe {
+                self.append_with_required_capacity_ready(intermediate_count, moot(&mut values[i]));
+            }
+        }
+        Ok(())
     }
 }
 
@@ -662,7 +679,7 @@ mod test {
     use crate::core::testing::*;
 
     #[test]
-    fn append_and_remove_unallocated_buffer() {
+    fn insert_and_remove_unallocated_buffer() {
         let mut array = MaybeLocalArrayOptimized64::<16, u8>::default();
         assert_eq!(array.capacity(), Count::of(16).expect("ok"));
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
@@ -682,6 +699,13 @@ mod test {
             .insert(OrderedInsert::AtEnd(3))
             .expect("already allocked");
         assert_eq!(array.count(), Count::of(3).expect("ok"));
+        array
+            .insert(OrderedInsert::SliceAtEnd(&mut [4, 5, 6][..]))
+            .expect("ok");
+        assert_eq!(array.count(), Count::of(6).expect("ok"));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(6));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(5));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(4));
         assert_eq!(array.remove(OrderedRemove::Last), Some(3));
         assert_eq!(array.remove(OrderedRemove::Last), Some(2));
         assert_eq!(array.remove(OrderedRemove::Last), Some(1));
@@ -691,7 +715,7 @@ mod test {
     }
 
     #[test]
-    fn append_and_remove_optimized_allocation() {
+    fn insert_and_remove_optimized_allocation() {
         let mut array = MaybeLocalArrayOptimized32::<8, u8>::default();
         assert_eq!(array.capacity(), Count::of(8).expect("ok"));
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
@@ -701,11 +725,14 @@ mod test {
         assert_eq!(array.capacity(), Count::of(100).expect("ok"));
         assert_eq!(array.memory(), Memory::OptimizedAllocation);
         assert_eq!(array.count(), Count::of(0).expect("ok"));
-        for i in 0..100 {
+        for i in 0..95 {
             array
                 .insert(OrderedInsert::AtEnd(i as u8))
                 .expect("already allocked");
         }
+        array
+            .insert(OrderedInsert::SliceAtEnd(&mut [95, 96, 97, 98, 99][..]))
+            .expect("ok");
         assert_eq!(array.count(), Count::of(100).expect("ok"));
         assert_eq!(array.capacity(), Count::of(100).expect("ok"));
         for j in 0..100 {
@@ -718,7 +745,7 @@ mod test {
     }
 
     #[test]
-    fn append_and_remove_max_array() {
+    fn insert_and_remove_max_array() {
         let mut array = MaybeLocalArrayOptimized8::<17, u8>::default();
         assert_eq!(array.capacity(), Count::of(17).expect("ok"));
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
@@ -728,11 +755,14 @@ mod test {
         assert_eq!(array.capacity(), Count::of(200).expect("ok"));
         assert_eq!(array.memory(), Memory::MaxArray);
         assert_eq!(array.count(), Count::of(0).expect("ok"));
-        for i in 0..200 {
+        for i in 0..199 {
             array
                 .insert(OrderedInsert::AtEnd(i as u8))
                 .expect("already allocked");
         }
+        array
+            .insert(OrderedInsert::SliceAtEnd(&mut [199][..]))
+            .expect("ok");
         assert_eq!(array.count(), Count::of(200).expect("ok"));
         assert_eq!(array.capacity(), Count::of(200).expect("ok"));
         for j in 0..200 {
