@@ -127,7 +127,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T: std::default::Default> SetCoun
         let old_count = self.count();
         if new_count < old_count {
             for _ in 0..(old_count - new_count).to_usize() {
-                _ = self.remove(Remove::Last);
+                _ = self.remove(OrderedRemove::Last);
             }
         } else if new_count > old_count {
             if new_count > self.capacity() {
@@ -226,7 +226,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         let mut count = self.count();
         debug_assert!(count.is_not_null());
         while new_capacity < count {
-            let was_present = self.remove(Remove::Last).is_some();
+            let was_present = self.remove(OrderedRemove::Last).is_some();
             debug_assert!(was_present);
             count -= 1;
         }
@@ -517,9 +517,9 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         }
     }
 
-    pub fn remove(&mut self, remove: Remove) -> Option<T> {
+    pub fn remove(&mut self, remove: OrderedRemove) -> Option<T> {
         match remove {
-            Remove::Last => self.remove_last(),
+            OrderedRemove::Last => self.remove_last(),
         }
     }
 
@@ -665,9 +665,9 @@ mod test {
             .insert(OrderedInsert::AtEnd(3))
             .expect("already allocked");
         assert_eq!(array.count(), Count::of(3).expect("ok"));
-        assert_eq!(array.remove(Remove::Last), Some(3));
-        assert_eq!(array.remove(Remove::Last), Some(2));
-        assert_eq!(array.remove(Remove::Last), Some(1));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(3));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(2));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(1));
         assert_eq!(array.count(), Count::of(0).expect("ok"));
         assert_eq!(array.capacity(), Count::of(16).expect("ok"));
         assert_eq!(array.memory(), Memory::UnallocatedBuffer);
@@ -693,7 +693,7 @@ mod test {
         assert_eq!(array.capacity(), Count::of(100).expect("ok"));
         for j in 0..100 {
             let i = 99 - j;
-            assert_eq!(array.remove(Remove::Last), Some(i as u8));
+            assert_eq!(array.remove(OrderedRemove::Last), Some(i as u8));
             assert_eq!(array.count(), Count::of(i).expect("ok"));
         }
         assert_eq!(array.capacity(), Count::of(100).expect("ok"));
@@ -720,7 +720,7 @@ mod test {
         assert_eq!(array.capacity(), Count::of(200).expect("ok"));
         for j in 0..200 {
             let i = 199 - j;
-            assert_eq!(array.remove(Remove::Last), Some(i as u8));
+            assert_eq!(array.remove(OrderedRemove::Last), Some(i as u8));
             assert_eq!(array.count(), Count::of(i).expect("ok"));
         }
         assert_eq!(array.capacity(), Count::of(200).expect("ok"));

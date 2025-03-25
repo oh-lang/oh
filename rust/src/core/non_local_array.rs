@@ -69,10 +69,10 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
     // TODO: a `removeAll` method that returns an iterator to the elements getting removed.
     // e.g., for converting into a count, etc.
 
-    /// Looking for `fn pop`? use `remove(Remove::Last)`
-    pub fn remove(&mut self, remove: Remove) -> Option<T> {
+    /// Looking for `fn pop`? use `remove(OrderedRemove::Last)`
+    pub fn remove(&mut self, remove: OrderedRemove) -> Option<T> {
         match remove {
-            Remove::Last => self.remove_last(),
+            OrderedRemove::Last => self.remove_last(),
         }
     }
 
@@ -142,7 +142,7 @@ impl<S: SignedPrimitive, T: std::default::Default> SetCount<S> for NonLocalArray
     fn set_count(&mut self, new_count: Count<S>) -> Containered {
         if new_count < self.count {
             while self.count > new_count {
-                _ = self.remove(Remove::Last);
+                _ = self.remove(OrderedRemove::Last);
             }
         } else if new_count > self.count {
             if new_count > self.capacity() {
@@ -278,9 +278,9 @@ mod test {
             .insert(OrderedInsert::AtEnd(3))
             .expect("already allocked");
         assert_eq!(array.count(), Count::of(3).expect("ok"));
-        assert_eq!(array.remove(Remove::Last), Some(3));
-        assert_eq!(array.remove(Remove::Last), Some(2));
-        assert_eq!(array.remove(Remove::Last), Some(1));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(3));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(2));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(1));
         assert_eq!(array.count(), Count::of(0).expect("ok"));
         assert_eq!(array.capacity(), Count::of(3).expect("ok"));
     }
@@ -292,11 +292,11 @@ mod test {
             .set_count(Count::of(5).expect("ok"))
             .expect("small alloc");
         assert_eq!(array.count(), Count::of(5).expect("ok"));
-        assert_eq!(array.remove(Remove::Last), Some(0));
-        assert_eq!(array.remove(Remove::Last), Some(0));
-        assert_eq!(array.remove(Remove::Last), Some(0));
-        assert_eq!(array.remove(Remove::Last), Some(0));
-        assert_eq!(array.remove(Remove::Last), Some(0));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(0));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(0));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(0));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(0));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(0));
         assert_eq!(array.count(), Count::of(0).expect("ok"));
     }
 

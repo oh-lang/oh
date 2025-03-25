@@ -5,9 +5,8 @@ pub enum Clear {
     DroppingCapacity,
 }
 
-// TODO: this should probably be `OrderedRemove`
 #[derive(Eq, PartialEq, Copy, Clone, Debug, Default, Hash)]
-pub enum Remove {
+pub enum OrderedRemove {
     #[default]
     Last,
     // TODO
