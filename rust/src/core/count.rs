@@ -46,14 +46,20 @@ where
         CountMax::negating(self.0.as_())
     }
 
-    pub fn double_or_at_least(self, at_least: T) -> Self {
+    /// Returns an error if we can't make this value any higher.
+    pub fn double_or_at_least(self, at_least: Count<T>) -> NumberResult<Self> {
         if self.0 <= T::MIN / T::TWO {
-            // doubling would overflow, just return max.
-            Self::MAX
+            if self.0 == T::MIN {
+                cold();
+                Err(NumberError::Unrepresentable)
+            } else {
+                // doubling would overflow, just return max.
+                Ok(Self::MAX)
+            }
         } else {
-            debug_assert!(at_least > T::ZERO);
+            debug_assert!(at_least > Count::default());
             // We negate things, so max -> min.
-            Self((-at_least).min(T::TWO * self.0))
+            Ok(Self(at_least.0.min(T::TWO * self.0)))
         }
     }
 
@@ -631,66 +637,82 @@ mod test {
     }
 
     #[test]
-    fn double_or_at_least() {
+    fn double_or_at_least_works() {
         assert_eq!(
-            Count8::negating(-10).double_or_at_least(5),
+            Count8::negating(-10)
+                .double_or_at_least(Count::of(5).expect("ok"))
+                .expect("ok"),
             Count8::negating(-20)
         );
         assert_eq!(
-            Count16::negating(-100).double_or_at_least(5),
+            Count16::negating(-100)
+                .double_or_at_least(Count::of(5).expect("ok"))
+                .expect("ok"),
             Count16::negating(-200)
         );
         assert_eq!(
-            Count32::negating(-1000).double_or_at_least(5),
+            Count32::negating(-1000)
+                .double_or_at_least(Count::of(5).expect("ok"))
+                .expect("ok"),
             Count32::negating(-2000)
         );
         assert_eq!(
-            Count64::negating(-10000).double_or_at_least(5),
+            Count64::negating(-10000)
+                .double_or_at_least(Count::of(5).expect("ok"))
+                .expect("ok"),
             Count64::negating(-20000)
         );
 
         assert_eq!(
-            Count8::negating(-1).double_or_at_least(5),
+            Count8::negating(-1)
+                .double_or_at_least(Count::of(5).expect("ok"))
+                .expect("ok"),
             Count8::negating(-5)
         );
         assert_eq!(
-            Count16::negating(0).double_or_at_least(5),
+            Count16::negating(0)
+                .double_or_at_least(Count::of(5).expect("ok"))
+                .expect("ok"),
             Count16::negating(-5)
         );
         assert_eq!(
-            Count32::negating(-2).double_or_at_least(5),
+            Count32::negating(-2)
+                .double_or_at_least(Count::of(5).expect("ok"))
+                .expect("ok"),
             Count32::negating(-5)
         );
         assert_eq!(
-            Count64::negating(-5).double_or_at_least(11),
+            Count64::negating(-5)
+                .double_or_at_least(Count::of(11).expect("ok"))
+                .expect("ok"),
             Count64::negating(-11)
         );
 
         // Near the max.
         assert_eq!(
-            Count8::negating(-128).double_or_at_least(5),
-            Count8::negating(-128)
+            Count8::negating(-128).double_or_at_least(Count::of(5).expect("ok")),
+            Err(NumberError::Unrepresentable),
         );
         assert_eq!(
-            Count8::negating(-127).double_or_at_least(5),
-            Count8::negating(-128)
+            Count8::negating(-127).double_or_at_least(Count::of(5).expect("ok")),
+            Ok(Count8::negating(-128))
         );
         assert_eq!(
-            Count8::negating(-65).double_or_at_least(5),
-            Count8::negating(-128)
+            Count8::negating(-65).double_or_at_least(Count::of(5).expect("ok")),
+            Ok(Count8::negating(-128))
         );
 
         assert_eq!(
-            Count16::negating(-32768).double_or_at_least(5),
-            Count16::negating(-32768)
+            Count16::negating(-32768).double_or_at_least(Count::of(5).expect("ok")),
+            Err(NumberError::Unrepresentable),
         );
         assert_eq!(
-            Count16::negating(-32767).double_or_at_least(5),
-            Count16::negating(-32768)
+            Count16::negating(-32767).double_or_at_least(Count::of(5).expect("ok")),
+            Ok(Count16::negating(-32768))
         );
         assert_eq!(
-            Count16::negating(-16385).double_or_at_least(5),
-            Count16::negating(-32768)
+            Count16::negating(-16385).double_or_at_least(Count::of(5).expect("ok")),
+            Ok(Count16::negating(-32768))
         );
     }
 

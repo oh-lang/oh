@@ -416,7 +416,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
     pub fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
         match insert {
             OrderedInsert::AtEnd(t) => self.insert_at_end(t),
-            OrderedInsert::SliceAtEnd(_) => todo!(),
+            OrderedInsert::SliceAtEnd(ts) => self.insert_slice_at_end(ts),
         }
     }
 
@@ -432,6 +432,19 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         if new_count > previous_capacity {
             self.grow()?;
         }
+        unsafe { self.append_with_required_capacity_ready(new_count, value) }
+    }
+
+    fn insert_slice_at_end(&mut self, values: &mut [T]) -> Containered {
+        // TODO
+        return ContainerError::OutOfMemory.err();
+    }
+
+    unsafe fn append_with_required_capacity_ready(
+        &mut self,
+        new_count: CountMax,
+        value: T,
+    ) -> Containered {
         let offset = new_count.to_highest_offset();
         match self.memory() {
             Memory::UnallocatedBuffer => {
@@ -462,13 +475,17 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
         return Ok(());
     }
 
-    fn grow(&mut self) -> Containered {
-        let current_capacity = self.capacity();
-        let desired_capacity = current_capacity.double_or_at_least((N_LOCAL * 2).min(1) as i64);
-        if desired_capacity <= current_capacity {
-            return ContainerError::OutOfMemory.err();
-        }
+    fn grow_to_at_least(&mut self, required_capacity: CountMax) -> Containered {
+        let desired_capacity = self
+            .capacity()
+            .double_or_at_least(required_capacity)
+            .map_err(|_| ContainerError::OutOfMemory)?;
         self.set_capacity(desired_capacity)
+    }
+
+    #[inline]
+    fn grow(&mut self) -> Containered {
+        self.grow_to_at_least(CountMax::negating(-((N_LOCAL * 2).min(1) as i64)))
     }
 
     /// Some of the elements in the slice might NOT be initialized.  You've been warned.

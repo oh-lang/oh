@@ -119,23 +119,26 @@ impl<S: SignedPrimitive, T> AllocationCount<S, T> {
     }
 
     pub fn grow(&mut self) -> Containered {
-        let capacity = self.capacity;
-        let desired_capacity = Self::roughly_double_capacity(capacity);
-        if desired_capacity <= capacity {
-            return ContainerError::OutOfMemory.err();
-        }
+        let desired_capacity = Self::roughly_double_capacity(self.capacity())
+            .map_err(|_| ContainerError::OutOfMemory)?;
         self.set_capacity(desired_capacity)
     }
 
-    fn roughly_double_capacity(capacity: Count<S>) -> Count<S> {
-        // When starting out, we allocate more for smaller (in size) T.
-        // This interpolates from starting_alloc = 32 down to 1 over a large range.
-        let t_bytes = std::mem::size_of::<T>() as i64;
-        let multiplier = (8 - (t_bytes / 16)).max(1);
-        let desired_total_bytes = 24 + t_bytes * multiplier;
-        let desired_total_words = desired_total_bytes / 8;
-        let starting_alloc = ((desired_total_words * 8) / t_bytes).max(1);
-        capacity.double_or_at_least(S::from(starting_alloc).unwrap())
+    fn roughly_double_capacity(capacity: Count<S>) -> NumberResult<Count<S>> {
+        if capacity.is_positive() {
+            // If someone has purposely done `set_capacity(1)`, then we won't
+            // do any fancy logic here.
+            capacity.double_or_at_least(Count::negating(-S::ONE))
+        } else {
+            // When starting out, we allocate more for smaller (in size) T.
+            // This interpolates from starting_alloc = 32 down to 1 over a large range.
+            let t_bytes = std::mem::size_of::<T>() as i64;
+            let multiplier = (8 - (t_bytes / 16)).max(1);
+            let desired_total_bytes = 24 + t_bytes * multiplier;
+            let desired_total_words = desired_total_bytes / 8;
+            let starting_alloc = ((desired_total_words * 8) / t_bytes).max(1);
+            capacity.double_or_at_least(Count::negating(-S::from(starting_alloc).unwrap()))
+        }
     }
 
     fn layout_of(capacity: Count<S>) -> ContainerResult<alloc::Layout> {
@@ -235,63 +238,67 @@ mod test {
     fn roughly_double_capacity() {
         assert_eq!(
             AllocationCount16::<u8>::roughly_double_capacity(Count16::default()),
-            Count16::negating(-32)
+            Ok(Count16::negating(-32))
         );
         assert_eq!(
             AllocationCount8::<u16>::roughly_double_capacity(Count8::default()),
-            Count8::negating(-20)
+            Ok(Count8::negating(-20))
         );
         assert_eq!(
             AllocationCount16::<[u8; 3]>::roughly_double_capacity(Count16::default()),
-            Count16::negating(-16)
+            Ok(Count16::negating(-16))
         );
         assert_eq!(
             AllocationCount64::<u32>::roughly_double_capacity(Count64::default()),
-            Count64::negating(-14)
+            Ok(Count64::negating(-14))
         );
         assert_eq!(
             AllocationCount16::<[u8; 5]>::roughly_double_capacity(Count16::default()),
-            Count16::negating(-12)
+            Ok(Count16::negating(-12))
         );
         assert_eq!(
             AllocationCount16::<[u8; 6]>::roughly_double_capacity(Count16::default()),
-            Count16::negating(-12)
+            Ok(Count16::negating(-12))
         );
         assert_eq!(
             AllocationCount16::<[u8; 7]>::roughly_double_capacity(Count16::default()),
-            Count16::negating(-11)
+            Ok(Count16::negating(-11))
         );
         assert_eq!(
             AllocationCount32::<i64>::roughly_double_capacity(Count32::default()),
-            Count32::negating(-11)
+            Ok(Count32::negating(-11))
         );
         assert_eq!(
             AllocationCount8::<i128>::roughly_double_capacity(Count8::default()),
-            Count8::negating(-8)
+            Ok(Count8::negating(-8))
         );
         assert_eq!(
             AllocationCount16::<[u8; 32]>::roughly_double_capacity(Count16::default()),
-            Count16::negating(-6)
+            Ok(Count16::negating(-6))
         );
         assert_eq!(
             AllocationCount32::<[u8; 64]>::roughly_double_capacity(Count32::default()),
-            Count32::negating(-4)
+            Ok(Count32::negating(-4))
         );
         assert_eq!(
             AllocationCount64::<[u8; 96]>::roughly_double_capacity(Count64::default()),
-            Count64::negating(-2)
+            Ok(Count64::negating(-2))
         );
         assert_eq!(
             AllocationCount8::<[u8; 128]>::roughly_double_capacity(Count8::default()),
-            Count8::negating(-1)
+            Ok(Count8::negating(-1))
         );
         assert_eq!(
             AllocationCount16::<[u8; 2048]>::roughly_double_capacity(Count16::default()),
-            Count16::negating(-1)
+            Ok(Count16::negating(-1))
         );
         assert_eq!(
             AllocationCount32::<[u8; 123456789]>::roughly_double_capacity(Count32::default()),
-            Count32::negating(-1)
+            Ok(Count32::negating(-1))
+        );
+        assert_eq!(
+            AllocationCount32::<[u8; 5]>::roughly_double_capacity(Count32::MAX),
+            Err(NumberError::Unrepresentable)
         );
     }
 }

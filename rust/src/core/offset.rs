@@ -6,3 +6,6 @@ pub type Offset16 = Offset<i16>;
 pub type Offset8 = Offset<i8>;
 
 // TODO: Offset should be a wrapper like Count which becomes null if negative.
+
+// TODO: switch to 32 on 32bit platforms
+pub type OffsetMax = Offset64;
