@@ -77,6 +77,7 @@ impl InMemoryFile {
         }
         lines.insert(OrderedInsert::AtEnd(current_line));
         self.lines = lines;
+        Ok(())
     }
 
     // TODO: add a `fn has_changed()` method

@@ -8,31 +8,8 @@ pub type ShtickOptimized16 = ShtickOptimized<i16, 14>;
 pub type ShtickOptimized32 = ShtickOptimized<i32, 12>;
 pub type ShtickOptimized64 = ShtickOptimized<i64, 16>;
 
-pub struct ShtickOptimized<S: SignedPrimitive, const N_LOCAL: usize> {
-    array: MaybeLocalArrayOptimized<S, N_LOCAL, u8>,
-}
-
-impl<S: SignedPrimitive, const N_LOCAL: usize> Default for ShtickOptimized<S, N_LOCAL> {
-    fn default() -> Self {
-        Self {
-            array: Default::default(),
-        }
-    }
-}
-
-impl<S: SignedPrimitive, const N_LOCAL: usize> std::ops::Deref for ShtickOptimized<S, N_LOCAL> {
-    type Target = MaybeLocalArrayOptimized<S, N_LOCAL, u8>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.array
-    }
-}
-
-impl<S: SignedPrimitive, const N_LOCAL: usize> std::ops::DerefMut for ShtickOptimized<S, N_LOCAL> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.array
-    }
-}
+pub type ShtickOptimized<S: SignedPrimitive, const N_LOCAL: usize> =
+    MaybeLocalArrayOptimized<S, N_LOCAL, u8>;
 
 impl<S: SignedPrimitive, const N_LOCAL: usize> TryFrom<&str> for ShtickOptimized<S, N_LOCAL> {
     type Error = ContainerError;
