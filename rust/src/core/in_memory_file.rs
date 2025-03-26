@@ -52,7 +52,12 @@ impl InMemoryFile {
             // TODO
             return Err(FileError::Unknown);
         }
-        let mut file = self.open_file(FileOpen::Read)?;
+        let mut file = if let Ok(file) = self.open_file(FileOpen::Read) {
+            file
+        } else {
+            self.lines.set_count(Count::of(0).expect("ok")).expect("ok");
+            return Ok(());
+        };
         let mut lines = InMemoryFileLines::default();
         let mut buffer = [0u8; 256];
         let mut current_line = FileLine::default();
@@ -106,9 +111,9 @@ impl InMemoryFile {
                         String::from(String::from_utf8_lossy(&self.path[..])).into();
                     std::fs::File::open(std::path::Path::new(&os_path))
                 }
+                .map_err(|_| FileError::Open)
             }
         }
-        .map_err(|_| FileError::Open)
     }
 
     // TODO: add a `fn has_changed()` method
