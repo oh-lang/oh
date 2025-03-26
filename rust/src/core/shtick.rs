@@ -8,8 +8,7 @@ pub type ShtickOptimized16 = ShtickOptimized<i16, 14>;
 pub type ShtickOptimized32 = ShtickOptimized<i32, 12>;
 pub type ShtickOptimized64 = ShtickOptimized<i64, 16>;
 
-pub type ShtickOptimized<S: SignedPrimitive, const N_LOCAL: usize> =
-    MaybeLocalArrayOptimized<S, N_LOCAL, u8>;
+pub type ShtickOptimized<S, const N_LOCAL: usize> = MaybeLocalArrayOptimized<S, N_LOCAL, u8>;
 
 impl<S: SignedPrimitive, const N_LOCAL: usize> TryFrom<&str> for ShtickOptimized<S, N_LOCAL> {
     type Error = ContainerError;

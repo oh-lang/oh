@@ -1,5 +1,9 @@
+use crate::core::moot::*;
 use crate::core::non_local_array::*;
 use crate::core::shtick::*;
+
+use std::ffi::{OsStr, OsString};
+use std::io::Read;
 
 /// If you have more than 128 characters per line, it's a moral failing. /s
 /// But it won't break because Shtick will internally expand to a `max_array` if necessary.
@@ -29,55 +33,79 @@ impl InMemoryFile {
             lines: Default::default(),
         };
         result.read()?;
-        result
+        Ok(result)
     }
 
     pub fn is_directory(&self) -> bool {
-        let path_count = self.path.count();
-        if path_count == Count::default() {
+        let path_len = self.path.len();
+        if path_len == 0 {
             // Assume an empty path is the current directory.
             true
         } else {
-            let last_char = self.path[path_count - 1];
+            let last_char = self.path[path_len - 1];
             last_char == std::path::MAIN_SEPARATOR as u8
         }
     }
 
     pub fn read(&mut self) -> Filed {
-        let path = std::path::Path::new(&self.path[..]);
         if self.is_directory() {
             // TODO
             return Err(FileError::Unknown);
         }
-        let mut file = std::fs::File::open(path).map_err(|_| FileError::Open)?;
+        let mut file = self.open_file_for_reading()?;
         let mut lines = InMemoryFileLines::default();
-        let mut file_offset = 0;
         let mut buffer = [0u8; 256];
-        let mut buffer_offset = 0;
         let mut current_line = FileLine::default();
         loop {
-            let bytes_read = file.read_at(&mut buffer, file_offset)?;
+            let bytes_read = file.read(&mut buffer).map_err(|_| FileError::Read)?;
             if bytes_read == 0 {
                 break;
             }
-            let buffer = buffer[0..bytes_read];
+            let buffer = &buffer[0..bytes_read];
             let mut handled_up_to = 0;
             for i in 0..bytes_read {
                 if buffer[i] == b'\n' {
                     current_line
-                        .insert_few(OrderedInsertFew::AtEnd(&buffer[handled_up_to..i]))
+                        .insert_few(OrderedInsertFew::AtEnd(
+                            &buffer[handled_up_to..i],
+                            TypeMarker,
+                            TypeMarker,
+                        ))
                         .map_err(|_| FileError::OutOfMemory)?;
-                    lines.insert(OrderedInsert::AtEnd(moot(&mut current_line)));
+                    lines
+                        .insert(OrderedInsert::AtEnd(moot(&mut current_line)))
+                        .map_err(|_| FileError::OutOfMemory)?;
                     handled_up_to = i + 1;
                 }
             }
             current_line
-                .insert_few(OrderedInsertFew::AtEnd(&buffer[handled_up_to..bytes_read]))
+                .insert_few(OrderedInsertFew::AtEnd(
+                    &buffer[handled_up_to..bytes_read],
+                    TypeMarker,
+                    TypeMarker,
+                ))
                 .map_err(|_| FileError::OutOfMemory)?;
         }
-        lines.insert(OrderedInsert::AtEnd(current_line));
+        lines
+            .insert(OrderedInsert::AtEnd(current_line))
+            .map_err(|_| FileError::OutOfMemory)?;
         self.lines = lines;
         Ok(())
+    }
+
+    fn open_file_for_reading(&self) -> FileResult<std::fs::File> {
+        if cfg!(windows) {
+            // Need to convert to a UTF16-like string for Windows.
+            std::fs::File::open(std::path::Path::new(&self.os_path())).map_err(|_| FileError::Open)
+        } else {
+            use std::os::unix::ffi::OsStrExt;
+            std::fs::File::open(std::path::Path::new(OsStr::from_bytes(&self.path[..])))
+                .map_err(|_| FileError::Open)
+        }
+    }
+
+    fn os_path(&self) -> OsString {
+        String::from(String::from_utf8_lossy(&self.path[..])).into()
     }
 
     // TODO: add a `fn has_changed()` method
@@ -86,6 +114,7 @@ impl InMemoryFile {
 pub enum FileError {
     OutOfMemory,
     Open,
+    Read,
     Unknown,
 }
 

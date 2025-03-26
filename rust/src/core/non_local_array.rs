@@ -100,11 +100,13 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
         if new_count > self.capacity() {
             self.grow_to_at_least(new_count)?;
         }
-        self.append_with_required_capacity_ready(new_count, t);
+        unsafe {
+            self.append_with_required_capacity_ready(new_count, t);
+        }
         return Ok(());
     }
 
-    fn append_with_required_capacity_ready(&mut self, new_count: Count<S>, value: T) {
+    unsafe fn append_with_required_capacity_ready(&mut self, new_count: Count<S>, value: T) {
         self.allocation
             .write_initializing(new_count.to_highest_offset(), value)
             .expect("should be in bounds");
