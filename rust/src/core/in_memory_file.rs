@@ -52,7 +52,7 @@ impl InMemoryFile {
             // TODO
             return Err(FileError::Unknown);
         }
-        let mut file = self.open_file_for_reading()?;
+        let mut file = self.open_file(FileOpen::Read)?;
         let mut lines = InMemoryFileLines::default();
         let mut buffer = [0u8; 256];
         let mut current_line = FileLine::default();
@@ -93,22 +93,29 @@ impl InMemoryFile {
         Ok(())
     }
 
-    fn open_file_for_reading(&self) -> FileResult<std::fs::File> {
-        if cfg!(windows) {
-            // Need to convert to a UTF16-like string for Windows.
-            std::fs::File::open(std::path::Path::new(&self.os_path())).map_err(|_| FileError::Open)
-        } else {
-            use std::os::unix::ffi::OsStrExt;
-            std::fs::File::open(std::path::Path::new(OsStr::from_bytes(&self.path[..])))
-                .map_err(|_| FileError::Open)
+    fn open_file(&self, file_open: FileOpen) -> FileResult<std::fs::File> {
+        match file_open {
+            FileOpen::Read => {
+                if cfg!(unix) {
+                    use std::os::unix::ffi::OsStrExt;
+                    let os_str = std::path::Path::new(OsStr::from_bytes(&self.path[..]));
+                    std::fs::File::open(os_str)
+                } else {
+                    // Need to convert to a UTF16-like string for Windows.
+                    let os_path: OsString =
+                        String::from(String::from_utf8_lossy(&self.path[..])).into();
+                    std::fs::File::open(std::path::Path::new(&os_path))
+                }
+            }
         }
-    }
-
-    fn os_path(&self) -> OsString {
-        String::from(String::from_utf8_lossy(&self.path[..])).into()
+        .map_err(|_| FileError::Open)
     }
 
     // TODO: add a `fn has_changed()` method
+}
+
+enum FileOpen {
+    Read,
 }
 
 pub enum FileError {
