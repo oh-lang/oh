@@ -553,24 +553,43 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T> MaybeLocalArrayOptimized<S, N_
 impl<S: SignedPrimitive, const N_LOCAL: usize, T: Default + TryClone> Array<T>
     for MaybeLocalArrayOptimized<S, N_LOCAL, T>
 {
+    fn len(&self) -> usize {
+        self.count().to_usize()
+    }
+
     /// Looking for `fn add(t)` or `fn append(t)`?  use `insert(OrderedInsert::AtEnd(t))`:
     fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
         match insert {
             OrderedInsert::AtEnd(t) => self.insert_at_end(t),
-            OrderedInsert::SliceAtEnd(ts) => self.insert_slice_at_end(ts),
+        }
+    }
+
+    /// Looking for `fn add_all(ts)` or `fn append_all(ts)`?
+    /// use `insert_few(OrderedInsertFew::AtEnd(ts), TypeMarker, TypeMarker)`:
+    fn insert_few<E, Values: Few<T, Error = E>>(
+        &mut self,
+        insert: OrderedInsertFew<T, E, Values>,
+    ) -> Containered {
+        match insert {
+            OrderedInsertFew::AtEnd(f, ..) => self.insert_few_at_end(f),
         }
     }
 }
 
-impl<S: SignedPrimitive, const N_LOCAL: usize, T: Default> MaybeLocalArrayOptimized<S, N_LOCAL, T> {
-    pub(crate) fn insert_slice_at_end(&mut self, values: &mut [T]) -> Containered {
+impl<S: SignedPrimitive, const N_LOCAL: usize, T: Default + TryClone>
+    MaybeLocalArrayOptimized<S, N_LOCAL, T>
+{
+    pub(crate) fn insert_few_at_end<E, Values: Few<T, Error = E>>(
+        &mut self,
+        mut values: Values,
+    ) -> Containered {
         // TODO: we need tests for this and `insert_at_end` which ensure that we grow capacity
         // correctly.  i.e., we don't always double capacity and we don't always just reallocate
         // to the next amount we need (we double only when we'd run out of space).
         let previous_capacity = self.capacity();
         let previous_count = self.count();
         let new_count =
-            previous_count + Count::of(values.len()).map_err(|_| ContainerError::OutOfMemory)?;
+            previous_count + Count::of(values.size()).map_err(|_| ContainerError::OutOfMemory)?;
         if new_count.is_null() {
             // Probably shouldn't happen with i64 as the backing integer,
             // but might be possible if we allow 32bit architectures.
@@ -580,10 +599,11 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T: Default> MaybeLocalArrayOptimi
             self.grow_to_at_least(new_count)?;
         }
         let mut intermediate_count = previous_count;
-        for i in 0..values.len() {
+        for i in 0..values.size() {
             intermediate_count += 1;
+            let value = values.nab(i).map_err(|_| ContainerError::Unknown)?;
             unsafe {
-                self.append_with_required_capacity_ready(intermediate_count, moot(&mut values[i]));
+                self.append_with_required_capacity_ready(intermediate_count, value);
             }
         }
         Ok(())
@@ -653,6 +673,7 @@ impl<S: SignedPrimitive, const N_LOCAL: usize, T: std::cmp::Eq> Eq
 impl<S: SignedPrimitive, const N_LOCAL: usize, T: TryClone> TryClone
     for MaybeLocalArrayOptimized<S, N_LOCAL, T>
 {
+    // TODO: this should probably be one_of(ContainerError, <T as TryClone>::Error)
     type Error = ContainerError;
 
     fn try_clone(&self) -> Result<Self, ContainerError> {
@@ -697,7 +718,11 @@ mod test {
             .expect("already allocked");
         assert_eq!(array.count(), Count::of(3).expect("ok"));
         array
-            .insert(OrderedInsert::SliceAtEnd(&mut [4, 5, 6][..]))
+            .insert_few(OrderedInsertFew::AtEnd(
+                &mut [4, 5, 6][..],
+                TypeMarker,
+                TypeMarker,
+            ))
             .expect("ok");
         assert_eq!(array.count(), Count::of(6).expect("ok"));
         assert_eq!(array.remove(OrderedRemove::Last), Some(6));
@@ -728,7 +753,11 @@ mod test {
                 .expect("already allocked");
         }
         array
-            .insert(OrderedInsert::SliceAtEnd(&mut [95, 96, 97, 98, 99][..]))
+            .insert_few(OrderedInsertFew::AtEnd(
+                &mut [95, 96, 97, 98, 99][..],
+                TypeMarker,
+                TypeMarker,
+            ))
             .expect("ok");
         assert_eq!(array.count(), Count::of(100).expect("ok"));
         assert_eq!(array.capacity(), Count::of(100).expect("ok"));
@@ -758,7 +787,11 @@ mod test {
                 .expect("already allocked");
         }
         array
-            .insert(OrderedInsert::SliceAtEnd(&mut [199][..]))
+            .insert_few(OrderedInsertFew::AtEnd(
+                &mut [199][..],
+                TypeMarker,
+                TypeMarker,
+            ))
             .expect("ok");
         assert_eq!(array.count(), Count::of(200).expect("ok"));
         assert_eq!(array.capacity(), Count::of(200).expect("ok"));

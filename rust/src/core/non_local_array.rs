@@ -39,10 +39,9 @@ impl<S: SignedPrimitive, T> Default for NonLocalArrayCount<S, T> {
 impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
     /// Looking for `fn add(t)` or `fn append(t)`?  use `insert(OrderedInsert::AtEnd(t))`
     // TODO: add test for getting to end of S::MAX
-    pub fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
+    fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
         match insert {
             OrderedInsert::AtEnd(t) => self.insert_at_end(t),
-            OrderedInsert::SliceAtEnd(_) => todo!(),
         }
     }
 
@@ -184,6 +183,7 @@ impl<S: SignedPrimitive, T: std::cmp::PartialEq> PartialEq<Self> for NonLocalArr
 impl<S: SignedPrimitive, T: std::cmp::Eq> Eq for NonLocalArrayCount<S, T> {}
 
 impl<S: SignedPrimitive, T: TryClone> TryClone for NonLocalArrayCount<S, T> {
+    // TODO: this should probably be one_of(ContainerError, <T as TryClone>::Error)
     type Error = ContainerError;
 
     fn try_clone(&self) -> Result<Self, ContainerError> {
