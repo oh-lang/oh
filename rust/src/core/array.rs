@@ -47,11 +47,12 @@ pub trait Array<T: Default + TryClone>: std::ops::Deref<Target = [T]> + std::ops
     ) -> Containered;
 }
 
+// TODO: because `insert_few` is generic, there's no way to build a vtable here (i.e., for `dyn Array`)
 //impl<'a, T: Default> Few<T> for &'a mut dyn Array<T> {
 //    type Error = ContainerError;
 //
 //    fn nab(&mut self, index: usize) -> Result<T, Self::Error> {
-//        moot(&mut self[index])
+//        moot(&mut <Self as std::ops::DerefMut>::deref_mut(self)[index])
 //    }
 //
 //    fn size(&self) -> usize {

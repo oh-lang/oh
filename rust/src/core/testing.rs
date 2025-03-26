@@ -334,4 +334,35 @@ mod test {
         let x: u8 = 13;
         testing_unname_pointer(&x);
     }
+
+    #[test]
+    fn how_does_rust_split_work() {
+        let x = b" how does rust split  work ";
+
+        for word in x.split(|b| *b == b' ') {
+            testing_print(word);
+        }
+
+        testing_unprint(vec![
+            Vec::from(b""),
+            Vec::from(b"how"),
+            Vec::from(b"does"),
+            Vec::from(b"rust"),
+            Vec::from(b"split"),
+            Vec::from(b""),
+            Vec::from(b"work"),
+            Vec::from(b""),
+        ]);
+    }
+
+    #[test]
+    fn how_does_rust_split_work2() {
+        let x = b"no edges";
+
+        for word in x.split(|b| *b == b' ') {
+            testing_print(word);
+        }
+
+        testing_unprint(vec![Vec::from(b"no"), Vec::from(b"edges")]);
+    }
 }

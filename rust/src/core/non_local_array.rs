@@ -35,8 +35,12 @@ impl<S: SignedPrimitive, T> Default for NonLocalArrayCount<S, T> {
     }
 }
 
-// TODO: implement #[derive(Debug, Hash)]
-impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
+// TODO: implement Hash
+impl<S: SignedPrimitive, T: Default + TryClone> Array<T> for NonLocalArrayCount<S, T> {
+    fn len(&self) -> usize {
+        self.count().to_usize()
+    }
+
     /// Looking for `fn add(t)` or `fn append(t)`?  use `insert(OrderedInsert::AtEnd(t))`
     // TODO: add test for getting to end of S::MAX
     fn insert(&mut self, insert: OrderedInsert<T>) -> Containered {
@@ -45,19 +49,66 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
         }
     }
 
+    /// Looking for `fn add_all(ts)` or `fn append_all(ts)`?
+    /// use `insert_few(OrderedInsertFew::AtEnd(ts), TypeMarker, TypeMarker)`:
+    fn insert_few<E, Values: Few<T, Error = E>>(
+        &mut self,
+        insert: OrderedInsertFew<T, E, Values>,
+    ) -> Containered {
+        match insert {
+            OrderedInsertFew::AtEnd(f, ..) => self.insert_few_at_end(f),
+        }
+    }
+}
+
+impl<S: SignedPrimitive, T: Default + TryClone> NonLocalArrayCount<S, T> {
+    pub(crate) fn insert_few_at_end<E, Values: Few<T, Error = E>>(
+        &mut self,
+        mut values: Values,
+    ) -> Containered {
+        // TODO: we need tests for this and `insert_at_end` which ensure that we grow capacity
+        // correctly.  i.e., we don't always double capacity and we don't always just reallocate
+        // to the next amount we need (we double only when we'd run out of space).
+        let previous_capacity = self.capacity();
+        let previous_count = self.count();
+        let new_count =
+            previous_count + Count::of(values.size()).map_err(|_| ContainerError::OutOfMemory)?;
+        if new_count.is_null() {
+            return ContainerError::OutOfMemory.err();
+        }
+        if new_count > previous_capacity {
+            self.grow_to_at_least(new_count)?;
+        }
+        let mut intermediate_count = previous_count;
+        for i in 0..values.size() {
+            intermediate_count += S::ONE;
+            let value = values.nab(i).map_err(|_| ContainerError::Unknown)?;
+            unsafe {
+                self.append_with_required_capacity_ready(intermediate_count, value);
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
     fn insert_at_end(&mut self, t: T) -> Containered {
         let new_count = self.count + S::ONE;
         if new_count.is_null() {
             return ContainerError::OutOfMemory.err();
         }
         if new_count > self.capacity() {
-            self.grow()?;
+            self.grow_to_at_least(new_count)?;
         }
+        self.append_with_required_capacity_ready(new_count, t);
+        return Ok(());
+    }
+
+    fn append_with_required_capacity_ready(&mut self, new_count: Count<S>, value: T) {
         self.allocation
-            .write_initializing(new_count.to_highest_offset(), t)
+            .write_initializing(new_count.to_highest_offset(), value)
             .expect("should be in bounds");
         self.count = new_count;
-        return Ok(());
     }
 
     // TODO: a `removeAll` method that returns an iterator to the elements getting removed.
@@ -119,8 +170,12 @@ impl<S: SignedPrimitive, T> NonLocalArrayCount<S, T> {
         self.allocation.set_capacity(new_capacity)
     }
 
-    fn grow(&mut self) -> Containered {
-        self.allocation.grow()
+    fn grow_to_at_least(&mut self, required_capacity: Count<S>) -> Containered {
+        let desired_capacity = self
+            .capacity()
+            .double_or_at_least(required_capacity)
+            .map_err(|_| ContainerError::OutOfMemory)?;
+        self.set_capacity(desired_capacity)
     }
 }
 
@@ -258,10 +313,10 @@ mod test {
     }
 
     #[test]
-    fn append_and_remove() {
+    fn insert_and_remove() {
         let mut array = NonLocalArrayCount64::<u32>::default();
         array
-            .set_capacity(Count::of(3).expect("ok"))
+            .set_capacity(Count::of(6).expect("ok"))
             .expect("small alloc");
         array
             .insert(OrderedInsert::AtEnd(1))
@@ -272,12 +327,23 @@ mod test {
         array
             .insert(OrderedInsert::AtEnd(3))
             .expect("already allocked");
-        assert_eq!(array.count(), Count::of(3).expect("ok"));
+        array
+            .insert_few(OrderedInsertFew::AtEnd(
+                &mut [4, 5, 6][..],
+                TypeMarker,
+                TypeMarker,
+            ))
+            .expect("ok");
+        assert_eq!(array.count(), Count::of(6).expect("ok"));
+        assert_eq!(array.capacity(), Count::of(6).expect("ok"));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(6));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(5));
+        assert_eq!(array.remove(OrderedRemove::Last), Some(4));
         assert_eq!(array.remove(OrderedRemove::Last), Some(3));
         assert_eq!(array.remove(OrderedRemove::Last), Some(2));
         assert_eq!(array.remove(OrderedRemove::Last), Some(1));
         assert_eq!(array.count(), Count::of(0).expect("ok"));
-        assert_eq!(array.capacity(), Count::of(3).expect("ok"));
+        assert_eq!(array.capacity(), Count::of(6).expect("ok"));
     }
 
     #[test]
@@ -346,14 +412,20 @@ mod test {
         array
             .insert(OrderedInsert::AtEnd(TestingNoisy::new(6)))
             .expect("ok");
-        assert_eq!(array.capacity(), Count::of(14).expect("ok"));
+        assert_eq!(array.capacity(), Count::of(8).expect("ok"));
         testing_unprint(vec![
             Vec::from(b"noisy_new(1)"),
-            Vec::from(b"create(A: 14)"),
+            Vec::from(b"create(A: 1)"),
             Vec::from(b"noisy_new(100)"),
+            Vec::from(b"delete(A)"),
+            Vec::from(b"create(B: 2)"),
             Vec::from(b"noisy_new(40)"),
+            Vec::from(b"delete(B)"),
+            Vec::from(b"create(C: 4)"),
             Vec::from(b"noisy_new(-771)"),
             Vec::from(b"noisy_new(6)"),
+            Vec::from(b"delete(C)"),
+            Vec::from(b"create(D: 8)"),
         ]);
 
         let clone = array.try_clone().expect("ok");
@@ -364,7 +436,7 @@ mod test {
         assert_eq!(clone[2].value(), 40);
         assert_eq!(clone[3].value(), -771);
         testing_unprint(vec![
-            Vec::from(b"create(B: 5)"),
+            Vec::from(b"create(E: 5)"),
             Vec::from(b"noisy_clone(1)"),
             Vec::from(b"noisy_clone(100)"),
             Vec::from(b"noisy_clone(40)"),

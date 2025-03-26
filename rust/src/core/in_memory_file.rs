@@ -61,12 +61,21 @@ impl InMemoryFile {
                 break;
             }
             let buffer = buffer[0..bytes_read];
-            for slice in buffer.split(|b| b == b'\n') {
-                current_line.append(slice)
+            let mut handled_up_to = 0;
+            for i in 0..bytes_read {
+                if buffer[i] == b'\n' {
+                    current_line
+                        .insert_few(OrderedInsertFew::AtEnd(&buffer[handled_up_to..i]))
+                        .map_err(|_| FileError::OutOfMemory)?;
+                    lines.insert(OrderedInsert::AtEnd(moot(&mut current_line)));
+                    handled_up_to = i + 1;
+                }
             }
-            buffer[0..buffer.len() - 1]
+            current_line
+                .insert_few(OrderedInsertFew::AtEnd(&buffer[handled_up_to..bytes_read]))
+                .map_err(|_| FileError::OutOfMemory)?;
         }
-        lines.append(current_line);
+        lines.insert(OrderedInsert::AtEnd(current_line));
         self.lines = lines;
     }
 
@@ -74,8 +83,9 @@ impl InMemoryFile {
 }
 
 pub enum FileError {
-    Unknown,
+    OutOfMemory,
     Open,
+    Unknown,
 }
 
 pub type FileResult<T> = Result<T, FileError>;
