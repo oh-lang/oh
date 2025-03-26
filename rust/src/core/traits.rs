@@ -64,3 +64,69 @@ impl<'a, T: TryClone> Few<T> for &'a [T] {
         self.len()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::core::testing::*;
+
+    fn do_something<T: std::fmt::Debug, E: std::fmt::Debug, F: Few<T, Error = E>>(mut few: F) {
+        for i in 0..few.size() {
+            let value = few.nab(i).expect("ok");
+            testing_print_string(format!("{}: {:?}", i, value));
+        }
+    }
+
+    #[test]
+    fn test_few_mut_uses_moot() {
+        let mut y: [TestingNoisy; 3] = [
+            TestingNoisy::new(6),
+            TestingNoisy::new(7),
+            TestingNoisy::new(8),
+        ];
+        testing_unprint(vec![
+            Vec::from(b"noisy_new(6)"),
+            Vec::from(b"noisy_new(7)"),
+            Vec::from(b"noisy_new(8)"),
+        ]);
+        do_something(&mut y[..]);
+        testing_unprint(vec![
+            Vec::from(b"noisy_new(256)"), // for mooting
+            Vec::from(b"0: noisy(6)"),
+            Vec::from(b"noisy_drop(6)"),
+            Vec::from(b"noisy_new(256)"), // for mooting
+            Vec::from(b"1: noisy(7)"),
+            Vec::from(b"noisy_drop(7)"),
+            Vec::from(b"noisy_new(256)"), // for mooting
+            Vec::from(b"2: noisy(8)"),
+            Vec::from(b"noisy_drop(8)"),
+        ]);
+        assert_eq!(
+            y,
+            [
+                TestingNoisy::default(),
+                TestingNoisy::default(),
+                TestingNoisy::default(),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_few_const_uses_try_clone() {
+        let x: [TestingNoisy; 2] = [TestingNoisy::new(12), TestingNoisy::new(24)];
+        testing_unprint(vec![
+            Vec::from(b"noisy_new(12)"),
+            Vec::from(b"noisy_new(24)"),
+        ]);
+        do_something(&x[..]);
+        testing_unprint(vec![
+            Vec::from(b"noisy_clone(12)"), // from TryClone
+            Vec::from(b"0: noisy(12)"),
+            Vec::from(b"noisy_drop(12)"),
+            Vec::from(b"noisy_clone(24)"), // from TryClone
+            Vec::from(b"1: noisy(24)"),
+            Vec::from(b"noisy_drop(24)"),
+        ]);
+        assert_eq!(x, [TestingNoisy::new(12), TestingNoisy::new(24)]);
+    }
+}

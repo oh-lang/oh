@@ -6,15 +6,14 @@ use crate::core::signed::*;
 use std::cell::RefCell;
 use std::collections::hash_map::HashMap;
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Eq, PartialEq, Hash)]
 pub struct TestingNoisy {
     value: i32,
 }
 
 impl TestingNoisy {
     pub fn new(value: i32) -> Self {
-        let string = format!("noisy_new({})", value);
-        testing_print(<String as AsRef<[u8]>>::as_ref(&string));
+        testing_print_string(format!("noisy_new({})", value));
         Self { value }
     }
 
@@ -23,10 +22,15 @@ impl TestingNoisy {
     }
 }
 
+impl std::fmt::Debug for TestingNoisy {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "noisy({})", self.value)
+    }
+}
+
 impl Clone for TestingNoisy {
     fn clone(&self) -> Self {
-        let string = format!("noisy_clone({})", self.value);
-        testing_print(<String as AsRef<[u8]>>::as_ref(&string));
+        testing_print_string(format!("noisy_clone({})", self.value));
         Self { value: self.value }
     }
 }
@@ -39,8 +43,7 @@ impl Default for TestingNoisy {
 
 impl std::ops::Drop for TestingNoisy {
     fn drop(&mut self) {
-        let string = format!("noisy_drop({})", self.value);
-        testing_print(<String as AsRef<[u8]>>::as_ref(&string));
+        testing_print_string(format!("noisy_drop({})", self.value));
         self.value *= -1;
     }
 }
@@ -77,6 +80,16 @@ pub fn testing_print(bytes: &[u8]) {
 #[cfg(not(test))]
 #[inline]
 pub fn testing_print(_bytes: &[u8]) {}
+
+#[cfg(test)]
+#[inline]
+pub fn testing_print_string(string: String) {
+    testing_print(<String as AsRef<[u8]>>::as_ref(&string));
+}
+
+#[cfg(not(test))]
+#[inline]
+pub fn testing_print_string(string: String) {}
 
 #[cfg(test)]
 pub fn testing_prints() -> Vec<Vec<u8>> {
