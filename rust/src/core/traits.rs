@@ -70,7 +70,7 @@ mod test {
     use super::*;
     use crate::core::testing::*;
 
-    fn do_something<T: std::fmt::Debug, E: std::fmt::Debug, F: Few<T, Error = E>>(mut few: F) {
+    fn do_a_few_things<T: std::fmt::Debug, E: std::fmt::Debug, F: Few<T, Error = E>>(mut few: F) {
         for i in 0..few.size() {
             let value = few.nab(i).expect("ok");
             testing_print_string(format!("{}: {:?}", i, value));
@@ -89,7 +89,9 @@ mod test {
             Vec::from(b"noisy_new(7)"),
             Vec::from(b"noisy_new(8)"),
         ]);
-        do_something(&mut y[..]);
+
+        do_a_few_things(&mut y[..]);
+
         testing_unprint(vec![
             Vec::from(b"noisy_new(256)"), // for mooting
             Vec::from(b"0: noisy(6)"),
@@ -118,7 +120,9 @@ mod test {
             Vec::from(b"noisy_new(12)"),
             Vec::from(b"noisy_new(24)"),
         ]);
-        do_something(&x[..]);
+
+        do_a_few_things(&x[..]);
+
         testing_unprint(vec![
             Vec::from(b"noisy_clone(12)"), // from TryClone
             Vec::from(b"0: noisy(12)"),
