@@ -89,7 +89,7 @@ pub fn testing_print_string(string: String) {
 
 #[cfg(not(test))]
 #[inline]
-pub fn testing_print_string(string: String) {}
+pub fn testing_print_string(_string: String) {}
 
 #[cfg(test)]
 pub fn testing_prints() -> Vec<Vec<u8>> {

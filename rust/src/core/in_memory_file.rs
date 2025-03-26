@@ -91,9 +91,11 @@ impl InMemoryFile {
                 ))
                 .map_err(|_| FileError::OutOfMemory)?;
         }
-        lines
-            .insert(OrderedInsert::AtEnd(current_line))
-            .map_err(|_| FileError::OutOfMemory)?;
+        if current_line.count() > Count::default() {
+            lines
+                .insert(OrderedInsert::AtEnd(current_line))
+                .map_err(|_| FileError::OutOfMemory)?;
+        }
         self.lines = lines;
         Ok(())
     }
@@ -123,6 +125,7 @@ enum FileOpen {
     Read,
 }
 
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub enum FileError {
     OutOfMemory,
     Open,
