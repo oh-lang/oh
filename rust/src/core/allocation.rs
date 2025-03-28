@@ -176,9 +176,9 @@ impl<S: SignedPrimitive, T> std::ops::Deref for AllocationCount<S, T> {
 impl<S: SignedPrimitive, T> std::ops::DerefMut for AllocationCount<S, T> {
     /// Caller is responsible for only accessing initialized values.
     fn deref_mut(&mut self) -> &mut [T] {
-        let capacity = self.capacity;
-        if let Some(capacity) = capacity.to_u64() {
-            unsafe { std::slice::from_raw_parts_mut(self.as_ptr_mut(), capacity as usize) }
+        let capacity = self.capacity.to_usize();
+        if capacity > 0 {
+            unsafe { std::slice::from_raw_parts_mut(self.as_ptr_mut(), capacity) }
         } else {
             cold();
             &mut []
@@ -198,6 +198,13 @@ mod test {
     fn can_deref_an_empty_allocation() {
         let allocation = AllocationCount64::<u64>::default();
         let slice = allocation.deref();
+        assert_eq!(slice.len(), 0);
+    }
+
+    #[test]
+    fn can_deref_mut_an_empty_allocation() {
+        let mut allocation = AllocationCount32::<u8>::default();
+        let slice = allocation.deref_mut();
         assert_eq!(slice.len(), 0);
     }
 
