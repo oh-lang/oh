@@ -696,6 +696,22 @@ mod test {
     use super::*;
     use crate::core::testing::*;
 
+    use std::ops::{Deref, DerefMut};
+
+    #[test]
+    fn can_deref_an_empty_array() {
+        let array = MaybeLocalArrayOptimized32::<3, u32>::default();
+        let slice = array.deref();
+        assert_eq!(slice.len(), 0);
+    }
+
+    #[test]
+    fn can_deref_mut_an_empty_array() {
+        let mut array = MaybeLocalArrayOptimized64::<3, u8>::default();
+        let slice = array.deref_mut();
+        assert_eq!(slice.len(), 0);
+    }
+
     #[test]
     fn insert_and_remove_unallocated_buffer() {
         let mut array = MaybeLocalArrayOptimized64::<16, u8>::default();

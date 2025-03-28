@@ -278,6 +278,22 @@ mod test {
     use super::*;
     use crate::core::testing::*;
 
+    use std::ops::{Deref, DerefMut};
+
+    #[test]
+    fn can_deref_an_empty_array() {
+        let array = NonLocalArrayCount8::<u8>::default();
+        let slice = array.deref();
+        assert_eq!(slice.len(), 0);
+    }
+
+    #[test]
+    fn can_deref_mut_an_empty_array() {
+        let mut array = NonLocalArrayCount8::<u8>::default();
+        let slice = array.deref_mut();
+        assert_eq!(slice.len(), 0);
+    }
+
     #[test]
     fn drop_frees_allocation() {
         {

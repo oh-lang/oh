@@ -189,7 +189,6 @@ impl<S: SignedPrimitive, T> std::ops::DerefMut for AllocationCount<S, T> {
 #[cfg(test)]
 mod test {
     use super::*;
-
     use crate::core::aligned::*;
 
     use std::ops::{Deref, DerefMut};
