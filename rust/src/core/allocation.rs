@@ -163,9 +163,9 @@ impl<S: SignedPrimitive, T> std::ops::Deref for AllocationCount<S, T> {
     type Target = [T];
     /// Caller is responsible for only accessing initialized values.
     fn deref(&self) -> &[T] {
-        let capacity = self.capacity;
-        if let Some(capacity) = capacity.to_u64() {
-            unsafe { std::slice::from_raw_parts(self.as_ptr(), capacity as usize) }
+        let capacity = self.capacity.to_usize();
+        if capacity > 0 {
+            unsafe { std::slice::from_raw_parts(self.as_ptr(), capacity) }
         } else {
             cold();
             &[]
@@ -193,6 +193,13 @@ mod test {
     use crate::core::aligned::*;
 
     use std::ops::{Deref, DerefMut};
+
+    #[test]
+    fn can_deref_an_empty_allocation() {
+        let allocation = AllocationCount64::<u64>::default();
+        let slice = allocation.deref();
+        assert_eq!(slice.len(), 0);
+    }
 
     #[test]
     fn handles_pointers_correctly() {
