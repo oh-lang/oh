@@ -2311,35 +2311,48 @@ Note that you can use all the same methods on a reference as the original type.
 ```
 My_value; int(1234567890)
 (My_ref; int) = My_value
-# equivalent: `My_ref: (Int;) = My_value`
+# equivalent: `My_ref; (Int;) = My_value`
+(My_readonly_ref: int) = My_value
+# equivalent: `My_readonly_ref: (Int:) = My_value`
 
-# NOTE: `My_value` needs to be writable for this to work.
+# NOTE: `My_value` and the `My_ref` reference need to be writable for this to work.
 My_ref = 12345
+# My_readonly_ref = 123 # COMPILE ERROR!
 
 # This is true; `My_value` was updated via the reference `My_ref`
 My_value == 12345
+My_readonly_ref == 12345 # also true.
 
 # There is no need to "dereference" the pointer
-print(My_ref multiply(77) assert())
+print(My_ref * 77)
+print(My_readonly_ref * 23)
 ```
 
 Unlike in C++, there's also an easy way to change the reference to point to
-another instance.
+another instance.  This does require a bit more syntax if you are pointing
+to a readonly value like `(Referent_type:)`, since you'll need to refer to it
+in a way that lets you modify the reference itself.
 
 ```
 My_value1: int(1234)
 My_value2: int(765)
-My_ref; (Int) = My_value1
+My_ref; (Int:) = My_value1
 # This works only for `My_ref;` declarations.  The actual data can be readonly,
 # as it is in this case (`My_value1` and `2` are both readonly), or writable.
 (My_ref) = My_value2
 ```
 
+Note that by default, references like `(My_ref; int) = some_reference()`
+will be reassignable, i.e., defined like `My_ref; (Int;) = some_reference()`,
+and references like `(My_ref: int) = some_reference()` will not be reassignable,
+i.e., defined like `My_ref: (Int:) = some_reference()`.  If you want a readonly-
+referent reference to be reassignable, use `My_ref; (Int:) = ...`.
+
 You can grab a few references at a time using [destructuring](#destructuring)
 notation like this:
 
 ```
-Ref3; (Str) = some_ref()
+Ref3; (Str:) = some_ref()
 # this declares+defines `Ref1` and `Ref2`, and reassigns `Ref3`:
 (Ref1;, Ref2:, Ref3) = some_function_that_returns_refs()
 
@@ -2474,10 +2487,6 @@ My_array; array[int](1, 2, 3, 4, 5, 6)
 Fifth += 100
 My_array == [1, 2, 3, 4, 105, 6]    # should be true
 ```
-
-TODO: maybe require a secondary colon to define a reference object, e.g., `(Fifth;): fifth_element(;My_array)`.
-that way we can consider it an unreassignable reference (if defined with `:`), or a reassignable reference
-(if defined with `;`).
 
 #### refer function
 
@@ -3510,7 +3519,7 @@ it may only be not-writable from your scope's reference to the variable.
 
 In cases where we know the function won't do self-referential logic,
 we can try to optimize and pass by value automatically.  However, we
-do want to support closures like `next_generator(Int; int): do(): {++Int}`,
+do want to support closures like `next_generator(Int; int): {do(): {++Int}}`,
 which returns a function which increments the passed-in, referenced integer,
 so we can never pass a temporary argument (e.g., `Arg. str`) into `next_generator`.
 
@@ -3540,7 +3549,8 @@ is that the function requires a `function_case` identifier before the parenthese
 
 You can also use destructuring to specify return types explicitly.
 The notation is `[Field1: type1, Field2; type2] = do_stuff()`.  This can be used
-to grab even a single field and explicitly type it, e.g., `[X: str] = whatever()`.
+to grab even a single field and explicitly type it, e.g., `[X: str] = whatever()`,
+although via [SFO](#single-field-objects) this is the same as `X: str = whatever()`.
 
 This notation is a bit more flexible than JavaScript, since we're
 allowed to reassign existing variables while destructuring.  In JavaScript,
