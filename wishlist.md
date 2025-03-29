@@ -1307,6 +1307,14 @@ easier to reason about types.
 TODO: types of functions, shouldn't really have `new`.
 TODO: we should discuss the things functions do have, like `my_function Inputs`
 and `my_function Outputs`.
+TODO: if we define `my_fn(~X): x` and then use `Y: x(3)` internally, that's fine,
+we're creating an `x` instance with initialization of `3`.
+but if we do `Z: X x()` then we have a bit of a shadowing problem; are we referring
+to `x(X)`, e.g., `X clone()`, or are we referring to a method `x:;x()`?
+presumably we may want to refer to either, so we need ways to disambiguate.
+in this case, we probably want `x(X)` to do the clone operation and `X x()` to request
+the method `:;x()`.  e.g., if `x == vector3`, then `x(X)` is `vector3(X x(), X y(), X z())`
+and `X x()` is component x of the vector.
 
 ## type overloads
 
@@ -2337,7 +2345,7 @@ a: (X: dbl, Y; int, Z. str)
 # This is OK:
 X: 3.0
 Y; 123
-A: (X, Y;, Z. "hello")    # `Z` is passed by value, so it's not a reference.
+A: (X, Y, Z. "hello")    # `Z` is passed by value, so it's not a reference.
 A Y *= 37    # OK
 
 # This is not OK:
@@ -2347,7 +2355,7 @@ return_a(Q: int): a
     X: Q dbl() ok_or(NaN) * 4.567
     Y; Q * 3
     # So we can't pass X, Y as references here.  Z is fine.
-    (X, Y;, Z. "world")
+    (X, Y, Z. "world")
 ```
 
 Note that we can return arguments instances from functions, but they must be
@@ -4040,7 +4048,7 @@ logger(@Named ~Value): value
 logger(Value: 3)  # returns the integer `3`
 ```
 
-And as usual, you can avoid inferring the type by avoiding using `~`.
+And as in other contexts, you can avoid inferring the type by avoiding using `~`.
 
 ```
 # this generic needs to be specified in brackets at the call site: 
