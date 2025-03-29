@@ -291,17 +291,17 @@ to panic?
 * commas `,` are equivalent to a line break at the current tab and vice versa
     * `do_something(), do_something_else()` executes both functions sequentially 
     * see [line continuations](#line-continuations) for how commas can be elided across newlines for e.g., array elements
-* `()` for argument objects, organization, and function calls/declarations
-    * `(W: str = "hello", X: dbl, Y; dbl, Z. dbl)` to declare an argument object type, `W` is an optional field
+* `()` for reference objects, organization, and function calls/declarations
+    * `(W: str = "hello", X: dbl, Y; dbl, Z. dbl)` to declare a reference object type, `W` is an optional field
         passed by readonly reference, `X` is a readonly reference, `Y` is a writable reference,
-        and `Z` is passed by value.  See [argument objects](#argument-objects) for more details.
+        and `Z` is passed by value.  See [reference objects](#reference-objects) for more details.
     * `My_str: "hi", (X: str) = My_str` to create a [reference](#references) to `My_str` in the variable `X`.
-    * `(Some_instance x(), Some_instance Y;, W: "hi", Z. 1.23)` to instantiate an argument object instance
+    * `(Some_instance x(), Some_instance Y;, W: "hi", Z. 1.23)` to instantiate a reference object instance
         with `X` and `W` as readonly references, `Y` as mutable reference, and `Z` as a temporary.
     * `"My String Interpolation is $(X, Y: Z)"` to add `(X: *value-of-X*, Y: *value-of-Z*)` to the string.
     * `f(A: 3, B: "hi")` to call a function, and `f(A: int, B: str): null` to declare a function.
     * `A@ (x(), Y)` to call `A x()` then `A Y` with [sequence building](#sequence-building)
-        and return them in an argument object with fields `X` and `Y`, i.e., `(X: A x(), Y: A Y)`.
+        and return them in a reference object with fields `X` and `Y`, i.e., `(X: A x(), Y: A Y)`.
         This allows `X` and `Y` to be references.  This can be useful e.g., when `A` is an expression
         that you don't want to add a local variable for, e.g., `my_long_computation()@ (x(), Y)`.
 * `[]` are for types, containers (including objects, arrays, and lots), and generics
@@ -343,7 +343,7 @@ to panic?
     * [inline blocks](#block-parentheses-and-commas) include:
         * `$[...]` as shorthand for a new block defining `[...]`, e.g., for a return value:
             `Array: if Some_condition $[1, 2, 3] else $[4, 5]`
-        * `$(...)` as shorthand for a new block defining `(...)`, e.g., an argument object:
+        * `$(...)` as shorthand for a new block defining `(...)`, e.g., a reference object:
             `Result: if X > Y $(Max: X, Min: Y) else $(Min: X, Max: Y)`
         * `${...}` is almost always equivalent to `{...}`, except inside of string interpolation,
             so we'll likely alias `${...}` to `{...}` outside of strings.
@@ -895,7 +895,7 @@ my_function(Int): [X: int, Y: int]
     ]
 ```
 
-Because parentheses indicate [argument objects](#argument-objects),
+Because parentheses indicate [reference objects](#reference-objects),
 which can be returned like brackets, similar care must be taken with
 indents in `()`.
 
@@ -1073,7 +1073,7 @@ Some_line_continuation_example_variable:
 You can use `{` ... `}` to define a block inline.  The braces block is grammatically
 the same as a standard block, i.e., going to a new line and indenting to +1.
 This is useful for short `if` statements, e.g., `if Some_condition {do_something()}`.
-Similarly, you can return containers/objects or argument objects in blocks via
+Similarly, you can return normal objects or reference objects in blocks via
 `$[...]` or `$(...)`, respectively.
 
 Similarly, note that commas are essentially equivalent to a new line and tabbing to the
@@ -2303,111 +2303,9 @@ v(X, Y)     # equivalent to `v(X: X, Y: Y)` but the redundancy is not idiomatic.
 v(Y, X)     # equivalent
 ```
 
-### argument objects
-
-TODO: we probably need a borrow checker (like Rust):
-
-```
-Result?; some_nullable_result()
-if Result is Non_null:
-    print(Non_null)
-    Result = some_other_function_possibly_null()
-    # this could be undefined behavior if `Non_null` is a reference to the
-    # nonnull part of `Result` but `Result` became null with `some_other_function_possibly_null()`
-    print(Non_null)
-```
-
-Alternatively, we pass around "full references" whenever we can't determine that
-borrowing can be done with just a pointer.  Full references include a path from
-a safely-borrowed pointer, with checks at each nested value for any additions
-that need to be made.  In the above example, we need `Non_null` to be a pointer
-from `Result` that checks if `Result` is non-null before any dereferencing.  The
-above example can be checked by the compiler, but if `Result` was itself a reference
-path then we'd need to recheck any dereferences of `Non_null`.
-
-TODO: let's rename argument objects; they're more general than arguments.
-Maybe just references or reference objects.
-
-In oh-lang, parentheses can be used to define argument objects, both as types
-and instances.  As a type, `(X: dbl, Y; int, Z. str)` differs from the object
-type `[X: dbl, Y; int, Z; str]`, for more than just the reason that `.` is invalid
-in an object type.  When instantiated, argument objects with `;` and `:` fields
-contain references to variables; objects get their own copies.  For convenience,
-we'll use *arguments type* for an argument object type and *arguments instance* for
-an argument object instance.
-
-Because they contain references, arguments instances cannot outlive the lifetime
-of the variables they contain.
-
-```
-a: (X: dbl, Y; int, Z. str)
-
-# This is OK:
-X: 3.0
-Y; 123
-A: (X, Y, Z. "hello")    # `Z` is passed by value, so it's not a reference.
-A Y *= 37    # OK
-
-# This is not OK:
-return_a(Q: int): a
-    # X and Y are defined locally here, and will be descoped at the
-    # end of this function call.
-    X: Q dbl() ok_or(NaN) * 4.567
-    Y; Q * 3
-    # So we can't pass X, Y as references here.  Z is fine.
-    (X, Y, Z. "world")
-```
-
-Note that we can return arguments instances from functions, but they must be
-defined with variables whose lifetimes outlive the input arguments instance.
-For example:
-
-```
-X: 4.56
-return_a(Q; int): (X: dbl, Y; int, Z. str)       # inline arguments type
-    Q *= 37
-    # X has a lifetime that outlives this function.
-    # Y has the lifetime of the passed-in variable, which exceeds the return type.
-    # Z is passed by value, so no lifetime concerns.
-    (X, Y; Q, Z. "sky")
-```
-
-Argument objects are helpful if you want to have arguments that should be
-references, but need nesting to be the most clear.  For example:
-
-```
-# function declaration
-copy(From: (Pixels, Rectangle.), To: (Pixels;, Rectangle.): null
-
-# function usage
-@Source Pixels: pixels() { #( build image )# }
-@Destination Pixels; pixels()
-Size: rectangle(Width: 10, Height: 7)
-
-copy
-(   From: 
-    (   @Source Pixels
-        Size + Vector2(X: 3, Y: 4)
-    )
-    To:
-    (   @Destination Pixels;
-        Size + Vector2(X: 9, Y: 8)
-    )
-)
-```
-
-We can create deeply nested argument objects by adding valid identifiers with consecutive `:`/`;`/`.`.
-E.g., `(X: Y: 3)` is the same as `(X: (Y: 3))`.  This can be useful for a function signature
-like `run(After: duration, fn(): ~t): t`.  `duration` is a built-in type that can be built
-out of units of time like `Seconds`, `Minutes`, `Hours`, etc., so we can do something like
-`run(After: Seconds: 3, (): print("hello world!"))`, which will automatically pass
-`(Seconds: 3)` into the `duration` constructor.  Of course, if you need multiple units of time,
-you'd use `run(After: (Seconds: 6, Minutes: 1), (): print("hello world!"))` or to be explicit
-you'd use `run(After: duration(Seconds: 6, Minutes: 1), (): print("hello world!"))`.
-
 ### references
 
-We can create references using [argument objects](#argument-objects) in the following way.
+We can create references using [reference objects](#reference-objects) in the following way.
 Note that you can use all the same methods on a reference as the original type.
 
 ```
@@ -2449,6 +2347,103 @@ Ref3; (Str) = some_ref()
 some_function_that_returns_refs(): (Ref2; int, Ref2: dbl, Ref3; str)
 ```
 
+#### reference objects
+
+TODO: we probably need a borrow checker (like Rust):
+
+```
+Result?; some_nullable_result()
+if Result is Non_null:
+    print(Non_null)
+    Result = some_other_function_possibly_null()
+    # this could be undefined behavior if `Non_null` is a reference to the
+    # nonnull part of `Result` but `Result` became null with `some_other_function_possibly_null()`
+    print(Non_null)
+```
+
+Alternatively, we pass around "full references" whenever we can't determine that
+borrowing can be done with just a pointer.  Full references include a path from
+a safely-borrowed pointer, with checks at each nested value for any additions
+that need to be made.  In the above example, we need `Non_null` to be a pointer
+from `Result` that checks if `Result` is non-null before any dereferencing.  The
+above example can be checked by the compiler, but if `Result` was itself a reference
+path then we'd need to recheck any dereferences of `Non_null`.
+
+In oh-lang, parentheses can be used to define reference objects, both as types
+and instances.  As a type, `(X: dbl, Y; int, Z. str)` differs from the object
+type `[X: dbl, Y; int, Z; str]`, for more than just the reason that `.` is invalid
+in an object type.  When instantiated, reference objects with `;` and `:` fields
+contain references to variables; objects get their own copies.
+
+Because they contain references, reference object instances cannot outlive the lifetime
+of the variables they contain.
+
+```
+a: (X: dbl, Y; int, Z. str)
+
+# This is OK:
+X: 3.0
+Y; 123
+A: (X, Y, Z. "hello")    # `Z` is passed by value, so it's not a reference.
+A Y *= 37    # OK
+
+# This is not OK:
+return_a(Q: int): a
+    # X and Y are defined locally here, and will be descoped at the
+    # end of this function call.
+    X: Q dbl() ok_or(NaN) * 4.567
+    Y; Q * 3
+    # So we can't pass X, Y as references here.  Z is fine.
+    (X, Y, Z. "world")
+```
+
+Note that we can return reference object instances from functions, but they must be
+defined with variables whose lifetimes outlive the input reference object instance.
+For example:
+
+```
+X: 4.56
+return_a(Q; int): (X: dbl, Y; int, Z. str)       # inline reference object type
+    Q *= 37
+    # X has a lifetime that outlives this function.
+    # Y has the lifetime of the passed-in variable, which exceeds the return type.
+    # Z is passed by value, so no lifetime concerns.
+    (X, Y; Q, Z. "sky")
+```
+
+Argument objects are helpful if you want to have arguments that should be
+references, but need nesting to be the most clear.  For example:
+
+```
+# function declaration
+copy(From: (Pixels, Rectangle.), To: (Pixels;, Rectangle.): null
+
+# function usage
+@Source Pixels: pixels() { #( build image )# }
+@Destination Pixels; pixels()
+Size: rectangle(Width: 10, Height: 7)
+
+copy
+(   From: 
+    (   @Source Pixels
+        Size + Vector2(X: 3, Y: 4)
+    )
+    To:
+    (   @Destination Pixels;
+        Size + Vector2(X: 9, Y: 8)
+    )
+)
+```
+
+We can create deeply nested reference objects by adding valid identifiers with consecutive `:`/`;`/`.`.
+E.g., `(X: Y: 3)` is the same as `(X: (Y: 3))`.  This can be useful for a function signature
+like `run(After: duration, fn(): ~t): t`.  `duration` is a built-in type that can be built
+out of units of time like `Seconds`, `Minutes`, `Hours`, etc., so we can do something like
+`run(After: Seconds: 3, (): print("hello world!"))`, which will automatically pass
+`(Seconds: 3)` into the `duration` constructor.  Of course, if you need multiple units of time,
+you'd use `run(After: (Seconds: 6, Minutes: 1), (): print("hello world!"))` or to be explicit
+you'd use `run(After: duration(Seconds: 6, Minutes: 1), (): print("hello world!"))`.
+
 
 #### reference lifetimes
 
@@ -2472,13 +2467,17 @@ However, since function arguments can be references (e.g., if they are defined w
 fifth_element(Array[int];): (Int;)
     # this is OK because `Array` is a mutable reference
     # to an array that already exists outside of this scope.
-    (Array[4];)
+    (;Array[4])
 
 My_array; array[int](1, 2, 3, 4, 5, 6)
-(Fifth;) = fifth_element(My_array;)
+(Fifth;) = fifth_element(;My_array)
 Fifth += 100
 My_array == [1, 2, 3, 4, 105, 6]    # should be true
 ```
+
+TODO: maybe require a secondary colon to define a reference object, e.g., `(Fifth;): fifth_element(;My_array)`.
+that way we can consider it an unreassignable reference (if defined with `:`), or a reassignable reference
+(if defined with `;`).
 
 #### refer function
 
@@ -2587,7 +2586,7 @@ from function assignments, i.e., assigning the value of one function to another,
 like `my_mutable_fn(); int {original_definition()}`, followed by
 `my_mutable_fn(); int = some_other_fn`.  See [mutable functions](#mutable-functions).
 
-### the name of a called function in an argument object
+### the name of a called function in a reference object
 
 Calling a function with one argument being defined by a nested function will use
 the nested function's name as the variable name.  E.g., if a function is called
@@ -3227,7 +3226,7 @@ temporary will actually create a hidden `int` before the function call.  E.g.,
 rest of the block.  See also [lifetimes and closures](#lifetimes-and-closures).
 To avoid a copy entirely, you'd need to explicitly annotate the return type;
 e.g., you can use `fn(Int;): (Int;) {++Int}` for the above example, i.e.,
-using [argument objects](#argument-objects) for the return value.
+using [reference objects](#reference-objects) for the return value.
 
 In C++ terms, arguments declared as `.` are passed as temporaries (`t &&`),
 arguments declared as `:` are passed as constant reference (`const t &)`,
@@ -5227,7 +5226,7 @@ See also [`new[...]: ...` syntax](#returning-a-type).
 
 Note that generic classes like `generic[of]: [Of]` do not work the same way as
 generic arguments in functions like `fn[of](Of)`.  The latter uses a default-named
-argument in an argument object and the former creates an object whose field
+argument in a reference object and the former creates an object whose field
 is always named `Of`, regardless of what the generic type `of` is.  Thus
 `fn[of](Of)` can be called with `fn[int](5)` (without `Int: 5` specified), while
 creating a generic class `generic[of]: [Of]` will always have the field named as `Of`,
@@ -5315,7 +5314,7 @@ at the same time.
 ## sequence building
 
 Sequence building is using the syntax `A@ [B, c()]` to create an object like `[B: A B, C: A c()]`,
-similarly with `()` to create an argument object, or `{}` to evaluate a few methods on the same
+similarly with `()` to create a reference object, or `{}` to evaluate a few methods on the same
 object.  If you need the LHS of a sequence builder to come in at a different spot, use `@` inside
 the parentheses, e.g., `A@ [B + @ x(), if @ y() { C } else { @ Z }, W]`, which corresponds to
 `[B: B + A x(), Y: if A y() { C } else { A Z }, W: A W]`.  Note that if you use `@` anywhere in
@@ -5375,7 +5374,7 @@ is a reference (either readonly or writable), the return value of the sequence
 builder will depend on the type of parentheses used:
 `{}` returns the value of the last statement in `{}`,
 `[]` creates an object with all the fields built out of the RHS methods, and
-`()` creates an argument object with all the fields built out of the RHS methods.
+`()` creates a reference object with all the fields built out of the RHS methods.
 Some examples of the LHS being a reference follow:
 
 ```
@@ -5821,7 +5820,7 @@ hm[of]: hm[ok: of, er]
 container[at, of: non_null]: []
 {   # Returns `Null` if `At` is not in this container,
     # otherwise the `of` instance at that `At`.
-    # This is wrapped in an argument object to enable passing by reference.
+    # This is wrapped in a reference object to enable passing by reference.
     # TODO: do we like this?  it looks a bit like SFO logic that we killed off.
     # USAGE:
     #   # Get the value at `At: 5` and make a copy of it:
