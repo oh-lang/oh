@@ -1516,7 +1516,16 @@ $curried_function{some_function(X: 5, Y; 2.4, $Z.)}:
 
 TODO: discussion on how to code up macros.
 
+All standard flow control words also get a reserved macro, e.g., `@if`, `@else`, `@while`,
+etc., so that users can tell the compiler to check these values at compile time rather than
+at runtime.  Obviously inputs to these need to be resolvable at compile time.
+
 List of existing macros.
+* `@if`, `@elif`, `@else`
+* `@what`
+* `@while`, `@each`
+* `@return` - probably isn't necessary but reserved anyway.
+
 
 ## namespaces
 
@@ -5333,6 +5342,7 @@ object.  If you need the LHS of a sequence builder to come in at a different spo
 the parentheses, e.g., `A@ [B + @ x(), if @ y() { C } else { @ Z }, W]`, which corresponds to
 `[B: B + A x(), Y: if A y() { C } else { A Z }, W: A W]`.  Note that if you use `@` anywhere in
 a parenthetical statement, you need to use it everywhere you want the LHS to appear.
+(A parenthetical statement is considered just one of statements here: `[Statement1, Statement2, ...]`.)
 
 Why would you need sequence building?
 One reason is that it makes declaring a bunch of private (or protected) variables convenient,
@@ -5671,9 +5681,6 @@ Nested tests will freshly execute any parent logic before executing themselves.
 This ensures a clean state.  If you want multiple tests to start with the same
 logic, just move that common logic to a parent test.
 
-TODO: parametric tests probably can just be `@test "params":` and nesting
-`All_possible_params each Params: {@test "works for $[Params]": ...}`.
-
 Inside of a `test` block, you have access to a `Test` variable which includes
 things like what has been printed (`Test print()`).  In this example, `Test print()`
 will pull everything that would have been printed in the test, putting it into
@@ -5681,17 +5688,37 @@ a string array (one string per newline), for comparisons and matching.
 It then clears its internal state so that new calls
 to `Test print()` will only see new things since the last time `Test print()` was called.
 
+Parametric tests are also possible; just make sure to use `@each` (or another control flow macro)
+in order to expand the loops at compile time.
+
+```
+@test_only
+test_case: [Argument: str, Return: int]
+
+@test_only
+Test_cases: lot[at: str, test_case]
+[   "hello": [Argument: "hello world", Return: 11]
+    "wow": [Argument: "wowee", Return: 5]
+]
+
+@test "do_something":
+    # this common setup executes before each parametric test;
+    # each nested test starts with the common setup from fresh
+    # and doesn't continue to use the environment for the next nested test.
+    get_environment_set_up()
+
+    Test_cases @each(Name: at, Test_case:)
+        @test "testing ${Name}":
+            test(do_something(Test_case Argument)) == Test_case Return
+```
+
 Integration tests can be written in files that end with `.test.oh` or `.test.ohs` (i.e., as a script).
 These can pull in any dependencies via standard file/module imports, including other test files.
 E.g., if you create some test helper functions in `helper.test.oh`, you can import these
 into other test files (but not non-test files) for usage.
 
-In debug mode (the default), unit tests are always run before a program runs its non-test code
-(i.e., whenever `hm run` is invoked), and integration tests (and unit tests) are run via `hm test`.
-In hardened or optimized modes, unit tests can be invoked via `hm test -h` (hardened, also `--hardened`
-works instead of `-h`) or `hm test -o` (optimized, also `--optimized` works instead of `-o`).
-If you are in a subdirectory of your main project, `hm test` will only run tests in that directory
-and any subdirectories.
+Unit and integration tests are run via `oh test` in the directory you want, or `oh test subdirectory/`;
+only tests in that directory (and recursive subdirectories) will be run.
 
 ## file access / file system
 
