@@ -1,0 +1,21 @@
+in_memory_file:
+[   m: [File_path;, Lines; array[str]]
+]
+{   open(File_path.): hm[m]
+        Result; m = [File_path!, Lines: []]
+        if Result read() is Er:
+            if Er != File_not_found
+                return Er
+        Result
+
+    ;;read(): hm[null]
+        Lines; file[Read_only](File_path) read() assert()
+        M Lines <-> Lines
+
+    ::write(): hm[null]
+        M File_path make() assert() write(M Lines)
+}
+
+[file, er, hm]: \/file
+[file_path]: \/file_path
+

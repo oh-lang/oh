@@ -4352,7 +4352,7 @@ example_class@
 ```
 
 If they are public, you can import these custom methods/functions in other files in two
-ways: (1) import the full module via `import \/relative/path/to/file` or `import \\library/module`,
+ways: (1) import the full module via `[*]: \/relative/path/to/file` or `[*]: \\library/module`,
 or (2) import the specific method/function via e.g.,
 `{example_class my_added_class_function(K: int): example_class} \/relative/path/to/file`
 or `{example_class::my_added_method(Y: int): int} \\library/module`.
@@ -5590,7 +5590,7 @@ Vector2_oh: \/vector2   # .oh extension can be used but will be formatted off.
 Vector2: Vector2_oh vector2(X: 3, Y: 4)
 print(Vector2)
 # you can also destructure imports like this:
-[vector2]: \/vector2    # or `[vector2]: oh("./vector2.oh")`
+[vector2]: \/vector2    # equivalent to `[vector2]: oh("./vector2.oh")`
 ```
 
 Note that we cannot import a function like this: `[my_function]: \/other_file`;
@@ -5599,6 +5599,11 @@ that you're pulling in, e.g., `[my_function(Int): str]: \/other_file`,
 or request all overloads via `[my_function(Call;): null]: \/other_file`.
 Or you can just import the file and use the function as needed:
 `Other_file: \/other_file, Other_file my_function(123)`.
+TODO: i think we can relax this requirement; if you request `[my_function]` it can just
+be the function with all overloads; otherwise we should technically require specifying
+type "overloads" for generic types like `hm[of]: hm[ok: of, er]` that come from other files.
+there's not a huge difference between types and functions, they both can
+take arguments to return something else.
 
 You can use this `\/` notation inline as well, which is recommended
 for avoiding unnecessary imports.  It will be a language feature to
@@ -5812,6 +5817,9 @@ what Result
     Er:
         print("Er: ", Er)
 ```
+
+TODO: we probably want to enable things like `if Result is Ok: and Ok != 0 {...} else {...}`
+and similarly for `Er`.
 
 ## assert
 

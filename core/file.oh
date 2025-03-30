@@ -1,5 +1,7 @@
 file[Mode]: [@private File_handle]
-{   m(Path.): hm[m]
+{   m(File_path.): hm[m]
+
+    ;;descope(): null
 
     # moves the file pointer to the byte specified by `Count`.
     ;;seek(Count): hm[null]
@@ -23,6 +25,12 @@ file[Mode]: [@private File_handle]
     # it will return an empty array.
     ;;read[Require: Mode is_readable()]: hm[[Lines: array[str]]]
 
+    # appends all lines to the file, and also adds newline character(s).
+    # TODO: update to `iterator[str]` instead of `array[str]`
+    ;;write[Require: Mode is_writable()](Lines: array[str]): hm[null]
+        Lines each Line:
+            M write(Line)
+
     # appends a line to the file, and also adds newline character(s).
     ;;write[Require: Mode is_writable()](Line: str): hm[null]
 
@@ -38,11 +46,14 @@ file[Mode]: [@private File_handle]
 mode: one_of
 [   Read_only
     Read_write
-    # TODO: Truncate_write??
+    # file is created or truncated if already present
+    Truncate_write
 ]
 {   ::is_writable(): bool
         what M
             Read_write
+                True
+            Truncate_write
                 True
             Read_only
                 False
@@ -54,13 +65,18 @@ mode: one_of
             Read_only
             Read_write
                 True
+            Truncate_write
+                False
 }
 
 er: one_of
-[   Invalid # TODO
+[   Invalid
+    File_not_found
 ]
 
 hm[of]: hm[ok: of, er]
 
+[path]: \/path
+
 @test_only
-Mocked_files: lot[at: Path, In_memory_file]
+Mocked_files: lot[at: File_path, In_memory_file]

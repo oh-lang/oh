@@ -1,0 +1,11 @@
+file_path: str
+{   ::is_directory(): bool
+    ::is_regular_file(): bool
+
+    # if a regular file, returns the directory it's contained in (e.g., `x/file.txt` -> `x/`).
+    # if a directory, returns the parent directory (i.e., `..`)
+    ::parent_directory(): file_path
+
+    # creates/truncates a file, including any directories it's nested in.
+    ::make(): hm[file]
+}
