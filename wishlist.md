@@ -220,6 +220,28 @@ we use this syntax, `child_class: parent_class { ::extra_methods(): int, ... }`,
 and to add instance variables to the child class we use this notation:
 `child_class: all_of[parentClass, m: [Child_x: int, Child_y: str]] { ... methods }`.
 
+oh-lang handles generics/templates in a way more similar to zig or python rather than C++ or Rust.
+When compiled on their own, templates are only tested for syntax/grammar correctness.
+When templates are *used* in another piece of code, that's when the specification kicks in
+and all expressions within the generic are compiled to see if they are allowed with the
+specified types.  Any errors are still compile-time errors, but you get to have the simplicity
+of duck typing without needing to specify your type constraints fully.
+
+```
+my_generic[of](A: ~of, B: of): of
+    # this clearly requires `of` to implement `*`
+    # but we didn't need to specify `[of: number]` or similar in the generic template.
+    A * B
+
+print(my_generic(A: 3, B: 4))   # OK
+print(my_generic(A: [1, 2, 3], B: [4, 5]))  # COMPILE ERROR: no definition for `array[int] * array[int]`
+```
+
+Similarly, duck typing means that if you define an appropriate `::hash` function on your class,
+you don't need to mention that your class is `hashable`.  A check for `some_class is some_other_class`
+will not require strict descent from `some_other_class` but only that the same methods and fields
+are defined.
+
 ## safety
 
 oh-lang supports "safe" versions of functions where it's possible that we'd run out of
@@ -4125,7 +4147,8 @@ my_class[of, N: count]:
     Third_value[Require: N >= 3]: of
     ... # plz help am i coding this right??
 ]
-{   # `of is hashable` is true iff `of` extends `hashable`.
+{   # `of is hashable` is true iff `of` extends `hashable` either explicitly
+    # or implicitly by implementing a `hash` method like this:
     ::hash[Require: of is hashable](~Builder):
         Builder hash(My Value)
         # TODO: is this the best notation for if `Second_value` is compile-time present?
@@ -6897,6 +6920,8 @@ oh-lang will support fast hashes for classes like `int`, `i32`, and `array[u64]`
 and other containers of precise types, as well as recursive containers thereof.
 
 ```
+# note it's not strictly necessary to mention you implement `hashable`
+# if you have the correct `hash` method signature.
 my_hashable_class: all_of[hashable, m: [Id: u64, Name; string]]
 {   # we allow a generic hash builder so we can do cryptographically secure hashes
     # or fast hashes in one definition, depending on what is required.
