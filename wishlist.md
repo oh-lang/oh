@@ -737,7 +737,7 @@ child3: all_of[parent1, parent2, m: [C3: int]]
 
     ::do_p1(): null
         # this logic repeats `Parent1 do_p1())` `M C3` times.
-        M C3 each @Ignore Int:
+        M C3 each Int_:
             # same as `parent1 do_p1(M)` or `parent1::do_p1()`.
             Parent1 do_p1()
     
@@ -795,7 +795,7 @@ There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
 which are function-like but may consume the rest of the statement.
 E.g., `return X + 5` will return the value `(X + 5)` from the enclosing function.
 There are some reserved namespaces with side effects like `@First`, `@Second`,
-`@Unused`, `@Ignore`, `@Named`,
+`@Named`,
 which should be used for their side effects.  For example, `@First` and `@Second`
 are reserved for binary operations like `&&` and `*`.  See [namespaces](#namespaces)
 for more details.  Other reserved keywords:
@@ -810,8 +810,19 @@ underscores (`_`) have some special handling.  They are ignored in numbers,
 e.g., `1_000_000` is the same as `1000000`, and highly recommended for large numbers.
 Underscores in identifiers will automatically "capitalize" the next letter, so
 `my_function` is the same as `myFunction`, and `_count` is the same as `Count`.
-Numbers are ignored, so `x_1` is the same as `x1`.  Trailing underscores are not allowed;
-if you want to annotate a variable as unused, use the `@Unused` or `@Ignore` namespace.
+Numbers are ignored, so `x_1` is the same as `x1`.  To indicate a variable (or function)
+is unused in a block, use a trailing underscore.  If used when defining a function
+argument, it will not affect how callers call the function; they'll use the
+non-trailing-underscored name.
+
+```
+# when defining, we use a trailing underscore to indicate the variable is unused.
+my_function(Argument_which_we_will_need_later_: int): null
+    print("TODO")
+
+# when calling:
+my_function(Argument_which_we_will_need_later: 3)
+```
 
 ## blocks
 
@@ -1507,9 +1518,6 @@ TODO: discussion on how to code up macros.
 
 List of existing macros.
 
-* `@unused` - aliases to `@Unused` namespace
-* `@ignore` - aliases to `@Ignore` namespace
-
 ## namespaces
 
 Namespaces are used to avoid conflicts between two variable names that should be called
@@ -1623,10 +1631,6 @@ TODO: we could use `@Outer fn` and then `outer(...)` to call the function.
 
 * `@First` - for the first operand in a binary operation (where order matters)
 * `@Second` - for the second operand in a binary operation (where order matters)
-* `@Unused` - for variables that aren't used in this block
-* `@Ignore` - the same as `@Unused`, but usually used for errors, e.g., `Result map(an(@Ignore Er): -1)`
-    TODO: probably can use a *trailing* underscore to ignore a variable, e.g., `Result map({$Er_, -1})`,
-    but i like the purposeful intent behind the `@Ignore` namespace.
 * `@Named` - for arguments that should be explicitly named in [functions](#defining-generic-functions)
 
 ## member access operators `::`, `;;`, ` `, and subscripts `[]`
@@ -2534,7 +2538,7 @@ is just the `Variable_case` version of the `type_case` type.
 
 ```
 # this function declaration is equivalent to `f(Int: int): int`:
-f(Int): int
+f(Int:): int
     Int + 5
 
 Z: 3
@@ -2915,7 +2919,7 @@ greet(Say: string, To: string): null
     print("${Say}, ${To}!")
 
 greet(Say: string, To: string, Times: int): null
-    range(Times) each @Unused Int:
+    range(Times) each Int_:
         greet(Say, To)
 
 # so you call this in different ways:
@@ -4784,7 +4788,7 @@ you can make it simpler like this instead:
 horse: all_of[animal, m: [Owner: str]]
 {   # this passes `Name` to the `animal` constructor and sets `Owner` on self:
     ;;renew(Animal Name: str, M Owner: str, Neigh_times: int = 0)
-        range(Neigh_times) each @Unused Int:
+        range(Neigh_times) each Int_:
             This speak()
 
     ::speak(): null
@@ -4846,7 +4850,7 @@ flow8: [I8;]
             M I8 = -128
             return
         I16: M I8 + O I8
-        M I8 = i8(I16) map({@Ignore $Er, -128})
+        M I8 = i8(I16) map({$Er_, -128})
 
     ::+(O): flow8
         Copy; M
@@ -5259,7 +5263,7 @@ All classes have a few compiler-provided methods which cannot be overridden.
 * `..map(an(M.): ~t): t` to easily convert types or otherwise transform
     the data held in `M`.  This method consumes `M`.  You can also overload
     `map` to define other useful transformations on your class.
-* `::map(an(M): ~t): t` is similar to `..map(an(M.): ~t): t`,
+* `::map(an(M:): ~t): t` is similar to `..map(an(M.): ~t): t`,
     but this method keeps `M` constant (readonly).  You can overload as well.
 * `m(...): m` class constructors for any `;;renew(...): null` methods.
 * `m(...): hm[ok: m, er]` class or error constructors for any methods defined as
@@ -5799,8 +5803,8 @@ then we can automatically convert its return value into a `one_of[ok, null]`, i.
 a nullable version of the `ok` type.  This is helpful for things like type casting;
 instead of `My_int: what int(My_dbl) {Ok. {Ok}, Er: {-1}}` you can do
 `My_int: int(My_dbl) ?? -1`.  Although, there is another option that
-doesn't use nulls:  `int(My_dbl) map(by(@Ignore Er): -1)`, or via
-[lambda functions](#lambda-functions): `int(My_dbl) map({@Ignore $Er, -1})`.
+doesn't use nulls:  `int(My_dbl) map(fn(Er_): -1)`, or via
+[lambda functions](#lambda-functions): `int(My_dbl) map({$Er_, -1})`.
 
 TODO: should this be valid if `ok` is already a nullable type?  e.g.,
 `my_function(): hm[ok: one_of[int, null], er: str]`.
@@ -6136,10 +6140,10 @@ Stack_database; lot[at: array[int], string]
 Stack_database[[1,2,3]] = "stack123"
 Stack_database[[1,2,4]] = "stack124"
 # prints "stack123" with 90% probability, "stack124" with 10%:
-print(Stack_database[map([1.0, 2.0, 3.1], $Dbl round(Stochastically))])
+print(Stack_database[map([1.0, 2.0, 3.1], {$Dbl round(Stochastically)})])
 # things get more complicated, of course, if all array elements are non-integer.
 # the array is cast to the ID type (integer array) first.
-Stack_database[[2.2, 3.5, 4.8] map($Dbl round(Stochastically))]
+Stack_database[[2.2, 3.5, 4.8] map({$Dbl round(Stochastically)})]
 # result could be stored in [2, 3, 4], [2, 3, 5], [2, 4, 4], [2, 4, 5],
 #                           [3, 3, 4], [3, 3, 5], [3, 4, 4], [3, 4, 5]
 # but the ID is decided first, then the lot is added to.
@@ -6550,7 +6554,7 @@ example_class: [Value: int]
 but in oh-lang the `case` keyword is not required.  You can use the keyword
 `else` for a case that is not matched by any others, i.e., the default case.
 You can also use `Any:;.` to match any other case, if you want access to the
-remaining values.  (`else` is therefore like an `@Ignore Any:` case.)
+remaining values.  (`else` is therefore like an `Any_:` case.)
 We switch from the standard terminology for two reasons: (1) even though
 `switch X` does describe that the later logic will branch between the different
 cases of what `X` could be, `what X` is more descriptive as to checking what `X` is,
