@@ -2,6 +2,7 @@ in_memory_file:
 [   m: [File_path;, Lines; array[str]]
 ]
 {   open(File_path.): hm[m]
+        File_path normalize() assert()
         Result; m = [File_path!, Lines: []]
         if Result read() is Er:
             if Er != File_not_found
@@ -13,6 +14,10 @@ in_memory_file:
         M Lines <-> Lines
 
     ::write(): hm[null]
+        # we need to be very careful with an in-memory directory
+        # that could just erase all file contents.
+        assert(M File_path is_regular_file(), Er: Expected_regular_file)
+
         M File_path make() assert() write(M Lines)
 }
 

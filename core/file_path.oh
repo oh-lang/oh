@@ -1,11 +1,39 @@
-file_path: str
-{   ::is_directory(): bool
+file_path:
+[   @private m: [Array[u8];]
+]
+{   # some operating systems have different ways of representing file paths,
+    # so convert from WTF8 to the OS representation here.
+    # NOTE: this is purely a mechanical operation that does not rely on the file system.
+    # if you need to make sure the path is valid, use `;;normalize()`.
+    # NOTE: if you want to create a directory path, use a trailing separator, e.g., `a/b/`.
+    # if you're not sure if `a/b` is a directory or a regular file, pass it in and call
+    # `;;normalize()` before checking `::is_directory()` or `::is_regular_file()`.
+    m(Str.): m
+
+    # WARNING: this (and `::is_regular_file()`) are purely mechanical operations.
+    # if you need to verify that this path may be an existing directory, but
+    # was passed in without the trailing directory separator, then use `;;normalize()` first.
+    ::is_directory(): bool
     ::is_regular_file(): bool
 
+    # verifies the path is valid on the current OS.
+    # this does not care if the path exists (e.g., see `::already_exists()`), but it
+    # does care if the path would try to change an existing file into a directory.
+    # e.g., suppose this path is `/a/b/c.txt` but `/a/b` is an existing file and
+    # not a directory; in this case, then this method will return an error.
+    # alternatively, if `/a/` exists but not `/a/b/`, we will return no error because
+    # we can still make the path `/a/b/c.txt` in a valid way (e.g., via `::make()`).
+    ;;normalize(): hm[null]
+
     # if a regular file, returns the directory it's contained in (e.g., `x/file.txt` -> `x/`).
-    # if a directory, returns the parent directory (i.e., `..`)
+    # if a directory, returns the parent directory (e.g., `x/y/` -> `x/`)
+    # if already root (i.e., `/`) or empty (i.e., ``), then returns self.
+    # NOTE: this is purely a mechanical operation that does not rely on the file system.
+    # if you need to make sure the path is valid, use `;;normalize()`.
     ::parent_directory(): file_path
 
     # creates/truncates a file, including any directories it's nested in.
     ::make(): hm[file]
 }
+
+[file, er, hm]: \/file

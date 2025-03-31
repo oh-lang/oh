@@ -72,6 +72,7 @@ mode: one_of
 er: one_of
 [   Invalid
     File_not_found
+    Expected_regular_file
 ]
 
 hm[of]: hm[ok: of, er]
