@@ -70,9 +70,10 @@ mode: one_of
 }
 
 er: one_of
-[   Invalid
+[   Unknown
     File_not_found
     Expected_regular_file
+    Expected_directory
 ]
 
 hm[of]: hm[ok: of, er]
