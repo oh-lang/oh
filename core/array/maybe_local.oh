@@ -1,22 +1,22 @@
 # stores up to 9_223_372_036_854_775_808 elements.
 # uses at least 8 bytes for a pointer + 8 bytes for count.
-heap_or_local_array64[of, Local_bytes]:
-        heap_or_local_array[of, special_count: h64, Local_bytes]
+maybe_local_array64[of, Local_bytes]:
+        maybe_local_array[of, special_count: h64, Local_bytes]
 
 # efficiently stores up to 2_147_483_648 elements, more being less efficient.
 # uses at least 8 bytes for a pointer + 4 bytes for count & special_count.
-heap_or_local_array32[of, Local_bytes]:
-        heap_or_local_array[of, special_count: h32, Local_bytes]
+maybe_local_array32[of, Local_bytes]:
+        maybe_local_array[of, special_count: h32, Local_bytes]
 
 # efficiently stores up to 32_768 elements, more being less efficient.
 # uses at least 8 bytes for a pointer + 2 bytes for count & special_count.
-heap_or_local_array16[of, Local_bytes]:
-        heap_or_local_array[of, special_count: h16, Local_bytes]
+maybe_local_array16[of, Local_bytes]:
+        maybe_local_array[of, special_count: h16, Local_bytes]
 
 # efficiently stores up to 128 elements, more being less efficient.
 # uses at least 8 bytes for a pointer + 1 byte for count & special_count.
-heap_or_local_array8[of, Local_bytes]:
-        heap_or_local_array[of, special_count: h8, Local_bytes]
+maybe_local_array8[of, Local_bytes]:
+        maybe_local_array[of, special_count: h8, Local_bytes]
 
 # for simplicity, rounds to multiples of 8 bytes.
 Local_bytes: one_of[16, 24, 32, 40, 48, 56, 64]
@@ -24,53 +24,56 @@ Local_bytes: one_of[16, 24, 32, 40, 48, 56, 64]
 # array that is local up to a certain capacity (`Max_unallocated_count`)
 # and allocated on the heap past that.
 @align(8)
-heap_or_local_array
+maybe_local_array
 [   special_count: hoisted_primitive
     of
     Local_bytes
     # ensure that `Efficient_allocation` doesn't increase the size of this struct past `Local_bytes`.
-    Require: Local_bytes >= count_bytes(efficient_allocation[special_count, of]) + count_bytes(special_count)
+    Require:
+    (   Local_bytes
+            >=  count_bytes(efficient_allocation[special_count, of])
+            +   count_bytes(special_count)
+    )
 ]: all_of
 [   @private m:
     [   Union; c_union
-        [   Unallocated; vector[Max_unallocated_count, of]
-            Efficient_allocation; efficient_allocation[special_count, of]
-            Inefficient_allocation; ptr[heap_array[of]]
+        [   Local_vector; vector[Max_unallocated_count, of]
+            Efficient_allocation; allocation[special_count, of]
+            Non_local_array; ptr[non_local_array[of]]
         ]
         Special_count;
     ]
     array[of]
 ]
-{   Max_unallocated_count: (Local_bytes - count_bytes(special_count)) // count_bytes(of)
+{   # while we can efficiently store only up to a count of `special_count`,
+    # we expand if necessary via the `Non_local_array` to `count_arch`.
+    count: count_arch
+    Max_unallocated_count: (Local_bytes - count_bytes(special_count)) // count_bytes(of)
     Local_zero_start: special_count(1)
-    Null_special_count: m Local_zero_start + m Max_unallocated_count
-    Inefficient_special_count: special_count max() // 2
+    Inefficient_special_count: m Local_zero_start + m Max_unallocated_count
 
     @private
-    ::locality(): locality
+    ::memory(): memory
         if M Special_count < Local_zero_start
-            Allocated_efficiently
+            Efficient_allocation
         elif M Special_count < Null_special_count
-            Local
+            Local_vector
         elif M Special_count == Inefficient_special_count
-            Allocated_inefficiently
+            Non_local_array
         else
-            panic("heap_or_local_array was null or something else")
+            panic("maybe_local_array was in an invalid state")
 
     ?: m
-    {   Null: [Special_count: m Null_special_count]
-        ::is(null): M Special_count == Null_count
+    {   Null: [Special_count: m Inefficient_special_count + 1]
+        ::is(null): bool
+            M Special_count == m Inefficient_special_count
+                and M Non_local_array == Null
     }
 }
 
 @private
-efficient_allocation[locality: hoisted_primitive, of]:
-[   Allocation[of, capacity: hoisted_primitive]
-]
-
-@private
-locality: one_of
-[   Local
-    Allocated_efficiently
-    Allocated_inefficiently
+memory: one_of
+[   Local_vector
+    Efficient_allocation
+    Non_local_array
 ]
