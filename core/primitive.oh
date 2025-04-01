@@ -1,3 +1,9 @@
+# TODO: fix for 32bit architectures
+h_arch: h64
+s_arch: s64
+i_arch: i64
+u_arch: u64
+
 primitive: flatten
 [   # unsigned primitives represent `0` to `2^P - 1`.
     unsigned_primitive

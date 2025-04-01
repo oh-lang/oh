@@ -3,17 +3,8 @@
 indexable_sequence[of: not[null]]: container[of, at: index]
 {   ;;count(@Resize_to Count): null 
 
-    # requires a positive (or zero) index passed in.
-    # will return an error if `In_bounds >= M count()`.
-    :;[In_bounds.]: hm[(Of:;)]
-
-    # in-bounds reference, which is unsafe to call unless `In_bounds` is 
-    # within the range `[0, M count())`.
-    @can_panic
-    :;[In_bounds.]: (Of:;)
-
     # nullable getter; returns null if `Index` is outside the bounds of the array.
-    ::[Index.]: (Of?)
+    ::[Index.]: (Of?:)
         refer
         (   M
             At. @hide Index
@@ -31,6 +22,10 @@ indexable_sequence[of: not[null]]: container[of, at: index]
                 In_bounds: O in_bounds(Index) assert()
                 (Of; O[In_bounds])
         )
+
+    # requires `In_bounds >= 0` and `In_bounds < M count()`.
+    # throws in debug, prefer `Index` access which will bounds check.
+    :;[In_bounds.]: (Of:;)
 
     @protected
     ::in_bounds(Index.): hm[in_bounds]

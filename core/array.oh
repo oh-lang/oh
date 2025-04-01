@@ -1,11 +1,3 @@
-[allocation]: \/allocation
-
-er: flatten
-[   \/allocation er
-    \/indexable er
-]
-hm[ok]: hm[ok, er]
-
 array[of, capacity: count]: all_of
 [   hashable
     indexable_sequence[of]
@@ -151,3 +143,5 @@ array[of, capacity: count]: all_of
             return ok()
         M capacity(Current_capacity double_or_max(At_least. 4))
 }
+
+[allocation, hm, er]: \/allocation

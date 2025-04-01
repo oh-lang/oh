@@ -1,44 +1,56 @@
-heap_array[capacity: hoisted_primitive, of]: all_of
+non_local_array[capacity: hoisted_primitive = h_arch, of]: all_of
 [   @private m:
     [   Allocation[of, capacity];
-        Count; count[wrapping: capacity]
+        Count; m count
     ]
     array[of]
 ]
-{   
-    ;;enscope(Arguments[of].): null
-        Allocation capacity(Arguments count()) ?? panic()
-        while Count < Arguments count()
-            Allocation move_construct(In_bounds: Arguments[Count++]!)
+{   # constructs an array `[1, 2, 3]` via syntax `non_local_array(1, 2, 3)`,
+    # inferring e.g., `t: int`.
+    g(Arguments[~t].): hm[g[t]]
+        Allocation; allocation[of]
+        Allocation capacity(Arguments count()) assert()
+        Count: Arguments count()
+        Count each Index:
+            Allocation move_construct(In_bounds: Index, Arguments[Index]!)
+        [Allocation, Count]
 
     ;;descope(): null
         M clear(Drop_capacity)
 
-    ::capacity(): count
+    ::capacity(): m count
         M Allocation capacity()
 
     ;;capacity(Capacity.): hm[capacity]
         while M Count > Capacity
-            @Unused Of: M pop()
+            Of_: M pop()
         M Allocation capacity(Capacity)
 
-    ::count(): count
+    ::count(): m count
         M Count
 
     ;;append(Of.): hm[null]
-        debug assert(M Count < count::Max)
-        M capacity(At_least: M Count + 1) assert()
-        Allocation move_construct(M Count++, Of!)
-   
+        assert(M Count < m count::Max, Er: Out_of_memory)
+        Required_capacity: M Count + 1
+        if Required_capacity > M capacity()
+            M grow(Required_capacity) assert()
+        M Count = Required_capacity
+        Allocation move_construct(In_bounds: Required_capacity highest_index(), Of!)
+
     # in-bounds reference, which is unsafe to call unless `In_bounds` is 
     # within the range `[0, M count())`.
     :;[In_bounds.]: (Of:;)
-        debug assert(In_bounds >= 0 and In_bounds < M count())
+        # TODO: `In_bounds` can probably be a u64 so we don't have to check < 0.
+        debug assert(In_bounds >= 0 and In_bounds < M Count)
         Allocation[In_bounds_and_constructed. In_bounds]
 
     ;;pop()?: of
         if M Count == 0
             Null
         else
-            M Allocation read_out(--M Count)
+            M Allocation read_out(In_bounds: --M Count)
+
+    count: count[wrapping: capacity]
 }
+
+[er, hm]: \/../container
