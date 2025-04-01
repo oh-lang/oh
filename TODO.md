@@ -28,6 +28,17 @@ the program `P` you want to compile.  but instead of compiling the interpreter `
 and then running the program `P`, i.e., `c(I)(P)`, you compile with the interpreter
 and code combined, i.e., `c(I * P)`; thus making the compiler aware of what
 transformations you're trying to do in `P` via `I` to native code.  however, to
-specify `I * P`, you need to write `I` a special way.
+specify `I * P`, you need to write `I` a special way.  if you feed in `P` as
+the compiler itself (written in language `L`), then you get your compiler at
+"native" (and not interpreted) speeds.
 
+this doesn't feel all that much different from transpiling to e.g., C++.
+
+unfortunately performance isn't that great:
+https://news.ycombinator.com/item?id=17946026
+
+but there are some interesting tools out there:
 https://github.com/BuildIt-lang/buildit
+
+Deegen, e.g., https://github.com/luajit-remake/luajit-remake, seems nice
+but also relies on LLVM.  But could be a model for writing a JIT.

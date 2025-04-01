@@ -292,6 +292,8 @@ to panic?
 # general syntax
 
 * `print(...)` to echo some values (in ...) to stdout, `error(...)` to echo to stderr
+    * use string interpolation for printing dynamic values: `print("hello, ${Variable_1}")`
+    * use `print(No_newline: "keep going ")` to print without a newline
 * `type_case`/`function_case` identifiers like `x` are function/type-like, see [identifiers](#identifiers)
 * `Variable_case` identifiers like `X` are instance-like, see [identifiers](#identifiers)
 * use `#` for [comments](#comments)
