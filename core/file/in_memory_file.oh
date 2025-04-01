@@ -19,5 +19,4 @@ in_memory_file:
         M File_path mode(Truncate_write) assert() write(M Lines)
 }
 
-[regular_file_path, regular_file, er, hm]: \/file
-
+[regular_file_path, regular_file, er, hm]: \/../file
