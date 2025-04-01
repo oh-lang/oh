@@ -1,6 +1,5 @@
 # stores up to 9_223_372_036_854_775_808 elements.
 # uses at least 8 bytes for a pointer + 8 bytes for count.
-# setting `Local_bytes: 16` thus doesn't provide any room for a local array.
 heap_or_local_array64[of, Local_bytes]:
         heap_or_local_array[of, special_count: h64, Local_bytes]
 
