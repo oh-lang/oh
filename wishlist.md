@@ -268,6 +268,7 @@ custom_container[of]: [Repeated; repeated[10, of]]
         else
             ok((Of:; M Repeated[Ordinal]))
 
+    @can_panic
     M[Ordinal]:; (Of:;)
         M[Ordinal] Hm ?? panic(Er)
 
@@ -5857,8 +5858,8 @@ methods.  For public methods, `assert` should always be used to check arguments.
 
 Note that for functions that return results, i.e., `hm[ok, er]`, `assert` will automatically
 return early with an `er` based on the error the `assert` encountered.  If a function does
-*not* return a result, then using `assert` will be a run-time panic.
-TODO: we might want to annotate such functions as `@panics` or `@can_panic`.
+*not* return a result, then using `assert` will be a run-time panic; to make sure that's
+what you want, annotate the function with `@can_panic`, otherwise it's a compile error.
 
 ## automatically converting errors to null
 

@@ -100,7 +100,31 @@ maybe library files need to be copied over anyway into their own directory (at l
 alternatively, as an even rougher first pass, we could put everything into one big `.c` file,
 with some DAG logic for where things should be defined.
 
-## inheritance
+## classes
+
+### type layout
+
+Structs are laid out like the oh-lang class bodies (in `[]`).
+
+```
+# in oh-lang, define a class in file `linear.oh`:
+vector3: [X: dbl, Y: dbl, Z: dbl]
+{   ::length(): dbl
+        sqrt(M X^2 + M Y^2 + M Z^2)
+}
+
+# in C:
+typedef struct
+{   double X;
+    double Y;
+}       LINEAR_OH__vector3;
+
+double LINEAR_OH__length__vector3__return__double(const LINEAR_OH__vector3 *M)
+{   return sqrt(M->X * M->X + M->Y * M->Y + M->Z * M->Z);
+}
+```
+
+### inheritance
 
 to resolve a method on a class, we first look if there's a local definition for it;
 we look at class functions (static functions) first, then instance methods next.
@@ -115,6 +139,11 @@ My_class; my_class
 My_class my_method()    # calls my_class::my_method
 My_class other_method() # looks for parent1::other_method(), then parent2::other_method()
 ```
+
+if we have a dynamic class (e.g., not `@only`), we need to keep track of what child class it is.
+this will require putting a type word after/before it in memory, to provide the vtable.
+e.g., usually applies only to pointers in C++, but in oh-lang we allow child classes up to a certain size locally.
+note we shouldn't need a full type; we could use a smart/small type since we know it descends from the parent.
 
 ## function signatures
 
@@ -152,3 +181,8 @@ this also would require special handling for `hm` types when we need `one_of`s
 for other things anyway.  probably can do the standard thing and return the
 struct.
 
+## big ints
+
+some options:
+* https://github.com/wbhart/bsdnt
+* https://github.com/adam-mcdaniel/bigint
