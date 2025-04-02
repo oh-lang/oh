@@ -126,7 +126,7 @@ when defining a function and declaring an argument.  I.e., `X;` expands to `X; x
 
 Class methods technically take an argument for `M` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
-writing `the_method(M, X: int): str`, we can write `::the_method(X: int): str`.
+writing `the_method(M:, X: int): str`, we can write `::the_method(X: int): str`.
 This parallels `my_class::the_method` in C++, but in oh-lang we can analogously use
 `;;a_mutating_method` for a method that can mutate `M`, i.e.,
 `a_mutating_method(M;, X: int): str` becomes `;;a_mutating_method(X: int): str`,

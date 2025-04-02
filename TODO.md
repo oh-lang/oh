@@ -71,16 +71,56 @@ we'll need to resolve overloads at compile-time if possible, run-time if necessa
 
 for libraries/projects with lots of files, we'll want to figure out how to
 speed up recompilation by only compiling new changes.  potentially we could
-have `.generated.my_file_name.c`/`.h` and `.generated.my_file_name.o` if need be,
-in the same directory, or in a `.generated` directory (without the `.generated` prefix
-on the files).  i'm a fan of the local `.generated.my_file.c` approach so that
-generated code could be inspected easily.
+have `.my_file_name.generated.c`/`.h` and `.my_file_name.generated.o` if need be,
+in the same directory, or in a `.generated` directory (without the `.generated` infix
+on the files).  i'm a fan of the local `.my_file.generated.c` approach so that
+generated code can be inspected easily.
+
+## generics
+
+i'm a big fan of zig's comptime type system, which defers type checking 'til
+after specialization (a sort of duck-typing).  we can support this by generating
+code for generics only after someone tries to use it in real code.
+
+```
+multiply(A: ~t, B: t): t
+    A * B
+
+multiply(A: -5, B: 20)      # should return -100
+multiply(A: "a", B: "B")    # should fail at compilation
+```
+
+as a first pass, we can just specialize the generic code *in the file it's used*.
+this isn't great but you could do casts between equivalent templates (e.g., across file boundaries).
+ideally we'd keep track of it somewhere, e.g., in `.my_file.generated.c`/`.h` files,
+where `my_file.oh` is where the generic *itself* is defined, so that we can re-use them
+across the codebase.  we'd need to support this for library functions as well.
+maybe library files need to be copied over anyway into their own directory (at least 3rd party code).
+
+alternatively, as an even rougher first pass, we could put everything into one big `.c` file,
+with some DAG logic for where things should be defined.
+
+## inheritance
+
+to resolve a method on a class, we first look if there's a local definition for it;
+we look at class functions (static functions) first, then instance methods next.
+if there is none, it will go through the parent classes in order and look if they define it.
+
+```
+my_class: all_of[m: [My_data;], parent1, parent2]
+{   ::my_method(): null
+}
+
+My_class; my_class
+My_class my_method()    # calls my_class::my_method
+My_class other_method() # looks for parent1::other_method(), then parent2::other_method()
+```
 
 ## function signatures
 
 we're going to need to create overloads ourselves with unique names.
-because capital letters aren't allowed to start a function, and because
-internal underscores cannot be repeated, we'll use them to namespace in
+because capital letters aren't allowed to start a function (and because
+internal underscores cannot be repeated), we'll use them to namespace in
 the generated code so there aren't any collisions.
 we'll also alphabetize input (and output) arguments.
 
@@ -102,7 +142,7 @@ this would be convenient if we were targeting C++, since we could just throw
 all the output arguments into the function and get C++ to get the right overload
 for us.
 
-## errors
+### errors
 
 we'll need to standardize on how we'll return errors.  one idea, functions
 that never error out return void, and functions that can error out return
