@@ -34,8 +34,8 @@ non_local_array[capacity: hoisted_primitive = h_arch, of]: all_of
         Required_capacity: M Count + 1
         if Required_capacity > M capacity()
             M grow(Required_capacity) assert()
-        M Count = Required_capacity
         Allocation move_construct(In_bounds: Required_capacity highest_index(), Of!)
+        M Count = Required_capacity
 
     # in-bounds reference, which is unsafe to call unless `In_bounds` is 
     # within the range `[0, M count())`.
@@ -48,7 +48,8 @@ non_local_array[capacity: hoisted_primitive = h_arch, of]: all_of
         if M Count == 0
             Null
         else
-            M Allocation read_out(In_bounds: --M Count)
+            M Allocation read_out(In_bounds: M Count highest_index())
+            --M Count
 
     count: count[wrapping: capacity]
 }

@@ -21,7 +21,7 @@ maybe_local_array8[of, Local_bytes]:
 # for simplicity, rounds to multiples of 8 bytes.
 Local_bytes: one_of[16, 24, 32, 40, 48, 56, 64]
 
-# array that is local up to a certain capacity (`Max_unallocated_count`)
+# array that is local up to a certain capacity (`Max_local_count`)
 # and allocated on the heap past that.
 @align(8)
 maybe_local_array
@@ -33,11 +33,11 @@ maybe_local_array
     (   Local_bytes
             >=  count_bytes(efficient_allocation[special_count, of])
             +   count_bytes(special_count)
-    )
+    ) and
 ]: all_of
 [   @private m:
     [   Union; c_union
-        [   Local_vector; vector[Max_unallocated_count, of]
+        [   Local_vector; vector[Max_local_count, of]
             Efficient_allocation; allocation[special_count, of]
             Non_local_array; ptr[non_local_array[of]]
         ]
@@ -48,9 +48,9 @@ maybe_local_array
 {   # while we can efficiently store only up to a count of `special_count`,
     # we expand if necessary via the `Non_local_array` to `count_arch`.
     count: count_arch
-    Max_unallocated_count: (Local_bytes - count_bytes(special_count)) // count_bytes(of)
+    Max_local_count: (Local_bytes - count_bytes(special_count)) // count_bytes(of)
     Local_zero_start: special_count(1)
-    Inefficient_special_count: m Local_zero_start + m Max_unallocated_count
+    Inefficient_special_count: m Local_zero_start + m Max_local_count
 
     @private
     ::memory(): memory

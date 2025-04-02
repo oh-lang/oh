@@ -42,3 +42,20 @@ https://github.com/BuildIt-lang/buildit
 
 Deegen, e.g., https://github.com/luajit-remake/luajit-remake, seems nice
 but also relies on LLVM.  But could be a model for writing a JIT.
+
+# ideas from vlang
+
+v-lang is super nice from a compile-time perspective.  for debug builds,
+they use [tcc](https://repo.or.cz/w/tinycc.git) since it's fast.  for
+release builds they use gcc or whatever's available.  under the hood,
+AFAIU they transpile to a `.c` file which is then consumed by tcc or gcc.
+transpiling in oh-lang might be the easiest thing to do right now to get the best
+performance.  also transpiling to `.c` would allow us to use cosmocc
+(i.e., [cosmopolitan](https://github.com/jart/cosmopolitan)) for cross-platform
+builds.  that wouldn't strictly work for GUI applications, however.
+
+this approach wouldn't allow for any JIT'ing, however, at least not without
+LICENSE infection, since we wouldn't be able to ship a compiler in the code.
+however, security should be considered before we go the full JIT route anyway.
+we could avoid shipping a compiler and compile by firing off a `tcc tmp_file.c`
+request from inside the code, and then loading and running the file separately...
