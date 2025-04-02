@@ -59,3 +59,56 @@ LICENSE infection, since we wouldn't be able to ship a compiler in the code.
 however, security should be considered before we go the full JIT route anyway.
 we could avoid shipping a compiler and compile by firing off a `tcc tmp_file.c`
 request from inside the code, and then loading and running the file separately...
+*actually* looks like tinycc is mostly relicensed to MIT:
+https://news.ycombinator.com/item?id=41763624
+so we could ship the parts of it that we care about (e.g., not arm-gen.c).
+
+# if we transpile to c
+
+we're going to need forward declarations for all functions and structs.
+
+we'll need to resolve overloads at compile-time if possible, run-time if necessary.
+
+for libraries/projects with lots of files, we'll want to figure out how to
+speed up recompilation by only compiling new changes.  potentially we could
+have `.generated.my_file_name.c`/`.h` and `.generated.my_file_name.o` if need be,
+in the same directory, or in a `.generated` directory (without the `.generated` prefix
+on the files).  i'm a fan of the local `.generated.my_file.c` approach so that
+generated code could be inspected easily.
+
+## function signatures
+
+we're going to need to create overloads ourselves with unique names.
+because capital letters aren't allowed to start a function, and because
+internal underscores cannot be repeated, we'll use them to namespace in
+the generated code so there aren't any collisions.
+we'll also alphabetize input (and output) arguments.
+
+```
+# in oh-lang, in file `my_file.oh`:
+my_function(Y: dbl, X: int): str
+
+# in C:
+OH_str MY_FILE_OH__my_function__X__Y__return__Str(const OH_int *X, const double *Y);
+```
+
+an alternative is to have pointers for each return type.  e.g., 
+
+```
+void MY_FILE_OH__my_function__X__Y__return__Str(const OH_int *X, const double *Y, OH_str *Str);
+```
+
+this would be convenient if we were targeting C++, since we could just throw
+all the output arguments into the function and get C++ to get the right overload
+for us.
+
+## errors
+
+we'll need to standardize on how we'll return errors.  one idea, functions
+that never error out return void, and functions that can error out return
+the error type.  however, we'd need to require that the error type can be something
+that isn't an error (e.g., if `er: int`, then `Er: 0` should be not an error).
+this also would require special handling for `hm` types when we need `one_of`s
+for other things anyway.  probably can do the standard thing and return the
+struct.
+

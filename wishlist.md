@@ -109,16 +109,20 @@ This also works for generic classes like `my_generic[of]` where `of` is a templa
 
 When calling a function, we don't need to use `my_function(X: X)` if we have a local
 variable named `X` that shadows the function's argument named `X`.  We can just
-call `my_function(:X)` for readonly reference (`X: X`), `other_function(;Y)` for a writable
-reference (`Y; Y`), or `tmp_function(.Z)` to pass in as a temporary `Z. Z!` and `@hide(Z)`
-so it can't be used in this block afterwards.  (Using `tmp_function(Z!)` will allow `Z`
-to still be used afterwards.)  Note the declaration operator (`.;:`) goes on the left
+call `my_function(:X)` to specify the readonly reference overload (`X: X`),
+`other_function(;Y)` to specify the writable reference overload (`Y; Y`), or
+`tmp_function(.Z)` to specify a temporary overload `Z. @hide(Z)!`, which also
+stops you from using `Z` again in the rest of the block.  Using `tmp_function(Z!)`
+calls the temporary overload and would allow `Z` to still be used afterwards,
+but `Z` will be [reset to the default](#prefix-and-postfix-exclamation-points).
+If no declaration operator is used when calling a function, e.g., `my_function(X)`,
+then we'll infer `:` if `X` is readonly (i.e., defined with `:`)
+and `;` if `X` is writable (i.e., defined with `.` or `;`).
+If no writable overload is present, the compiler will retry for a readonly overload.
+Note the declaration operator (`.;:`) goes on the left
 when calling a function with an existing variable for an argument, and on the right
 when defining a function and declaring an argument.  I.e., `X;` expands to `X; x`, while
-`;X` expands to `X; X`.  If no declaration operator is used when calling a function, e.g.,
-`my_function(X)`, then we'll infer `:` if `X` is readonly (i.e., defined with `:`)
-and `;` if `X` is writable (i.e., defined with `.` or `;`).  If no writable overload is
-present, the compiler will retry for a readonly overload.
+`;X` expands to `X; X`.
 
 Class methods technically take an argument for `M` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
@@ -1760,7 +1764,7 @@ variable name.
 There's also an infix `??` type which is a nullish or.
 `X Y ?? Z` will choose `X Y` if it is non-null, otherwise `Z`.
 
-## prefix and postfix exclamation points `!`
+## prefix and postfix exclamation points
 
 The operator `!` is always unary (except when combined with equals for not equals,
 e.g., `!=`).  It can act as a prefix operator "not", e.g., `!A`, pronounced "not A",
