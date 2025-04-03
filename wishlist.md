@@ -158,6 +158,31 @@ there could be a lot of pointless churn if you start your generic with `[x, y]` 
 `[w, z]`, but still can keep types `x` and `y` and construct them from `w`, `z`.
 what is the worst that could happen?  alternatively we could always require referring to the types as
 `m w` and `m z`, but that's probably not going to be pleasant.
+preferred solution: don't require `m` (or `M`) when referring to class (or instance) fields,
+except on methods (e.g., via `::` `;;` or `..`).  if you would be introducing a shadow, e.g.,
+via a globally defined type, method, or variable, the compiler errors out.  you can rename
+the global type if you're importing it in the file, e.g.,
+
+```
+my_generic[at, of]: [m: [Lot;]]
+{   lot: @only insertion_ordered_lot[at, of]
+    ...
+}
+
+# ERROR: `lot` is shadowed inside of `my_generic`, use import renaming to avoid this.
+#       e.g., `[core_lot]: \\core/lot`
+[lot]: \\core/lot
+```
+
+Note this is actually ok, because we can distinguish overloads based on arguments.
+
+```
+vector2: [X: dbl, Y: dbl]
+{   ::atan(): dbl
+        atan(X, Y)      # also ok: `\\math atan(X, Y)`
+}
+[atan(X: dbl, Y: dbl): dbl]: \\math
+```
 
 In the example above, we can use `some_type: my_generic[at, of] lot` to refer to the
 nested type, but can we also use `some_type: lot[m: my_generic[at, of]]`.  We don't

@@ -171,6 +171,15 @@ this would be convenient if we were targeting C++, since we could just throw
 all the output arguments into the function and get C++ to get the right overload
 for us.
 
+we also need to supply a few different function signatures for when
+references are more complicated than just a pointer (e.g., via the `refer` class).
+
+### lambda functions
+
+we'll need to support lambda functions by pulling them into the root scope
+with an additional `Context` argument that gets automatically supplied
+if there are any captures.
+
 ### errors
 
 we'll need to standardize on how we'll return errors.  one idea, functions

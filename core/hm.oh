@@ -98,3 +98,11 @@ hm[ok, er]: one_of[ok, er]
     # which is pretty verbose.  could use `(M.): one_of[ok, null]` for implicit conversion
     ..to(): one_of[ok, null]
 }
+
+hm[ok: hm[ok: ~other_ok, er: ~other_er], er]: disallowed
+[   "Do not nest a `hm` class inside another `hm`'s `ok`."
+]
+
+hm[ok, er: hm[ok: ~other_ok, er: ~other_er]]: disallowed
+[   "Do not nest a `hm` class inside another `hm`'s `er`."
+]
