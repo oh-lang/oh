@@ -80,6 +80,7 @@ hm[ok, er]: one_of[ok, er]
 
     # TODO: do we really want a function like this when we can have people
     # do `what M! { Ok. {...ok logic...}, Er. {...er logic...}}`?
+    # TODO: do we even want any `map` methods since we have `what`?
     # maps `ok` and `er` separately.
     ..map(fn(@Named Ok.): ~t, fn(@Named Er.): t): t
 

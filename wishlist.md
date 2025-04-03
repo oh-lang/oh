@@ -153,6 +153,11 @@ my_generic[at, of]:
         M Lot <-> Lot
 }
 ```
+TODO: i really would like to break consistency here and just be able to use `lot` instead of `m lot` here.
+there could be a lot of pointless churn if you start your generic with `[x, y]` and then switch to
+`[w, z]`, but still can keep types `x` and `y` and construct them from `w`, `z`.
+what is the worst that could happen?  alternatively we could always require referring to the types as
+`m w` and `m z`, but that's probably not going to be pleasant.
 
 In the example above, we can use `some_type: my_generic[at, of] lot` to refer to the
 nested type, but can we also use `some_type: lot[m: my_generic[at, of]]`.  We don't

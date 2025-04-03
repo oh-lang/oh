@@ -2,15 +2,18 @@ array[of, capacity: count]: all_of
 [   hashable
     indexable_sequence[of]
 ]
-{   heap_or_local[Local_bytes, locality: hoisted_primitive = h16]:
-            heap_or_local_array[Local_bytes, locality, of]
-    heap[capacity: hoisted_primitive = h64]: heap_array[capacity, of]
+{   maybe_local[Local_bytes, locality: hoisted_primitive = h16]:
+            maybe_local_array[Local_bytes, locality, of]
+    non_local[capacity: hoisted_primitive = h64]: non_local_array[capacity, of]
 
-    ::capacity(): count
+    @alias heap: non_local
+    @alias heap_or_local: maybe_local
+
+    ::capacity(): m count
 
     ;;capacity(Capacity.): null 
 
-    ::count(): count
+    ::count(): m count
         M Count
 
     ;;count[Require: of is defaultable](@New Count): hm[count]
@@ -64,14 +67,11 @@ array[of, capacity: count]: all_of
     ;;pop(Index.)?: of
         # don't resize the array in case `Index >= M Count`.
         what M in_bounds(Index)
-            # TODO: shouldn't this be `Ok. in_bounds` if we're going to be pedantic
-            #       with naming?  otherwise we shouldn't use `@Named Ok` in the definition
-            #       of `hm`, and it would just be `In_bounds.`
             Ok.
                 M pop(Ok)
             @Ignore Er.
                 Null
-        # alternatively: `M in_bounds(Index) map((Ok.): M pop(Ok), (@Unused Er.): Null)`
+        # alternatively: `M in_bounds(Index) map({M pop($Ok)}, {$Er_, Null})`
 
     ;;pop(In_bounds.): of
         debug assert(In_bounds >= 0 and In_bounds < M count())
@@ -79,13 +79,13 @@ array[of, capacity: count]: all_of
         M erase(In_bounds)
         Result
 
-    ;;erase(Index.): capacity
+    ;;erase(Index.): m count
         if M in_bounds(Index) is Ok.
             M erase(Ok)
         else
             0
 
-    ;;erase(In_bounds.): capacity
+    ;;erase(In_bounds.): m count
         debug assert(In_bounds >= 0 and In_bounds < M count())
         range(In_bounds, M count() - 1) each Destination_index:
             M[Destination_index] = M[In_bounds: Destination_index + 1]!
@@ -137,7 +137,7 @@ array[of, capacity: count]: all_of
             Builder hash(Of)
     }
 
-    ;;capacity(At_least: count): hm[null]
+    ;;capacity(At_least: m count): hm[null]
         Current_capacity: M capacity()
         if At_least <= Current_capacity 
             return ok()
