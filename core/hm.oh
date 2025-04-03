@@ -18,16 +18,18 @@ hm[ok, er]: one_of[ok, er]
     #   # example with explicit `block` that does the same thing as implicit:
     #   explicit_block(): hm[ok: null, er: str]
     #       indent
-    #       (   (Block[hm[ok: null, er: str]]):
+    #       (   fn(Block[hm[ok: null, er: str]]):
     #               Result: do_something(1.234) assert(Block)
     #               print(Result)
     #               Block exit(null)
     #       )
     #   ```
     ..assert[block_return: contains[er]](Block[~block_return]): ok
-        what M
-            Ok: $(Ok)
-            Er: $(debug error(Er), Block exit(Er))
+        what M!
+            Ok. {Ok}
+            Er.
+                debug error(Er)
+                Block exit(Er)
 
     # The API is `Ok: Hm assert(Er: "custom error if not `ok`")`.
     # This will moot `M` and shortcircuit a failure (i.e., if `Hm`
@@ -48,43 +50,38 @@ hm[ok, er]: one_of[ok, er]
     #   # example with explicit `block` that does the same thing as implicit:
     #   explicit_block(): hm[ok: null, er: one_of[Invalid_do_something, Other_error]]
     #       indent
-    #       (   (Block[hm[ok: null, er: str]]):
+    #       (   fn(Block[hm[ok: null, er: str]]):
     #               Result: do_something(1.234) assert(Block, Er: Invalid_do_something)
     #               print(Result)
     #               Block exit(null)
     #       )
     #   ```
     ..assert[block_return: contains[new_er]](@New Er: ~new_er, Block[~block_return]): ok
-        what M
-            Ok: $(Ok)
-            Er:
+        what M!
+            Ok. {Ok}
+            Er.
                 debug error(Er)
                 Block exit(@New Er)
 
     # maps an `Ok` result to a different type of `ok`, consuming `M`.
     # since this is a `@Named` namespace, we need to use `My_hm map((Ok.): Ok + 3)`
-    # instead of whatever type `ok` is, e.g., `My_hm map((Int.): Int + 3)` would not work.
-    # TODO: maybe use `@As` instead of `@Named`.
-    # TODO: it's probably ambiguous to pass a function by name without specifying the overload.
-    #       e.g., if i have a function `my_fn(Ok.): int` and overload `my_fn(Er.): int`,
-    #       then `Hm! map(my_fn)` should do what?  do we need to require `Hm! map(my_fn($$Ok))`?
-    #       things get worse if we allow output-type overloading; then we need `Hm! map(my_fn($$Ok) Int)`.
-    ..map(fn(@Named Ok.): @A~ok): hm[@A ok, er]
-
-    # maps an `Ok` result to a different type of `ok`, with possibly an error, consuming `M`.
-    # TODO: namespaces are kinda annoying.  can we do `a_ok` and just match the suffix for `hm[a_ok, er]`?  
-    #       there's some ambiguity, however, if our type name has `_` inside, e.g., `fixed_array`.
-    ..map(fn(@Named Ok.): hm[@A~ok, er]): hm[@A ok, er]
+    # instead of whatever type `ok` is, e.g., `My_hm map((Int.): Int + 3)` would not work
+    # even if `ok` is type `int`.
+    ..map(fn(@Named Ok.): ~new_ok): hm[ok: new_ok, er]
 
     # passes through any `Ok` result, but maps an `Er` to the desired `ok` result
-    # via the passed-in function.
+    # via the passed-in function.  while this looks like it could be indistinguishable
+    # from the next method if types `ok` and `er` are the same, the return type here
+    # is just `ok`, so we can distinguish based on return type overloading.
     ..map(fn(@Named Er.): ok): ok
 
     # maps an `Er` result to a different type of `er`.
-    ..map(fn(@Named Er.): @New~er): hm[ok, @New er]
+    ..map(fn(@Named Er.): ~new_er): hm[ok, er: new_er]
 
+    # TODO: do we really want a function like this when we can have people
+    # do `what M! { Ok. {...ok logic...}, Er. {...er logic...}}`?
     # maps `ok` and `er` separately.
-    ..map(@Ok fn(@Named Ok.): ~t, @Er fn(@Named Er.): t): t
+    ..map(fn(@Named Ok.): ~t, fn(@Named Er.): t): t
 
     # runs a callback if OK but returns self
     ..check(fn(@Named Ok): null): m
@@ -93,9 +90,7 @@ hm[ok, er]: one_of[ok, er]
     ..check(fn(@Named Er): null): m
 
     # runs different callbacks based on OK/not-OK but returns self
-    # TODO: namespaces are kinda annoying.  can we do `ok_fn` and `er_fn` and just
-    #       match the suffix for an existing type?  
-    ..check(@Ok fn(@Named Ok): null, @Er fn(@Named Er): null): m
+    ..check(fn(@Named Ok): null, fn(@Named Er): null): m
 
     # TODO: should we use `to` here or is there a better way to indicate casting?
     # it's technically something like `one_of[ok, null](Result: hm[ok, er]): one_of[ok, null]`

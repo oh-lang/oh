@@ -824,7 +824,7 @@ There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
 which are function-like but may consume the rest of the statement.
 E.g., `return X + 5` will return the value `(X + 5)` from the enclosing function.
 There are some reserved namespaces with side effects like `@First`, `@Second`,
-`@Named`,
+`@Named`, `@As`,
 which should be used for their side effects.  For example, `@First` and `@Second`
 are reserved for binary operations like `&&` and `*`.  See [namespaces](#namespaces)
 for more details.  Other reserved keywords:
@@ -1670,6 +1670,8 @@ TODO: we could use `@Outer fn` and then `outer(...)` to call the function.
 * `@First` - for the first operand in a binary operation (where order matters)
 * `@Second` - for the second operand in a binary operation (where order matters)
 * `@Named` - for arguments that should be explicitly named in [functions](#defining-generic-functions)
+
+TODO: maybe change `@Named` to `@As`.
 
 ## member access operators `::`, `;;`, ` `, and subscripts `[]`
 
@@ -6354,13 +6356,13 @@ the element and advance the iterator, e.g.:
 ```
 Array: [1,2,3]
 Iterator; iterator[int]
-assert Iterator next(Array) == 1
-assert next(Array, Iterator;) == 2  # you can use global `next`
-assert Iterator::peak(Array) == 3
-assert peak(Iterator, Array) == 3   # or you can use global `peak`
-assert Iterator next(Array) == 3
-assert Iterator next(Array) == Null
-assert Iterator peak(Array) == Null
+assert(Iterator next(Array) == 1)
+assert(next(Array, Iterator;) == 2)  # you can use global `next`
+assert(Iterator::peak(Array) == 3)
+assert(peak(Iterator, Array) == 3)   # or you can use global `peak`
+assert(Iterator next(Array) == 3)
+assert(Iterator next(Array) == Null)
+assert(Iterator peak(Array) == Null)
 # etc.
 ```
 
