@@ -1,7 +1,7 @@
-non_local_array[capacity: hoisted_primitive = h_arch, of]: all_of
+non_local_array[of, capacity: select_count = count_arch]: all_of
 [   @private m:
     [   Allocation[of, capacity];
-        Count; m count
+        Count; count
     ]
     array[of]
 ]
@@ -51,7 +51,7 @@ non_local_array[capacity: hoisted_primitive = h_arch, of]: all_of
             M Allocation read_out(In_bounds: M Count highest_index())
             --M Count
 
-    count: count[wrapping: capacity]
+    count: capacity
 }
 
 [er, hm]: \/../container

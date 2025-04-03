@@ -1,41 +1,59 @@
-count: count64
-count64: count[wrapping: h64]
-count32: count[wrapping: h32]
-count16: count[wrapping: h16]
-count8: count[wrapping: h8]
+# TODO: some logic like `@if u_arch > u32 {count64}` here:
+count: select[count64, count32, count16, count8]
+
+count_arch: count64 # TODO: fix for 32 bit
+
+count64: count[u64]
+count32: count[u32]
+count16: count[u16]
+count8: count[u8]
 
 @final
-count[wrapping: hoisted_primitive]: all_of
-[   @private m: [Value; wrapping]
+count[u: unsigned_primitive]: all_of
+[   [@private Value; u]
     integer
 ]
-{   m(Wrapping. wrapping): hm[ok: m, number er]
-        if Wrapping >= 0
+{   m(Wrapping.): hm[m]
+        if Wrapping <= max()
             [Value: Wrapping]
         else
-            Unrepresentable 
+            Unrepresentable
+
+    ?:
+    {   ::is(null): bool
+            Value > max()
+        Null: [Value: u(Wrapping: -1)]
+
+        ::null_boxing(): u
+            Value
+        ;;null_boxing(U; u): null
+            Value <-> U
+        ;;null_boxing(U. u): null
+            Value = U
+    }
+
+    @integer(Value)
 
     min(): m
         [Value: 0]
 
     max(): m
-        [Value: wrapping max()]
+        [Value: signed[u] max() + 1]
 
-    m(Signed. signed[wrapping]): hm[ok: m, number er]
-        if Signed >= 0
-            # no representability issues, only `Signed min()` would be
-            # problematic with hoisting, but `Signed` is non-negative:
-            [Value: hoisted(Signed) ?? panic("should be fine")]
-        else
-            Unrepresentable 
+    m(Signed. signed[u]): hm[m]
+        [Value: u(.Signed) assert()]
 
-    @integer(Value)
-
-    ::double_or_max(At_least. wrapping): m
-        what multiply(m, 2)
-            Ok.
-                max(Ok, At_least)
-            @Ignore Er.
+    ::double_or_max(At_least. u): m
+        if Value >= max() Value
+            @cold_path
+            # TODO: do we need a cast here `(M as m?) is_null()`
+            if is_null()
+                error("Count was null in ::double_or_max, assuming 0")
+                [Value. At_least]
+            else
                 max()
+        else
+            [Value: max(At_least, Value * 2)]
 }
 
+hm[of]: hm[ok: of, number er]
