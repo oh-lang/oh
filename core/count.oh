@@ -1,5 +1,5 @@
 # TODO: some logic like `@if u_arch > u32 {count64}` here:
-count: select[count64, count32, count16, count8]
+count_primitive: select[count64, count32, count16, count8]
 
 count_arch: count64 # TODO: fix for 32 bit
 
@@ -9,8 +9,8 @@ count16: count[u16]
 count8: count[u8]
 
 @final
-count[u: unsigned_primitive]: all_of
-[   [@private Value; u]
+count[of: unsigned_primitive]: all_of
+[   [@private Value; of]
     integer
 ]
 {   m(Wrapping.): hm[m]
@@ -22,14 +22,14 @@ count[u: unsigned_primitive]: all_of
     ?:
     {   ::is(null): bool
             Value > max()
-        Null: [Value: u(Wrapping: -1)]
+        Null: [Value: of(Wrapping: -1)]
 
-        ::null_boxing(): u
+        ::null_boxing(): of
             Value
-        ;;null_boxing(U; u): null
-            Value <-> U
-        ;;null_boxing(U. u): null
-            Value = U
+        ;;null_boxing(Of;): null
+            Value <-> Of
+        ;;null_boxing(Of.): null
+            Value = Of
     }
 
     @integer(Value)
@@ -38,12 +38,12 @@ count[u: unsigned_primitive]: all_of
         [Value: 0]
 
     max(): m
-        [Value: signed[u] max() + 1]
+        [Value: signed[of] max() + 1]
 
-    m(Signed. signed[u]): hm[m]
-        [Value: u(.Signed) assert()]
+    m(Signed. signed[of]): hm[m]
+        [Value: of(.Signed) assert()]
 
-    ::double_or_max(At_least. u): m
+    ::double_or_max(At_least. of): m
         if Value >= max() Value
             @cold_path
             # TODO: do we need a cast here `(M as m?) is_null()`

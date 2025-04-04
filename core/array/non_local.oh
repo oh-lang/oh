@@ -1,4 +1,4 @@
-non_local_array[of, capacity: select_count = count_arch]: all_of
+non_local_array[of, capacity: count_primitive = count_arch]: all_of
 [   @private m:
     [   Allocation[of, capacity];
         Count; count

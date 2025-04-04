@@ -87,6 +87,7 @@ symmetric_primitive: select
         64 { s64 }
 }
 
+# TODO: switch from `wrapping` to `of` everywhere:
 s64: symmetric[wrapping: i64]
 s32: symmetric[wrapping: i32]
 s16: symmetric[wrapping: i16]
