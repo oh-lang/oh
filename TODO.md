@@ -76,7 +76,52 @@ in the same directory, or in a `.generated` directory (without the `.generated` 
 on the files).  i'm a fan of the local `.my_file.generated.c` approach so that
 generated code can be inspected easily.
 
-## generics
+## function signatures
+
+we're going to need to create overloads ourselves with unique names.
+because capital letters aren't allowed to start a function (and because
+internal underscores cannot be repeated), we'll use them to namespace in
+the generated code so there aren't any collisions.
+we'll also alphabetize input (and output) arguments.
+
+```
+# in oh-lang, in file `my_file.oh`:
+my_function(Y: dbl, X: int): str
+
+# in C:
+OH_str MY_FILE_OH__my_function__X__Y__return__Str(const OH_int *X, const double *Y);
+```
+
+an alternative is to have pointers for each return type.  e.g., 
+
+```
+void MY_FILE_OH__my_function__X__Y__return__Str(const OH_int *X, const double *Y, OH_str *Str);
+```
+
+this would be convenient if we were targeting C++, since we could just throw
+all the output arguments into the function and get C++ to get the right overload
+for us.
+
+we also need to supply a few different function signatures for when
+references are more complicated than just a pointer (e.g., via the `refer` class).
+
+### lambda functions
+
+we'll need to support lambda functions by pulling them into the root scope
+with an additional `Context` argument that gets automatically supplied
+if there are any captures.
+
+### errors
+
+we'll need to standardize on how we'll return errors.  one idea, functions
+that never error out return void, and functions that can error out return
+the error type.  however, we'd need to require that the error type can be something
+that isn't an error (e.g., if `er: int`, then `Er: 0` should be not an error).
+this also would require special handling for `hm` types when we need `one_of`s
+for other things anyway.  probably can do the standard thing and return the
+struct.
+
+### generics
 
 i'm a big fan of zig's comptime type system, which defers type checking 'til
 after specialization (a sort of duck-typing).  we can support this by generating
@@ -144,51 +189,6 @@ if we have a dynamic class (e.g., not `@only`), we need to keep track of what ch
 this will require putting a type word after/before it in memory, to provide the vtable.
 e.g., usually applies only to pointers in C++, but in oh-lang we allow child classes up to a certain size locally.
 note we shouldn't need a full type; we could use a smart/small type since we know it descends from the parent.
-
-## function signatures
-
-we're going to need to create overloads ourselves with unique names.
-because capital letters aren't allowed to start a function (and because
-internal underscores cannot be repeated), we'll use them to namespace in
-the generated code so there aren't any collisions.
-we'll also alphabetize input (and output) arguments.
-
-```
-# in oh-lang, in file `my_file.oh`:
-my_function(Y: dbl, X: int): str
-
-# in C:
-OH_str MY_FILE_OH__my_function__X__Y__return__Str(const OH_int *X, const double *Y);
-```
-
-an alternative is to have pointers for each return type.  e.g., 
-
-```
-void MY_FILE_OH__my_function__X__Y__return__Str(const OH_int *X, const double *Y, OH_str *Str);
-```
-
-this would be convenient if we were targeting C++, since we could just throw
-all the output arguments into the function and get C++ to get the right overload
-for us.
-
-we also need to supply a few different function signatures for when
-references are more complicated than just a pointer (e.g., via the `refer` class).
-
-### lambda functions
-
-we'll need to support lambda functions by pulling them into the root scope
-with an additional `Context` argument that gets automatically supplied
-if there are any captures.
-
-### errors
-
-we'll need to standardize on how we'll return errors.  one idea, functions
-that never error out return void, and functions that can error out return
-the error type.  however, we'd need to require that the error type can be something
-that isn't an error (e.g., if `er: int`, then `Er: 0` should be not an error).
-this also would require special handling for `hm` types when we need `one_of`s
-for other things anyway.  probably can do the standard thing and return the
-struct.
 
 ## big ints
 
