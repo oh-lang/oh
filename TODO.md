@@ -19,7 +19,7 @@ do stacks make sense for strongly-typed languages?  would likely have some
 indirection, e.g., a pointer stack, a type stack, and a value stack.  values
 can take up more space on the value stack based on size of the type.
 
-# reference implementation
+## reference implementation
 
 can we use [Futamura projection](https://en.wikipedia.org/wiki/Partial_evaluation)
 to implement the compiler and interpreter in one go?
@@ -86,21 +86,11 @@ we'll also alphabetize input (and output) arguments.
 
 ```
 # in oh-lang, in file `my_file.oh`:
-my_function(Y: dbl, X: int): str
+my_function(Y: dbl, X; int): str
 
 # in C:
-OH_str MY_FILE_OH__my_function__X__Y__return__Str(const OH_int *X, const double *Y);
+OH_str MY_FILE_OH__my_function__X__rw_int__Y__ro_dbl__return__Str(OH_int *X, const double *Y);
 ```
-
-an alternative is to have pointers for each return type.  e.g., 
-
-```
-void MY_FILE_OH__my_function__X__Y__return__Str(const OH_int *X, const double *Y, OH_str *Str);
-```
-
-this would be convenient if we were targeting C++, since we could just throw
-all the output arguments into the function and get C++ to get the right overload
-for us.
 
 we also need to supply a few different function signatures for when
 references are more complicated than just a pointer (e.g., via the `refer` class).
@@ -133,10 +123,15 @@ multiply(A: ~t, B: t): t
 
 multiply(A: -5, B: 20)      # should return -100
 multiply(A: "a", B: "B")    # should fail at compilation
+
+# in C, specialized after we infer `int`
+OH_int FILE_OH__multiply__A__ro_int__B__ro_int__return__Int(const OH_int *A, const OH_int *B)
+{   return OH__multiply__Int__ro__Int__ro__return__Int(A, B);
+}
 ```
 
 as a first pass, we can just specialize the generic code *in the file it's used*.
-this isn't great but you could do casts between equivalent templates (e.g., across file boundaries).
+this isn't great but you could do casts between equivalent generic structs (e.g., across file boundaries).
 ideally we'd keep track of it somewhere, e.g., in `.my_file.generated.c`/`.h` files,
 where `my_file.oh` is where the generic *itself* is defined, so that we can re-use them
 across the codebase.  we'd need to support this for library functions as well.
@@ -190,8 +185,99 @@ this will require putting a type word after/before it in memory, to provide the 
 e.g., usually applies only to pointers in C++, but in oh-lang we allow child classes up to a certain size locally.
 note we shouldn't need a full type; we could use a smart/small type since we know it descends from the parent.
 
+TODO: we need to disallow `all_of` if `parent1` and `parent2` have any of the same instance fields.
+
+### generics
+
+generic templates with generic methods is disallowed by C++, but we should
+be able to make it happen.
+
+```
+generic[of]: [Value; of]
+{   ::method(~U): u
+        U_Value: u = (U * Value) ?? panic()
+        U + U_value
+}
+specific[of: number]: all_of[generic[of], m: [Scale; of]]
+{   ;;renew(M Scale; of = 1, Generic Value.): {}
+
+    ::method(~U): u
+        Parent_result: Generic::method(U)
+        Scale * Parent_result
+}
+
+Specific(Value: 10_i8, Scale: 2_i8)
+print(Specific method(0.5)) # should print "11" via `2 * (0.5 + dbl(0.5 * 10))`
+```
+
+would transpile to this:
+
+```
+// defined because of `generic[i8]` usage inside of `specific[i8]`
+struct OH_generic_i8
+{   OH_i8 Value;
+};
+// defined because of `specific[i8]`
+struct OH_specific_i8
+{   i8 Value; // NOTE: inlined `OH_generic_i8`
+    i8 Scale;
+};
+// defined because of `Specific method(0.5)` usage needing `Generic::method(0.5)`:
+dbl OH__method__Generic_i8__Dbl__return__Dbl(const OH_generic_i8 *Generic_i8, double Dbl)
+{   dbl U_value = Dbl * Generic_i8->Value;
+    return Dbl + U_value;
+}
+// defined because of `Specific method(0.5)` usage:
+dbl OH__method__Specific_i8__dbl(const OH_specific_i8 *Specific_i8, double Dbl)
+{   dbl Parent_result = OH_method__Generic_i8__Dbl__return__Dbl
+    (   // NOTE: in general we need this offset if `specific_i8` is `all_of[m: [Scale; i8], generic[i8]]`
+        (const OH_generic_i8 *)&(Specific_i8->Value),
+        Dbl
+    );
+    return Specific_i8 -> Scale * Parent_result;
+}
+// for dynamic dispatch
+dbl OH__method__DISPATCH_Generic_i8__Dbl__return__Dbl(const OH_generic_i8 *Generic_i8, double Dbl)
+{   // TODO
+}
+```
+
 ## big ints
 
 some options:
 * https://github.com/wbhart/bsdnt
 * https://github.com/adam-mcdaniel/bigint
+
+## jit
+
+this seems fairly tricky.  we could ship part of `tcc` (not `arm-gen.c`) inside of
+the compiled binary, but i'm not sure how we'd get it to interface with existing code.
+e.g., we want this to be possible:
+
+```
+# vector.oh:
+vector3[of]: [X; of, Y; of, Z; of]
+vector3i: vector3[i64] # this specialization gets compiled in `.vector.generated.c`
+
+# some_other_file.oh
+compile_vector3d(): null
+    Lines;
+    [   "[vector3]: \/vector"
+        "vector3d: vector3[dbl]"    # new specialization
+        "print(vector3d(X: 0.5, Y: 0.3, Z: 0.1))"
+    ]
+    Executable: compile(Lines;) ?? panic("should have been ok")
+    Executable run()
+
+compile_vector3i(): null
+    Lines;
+    [   "[vector3i]: \/vector"
+        "print(vector3i(X: 3, Y: 4, Z: 5))"
+    ]
+    Executable: compile(Lines;) ?? panic("should have been ok")
+    Executable run()
+```
+
+this would require some advanced linking logic.  would this require compiling
+everything but `main` into a library, then linking `main` with that library?
+then any new `compile` calls can rely on the library.

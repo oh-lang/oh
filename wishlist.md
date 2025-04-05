@@ -5159,53 +5159,14 @@ Specific(Value: 10_i8, Scale: 2_i8)
 print(Specific method(0.5)) # should print "11" via `2 * (0.5 + dbl(0.5 * 10))`
 ```
 
-Since we internally define methods as global functions, we're probably ok.
-E.g., `::method(U: ~u): u` becomes `method(Generic: generic[of], U: ~u): u`.
-There'd be some trickiness to using C++ under the hood, because
-`template <class t, class u> u global_method(readonly<generic<t>> Generic, readonly<u> U)`
-would still require checking `Generic` for a child class.  But we're thinking of
-using C under the hood with functions getting defined only *after* generic specialization,
-i.e., after filling in actual types.
-
-```
-// defined because of `generic[str]` usage
-struct OH_generic_str
-{   OH_str Value;
-};
-// defined because of `Generic method(2_i32)` usage:
-i32 OH__method__ONLY_Generic_str__I32__return__I32(const OH_generic_str *Generic_str, i32 I32)
-{   i32 U_value = OH__multiply__I32__Str__(I32, &const Generic_str->Value); // TODO: panic handling
-    return I32 + U_value;
-}
-// defined because of `specific[i8]`
-struct OH_specific_i8
-{   i8 Value;
-    i8 Scale;
-};
-// defined because of `Specific method(0.5)` usage:
-dbl OH__method__ONLY_Generic_i8__Dbl__return__Dbl(const OH_generic_i8 *Generic_i8, double Dbl)
-{   dbl U_value = Dbl * Generic_i8->Value;
-    return Dbl + U_value;
-}
-// defined because of `Specific method(0.5)` usage:
-dbl OH__method__ONLY_Specific_i8__dbl(const OH_specific_i8 *Specific_i8, double Dbl)
-{   dbl Parent_result = OH_method__ONLY_Generic_i8__Dbl__return__Dbl((const OH_generic_i8 *)Specific_i8, Dbl);
-    return Specific_i8 -> Scale * Parent_result;
-}
-// for dynamic dispatch
-dbl OH__method__DISPATCH_Generic_i8__Dbl__return__Dbl(const OH_generic_i8 *Generic_i8, double Dbl)
-{   // TODO
-}
-```
-
 Just like with function arguments, we can elide a generic field value if the
 field name is already a type name in the current scope.  For example:
 
 ```
-My_namespace at: int
+@My_namespace at: int
 value: [X: flt, Y: flt]
-My_lot; lot[My_namespace at, value]
-# Equivalent to `My_lot; lot[at: My_namespace at, value]`.
+My_lot; lot[@My_namespace at, value]
+# Equivalent to `My_lot; lot[at: @My_namespace at, value]`.
 ```
 
 ### generic type constraints
