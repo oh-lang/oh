@@ -144,7 +144,7 @@ with some DAG logic for where things should be defined.
 
 ### type layout
 
-Structs are laid out like the oh-lang class bodies (in `[]`).
+structs are laid out like the oh-lang class bodies (in `[]`).
 
 ```
 # in oh-lang, define a class in file `linear.oh`:
@@ -184,6 +184,19 @@ if we have a dynamic class (e.g., not `@only`), we need to keep track of what ch
 this will require putting a type word after/before it in memory, to provide the vtable.
 e.g., usually applies only to pointers in C++, but in oh-lang we allow child classes up to a certain size locally.
 note we shouldn't need a full type; we could use a smart/small type since we know it descends from the parent.
+
+when creating a class, we give it a positive `Type_id` (probably `u_arch`) only if it
+*has any fields* (e.g., instance variables or instance functions defined in `[]`).
+otherwise we'll set the `Type_id` to be 0; it's abstract and shouldn't perform any
+of the following logic.  when we notice anyone is inheriting from a non-zero `Type_id`,
+i.e., via an `child_type: all_of[parent_type, m: child_fields]`, we tag add to a list
+keyed on `parent_type Type_id` (and same for any ancestors of `parent_type`).
+this can be a "short tag" when we know the type is at least `parent_type` already.
+the short tag should be 8 bits only, but we probably can make this configurable (e.g., for 32 bit arch).
+if we don't mark a non-final instance variable as `@only`, it will take up at least 64 bits of space.
+this is because we'll use 56 bits to store a pointer to a child in the worst case, with 8 bits as the
+short tag afterwards.  if we are storing a variable as `any` type, we'll use the full `u_arch`
+size to store `Type_id` then the variable data.
 
 TODO: we need to disallow `all_of` if `parent1` and `parent2` have any of the same instance fields.
 
@@ -237,7 +250,7 @@ dbl OH__method__Specific_i8__dbl(const OH_specific_i8 *Specific_i8, double Dbl)
     return Specific_i8 -> Scale * Parent_result;
 }
 // for dynamic dispatch
-dbl OH__method__DISPATCH_Generic_i8__Dbl__return__Dbl(const OH_generic_i8 *Generic_i8, double Dbl)
+dbl OH__method__DYNAMIC_Generic_i8__Dbl__return__Dbl(const OH_generic_i8 *Generic_i8, double Dbl)
 {   // TODO
 }
 ```
