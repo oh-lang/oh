@@ -635,8 +635,29 @@ do_something(X: int, Y: int): [W: int, Z: int]
 }
 ```
 
+We don't require `{}` in function definitions because we can distinguish between
+(A) creating a function from the return value of another function, (B) passing a function
+as an argument, and (C) defining a function inline in the following ways.  (A) uses
+`my_fn(Args): return_type = fn_returning_a_fn()` in order to get the correct type on `my_fn`,
+(B) uses `outer_fn(rename_to_this(Args): return_type = use_this_fn)` and requires a single
+`function_case` identifier on the RHS, while (C) uses `defining_fn(Args): do_this(Args) + 5`
+and uses inference to get the return type (for the default `do_this(Args)` function).
+
 ```
-# defining a function with some lambda functions as arguments
+# case (A): defining a function that returns a lambda function
+make_counter(Counter; int): do(): int
+    do(): ++Counter
+Counter; 123
+counter(): int = make_counter(Counter;)
+print(counter())    # 124
+# `Counter` is also 124 now.
+```
+
+Note that because we support [function overloading](#function-overloads), we need
+to specify the *whole* function [when passing it in as an argument](#functions-as-arguments).
+
+```
+# case (B): defining a function with some lambda functions as arguments
 do_something(you(): str, greet(Name: str): str): str
     greet(Name: you())
 
@@ -647,33 +668,9 @@ do_something
     greet(Name: str): str
         "Hello, ${Name}"
 )
-```
 
-Note that because we support [function overloading](#function-overloads), we need
-to specify the *whole* function [when passing it in as an argument](#functions-as-arguments).
-We don't always require `{}` in function definitions because we can distinguish between
-(A) passing a function as an argument and (B) defining a function inline in the following way:
-(A) uses `outer_fn(rename_to_this(Args): return_type = use_this_fn)` and requires a single
-`function_case` identifier on the RHS, while (B) uses `defining_fn(Args): do_this()`
-or `defining_fn(Args): return_type = do_this()`, where `do_this()` can be any expression.
-
-```
-# defining a function that returns a lambda function
-make_counter(Counter; int): do(): int
-    do(): ++Counter
-Counter; 123
-counter: make_counter(Counter;)
-print(counter())    # 124
-# `Counter` is also 124 now.
-```
-
-```
-# defining a function that takes two type constructors as arguments,
-# one of them being named (`of` is the default name), and returns a type constructor:
-some_constructor[of, named_new]: if random(dbl) < 0.5 {of} else {named_new}
-
-some_type: some_constructor[int, named_new: dbl] # int or dbl with 50-50 probability
-X: some_type(1234)  # `X` is either `int(1234)` or `dbl(1234)`.
+# case (C): defining a few functions inline without `{}`
+hello_world(): print(do_something(you(): "world", greet(Name: str): "Hello, ${Name}"))
 ```
 
 ### defining generic functions
