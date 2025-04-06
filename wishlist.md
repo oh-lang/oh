@@ -7458,7 +7458,7 @@ bool: one_of[False: 0, True: 1]
 ```
 
 Enums provide a few extra additional methods for free as well, including
-the number of values that are enumerated via the class function `count(): count`,
+the number of values that are enumerated via the class function `count(): count_arch`,
 and the min and max values `min(): enum_type`, `max(): enum_type`.  You can also
 check if an enum instance `Enum` is a specific value `This_value` via
 `Enum is_this_value()` which will return true iff so.
@@ -7480,6 +7480,7 @@ print("starting at ${bool min()} and going to ${bool max()}")
 Because of this, it is a bit confusing to create an enum that has `Count` as an
 enumerated value name, but it is not illegal, since we can still distinguish between the
 enumerated value (`enum_name Count`) and total number of enumerated values (`enum_name count()`).
+Similarly for `Min`/`Max`.
 
 Also note that the `count()` method will return the total number of
 enumerations, not the number +1 after the last enum value.  This can be confusing

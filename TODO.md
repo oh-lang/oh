@@ -198,6 +198,9 @@ this is because we'll use 56 bits to store a pointer to a child in the worst cas
 short tag afterwards.  if we are storing a variable as `any` type, we'll use the full `u_arch`
 size to store `Type_id` then the variable data.
 
+TODO: does this short pointer work logic work for multiple parents?  they'd need to have the same
+offset/value, no?
+
 TODO: we need to disallow `all_of` if `parent1` and `parent2` have any of the same instance fields.
 
 ### generics
@@ -212,48 +215,118 @@ generic[of]: [Value; of]
         U + U_value
 }
 specific[of: number]: all_of[generic[of], m: [Scale; of]]
-{   ;;renew(M Scale; of = 1, Generic Value.): {}
+{   ;;renew(M Scale. of = 1, Generic Value. of): {}
 
     ::method(~U): u
         Parent_result: Generic::method(U)
         Scale * Parent_result
 }
 
-Specific(Value: 10_i8, Scale: 2_i8)
-print(Specific method(0.5)) # should print "11" via `2 * (0.5 + dbl(0.5 * 10))`
+`Generic` is actually wrapping a `specific[i8]` here:
+Generic[i8]; specific(Value: 10_i8, Scale: 2_i8)
+print(Generic method(0.5)) # should print "11" via `2 * (0.5 + dbl(0.5 * 10))`
 ```
 
 would transpile to this:
 
 ```
+// TODO: probably want `OH__generic__of__i8`
 // defined because of `generic[i8]` usage inside of `specific[i8]`
-struct OH_generic_i8
-{   OH_i8 Value;
-};
-// defined because of `specific[i8]`
-struct OH_specific_i8
-{   i8 Value; // NOTE: inlined `OH_generic_i8`
-    i8 Scale;
+struct oh__generic_i8
+{   struct
+    {   oh__i8 Value;
+    }       M;
 };
 // defined because of `Specific method(0.5)` usage needing `Generic::method(0.5)`:
-dbl OH__method__Generic_i8__Dbl__return__Dbl(const OH_generic_i8 *Generic_i8, double Dbl)
-{   dbl U_value = Dbl * Generic_i8->Value;
+dbl oh__method__Generic_i8__Dbl__return__Dbl(const oh__generic_i8 *Generic_i8, double Dbl)
+{   dbl U_value = Dbl * Generic_i8->M.Value;
     return Dbl + U_value;
 }
+// dynamic dispatch table.  called a "type table" `tt` because we'll add
+// other type reflection properties here.
+typedef struct oh_tt__generic_i8
+{   dbl (*method__Dbl__return__Dbl)(const oh__generic_i8 *M, double Dbl);
+    const char *name;
+}       oh_tt__generic_i8;
+oh_tt__generic_i8 Oh_tt__generic_i8
+{   .method__Dbl__return__Dbl = oh__method__Generic_i8__Dbl__return__Dbl;
+    .name = "generic[i8]";
+};
+
+// defined because of `specific[i8]`
+struct oh__specific_i8
+{   struct
+    {   oh__i8 Value;
+    }       Generic;
+    struct
+    {   oh__i8 Scale;
+    }       M;
+};
+
 // defined because of `Specific method(0.5)` usage:
-dbl OH__method__Specific_i8__dbl(const OH_specific_i8 *Specific_i8, double Dbl)
-{   dbl Parent_result = OH_method__Generic_i8__Dbl__return__Dbl
+dbl oh__method__Specific_i8__Dbl__return__Dbl(const oh__specific_i8 *Specific_i8, double Dbl)
+{   dbl Parent_result = oh_method__Generic_i8__Dbl__return__Dbl
     (   // NOTE: in general we need this offset if `specific_i8` is `all_of[m: [Scale; i8], generic[i8]]`
-        (const OH_generic_i8 *)&(Specific_i8->Value),
+        (const oh_generic_i8 *)&(Specific_i8->Generic),
         Dbl
     );
-    return Specific_i8 -> Scale * Parent_result;
+    return Specific_i8->M.Scale * Parent_result;
 }
+// type tables
+oh_tt__generic_i8 Oh_tt__specific_i8
+{   .method__Dbl__return__Dbl = oh__method__Specific_i8__Dbl__return__Dbl;
+    .name = "specific[i8]";
+};
+// this secondary table is created in case `specific_i8` has any methods that can be overridden
+// i.e., for things that inherit from `specific_i8`.
+typedef struct oh_tt__specific_i8
+{   dbl (*method__Dbl__return__Dbl)(const oh__specific_i8 *M, double Dbl);
+    const char *name = "specific[i8]";
+}       oh_tt__specific_i8;
+oh_tt__specific_i8 Oh_tt__generic_i8
+{   .method__Dbl__return__Dbl = oh__method__Generic_i8__Dbl__return__Dbl;
+    .name = "specific[i8]";
+};
+
+struct oh_some__generic_i8
+{   usize Type_id;
+    union
+    {   oh__generic_i8 Generic_i8;
+        oh__specific_i8 Specific_i8;
+    };
+};
+
 // for dynamic dispatch
-dbl OH__method__DYNAMIC_Generic_i8__Dbl__return__Dbl(const OH_generic_i8 *Generic_i8, double Dbl)
-{   // TODO
+dbl oh__method__DYNAMIC_Generic_i8__Dbl__return__Dbl(const oh_some__generic_i8 *Some__generic_i8, double Dbl)
+{   switch (Some__generic_i8->Type_id)
+    {   case Oh_type_id__generic_i8:
+            return oh__method__Generic_i8__Dbl__return__Dbl(&Some__generic_i8->Generic_i8, Dbl);
+        Case Oh_type_id__specific_i8:
+            return oh__method__Specific_i8__Dbl__return__Dbl(&Some__generic_i8->Specific_i8, Dbl);
+    }
 }
 ```
+
+option (0): C++ adds a vtable pointer for each parent class, which is not ideal from a
+component reusability perspective.  e.g., we'd like to enforce standard interfaces
+like `::count()`, `::hash(~Builder): null`, etc., without increasing the size of
+the class.  however, this approach does have super locality: adding a method to
+a class only affects it and any child class vtables.
+
+two alternate ways forward: (1) populate each vtable with *every* overload, but the
+non-impl'd overloads are functions that panic when called.  we'll call this approach
+`hidden_class: any`.  (2) use a switch-case on the `Type_id`, like in the `DYNAMIC`
+function above.
+
+(1) seems poor for rebuilding performance (e.g., if you add a method in one file, you
+need to rebuild all the files to include the new method).  it does make it "easy" to
+JIT a new class that reuses existing overloads, but it will fail for new overloads.
+it may also take up a lot of space.  (e.g., 1000 classes * 30 methods would be 30,000
+pointers which is like 234kB.)
+
+(2) should be fine, and it's probably not that much slower than the additional vtables
+approach of option (0).  however, inheriting from another class means we'd need to go
+in and patch the `DYNAMIC` function for that class somehow.
 
 ## big ints
 
