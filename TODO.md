@@ -293,6 +293,7 @@ struct oh_some__generic_i8
     union
     {   oh__generic_i8 Generic_i8;
         oh__specific_i8 Specific_i8;
+        oh__unknown Unknown;
     };
 };
 
@@ -301,9 +302,16 @@ dbl oh__method__DYNAMIC_Generic_i8__Dbl__return__Dbl(const oh_some__generic_i8 *
 {   switch (Some__generic_i8->Type_id)
     {   case Oh_type_id__generic_i8:
             return oh__method__Generic_i8__Dbl__return__Dbl(&Some__generic_i8->Generic_i8, Dbl);
-        Case Oh_type_id__specific_i8:
+        case Oh_type_id__specific_i8:
             return oh__method__Specific_i8__Dbl__return__Dbl(&Some__generic_i8->Specific_i8, Dbl);
     }
+    // for classes which are JIT:
+    dbl (*method__Dbl__return__Dbl)(const oh__unknown *M, double Dbl)
+        =   oh_look_up__method__Dbl__return__Dbl(Some__generic_i8->Type_id);
+    if (method__Dbl__return__Dbl) {
+        return method__Dbl__return__Dbl(&Some__generic_i8->Unknown, Dbl);
+    }
+    exit(1);
 }
 ```
 
@@ -327,6 +335,7 @@ pointers which is like 234kB.)
 (2) should be fine, and it's probably not that much slower than the additional vtables
 approach of option (0).  however, inheriting from another class means we'd need to go
 in and patch the `DYNAMIC` function for that class somehow.
+actually we probably can just have a catch-all hash map for any remaining.
 
 ## big ints
 
