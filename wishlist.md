@@ -640,13 +640,14 @@ We don't require `{}` in function definitions because we can distinguish between
 as an argument, and (C) defining a function inline in the following ways.  (A) uses
 `my_fn(Args): return_type = fn_returning_a_fn()` in order to get the correct type on `my_fn`,
 (B) uses `outer_fn(rename_to_this(Args): return_type = use_this_fn)` and requires a single
-`function_case` identifier on the RHS, while (C) uses `defining_fn(Args): do_this(Args) + 5`
+`function_case` identifier on the RHS, while (C) uses `defining_fn(Args): do_this(Args)`
 and uses inference to get the return type (for the default `do_this(Args)` function).
 
 ```
 # case (A): defining a function that returns a lambda function
 make_counter(Counter; int): do(): int
     do(): ++Counter
+# TODO: equivalent? `make_counter(Counter; int): do(): ++Counter`
 Counter; 123
 counter(): int = make_counter(Counter;)
 print(counter())    # 124
@@ -737,7 +738,7 @@ vector3: [X: dbl, Y: dbl, Z: dbl]
 
 # declaring a "complicated" class.  the braces `{}` are optional
 # but recommended due to the length of the class body.
-my_class: [X: int]
+my_class: [X; int]
 {   # here's a class function that's a constructor
     m(X. int): m
         ++Count
@@ -748,12 +749,12 @@ my_class: [X: int]
 
     # here's a class variable (not defined per instance)
     @private
-    Count; 0
+    Count; count_arch = 0
 
     # here's a class function (not defined per instance)
     # which can be called via `my_class count()` outside this class
     # or `count()` inside it.
-    count(): count
+    count(): count_arch
         Count
     # for short, `count(): Count`
 
@@ -5940,7 +5941,7 @@ er: one_of
 
 hm[of]: hm[ok: of, er]
 
-container[at, of: non_null]: []
+container[at, of: non_null, count_with: select_count]: []
 {   # Returns `Null` if `At` is not in this container,
     # otherwise the `of` instance at that `At`.
     # This is wrapped in a reference object to enable passing by reference.
@@ -5973,7 +5974,7 @@ container[at, of: non_null]: []
     @alias ::contains(At): M[At] != Null
 
     # Returns the number of elements in this container.
-    ::count(): count
+    ::count(): count_with
 
     # can implicitly convert to an iterator (with writeable/readonly references).
     ;:iterator(): iterator[(At:, Of;:)]
@@ -6291,7 +6292,7 @@ set[of: hashable]: container[id: of, value: true]
     # Fancy getter for whether `Of` is in the set or not.
     ::[Of, fn(@Maybe True?): ~t]: t
 
-    ::count(): count
+    ::count(): count_with
 
     # Unions this set with values from an iterator, returning True if
     # all the values from the iterator were already in this set, otherwise False.
