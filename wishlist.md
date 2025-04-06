@@ -5443,7 +5443,7 @@ my_builder: [...]
 
 # Note, inside the `{}` we allow mutating methods because `my_builder()` is a temporary.
 # The resulting variable will be readonly after this definition + mutation chain,
-# due to being defined with `:`.
+# due to `My_builder` being defined with `:`.
 My_builder: my_builder()@
 {   set("Abc", 123)
     set("Lmn", 456)
@@ -5841,10 +5841,10 @@ if Result is_ok()
     print("ok")
 
 # but it'd be nice to transform `Result` into the `Ok` (or `Er`) value along the way.
-Result is(an(Ok): print("Ok: ", Ok))
-Result is(an(Er): print("Er: ", Er))
+Result is(an(Ok): print("Ok: ${Ok}"))
+Result is(an(Er): print("Er: ${Er}"))
 
-# or if you're sure it's that thing, or want the program to terminate if not:
+# or if you're sure it's not an error, or want the program to terminate if not:
 Ok: Result ?? panic("expected `Result` to be non-null!!")
 ```
 
@@ -6387,7 +6387,7 @@ The way we achieve that is through using an array iterator:
 # the iterator will become an array iterator.  this allows us to check for
 # `@only` annotations (e.g., if `Iterator` was not allowed to change) and
 # throw a compile error.
-next(Iterator; iterator[t] @becomes(array_iterator[t]), Array: array[~t])?: t
+next(Iterator; iterator[t] @becomes array_iterator[t], Array: array[~t])?: t
     Iterator = array_iterator[t]()
     Iterator;;next(Array)
 
@@ -6962,11 +6962,10 @@ my_hashable_class: all_of[hashable, m: [Id: u64, Name; string]]
         Name hash(Builder;) # you can use `hash` via the field.
 
     # equivalent definition via sequence building:
-    ::hash(~Builder;):
-        Builder@
-        {   hash(Id)
-            hash(Name)
-        }
+    ::hash(~Builder;): Builder@
+    {   hash(Id)
+        hash(Name)
+    }
 }
 
 # note that defining `::hash(~Builder;)` automatically defines a `fast_hash` like this:
