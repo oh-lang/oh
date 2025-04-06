@@ -217,7 +217,7 @@ Because we use `::` for readonly methods and `;;` for writable methods, we can
 easily define "const template" methods via `:;` which work in either case `:` or `;`.
 This is mostly useful when you can call a few other methods internally that have specific
 `::` and `;;` overloads, since there's usually some distinct logic for readonly vs. writable.
-E.g., `;:the_method(X;: str): {M check(;:X)}` where `check` has distinct overloads for `::` and `;;`.
+E.g., `;:the_method(X;: str): M check(;:X)` where `check` has distinct overloads for `::` and `;;`.
 See [const templates](#const-templates) for more details.
 
 oh-lang uses result-passing instead of exception-throwing in order to make it clear
@@ -385,8 +385,9 @@ to panic?
         `Results: A@ [x(), Y], print("${Results[0]}, ${Results[1]})`.
 * `{}` for blocks and sequence building
     * `{...}` to effectively indent `...`, e.g., `if Condition {do_thing()} else {do_other_thing(), 5}`
-        * Used for defining a function inline, e.g., `fn(): {do_this(), do_that()}`.
-        * Note that braces `{}` are *optional* if you actually go to the next line and indent,
+        * Used for defining a multi-statement function inline, e.g., `fn(): {do_this(), do_that()}`.
+            (Note that you can avoid `{}` if the block is one statement, like `fn(): do_this()`.)
+        * Note that braces `{}` are optional if you actually go to the next line and indent,
             but they are recommended for long blocks.
     * `A@ {x(), Y}` with [sequence building](#sequence-building), 
         calling `A x()` and `A Y`, returning `A` if it's a temporary otherwise `A Y`
@@ -640,8 +641,7 @@ do_something(you(): str, greet(Name: str): str): str
     greet(Name: you())
 
 # calling a function with some functions as arguments:
-# note with this definition inline, braces are required.
-my_name(): {"World"}
+my_name(): "World"
 do_something
 (   you(): str = my_name
     greet(Name: str): str
@@ -651,17 +651,20 @@ do_something
 
 Note that because we support [function overloading](#function-overloads), we need
 to specify the *whole* function [when passing it in as an argument](#functions-as-arguments).
-We require braces in function definitions so that we can distinguish between passing
-a function as an argument (e.g., `outer_fn(rename_to_this(Args): return_type = use_this_fn)`)
-and defining a function inline (e.g., `defining_fn(Args): {do_this()}`).
+We don't always require `{}` in function definitions because we can distinguish between
+(A) passing a function as an argument and (B) defining a function inline in the following way:
+(A) uses `outer_fn(rename_to_this(Args): return_type = use_this_fn)` and requires a single
+`function_case` identifier on the RHS, while (B) uses `defining_fn(Args): do_this()`
+or `defining_fn(Args): return_type = do_this()`, where `do_this()` can be any expression.
 
 ```
 # defining a function that returns a lambda function
 make_counter(Counter; int): do(): int
-    do(): {++Counter}
+    do(): ++Counter
 Counter; 123
 counter: make_counter(Counter;)
 print(counter())    # 124
+# `Counter` is also 124 now.
 ```
 
 ```
@@ -755,7 +758,7 @@ my_class: [X: int]
     # or `count()` inside it.
     count(): count
         Count
-    # for short, `count(): {Count}`
+    # for short, `count(): Count`
 
     # methods which keep the class readonly use a `::` prefix
     ::do_something(Y: int): int
@@ -2110,10 +2113,10 @@ is null on it.  For example, the symmetric type `s8` defines null as `-128` like
 ```
 s8: i8 {@Null: -128}
 
-# roughly equivalent to `s8?: s8 { Null: -128_i8, ::is(null): {M == -128_i8} }`
+# roughly equivalent to `s8?: s8 { Null: -128_i8, ::is(null): M == -128_i8 }`
 ```
 
-Similarly, `f32?` and `f64?` indicate that `NaN` is null via `{@Null: NaN, ::is(null): {is_nan(M)}}`,
+Similarly, `f32?` and `f64?` indicate that `NaN` is null via `{@Null: NaN, ::is(null): is_nan(M)}`,
 so that you can define e.g. a nullable `f32` in exactly 32 bits.  To get this functionality,
 you must declare your variable as type `s8?` or `f32?`, so that the nullable checks
 kick in.
@@ -2131,7 +2134,7 @@ my_class: [@private Some_state: int]
     # the nullable definition, inside a class:
     ?: m
     {   Null: [Some_state: -1]
-        ::is_null(): {Some_state < 0}
+        ::is_null(): Some_state < 0
 
         ::null_method(): int
             assert(Some_state >= 0)
@@ -2143,7 +2146,7 @@ my_class: [@private Some_state: int]
 # both internal/external definitions aren't required of course.
 my_class?: my_class
 {   Null: [Some_state: -1]
-    ::is_null(): {Some_state < 0}
+    ::is_null(): Some_state < 0
     ::null_method(): int
         assert(Some_state >= 0)
         Some_state * 5
@@ -2671,7 +2674,7 @@ q
 # equivalent to `q(fn(): random() > 0.5)` or `q({random() > 0.5})`
 
 # defining a lambda usually requires a name, feel free to use the default:
-q(fn(): {True})
+q(fn(): True)
 # or you can use this notation, without the name:
 q({True})
 
@@ -2827,7 +2830,7 @@ But it would probably be more readable to just define the functions normally in 
 
 There is currently no good way to define the name of a lambda function; we may use
 `@named(whatever_name) {$X + $Y}`, but it's probably more readable to just define
-the function inline as `whatever_name(X, Y): {X + Y}`.
+the function inline as `whatever_name(X, Y): X + Y`.
 TODO: would `$named{$X + $Y}` work??
 
 ### types as arguments
@@ -3323,7 +3326,7 @@ and (2) child types are allowed to be passed by reference when the function asks
 for a parent type.
 
 Return types are never inferred as references, so one secondary difference between
-`fn(Int.): {++Int}` and `fn(Int;): {++Int}` is that a copy/temporary is required
+`fn(Int.): ++Int` and `fn(Int;): ++Int` is that a copy/temporary is required
 before calling the former and a copy is made for the return type in the latter.
 The primary difference is that the latter will modify the passed-in variable in
 the outer scope.  To avoid dangling references, any calls of `fn(Int;)` with a
@@ -3616,7 +3619,7 @@ it may only be not-writable from your scope's reference to the variable.
 
 In cases where we know the function won't do self-referential logic,
 we can try to optimize and pass by value automatically.  However, we
-do want to support closures like `next_generator(Int; int): {do(): {++Int}}`,
+do want to support closures like `next_generator(Int; int): do(): ++Int`,
 which returns a function which increments the passed-in, referenced integer,
 so we can never pass a temporary argument (e.g., `Arg. str`) into `next_generator`.
 
@@ -4271,7 +4274,7 @@ class first.
 
 ```
 x_and_y: [X: int, Y: dbl]
-{   ::my_method(): {X + round(Y) Int}
+{   ::my_method(): X + round(Y) Int
 }
 
 my_fn(Int): x_and_y
@@ -4660,7 +4663,7 @@ example:
 
     # no-copy "take" method.  moves X from this temporary.
     @visibility
-    ..x(): {X!}
+    ..x(): X!
 }
 W = example()
 W x(W x() + ", world")
@@ -4871,7 +4874,7 @@ Cat escape()    # prints "CAT ESCAPES DARINGLY!"
 We have some functionality to make it easy to pass `renew` arguments to
 a parent class via the `Parent_class_name` namespace in the constructor arguments.
 This way you don't need to add the boiler plate logic inside the
-constructor like this `;;renew(Parent_argument): { Parent renew(Parent_argument) }`,
+constructor like this `;;renew(Parent_argument): Parent renew(Parent_argument)`,
 you can make it simpler like this instead:
 
 ```
@@ -5305,15 +5308,15 @@ a_specification: some_generic[...tuple_type]
 Here is an example of returning a tuple type.
 
 ```
-tuple[Dbl]: [number, vector: any]
+tuple[Dbl]: [number, vector2: any]
     if abs(Dbl) < 128.0
-        [number: flt, vector: {X: flt, Y: flt}]
+        [number: flt, vector2: [X: flt, Y: flt]]
     else
-        [number: dbl, vector: {X: dbl, Y: dbl}]
+        [number: dbl, vector2: [X: dbl, Y: dbl]]
 
 my_tuples: tuple[random() * 256.0]
 My_number; my_tuples number(5.0)
-My_vector; my_tuples vector(X: 3.0, Y: 4.0)
+My_vector; my_tuples vector2(X: 3.0, Y: 4.0)
 ```
 
 See also [`new[...]: ...` syntax](#returning-a-type).
@@ -5969,8 +5972,8 @@ container[at, of: non_null]: []
     # returns an error if we ran out of memory trying to add the new value.
     ;;swap(At, Of?;): hm[null]
     
-    @alias ::has(At): {M[At] != Null}
-    @alias ::contains(At): {M[At] != Null}
+    @alias ::has(At): M[At] != Null
+    @alias ::contains(At): M[At] != Null
 
     # Returns the number of elements in this container.
     ::count(): count
@@ -6308,7 +6311,7 @@ set[of: hashable]: container[id: of, value: true]
     # insertion ordered, otherwise any convenient element.
     # Returns an error if there is no element available.
     ;;pop(): hm[of]
-    ;;pop(Of)?: {M[Of]!}
+    ;;pop(Of)?: M[Of]!
 
     @alias ;;remove(Of)?: M[Of]!
     ...
@@ -6904,8 +6907,8 @@ code:
 
 ```
 switch (fast_hash(Considered_string, Compile_time_salt))
-{   case fast_hash(String_case1, Compile_time_salt): { // precomputed with a stable hash
-        if (Considered_string != String_case1)
+{   case fast_hash(String_case1, Compile_time_salt): // precomputed with a stable hash
+    {   if (Considered_string != String_case1)
         {   goto __Default__;
         }
         // logic for String_case1...
@@ -6985,7 +6988,7 @@ what My_hashable_class
         print("it was something else: ${My_hashable_class}")
 ```
 
-Note that if your `fast_hash` implementation is terrible (e.g., `fast_hash(Salt): {Salt}`),
+Note that if your `fast_hash` implementation is terrible (e.g., `fast_hash(Salt): Salt`),
 then the compiler will error out after a certain number of attempts with different salts.
 
 For sets and lots, we use a hash method that is order-independent (even if the container
@@ -7607,7 +7610,7 @@ if Tree is_leaf()
 # narrowing to a `leaf` type that is readonly, while retaining a reference
 # to the original `Tree` variable.  the nested function only executes if
 # `Tree` is internally of type `leaf`:
-Tree is(fn(Leaf): {print(Leaf)})
+Tree is(fn(Leaf): print(Leaf))
 
 # narrowing to a `branch` type that is writable.  `Tree` was writable, so `Branch` can be.
 # the nested function only executes if `Tree` is internally of type `branch`:
@@ -8002,7 +8005,7 @@ is descoped.
 ```
 # function that takes a function as an argument and returns a function
 # example usage:
-#   some_fn(): {"hey"}
+#   some_fn(): "hey"
 #   # need to specify the overload
 #   other_fn(): int = wow(fn(): str = some_fn)
 #   print(other_fn()) # 3
@@ -8256,7 +8259,7 @@ check(T?` ~t, Blockable[~u, declaring` t])?: u
     what T
         T`
             Blockable block(T`)
-        Null: Null
+        Null: {Null}
 ```
 without some deep programming, we won't be able to have the option of doing things like
 `return X + Y`, since `return` breaks order of operations.
