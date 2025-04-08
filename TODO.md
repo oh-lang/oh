@@ -230,31 +230,23 @@ print(Generic method(0.5)) # should print "11" via `2 * (0.5 + dbl(0.5 * 10))`
 would transpile to this:
 
 ```
-// TODO: probably want `OH__generic__of__i8`
-// defined because of `generic[i8]` usage inside of `specific[i8]`
-struct oh__generic_i8
+// defined because of `specific[i8]` needing this as a parent.
+struct oh__generic_of_i8
 {   struct
     {   oh__i8 Value;
     }       M;
 };
 // defined because of `Specific method(0.5)` usage needing `Generic::method(0.5)`:
-dbl oh__method__Generic_i8__Dbl__return__Dbl(const oh__generic_i8 *Generic_i8, double Dbl)
-{   dbl U_value = Dbl * Generic_i8->M.Value;
+dbl oh__method__Generic_of_i8__Dbl__return__Dbl
+(   const oh__generic_of_i8 *Generic,
+    double Dbl
+)
+{   dbl U_value = Dbl * Generic->M.Value;
     return Dbl + U_value;
 }
-// dynamic dispatch table.  called a "type table" `tt` because we'll add
-// other type reflection properties here.
-typedef struct oh_tt__generic_i8
-{   dbl (*method__Dbl__return__Dbl)(const oh__generic_i8 *M, double Dbl);
-    const char *name;
-}       oh_tt__generic_i8;
-oh_tt__generic_i8 Oh_tt__generic_i8
-{   .method__Dbl__return__Dbl = oh__method__Generic_i8__Dbl__return__Dbl;
-    .name = "generic[i8]";
-};
 
 // defined because of `specific[i8]`
-struct oh__specific_i8
+struct oh__specific_of_i8
 {   struct
     {   oh__i8 Value;
     }       Generic;
@@ -264,78 +256,53 @@ struct oh__specific_i8
 };
 
 // defined because of `Specific method(0.5)` usage:
-dbl oh__method__Specific_i8__Dbl__return__Dbl(const oh__specific_i8 *Specific_i8, double Dbl)
-{   dbl Parent_result = oh_method__Generic_i8__Dbl__return__Dbl
-    (   // NOTE: in general we need this offset if `specific_i8` is `all_of[m: [Scale; i8], generic[i8]]`
-        (const oh_generic_i8 *)&(Specific_i8->Generic),
+dbl oh__method__Specific_of_i8__Dbl__return__Dbl
+(   const oh__specific_of_i8 *Specific,
+    double Dbl
+)
+{   dbl Parent_result = oh_method__Generic_of_i8__Dbl__return__Dbl
+    (   // NOTE: in general we need this offset if `specific[i8]` is `all_of[m: [Scale; i8], generic[i8]]`
+        (const oh_generic_of_i8 *)&(Specific->Generic),
         Dbl
     );
-    return Specific_i8->M.Scale * Parent_result;
+    return Specific->M.Scale * Parent_result;
 }
-// type tables
-oh_tt__generic_i8 Oh_tt__specific_i8
-{   .method__Dbl__return__Dbl = oh__method__Specific_i8__Dbl__return__Dbl;
-    .name = "specific[i8]";
-};
-// this secondary table is created in case `specific_i8` has any methods that can be overridden
-// i.e., for things that inherit from `specific_i8`.
-typedef struct oh_tt__specific_i8
-{   dbl (*method__Dbl__return__Dbl)(const oh__specific_i8 *M, double Dbl);
-    const char *name = "specific[i8]";
-}       oh_tt__specific_i8;
-oh_tt__specific_i8 Oh_tt__generic_i8
-{   .method__Dbl__return__Dbl = oh__method__Generic_i8__Dbl__return__Dbl;
-    .name = "specific[i8]";
-};
 
-struct oh_some__generic_i8
+typedef void *oh__unknown;
+
+struct oh_dynamic__generic_of_i8
 {   usize Type_id;
     union
-    {   oh__generic_i8 Generic_i8;
-        oh__specific_i8 Specific_i8;
+    {   oh__generic_of_i8 Generic_of_i8;
+        oh__specific_of_i8 Specific_of_i8;
         oh__unknown Unknown;
     };
 };
 
 // for dynamic dispatch
-dbl oh__method__DYNAMIC_Generic_i8__Dbl__return__Dbl(const oh_some__generic_i8 *Some__generic_i8, double Dbl)
-{   switch (Some__generic_i8->Type_id)
-    {   case Oh_type_id__generic_i8:
-            return oh__method__Generic_i8__Dbl__return__Dbl(&Some__generic_i8->Generic_i8, Dbl);
-        case Oh_type_id__specific_i8:
-            return oh__method__Specific_i8__Dbl__return__Dbl(&Some__generic_i8->Specific_i8, Dbl);
+dbl oh__method__DYNAMIC_Generic_of_i8__Dbl__return__Dbl
+(   const oh_dynamic__generic_of_i8 *Dynamic__generic_of_i8,
+    double Dbl
+)
+{   switch (Dynamic__generic_i8->Type_id)
+    {   case Oh_type_id__generic_of_i8:
+            return oh__method__Generic_of_i8__Dbl__return__Dbl(&Some__generic_i8->Generic_of_i8, Dbl);
+        case Oh_type_id__specific_of_i8:
+            return oh__method__Specific_of_i8__Dbl__return__Dbl(&Some__generic_i8->Specific_of_i8, Dbl);
     }
     // for classes which are JIT:
     dbl (*method__Dbl__return__Dbl)(const oh__unknown *M, double Dbl)
-        =   oh_look_up__method__Dbl__return__Dbl(Some__generic_i8->Type_id);
-    if (method__Dbl__return__Dbl) {
-        return method__Dbl__return__Dbl(&Some__generic_i8->Unknown, Dbl);
+        =   oh_look_up__method__Dbl__return__Dbl(Dynamic__generic_of_i8->Type_id);
+    if (method__Dbl__return__Dbl)
+    {   return method__Dbl__return__Dbl(&Dynamic__generic_of_i8->Unknown, Dbl);
     }
     exit(1);
 }
 ```
 
-option (0): C++ adds a vtable pointer for each parent class, which is not ideal from a
-component reusability perspective.  e.g., we'd like to enforce standard interfaces
-like `::count()`, `::hash(~Builder): null`, etc., without increasing the size of
-the class.  however, this approach does have super locality: adding a method to
-a class only affects it and any child class vtables.
-
-two alternate ways forward: (1) populate each vtable with *every* overload, but the
-non-impl'd overloads are functions that panic when called.  we'll call this approach
-`hidden_class: any`.  (2) use a switch-case on the `Type_id`, like in the `DYNAMIC`
-function above.
-
-(1) seems poor for rebuilding performance (e.g., if you add a method in one file, you
-need to rebuild all the files to include the new method).  it does make it "easy" to
-JIT a new class that reuses existing overloads, but it will fail for new overloads.
-it may also take up a lot of space.  (e.g., 1000 classes * 30 methods would be 30,000
-pointers which is like 234kB.)
-
-(2) should be fine, and it's probably not that much slower than the additional vtables
-approach of option (0).  however, inheriting from another class means we'd need to go
-in and patch the `DYNAMIC` function for that class somehow.
-actually we probably can just have a catch-all hash map for any remaining.
+TODO: we want to include a "lambda" type.  if it fits into the size of `oh_dynamic__generic_of_i8` union,
+we can inline all the lambda methods as pointers there.  if not, we use 
+a pointer to an allocated lambda type.
 
 ## big ints
 
