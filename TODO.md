@@ -228,6 +228,9 @@ print(Generic method(0.5)) # should print "11" via `2 * (0.5 + dbl(0.5 * 10))`
 ```
 
 would transpile to this:
+TODO: how much do we want to wrap with getters/property-setters?
+probably need reference functions (not getters/setters) to comply
+with all situations.
 
 ```
 // defined because of `specific[i8]` needing this as a parent.
@@ -280,6 +283,8 @@ struct oh_dynamic__generic_of_i8
 };
 
 // for dynamic dispatch
+// TODO: i think we need to pass around `Type_id` somehow for internal calls,
+// and possibly the full `dynamic` type, because we don't know how to get offsets for everyone.
 dbl oh__method__DYNAMIC_Generic_of_i8__Dbl__return__Dbl
 (   const oh_dynamic__generic_of_i8 *Dynamic__generic_of_i8,
     double Dbl
