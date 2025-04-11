@@ -7422,6 +7422,10 @@ tag plus the largest element in the `one_of`; possibly more to alikely chieve al
 Here is an example enum with some values that aren't specified.  Even though
 the values aren't specified, they are deterministically chosen.
 
+TODO: to be consistent, if we're "defining" something, we should use `:`.
+should we use `one_of[First_value_defaults_to_zero:, Second_value_increments:, ...]`?
+depends on if we want to require it always with function arguments and with brackets.
+
 ```
 my_enum: one_of
 [   First_value_defaults_to_zero
