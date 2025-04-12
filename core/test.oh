@@ -47,16 +47,10 @@
     #     )
     # )
     Block; block
-    (   ast statement("Test run(${Test_name}, ${Test_block_name})"))
+    (   ast statement("Context run(${Test_name}, ${Test_block_name})"))
     )
 
-    # TODO: i think we need to rename to `Context` OR `State`.
-    # alternatively we need to rename `test()` (the function) to `assert()`
-    # or something similar (maybe `Test[X] == Y`).  due to how we disallow
-    # shadowing, and that we require `lower_snake_case` and `Initial_upper_snake_case`
-    # to be type versions of each other, we can't have `Test` and `test`
-    # mean different things.
-    if Ast in_scope("Test")
+    if Ast in_scope("Context")
         # TODO: for running tests in parallel with the same parent state,
         # we probably could fork here.  but that's a bit hacky on Windows.
         Ast add(ast statement(Block!))
@@ -65,13 +59,12 @@
     # statement, via string, builds something like this:
     # ast statement
     # (   ast binary_operation
-    #     (   Left: identifier("Test")
+    #     (   Left: identifier("Context")
     #         Op_declare_writable
     #         Right: identifier("test_context")
     #     )
     # )
-    # `
-    Block prepend(ast statement("Test; test_context"))
+    Block prepend(ast statement("Context; test_context"))
 
     Ast add(Test. Block!)
 
@@ -99,51 +92,29 @@ test_context: [@protected Printed; array[str], @protected Name; str]
 }
         
 
-test[of]: [Of, Oh_line]
-{   g(~T., @Oh_line): g[t]
-        [T, Oh_line]
+test[of]: [Of, Oh_info, Conversion; str]
+{   g(~T., @Autofill Oh_info, Conversion. ""): g[t]
+        [T, Oh_info, Conversion]
 
-    ::==(Of): bool
-        if M Of == Of
-            return True
-        error("${M Oh_line}: expected ${M Of} == ${Of}")
-        panic("expected ${M Of} == ${Of}")
-        False
+    ;;descope[Require: of is bool](): null
+        if !Of
+            error("${M Oh_info}: expected ${Conversion}")
+            panic("expected ${Conversion}")
+    
+    ;;descope[Require: of is hm](): null
+        if Of is Er:
+            error("${M Oh_info}: expected ${Conversion}, got ${Er}")
+            panic("expected ${Conversion} to be OK, got ${Er}")
 
-    ::!=(Of): bool
-        if M Of != Of
-            return True
-        error("${M Oh_line}: expected ${M Of} != ${Of}")
-        panic("expected ${M Of} != ${Of}")
-        False
+    ;;descope(): null
+        if !Conversion
+            error("${M Oh_info}: expected an expression like test(X) == 7")
 
-    ::>=(Of): bool
-        if M Of >= Of
-            return True
-        error("${M Oh_line}: expected ${M Of} >= ${Of}")
-        panic("expected ${M Of} >= ${Of}")
-        False
-
-    ::<=(Of): bool
-        if M Of <= Of
-            return True
-        error("${M Oh_line}: expected ${M Of} <= ${Of}")
-        panic("expected ${M Of} <= ${Of}")
-        False
-        
-    ::>(Of): bool
-        if M Of > Of
-            return True
-        error("${M Oh_line}: expected ${M Of} > ${Of}")
-        panic("expected ${M Of} > ${Of}")
-        False
-
-    ::<(Of): bool
-        if M Of < Of
-            return True
-        error("${M Oh_line}: expected ${M Of} < ${Of}")
-        panic("expected ${M Of} < ${Of}")
-        False
+    @methods(of) @each Method:
+        @concat(Method Name)(...Method Arguments): test[Method returning]
+            Conversion += "${M format_method(Method)}"
+            Returning: @concat(Method Name)(...Method Arguments)
+            g(Returning, Oh_info, Conversion clone())
 }
 
 @test "==":
@@ -151,7 +122,7 @@ test[of]: [Of, Oh_line]
         test(5) == 5
         test(10) == 10
 
-    @test_panics "expected 5 == 6":
+    @test_panics "expected (5 == 6) Bool":
         test(5) == 6
 
 @test "!=":
@@ -159,7 +130,7 @@ test[of]: [Of, Oh_line]
         test(5) != 50
         test(10) != 12
 
-    @test_panics "expected 3 != 3":
+    @test_panics "expected (3 != 3) Bool":
         test(3) != 3
 
 @test ">=":
@@ -168,7 +139,7 @@ test[of]: [Of, Oh_line]
         test(4) >= 4
         test(10) >= 10
 
-    @test_panics "expected 5 >= 6":
+    @test_panics "expected (5 >= 6) Bool":
         test(5) >= 6
 
 @test "<=":
@@ -177,7 +148,7 @@ test[of]: [Of, Oh_line]
         test(7) <= 7
         test(12) <= 12
 
-    @test_panics "expected 7 <= 6":
+    @test_panics "expected (7 <= 6) Bool":
         test(7) <= 6
 
 @test "<":
@@ -185,10 +156,10 @@ test[of]: [Of, Oh_line]
         test(5) < 6
         test(10) < 11
 
-    @test_panics "expected 7 < -1":
+    @test_panics "expected (7 < -1) Bool":
         test(7) < -1
 
-    @test_panics "expected -1 < -1":
+    @test_panics "expected (-1 < -1) Bool":
         test(-1) < -1
 
 @test ">":
@@ -196,8 +167,8 @@ test[of]: [Of, Oh_line]
         test(5) > 3
         test(20) > 19
 
-    @test_panics "expected -1 > 1":
+    @test_panics "expected (-1 > 1) Bool":
         test(-1) > 1
 
-    @test_panics "expected 1 > 1":
+    @test_panics "expected (1 > 1) Bool":
         test(1) > 1

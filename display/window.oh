@@ -231,14 +231,12 @@ vertices[of]:
     ;;load(File_path): null
 
     ;;[fn(Array[vertex];): ~t]: t
-        assert(!My State gpu_is_ahead_of_cpu()) orPanic()
+        debug assert(!My State gpu_is_ahead_of_cpu())
 
         Result: fn(My Array;)
 
-        My State is
-        (   (Synced.):
-                My State = needs_commit(Previous_id: Synced Id)
-        )
+        if My State is Synced.
+            My State = needs_commit(Previous_id: Synced Id)
 
         Result
 
@@ -316,7 +314,16 @@ shader
 }
 
 # GPU data is any struct of fields that include these types.
-gpu_data: fields_of[u32, f32, vector2f, vector3f, vector4f, matrix3f, matrix4f]
+gpu_data: fields_of
+[   u32
+    f32
+    vector2f
+    vector3f
+    vector4f
+    matrix3f
+    matrix4f
+    pixels
+]
 
 font:
 [   @private @
