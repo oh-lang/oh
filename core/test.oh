@@ -50,6 +50,12 @@
     (   ast statement("Test run(${Test_name}, ${Test_block_name})"))
     )
 
+    # TODO: i think we need to rename to `Context` OR `State`.
+    # alternatively we need to rename `test()` (the function) to `assert()`
+    # or something similar (maybe `Test[X] == Y`).  due to how we disallow
+    # shadowing, and that we require `lower_snake_case` and `Initial_upper_snake_case`
+    # to be type versions of each other, we can't have `Test` and `test`
+    # mean different things.
     if Ast in_scope("Test")
         # TODO: for running tests in parallel with the same parent state,
         # we probably could fork here.  but that's a bit hacky on Windows.

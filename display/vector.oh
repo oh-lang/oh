@@ -1,0 +1,76 @@
+@final
+vector2[of]: [X; of, Y; of]
+{   ::dot(O): of
+        X * O X + Y * O Y
+    ::cross(O): of
+        X * O Y - Y * O X
+
+    @swizzleable
+}
+
+@expand_types(vector2)
+
+@expand_types(v):
+{   @concat(v, "i"): v[i32]
+    @concat(v, "l"): v[i64]
+    @concat(v, "f"): v[f32]
+    @concat(v, "d"): v[f64]
+}
+
+# swizzle operators
+@swizzleable:
+{   m2: vector2[of]
+    m3: vector3[of]
+    m4: vector4[of]
+
+    # NOTE: this code adds in all permutations like this:
+    #   ::xx[Require: @in_scope(X)](): m2
+    #       [X, Y: X]
+    [X, Y, Z, W] @each Component0:
+        [X, Y, Z, W] @each Component1:
+            ::@concat(component0, component1)
+            [   Require: @in_scope(Component0, Component1)
+            ](): m2
+                [X: Component0, Y: Component1]
+
+    # NOTE: this code adds in all permutations like this:
+    #   ::xxx[Require: @in_scope(X)](): m3
+    #       [X, Y: X, Z: X]
+    [X, Y, Z, W] @each Component0:
+        [X, Y, Z, W] @each Component1:
+            [X, Y, Z, W] @each Component2:
+                ::@concat(component0, component1, component2)
+                [   Require: @in_scope(Component0, Component1, Component2)
+                ](): m3
+                    [X: Component0, Y: Component1, Z: Component2]
+
+    # NOTE: this code adds in all permutations like this:
+    #   ::xxxx[Require: @in_scope(X)](): m4
+    #       [X, Y: X, Z: X, W: X]
+    [X, Y, Z, W] @each Component0:
+        [X, Y, Z, W] @each Component1:
+            [X, Y, Z, W] @each Component2:
+                [X, Y, Z, W] @each Component3:
+                    ::@concat(component0, component1, component2, component3)
+                    [   Require: @in_scope(Component0, Component1, Component2, Component3)
+                    ](): m4
+                        [X: Component0, Y: Component1, Z: Component2, W: Component3]
+}
+
+@test "swizzle"
+    @test "xx"
+        Test[vector2i(1, 2) xx()] == vector2i(1, 1)
+        Test[vector3d(0.0, 5.0, 9.0) xx()] == vector2d(0.0, 0.0)
+        Test[vector4l(-1, 7, 3, 4) xx()] == vector2l(-1, -1)
+    @test "xy"
+        Test[vector2i(1, 2) xy()] == vector2i(1, 2)
+        Test[vector3f(0.0, 5.0, 9.0) xy()] == vector2f(0.0, 5.0)
+        Test[vector4l(-1, 7, 3, 4) xy()] == vector2l(-1, 7)
+    @test "yx"
+        Test[vector2i(1, 2) yx()] == vector2i(2, 1)
+        Test[vector3d(0.0, 5.0, 9.0) yx()] == vector2d(5.0, 0.0)
+        Test[vector4l(-1, 7, 3, 4) yx()] == vector2l(7, -1)
+    @test "yy"
+        Test[vector2i(1, 2) yy()] == vector2i(2, 2)
+        Test[vector3f(0.0, 5.0, 9.0) yy()] == vector2f(5.0, 5.0)
+        Test[vector4l(-1, 7, 3, 4) yy()] == vector2l(7, 7)

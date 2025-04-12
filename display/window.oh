@@ -65,14 +65,16 @@ graphics_window: all_of[window, l3]
     ;;resolution(Size2.): L3 Pixels size(.Size2)
 }
 
-l2: [@private Pixels;]
+# low-level drawing to a set of pixels for 2D operations.
+l2: pixels
 {   # Writes some text to the l2.
     ;;draw(Caret;, String): null
 }
 
-l3: [@private Pixels;]
-{   # Function to get pixels to draw to.
-    ;;draw[of: select[cpu_pixels, qpu_pixels]](fn(~Of;): ~t): fn(My Pixels;)
+# low-level drawing to a set of pixels, with 3D operations.
+# 2D operations from `l2` are included.
+l3: l2
+{   
 }
 
 window_event: one_of
@@ -81,14 +83,14 @@ window_event: one_of
     # A sequence of runes (e.g., layout and locale included).
     text: string
     # A physical, named key.
-    key: [Key:, Modifiers:, State: one_of[Pressed, Released, Repeated]]
+    key: [Key, Modifiers, State: one_of[Pressed, Released, Repeated]]
     # Mouse button, e.g., left mouse button or right mouse button.
-    mouse_button: [Position: vector2i, Button: u8, Modifiers:, State: one_of[Pressed, Released]]
+    mouse_button: [Position: vector2i, Button: u8, Modifiers, State: one_of[Pressed, Released]]
     # The mouse moving.  The position is relative to the top-left of the shown pixels
     # (i.e., in case of letterboxing, coordinates can be < 0 or >= the Window Resolution).
-    mouse_move: [Delta: vector2i, Position: vector2i, Modifiers:]
+    mouse_move: [Delta: vector2i, Position: vector2i, Modifiers]
     # The mouse is scrolling.
-    mouse_wheel: [Delta: i32, Modifiers:]
+    mouse_wheel: [Delta: i32, Modifiers]
     # Polling for events timed out.
     Timeout
 ]
@@ -117,25 +119,26 @@ pixels: []
     ::size(): size2
 
     # Tries to resize the image.  Can fail if the new size is too large (OOM)
-    # or if the size is invalid (e.g., negative values).  If successful,
-    # returns the old size.
+    # or if the size is invalid (e.g., negative values).
     @hide_from(cpu_pixels, gpu_pixels)
-    ;;size(New Size2): hm[size2]
+    ;;size(Size2.): hm[null]
 
-    # Color getter via coordinates.  Can fail if the coordinates are out of bounds (OOB).
-    # Can also be expensive if the pixels aren't up-to-date on the CPU.
+    # Color getter via coordinates.
+    # Can fail if the coordinates are out of bounds (OOB).
+    # Can be expensive if the pixels aren't up-to-date on the CPU.
     @hide_from(gpu_pixels)
-    ::[Coordinates2i, fn(Color): ~t]: hm[t]
+    ::[Coordinates2i]: hm[color]
 
     # Color check+setter via coordinates.
+    # Can fail if the coordinates are OOB.
+    # Can be expensive if the pixels aren't up-to-date on the CPU.
     @hide_from(gpu_pixels)
-    ;;[Coordinates2i, fn(Color;): ~t]: hm[t]
+    ;;[Coordinates2i]: hm[(Color;)]
 
     # Color setter (doesn't check the color first).
     ;;draw(Coordinates2i, Color): hm[null]
 
     # Draws some text to these pixels.
-    @hide_from(cpu_pixels) # TODO: maybe support CPU font drawing eventually
     ;;draw(String, Caret;, Font;, Font_options: font_options()): null
 
     # TODO: `;;draw(..., Mask)` for scissor operations
@@ -349,9 +352,6 @@ font_style: choose
     Chaos # add pseudorandom jitter to drawn runes
 ]
 
-vector2[of]: [X; of, Y; of]
-vector2i: vector2[i32]
-vector2f: vector2[f32]
-
 size2: [Width; i32, Height; i32]
 index2: [Column; i32, Row; i32]
+[vector2i, vector2f]: \/vector
