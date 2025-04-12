@@ -4,11 +4,35 @@ vector2[of]: [X; of, Y; of]
         X * O X + Y * O Y
     ::cross(O): of
         X * O Y - Y * O X
+    ::cross(O): m3
+        [X: 0, Y: 0, Z: cross(O)]
 
     @swizzleable
 }
-
 @expand_types(vector2)
+
+@final
+vector3[of]: [X; of, Y; of, Z; of]
+{   ::dot(O): of
+        X * O X + Y * O Y + Z * O Z
+    ::cross(O): m
+    (   X: Y * O Z - Z * O Y
+        Y: Z * O X - X * O Z
+        Z: X * O Y - Y * O X
+    )
+
+    @swizzleable
+}
+@expand_types(vector3)
+
+@final
+vector4[of]: [X; of, Y; of, Z; of, W; of]
+{   ::dot(O): of
+        X * O X + Y * O Y + Z * O Z + W * O W
+
+    @swizzleable
+}
+@expand_types(vector4)
 
 @expand_types(v):
 {   @concat(v, "i"): v[i32]
@@ -26,6 +50,10 @@ vector2[of]: [X; of, Y; of]
     # NOTE: this code adds in all permutations like this:
     #   ::xx[Require: @in_scope(X)](): m2
     #       [X, Y: X]
+    # TODO: this probably doesn't work nicely unless we have
+    # a macro for identifiers, e.g., `@identifier @[X, Y, Z, W]`
+    # or `@Maybe_in_scope @[X, Y, Z, W]`.  unless we treat `@each`
+    # a bit differently.
     [X, Y, Z, W] @each Component0:
         [X, Y, Z, W] @each Component1:
             ::@concat(component0, component1)
