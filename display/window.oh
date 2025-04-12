@@ -231,12 +231,12 @@ vertices[of]:
     ;;load(File_path): null
 
     ;;[fn(Array[vertex];): ~t]: t
-        debug assert(!My State gpu_is_ahead_of_cpu())
+        debug assert(!My State gpu_ahead_of_cpu())
 
         Result: fn(My Array;)
 
         if My State is Synced.
-            My State = needs_commit(Previous_id: Synced Id)
+            My State = needs_gpu_update(Previous_id: Synced Id)
 
         Result
 
@@ -256,21 +256,22 @@ vertices[of]:
     # This object is not represented on the CPU at all.
     Gpu_only: [Id: of]
     # The CPU version of this object is ahead of the GPU version.
-    # The CPU version should send an update to the GPU (may be expensive).
+    # The CPU version should send an update to the GPU (may be expensive)
+    # if you want to draw it efficiently.
     Needs_gpu_update: [Previous_id: of]
     # The GPU version of this object is ahead of the CPU version.
-    # The CPU version should request the data from the GPU (may be expensive).
+    # If needed on the CPU, data must be requested from the GPU (may be expensive).
     Needs_cpu_update: [Id: of]
     # The GPU version of this object is in sync with the CPU version.
     Synced: [Id: of]
 ]
-{   ::gpu_is_ahead_of_cpu(): bool
+{   ::gpu_ahead_of_cpu(): bool
         what Me
-            Cpu_only: $(False)
-            Gpu_only: $(True)
-            Needs_gpu_update: $(False)
-            Needs_cpu_update: $(True)
-            Synced: $(False)
+            Cpu_only: {False}
+            Gpu_only: {True}
+            Needs_gpu_update: {False}
+            Needs_cpu_update: {True}
+            Synced: {False}
 }
 
 fragment:

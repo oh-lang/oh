@@ -10,19 +10,31 @@ created by end-user developers.  This is usually an inconsistency by convention,
 e.g., `PascalCase` for class names and `snake_case` for primitive types in C++,
 but Rust requires this inconsistency by fiat.
 In oh-lang, all types are `lower_snake_case`, like functions.  Variables and identifiers
-like `True` or `False` are `Initial_upper_snake_case`.  oh-lang doesn't recommend distinguishing
+like `_true`, `_false`, or `_my_var_x` are `_initial_underscore_lower_snake_case`.
+oh-lang doesn't recommend distinguishing
 between constant identifiers and non-constant identifiers with casing,
 e.g., like `UPPER_SNAKE_CASE` in other languages; you can rely on the compiler
 to stop you if you try to change a constant variable, and you'll save wear
 and tear on your caps-lock key.
+TODO: we might want to switch to `_type_case` and `variable_case` because `variable_case`
+is probably more common.  if we want to dredge up OLD hm-lang logic, we could use
+`__type_case`, `_func_case`, and `var_case`.  that would allow us to do things like this
+`my_class: [Count; __count] {__count: count_arch, ::_count(): __count}`, and import
+all functions via `[_my_func]: \/import/from/here`.
+TODO: update the remainder of the file to use the new cases, although we should decide on
+the previous TODO first.
 
 Why snake case: long names are hard to parse with Pascal case, and we want to support descriptive
 names.  Code is read more than it is written, so we don't need to optimize underscores out
 (e.g., like in `PascalCase`) at the cost of making the code harder to read.
-We'll allow an option for converting `_x` to `X` in case users want to use `CamelCase`
-or `dromedaryCase`, or even if they want to go all-in with `_prefixed_snake_case` for variable
-names (since `_prefixed_snake_case` would be equivalent to `Prefixed_snake_case`
-with the `_x` equals `X` rule).  For the remainder of this document, we'll use `Variable_case`,
+We'll automatically convert `CamelCase` or `dromedaryCase` to their respective
+oh-lang types (e.g., `_camel_case` and `dromedary_case`, respectively).  The reason
+why we use `_initial_underscore_lower_snake_case` for identifiers is because it's too
+easy to refactor a type (or function) like `the_array` into something like `special_array`
+and miss the corresponding update for variables like `The_array` into `Special_array`.
+It also makes internationalization not dependent on unicode parsing; we can immediately
+determine whether something is a variable based on the initial `_`.
+For the remainder of this document, we'll use `_variable_case`,
 `type_case`, and `function_case`, although the latter two are indistinguishable without context.
 In context, functions and types are followed by optional generics (in `[]` brackets),
 while functions alone have parentheses `()` with optional arguments inside.
