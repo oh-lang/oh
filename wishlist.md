@@ -9,18 +9,25 @@ In most languages, primitive types have different casing than class types that a
 created by end-user developers.  This is usually an inconsistency by convention,
 e.g., `PascalCase` for class names and `snake_case` for primitive types in C++,
 but Rust requires this inconsistency by fiat.
-In oh-lang, all types are `lower_snake_case`, like functions.  Variables and identifiers
-like `_true`, `_false`, or `_my_var_x` are `_initial_underscore_lower_snake_case`.
-oh-lang doesn't recommend distinguishing
-between constant identifiers and non-constant identifiers with casing,
-e.g., like `UPPER_SNAKE_CASE` in other languages; you can rely on the compiler
-to stop you if you try to change a constant variable, and you'll save wear
-and tear on your caps-lock key.
+In oh-lang, functions and types are `trailing_underscore_lower_snake_case_`,
+like `my_function_` and `dbl_` or `str_` for types.
+All variables and identifiers are `lower_snake_case`, like like `true`, `false`,
+or `my_var_x`.  oh-lang doesn't recommend distinguishing
+between constant identifiers and non-constant identifiers with casing.
+In fact, any capital letters in an identifier create a [namespace](#namespace)
+which can be used to disambiguate variables with the same name.
+
 TODO: we might want to switch to `_type_case` and `variable_case` because `variable_case`
 is probably more common.  if we want to dredge up OLD hm-lang logic, we could use
 `__type_case`, `_func_case`, and `var_case`.  that would allow us to do things like this
 `my_class: [Count; __count] {__count: count_arch, ::_count(): __count}`, and import
 all functions via `[_my_func]: \/import/from/here`.
+if we go this route, i actually like the `_` at the end, since it makes function
+calls look like `my_func_(x, y)`, which helps give space and highlights `()`.
+alternatively, should we use a different symbol like `my_func$(x, y)`??
+i like how `_` is obviously a part of the identifier; you might be tempted to do `my_func $(x, y)`,
+but if we want to distinguish types and functions, it would be more efficient if we had a different symbol.
+TODO: do we use SFO to allow defining types like `x: int`?
 TODO: update the remainder of the file to use the new cases, although we should decide on
 the previous TODO first.
 
@@ -108,7 +115,7 @@ with null, since `call_with_nullable(Some_value?: Null)` is equivalent to
 When defining a function, variable arguments that use the default name for a type can
 elide the type name; e.g., `my_function(Int): str` will declare a function that takes 
 an instance of `int`.  See [default-named arguments](#default-name-arguments-in-functions).
-This is also true if namespaces are used, e.g., `my_function(@My_namespace Int): str`.
+This is also true if [namespaces](#namespaces) are used, e.g., `my_function(MY_NAMESPACE_int): str`.
 If a declaration operator (like `;`, `:`, or `.`) is not used, we'll default to creating
 a readonly reference `:` overload but guess at a few weak overloads for `;` and `.` that
 make sense.  These weak overloads can be overridden with explicit `;` and `.` overloads.
@@ -156,9 +163,9 @@ shadowing any global variables or overloads inside a class, so import renaming m
 required.
 
 ```
-vector3: [X: dbl, Y: dbl, Z: dbl]
-{   ::length(): dbl
-        sqrt(X * X + Y * Y + Z * Z) # no need for `M X`, etc.
+vector3_: [x: dbl_, y: dbl_, z: dbl_]
+{   ::length_(): dbl_
+        sqrt_(x * x + y * y + z * z) # no need for `m x`, etc.
 }
 ```
 
@@ -167,14 +174,14 @@ and use them concisely.  For example, with a generic type, it would be convenien
 to refer to another generic subtype if we already have the class.
 
 ```
-my_generic[at, of]: [m: [Lot;]]
-{   lot: @only insertion_ordered_lot[at, of]
+my_generic_[at_, of_]: [m: [lot;]]
+{   lot_: @only insertion_ordered_lot_[at_, of_]
     ...
 }
 
-# ERROR: `lot` is shadowed inside of `my_generic`, use import renaming to avoid this.
-#       e.g., `[core_lot: lot]: \\core/lot`
-[lot]: \\core/lot
+# ERROR: `lot_` is shadowed inside of `my_generic_`, use import renaming to avoid this.
+#       e.g., `[core_lot_: lot_]: \\core/lot`
+[lot_]: \\core/lot
 ```
 
 In the example above, outside the class we can use `some_type: my_generic[at, of] lot`
@@ -187,10 +194,10 @@ Note this is actually ok, because we can distinguish overloads based on argument
 
 ```
 vector2: [X: dbl, Y: dbl]
-{   ::atan(): dbl
-        atan(X, Y)      # also ok: `\\math atan(X, Y)`
+{   ::atan_(): dbl
+        atan_(X, Y)      # also ok: `\\math atan(X, Y)`
 }
-[atan(X: dbl, Y: dbl): dbl]: \\math
+[atan_(X: dbl, Y: dbl): dbl]: \\math
 ```
 
 We're just not allowed to import any overloads that would be shadow a method or function
@@ -208,8 +215,8 @@ and `g` can be used for the current generic class (without the specification) wh
 vector3[of: number]: [X; of, Y; of, Z; of]
 {   # `g` is used for this generic class without the current specification,
     # in this case, `vector3`.
-    g(@First Value: ~value, @Second Value, @Third Value): g[value]
-        [X: @First Value, Y: @Second Value, Z: @Third Value]
+    g(FIRST_value: ~value, SECOND_value, THIRD_value): g[value]
+        [X: FIRST_value, Y: SECOND_value, Z: THIRD_value]
 
     ::dot(O): of
         # `M X`, etc. is optional, since `[X, Y, Z]` are in scope for this instance method.
@@ -452,25 +459,26 @@ See [variables](#variables) for a deeper dive.
 
 ```
 # declaring a variable:
-Readonly_var: int
-Mutable_var; int
+readonly_var: int_
+mutable_var; int_
 
 # declaring + defining a variable:
-Mutable_var; 321
+mutable_var; 321
 
 # you can also give it an explicit type:
-Readonly_var: int(123)
+readonly_var: int_(123)
 
 # you can also define a variable using an indented block;
 # the last line will be used to initialize the variable.
-# here we use an implicit type (whatever `Some_helper_value + 4` is).
-My_var:
-    # this helper variable will be descoped after calculating `My_var`.
-    Some_helper_value: some_computation(3)
-    Some_helper_value + 4
+# here we will infer the type; it's implicit in whatever
+# `some_helper_value + 4` is.
+my_var:
+    # this helper variable will be descoped after calculating `my_var`.
+    some_helper_value: some_computation_(3)
+    some_helper_value + 4
 
 # you can also give it an explicit type:
-Other_var; explicit_type
+other_var; explicit_type_
     "asdf" + "jkl;"
 ```
 
@@ -478,39 +486,39 @@ Other_var; explicit_type
 
 ```
 # declaring a string:
-Name: "Barnabus"
+name: "Barnabus"
 
 # using interpolation in a string:
-Greeting: "hello, ${Name}!"
+greeting: "hello, ${Name}!"
 
 # declaring a multiline string
-Important_items:
+important_items:
         &|Fridge
         &|Pancakes and syrup
         &|Cheese
-# this is the same as `Important_items: "Fridge\nPancakes and syrup\nCheese\n"`
+# this is the same as `important_items: "Fridge\nPancakes and syrup\nCheese\n"`
 
 # a single-line multiline string still includes a newline at the end.
-Just_one_line: &|This is a 'line' "you know"
-# this is equivalent to `Just_one_line: "This is a 'line' \"you know\"\n"
+just_one_line: &|This is a 'line' "you know"
+# this is equivalent to `just_one_line: "This is a 'line' \"you know\"\n"
 
 # declaring a multiline string with interpolation
-Multiline_interpolation:
-        &|Special delivery for ${Name}:
-        &|You will receive ${Important_items} and more.
+multiline_interpolation:
+        &|Special delivery for ${name}:
+        &|You will receive ${important_items} and more.
 # becomes "Special delivery for Barnabus\nYou will receive Fridge\nPancakes and syrup\nCheese\n and more."
 
 # interpolation over multiple file lines.
 # WARNING: this does not comply with Horstmann indenting,
 # and it's hard to know what the indent should be on the second line.
-Evil_long_line: "this is going to be a long discussion ${
-        Name}, can you confirm your availability?"
+evil_long_line: "this is going to be a long discussion, ${
+        name}, can you confirm your availability?"
 # INSTEAD, use string concatenation:
-Good_long_line: "this is going to be a long discussion"
-    &   "${Name}, can you confirm your availability?"
+Good_long_line: "this is going to be a long discussion,"
+    &   "${name}, can you confirm your availability?"
 
 # you can also nest interpolation logic, although this isn't recommended:
-Nested_interpolation: "hello, ${if Condition {Name} else {'World${"!" * 5}'}}!"
+nested_interpolation: "hello, ${if condition {name} else {'World${"!" * 5}'}}!"
 ```
 
 Notice that the `&` operator works on strings to add a space (if necessary)
@@ -528,7 +536,7 @@ See [arrays](#arrays) for more information.
 
 ```
 # declaring a readonly array
-My_array: array[element_type]
+my_array: array[element_type]
 
 # defining a writable array:
 Array_var; array[int](1, 2, 3, 4)
@@ -716,12 +724,12 @@ fn(~X): x
 # call it like this:
 fn(512)
 
-# this argument is inferred but need to name it as `X: ...`
-fn(@Named ~X): x
+# this argument type is inferred but need to name it as `x: ...`
+fn(~NAMED_x): x
 # call it like this:
-fn(X: 512)
+fn(x: 512)
 
-# another way to infer an argument but require naming it as `X: ...`
+# another way to infer an argument but require naming it as `x: ...`
 fn(X: ~t): t
 # we call it like this:
 fn(X: 512)
@@ -886,11 +894,11 @@ There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
 `what`, `in`, `each`, `for`, `while`, `pass`, `where`,
 which are function-like but may consume the rest of the statement.
 E.g., `return X + 5` will return the value `(X + 5)` from the enclosing function.
-There are some reserved namespaces with side effects like `@First`, `@Second`,
-`@Named`, `@As`,
-which should be used for their side effects.  For example, `@First` and `@Second`
+There are some reserved namespaces with side effects like `FIRST_`, `SECOND_`,
+`THIRD_`, `NAMED_`, `AS_`,
+which should be used for their side effects.  For example, `FIRST_` and `SECOND_`
 are reserved for binary operations like `&&` and `*`.  See [namespaces](#namespaces)
-for more details.  Other reserved keywords:
+for more details.
 
 There are some reserved variable names, like `M`, which can only
 be used as a reference to the current class instance, and `O` which
@@ -901,20 +909,18 @@ can only be used as a reference to an *O*ther instance of the same type;
 Most ASCII symbols are not allowed inside identifiers, e.g., `*`, `/`, `&`, etc., but
 underscores (`_`) have some special handling.  They are ignored in numbers,
 e.g., `1_000_000` is the same as `1000000`, and highly recommended for large numbers.
-Underscores in identifiers will automatically "capitalize" the next letter, so
-`my_function` is the same as `myFunction`, and `_count` is the same as `Count`.
-Numbers are ignored, so `x_1` is the same as `x1`.  To indicate a variable (or function)
-is unused in a block, use a trailing underscore.  If used when defining a function
+To indicate a variable (or function) is unused in a block, use a prefix underscore,
+such as `_unused_variable`.  If used when defining a function
 argument, it will not affect how callers call the function; they'll use the
 non-trailing-underscored name.
 
 ```
-# when defining, we use a trailing underscore to indicate the variable is unused.
-my_function(Argument_which_we_will_need_later_: int): null
-    print("TODO")
+# when defining, we use a leading underscore to indicate the variable is unused.
+my_function_(_argument_which_we_will_need_later: int_): null_
+    print_("TODO")
 
 # when calling:
-my_function(Argument_which_we_will_need_later: 3)
+my_function_(argument_which_we_will_need_later: 3)
 ```
 
 ## blocks
@@ -1645,23 +1651,26 @@ my_function(X: int): int
 
 There are two ways to get around this; one is [hiding variables](#hiding-variables).
 In the above example, the best way is to use a namespace for one or both conflicts.
-Namespaces look like `Variable_case` annotations with a field name, e.g.,
-`@My_namespace My_variable_name`, where `My_namespace` is some unrestricted
-name.  You normally use these in function arguments, but they can
-annotate any variable that you're declaring.  Any future references to the
-variable just use the namespace `My_namespace`.  It is recommended to namespace
+Namespaced variables have capital letters inside them, which are ignored for function
+arguments, e.g., `MY_NAMESPACE_my_variable_name` where `MY_NAMESPACE_` will be removed
+when matching arguments, so you'd call with e.g., `my_function_(my_variable_name: 3)`.
+In fact, capital letters will be stripped from anywhere in the identifier, so
+`MY_variable_OTHER_x_OK` would reduce to `variable_x` in a function argument.
+Namespaces are most useful in function arguments, but they can
+annotate any variable that you're declaring.  It is recommended to namespace
 the "outer" variable so you don't accidentally use it in the inner scope.
 
 ```
-my_function(@Outer X: int): int
+my_function_(OUTER_x: int_): int_
     # nested function is OK due to namespace:
-    do_stuff(X: int): null
-        # inner scope, any usage of `@Outer X` would be clearly intentional.
-        print(X)
-    do_stuff(@Outer X)
-    do_stuff(X: @Outer X // 2)
-    do_stuff(X: @Outer X // 4)
-    X // 8
+    do_stuff_(x: int_): null
+        # inner scope, any usage of `OUTER_x` would be clearly intentional.
+        print(x)
+    # NOTE: we don't need to rename `x: OUTER_x` because `OUTER_x` already resolves to `x`.
+    do_stuff_(OUTER_x)
+    do_stuff_(x: OUTER_x // 2)
+    do_stuff_(x: OUTER_x // 4)
+    OUTER_x // 8
 ```
 
 If it's difficult to namespace the outer variable (e.g., because you don't
@@ -1669,75 +1678,70 @@ want to delta many lines), you can use `@hide` to ensure you don't use the
 other value accidentally.
 
 ```
-my_function(X: int): int
+my_function_(x: int_): int_
     # nested function is OK due to namespace:
-    do_stuff(@Other X: int): null
-        # inner scope, usage of `X` might be accidental, so let's hide:
-        @hide X
+    do_stuff_(OTHER_x: int_): null_
+        # inner scope, usage of `x` might be accidental, so let's hide:
+        @hide x
         ...
-        print(@Other X) # OK
-        print(X)        # COMPILE ERROR, `X` was hidden from this scope.
+        print(OTHER_x)  # OK
+        print(x)        # COMPILE ERROR, `x` was hidden from this scope.
         ...
-    do_stuff(X)
-    do_stuff(X: X // 2)
-    do_stuff(X: X // 4)
-    X // 8
+    do_stuff_(x)
+    do_stuff_(x: x // 2)
+    do_stuff_(x: x // 4)
+    x // 8
 ```
 
 Similarly, you can define new variables with namespaces, in case you need a new variable
 in the current space.  This might be useful in a class method like this:
 
 ```
-my_class: [X; dbl]
+my_class: [x; dbl_]
 {   # this is a situation where you might like to use namespaces.
-    ;;do_something(@New X. dbl): dbl
-        # this is what `;;x(X. dbl): dbl` might be internally.
-        # defines a variable `X` in the namespace `@Old`:
-        @Old X: X!
-        X = @New X
-        @Old X
+    ;;do_something_(NEW_x. dbl_): dbl_
+        # NOTE: if you just want to create a swapper, you should
+        # probably just use this idiom: `;;x_(dbl;): null_`.
+
+        OLD_x: x!
+        x = NEW_x
+        OLD_x
 }
 ```
 
-One of the most convenient uses for namespaces is the ability to use elide argument
-names when calling functions.  E.g., if you have a function which takes a variable named `X`,
+One of the most convenient uses for namespaces is the ability to elide argument
+names when calling functions.  E.g., if you have a function which takes a variable named `x`,
 but you already have a different one in scope, you can create a new variable with a namespace
-`@Example_namespace X: My_new_x_value` and then pass it into the function as
-`my_function(@Example_namespace X)` instead of `my_function(X: @Example_namespace_x)`.
-This also works with default-named variables.
+`EXAMPLE_NAMESPACE_x: my_new_x_value` and then pass it into the function as
+`my_function_(EXAMPLE_NAMESPACE_x)` instead of `my_function_(x: EXAMPLE_NAMESPACE_x)`.
+This also works with default-named variables, which is a primary use-case.
 
 ```
-some_function(@Input Index): null
-    # `@Input Index` is a default-named variable of type `index`, but we refer to it
-    # within this scope using `@Input Index`.
-    even(Index): bool
-        Index % 2 == 0
-    # you can define other namespaces inline as well, like `@Another` here:
-    range(@Input Index) each @Another Index:
-        if even(@Another Index)
-            print(@Another Index)
+some_function_(INPUT_index): null_
+    # `INPUT_index` is a default-named variable of type `index_`, but we refer to it
+    # within this scope using `INPUT_index`.
+    even_(index): bool_
+        index % 2 == 0
+    # you can define other namespaces inline as well:
+    INPUT_index each ANOTHER_index:
+        if even_(ANOTHER_index)
+            print_(ANOTHER_index)
         
-X: index = 100
-some_function(X)     # note that we don't need to call as `some_function(Index: X)` or `some_function(@Input Index: X)`.
+x: index_ = 100
+some_function_(x)   # note that we don't need to call as `some_function_(index: x)`
+                    # nor `some_function_(INPUT_index: x)` (definitely not idiomatic).
 ```
 
-You can use the same namespace for multiple variables, e.g., `@Input Rune` and `@Input String`,
-as long as the variable names don't overlap.  Like the member access operators below, the
-namespace operator binds left to right.
-
-One final note, we don't consider namespacing as renaming, e.g., `@Outer Int: int`, and then referring
-to it as `Outer` internally -- we need the full `@Outer Int` to refer to it.  This is because we also
-want namespacing to work with functions, e.g., `@Outer fn`.  We also don't want to introduce another
-way to rename things, e.g., in destructuring.
-TODO: we could use `@Outer fn` and then `outer(...)` to call the function.
+You can use the same namespace for multiple variables, e.g., `INPUT_rune` and `INPUT_string`,
+as long as the variable names don't overlap.
 
 ### full list of reserved namespaces
 
-* `@First` - for the first operand in a binary operation (where order matters)
-* `@Second` - for the second operand in a binary operation (where order matters)
-* `@Named` - for arguments that should be explicitly named in [functions](#defining-generic-functions)
+* `FIRST_` - for the first operand in a binary operation (where order matters)
+* `SECOND_` - for the second operand in a binary operation (where order matters)
+* `NAMED_` - for arguments that should be explicitly named in [functions](#defining-generic-functions)
 
-TODO: maybe change `@Named` to `@As`.
+TODO: maybe change `NAMED_` to `@as` or `@named`.
 
 ## member access operators `::`, `;;`, ` `, and subscripts `[]`
 
@@ -1792,8 +1796,8 @@ get_median_slow(Array[int]): hm[ok: int, er: string]
     if Array count() == 0
         return er("no elements in array, can't get median.")
     # make a copy of the array, but no longer allow access to it (via `@hide`):
-    @Sorted Array: @hide Array sort()   # same as `Array::sort()` since `Array` is readonly.
-    ok(@Sorted Array[@Sorted Array count() // 2])
+    SORTED_array: @hide Array sort()   # same as `Array::sort()` since `Array` is readonly.
+    ok(SORTED_array[SORTED_array count() // 2])
 
 # sorts the array and returns the median.
 get_median_slow(Array[int];): hm[ok: int, er: string]
@@ -1903,6 +1907,8 @@ differs from the modulus, `%`, when the operands have opposing signs.
 
 |  `A`  |  `B`  | `floor(A/B)`  |  `A % B`  | `A // B`  | `A %% B`  |
 |:-----:|:-----:|:-------------:|:---------:|:---------:|:---------:|
+|   1   |   2   |      0        |     1     |     0     |     1     |
+|  -1   |   2   |     -1        |     1     |     0     |    -1     |
 |   1   |   5   |      0        |     1     |     0     |     1     |
 |  -1   |   5   |     -1        |     4     |     0     |    -1     |
 |   1   |  -5   |     -1        |    -4     |     0     |     1     |
@@ -1994,11 +2000,9 @@ include `X -= 5`, `Y &= 0x12`, etc.
 Swapping two variables is accomplished by something like `A <-> B`.
 Swap uses `<->` since `<=>` is reserved for a future spaceship operator
 (encompassing `<`, `<=`, `==`, `=>` and `>` in one).  As a function, swap
-would require mutable variables, e.g., `@order_independent ;;x(@New X.): [@Old X]`.
+would require mutable variables, e.g., `;;x_(SWAP_x;): null_`.
 If you define `swap` in this way for your custom class, it will be available
-for the shorthand notation `Some_class X <-> 1234`.
-TODO: make all "swappers" have the same function signature, not `swap` but
-`;;x(X.): x`.  could also use `;;x(X;): null` as the function signature.
+via the shorthand notation `some_class x <-> 1234`.
 
 ## ergo operator
 
@@ -2126,12 +2130,13 @@ We will allow defining a nullable type by taking a type and specifying what valu
 is null on it.  For example, the symmetric type `s8` defines null as `-128` like this:
 
 ```
-s8: i8 {@Null: -128}
-
-# roughly equivalent to `s8?: s8 { Null: -128_i8, ::is(null): M == -128_i8 }`
+s8_?: s8_
+{   null: -128_i8
+    ::is_(null_): m == -128_i8
+}
 ```
 
-Similarly, `f32?` and `f64?` indicate that `NaN` is null via `{@Null: NaN, ::is(null): is_nan(M)}`,
+Similarly, `f32?` and `f64?` indicate that `NaN` is null via `{null: NaN, ::is_(null_): is_nan_(m)}`,
 so that you can define e.g. a nullable `f32` in exactly 32 bits.  To get this functionality,
 you must declare your variable as type `s8?` or `f32?`, so that the nullable checks
 kick in.
@@ -2175,34 +2180,34 @@ since we don't want to make users extend from a base nullable class.
 # nullish or.
 # `Nullable ?? X` to return `X` if `Nullable` is null,
 # otherwise the non-null value in `Nullable`.
-non_null_or(@First ~A?., @Second A.): a
-    what @First A
-        Non_null: {Non_null}
-        Null {@Second A}
+non_null_or(~FIRST_a?., SECOND_a.): a
+    what FIRST_a
+        non_null: {non_null}
+        null {SECOND_a}
 
 # boolean or.
 # `Nullable || X` to return `X` if `Nullable` is null or falsey,
 # otherwise the non-null truthy value in `Nullable`.
-truthy_or(@First ~A?., @Second A.): a
-    what @First A
-        Non_null:
-            if Non_null
-                Non_null
+truthy_or(~FIRST_a?., SECOND_a.): a
+    what FIRST_a
+        non_null:
+            if non_null
+                non_null
             else
-                @Second A
-        Null {@Second A}
+                SECOND_a
+        null {SECOND_a}
 ```
 
 We'll support more complicated pattern matching (like in Rust) using
 the `where` operator.  The shorter version of the above `what` statement is:
 
 ```
-truthy_or(@First ~A?., @Second A.): a
-    what @First A
-        @Non_null A: where !!@Non_null A
-            @Non_null A
+truthy_or(~FIRST_a?., SECOND_a.): a
+    what FIRST_a
+        NON_NULL_a: where !!NON_NULL_a
+            NON_NULL_a
         Null
-            @Second A
+            SECOND_a
 ```
 
 In this case, you can think of the `what` cases as being evaluated in order,
@@ -2545,17 +2550,17 @@ references, but need nesting to be the most clear.  For example:
 copy(From: (Pixels, Rectangle.), To: (Pixels;, Rectangle.): null
 
 # function usage
-@Source Pixels: pixels() { #( build image )# }
-@Destination Pixels; pixels()
+SOURCE_pixels: pixels() { #( build image )# }
+DESTINATION_pixels; pixels()
 Size: rectangle(Width: 10, Height: 7)
 
 copy
 (   From: 
-    (   @Source Pixels
+    (   SOURCE_pixels
         Size + Vector2(X: 3, Y: 4)
     )
     To:
-    (   @Destination Pixels;
+    (   DESTINATION_pixels;
         Size + Vector2(X: 9, Y: 8)
     )
 )
@@ -2764,9 +2769,9 @@ This is also because we allow passing in types as function arguments, so anythin
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
 # if it can't find it.
 detect(greet(Int): string): int
-    100 each @Check Int:
-        if greet(@Check Int) == "hello, world!"
-            return @Check Int
+    100 each CHECK_int:
+        if greet(CHECK_int) == "hello, world!"
+            return CHECK_int
     return -1
 
 # if your function is named the same as the function argument...
@@ -2938,18 +2943,18 @@ An example of (1) is in a function like `max`:
 
 ```
 @order_independent
-max(Int, @Other Int): int
-    return if Int > @Other Int
+max(Int, OTHER_int): int
+    return if Int > OTHER_int
         Int
     else
-        @Other Int
+        OTHER_int
 
 max(5, 3) == max(3, 5)
 ```
 
 The compiler is not smart enough to know whether order matters or not, so we need to annotate
 the function with `@order_independent` -- otherwise it's a compiler error -- and we need to use
-namespaces (e.g., `@Other` with `@Other Int`) in order to distinguish between the two variables
+namespaces (e.g., `@Other` with `OTHER_int`) in order to distinguish between the two variables
 inside the function block.  When calling `max`, we don't need to use those namespaces, and
 can't (since they're invisible to the outside world).
 
@@ -2985,7 +2990,7 @@ The way to accomplish this in oh-lang is to use `@First` and `@Second` namespace
 each variable.  If defined in a method, `M` will be assumed to be namespaced as `@First`,
 so you can use `@Second` for the other variable being passed in.  Using `@First` and `@Second`
 allows you to avoid the compiler errors like `@order_independent` does.  You can also
-use `O` as the variable name which in the class body is the same as `@Second M`.
+use `O` as the variable name which in the class body is the same as `SECOND_m`.
 
 ```
 vector3: [X; dbl, Y; dbl, Z; dbl]
@@ -3004,10 +3009,10 @@ vector3: [X; dbl, Y; dbl, Z; dbl]
 
 # defined outside the class body, we do it like this:
 # NOTE: both definitions are *not* required, only one.
-cross(@First Vector3, @Second Vector3): vector3
-(   X: @First Vector3 Y * @Second Vector3 Z - @First Vector3 Z * @Second Vector3 Y
-    Y: @First Vector3 Z * @Second Vector3 X - @First Vector3 X * @Second Vector3 Z
-    Z: @First Vector3 X * @Second Vector3 Y - @First Vector3 Y * @Second Vector3 X
+cross(FIRST_vector3, SECOND_vector3): vector3
+(   X: FIRST_vector3 Y * SECOND_vector3 Z - FIRST_vector3 Z * SECOND_vector3 Y
+    Y: FIRST_vector3 Z * SECOND_vector3 X - FIRST_vector3 X * SECOND_vector3 Z
+    Z: FIRST_vector3 X * SECOND_vector3 Y - FIRST_vector3 Y * SECOND_vector3 X
 )
 ```
 
@@ -3293,7 +3298,7 @@ to figure out which overload should be used.  E.g., `[X, Y]: my_overload()` will
 look for an overload with outputs named `X` and `Y`.  Due to assumptions with
 [single field objects](#single-field-objects) (SFO), `X: my_overload()` is
 equivalent to `[X]: my_overload()`.  You can also explicitly type the return value,
-e.g., `@Some Int: my_overload()` or `R: my_overload() Dbl`,
+e.g., `SOME_int: my_overload()` or `R: my_overload() Dbl`,
 which will look for an overload with an `int` or `dbl` return type, respectively.
 
 When matching outputs, the fields count as additional arguments, which must
@@ -3321,7 +3326,7 @@ things outside the function block.  Inside the function block, pass-by-value
 arguments are mutable, and can be reassigned or modified as desired.
 Similar to Rust, variables that can be easily copied implement a `::copy(): me`
 method, while variables that may require large allocations should only implement
-`;;renew(@Other M): null` (essentially a C++ copy constructor).  This is done
+`;;renew(OTHER_m): null` (essentially a C++ copy constructor).  This is done
 by default for most oh-lang classes.
 
 Functions can also be defined with writable or readonly reference arguments, e.g., via
@@ -3755,7 +3760,7 @@ patterns(): Chaos: f32      # equivalent to `patterns(): [Chaos: f32]`
 
 I32: patterns()             # calls `patterns(): i32` overload
 My_value: patterns() I32    # same, but defining `My_value` via the `i32` return value.
-@Namespace I32: patterns()  # same, defining `@Namespace I32` via the `i32`.
+NAMESPACE_i32: patterns()  # same, defining `NAMESPACE_i32` via the `i32`.
 I32 as Q: patterns()        # same, defining `Q` via the `i32`.
 
 F32: patterns()             # COMPILE ERROR: no overload for `patterns(): f32`
@@ -3789,10 +3794,10 @@ SFO effectively makes any `x` return type into a `[X: x]` object.  This means
 that overloads like `patterns(): i32` and `patterns(): [I32]` would actually
 conflict; trying to define both would be a compile error.
 
-TODO: we probably can have `x(@New X: x): null` overloads where we don't need
-to always swap out the old value (e.g., `x(@New X: x): x`.
+TODO: we probably can have `x(NEW_x: x): null` overloads where we don't need
+to always swap out the old value (e.g., `x(NEW_x: x): x`.
 TODO: we should make it clear by requiring setters to return the old value only
-if `x(@New X: x): [@Old X]` is used.  or just use `;;x(X; x): null` as the
+if `x(NEW_x: x): [OLD_x]` is used.  or just use `;;x(X; x): null` as the
 swapper signature and `;;x(X. x): null` as the setter, and don't specify
 what `;;x(X; x): x` would mean.
 
@@ -3857,7 +3862,7 @@ call:
     # `{Field_name}` is defined in the return value, with a
     # default of 123 if `Field_name` is not set in the function.
     ;;output(~Name: any):
-        output(Name: @@Name, Value: Name)
+        output(Name: @NAME,_value: Name)
 
     # adds a field to the return type with a default value.
     # e.g., `Call output(Name: "Field_name", Value: 123)` will ensure
@@ -4107,7 +4112,7 @@ copy[dbl](Value: 3)     # will return `3.0`
 
 TODO: restrictions here, do we need to only have a single argument, so that
 argument names are unique?  it's probably ok if we have an `@order_independent`
-or use `@First ~T` and `@Second ~U` to indicate order is ok.
+or use `~FIRST_t` and `~SECOND_u` to indicate order is ok.
 or need to use `@Named` on some of them.
 maybe we see if there's an issue when compiling the generics and then complain at compile time.
 
@@ -4164,9 +4169,9 @@ to be `Value: XYZ`, then we need to explicitly tell the compiler that we don't
 want default names to apply, which we do using the `@Named` namespace.
 
 ```
-logger(@Named ~Value): value
-    print("got ${@Named Value}")
-    @Named Value
+logger(~NAMED_value): value
+    print("got ${NAMED_value}")
+    NAMED_value
 
 # it can be called like this, which implicitly infers the `value` type:
 logger(Value: 3)  # returns the integer `3`
@@ -4176,9 +4181,9 @@ And as in other contexts, you can avoid inferring the type by avoiding using `~`
 
 ```
 # this generic needs to be specified in brackets at the call site: 
-logger[value](@Named Value): value
+logger[value](NAMED_value): value
     ...
-    value(@Named Value)
+    value(NAMED_value)
 
 # and because it's not default named (i.e., it's named `value` not `of`),
 # you need to call it like this:
@@ -4334,9 +4339,9 @@ example_class: all_of
     # `example_class(X: int)` based on the public variable definition of `X`, but
     # we include it as an example in case you want to do extra work in the constructor
     # (although avoid doing work if possible).
-    ;;renew(@New X. int): null
+    ;;renew(NEW_x. int): null
         Parent_class renew(Name: "Example")
-        X = @New X!
+        X = NEW_x!
     # or short-hand: `;;renew(M X. int, Parent_class Name: "Example"): {}`
     # adding `M` to the arg name will automatically set `M X` to the passed in `X`.
 
@@ -4464,13 +4469,13 @@ destructor_class: [X: int]
 {   @protected
     # TODO: the `@Debug` annotation should do something interesting, like
     #       stop the debugger when the value is `set`ted or `get`ted.
-    m(@Debug X. int): m
-        print("X ${@Debug X}")
-        [X. @Debug X]
+    m(DEBUG_x. int): m
+        print("X ${DEBUG_x}")
+        [X. DEBUG_x]
     # `m(...): m` will also add methods like this:
-    #   ;;renew(@Debug X. int): null
+    #   ;;renew(DEBUG_x. int): null
     #       # this will call `M descope()` just before reassignment.
-    #       M = m(.@Debug X)
+    #       M = m(.DEBUG_x)
 
     # you should define the destructor:
     ;;descope(): null
@@ -4638,7 +4643,7 @@ named the `function_case` version of the `Variable_case` variable,
 with various arguments to determine the desired action.
 TODO: at some point we need to have a "base case" so that we don't infinitely recurse;
 should a parent class not call the child class accessors?  or should we only
-not recurse when we're in a method like `;;x(@New X): { X = @New X }`?  or should we
+not recurse when we're in a method like `;;x(NEW_x): { X = NEW_x }`?  or should we
 avoid recursing if the variable was defined in the class itself?  (probably the
 latter, as it's the least surprising.)
 
@@ -6207,7 +6212,7 @@ Employee_ids: lot[at: int, str]
     [Jim1, 203]
     # WARNING! not a good option for 2; no equivalent of option 1.D here.
     # Jim1: Jim1_id # WARNING, looks like option 1.C, which would define "Jim1" instead of "Jim C"
-    # option 3: `X` syntax where `X` is a known variable, essentially equal to `@@X: X`
+    # option 3: `X` syntax where `X` is a known variable, essentially equal to `@X:_x`
     Jim
 )
 # note that commas are optional if elements are separated by newlines,
@@ -6304,10 +6309,10 @@ set[of: hashable]: container[id: of, value: true]
     # TODO: if we used `True?` as the identifier everywhere we wouldn't need to do `Maybe True`, e.g.,
     #   `Set[X, fn(True?;): {True? = if Condition {True} else {Null}}]`
     # TODO: remove these methods and add `refer` methods
-    ;;[Of, fn(@Maybe True?; true): ~t]: t
+    ;;[Of, fn(MAYBE_true?; true): ~t]: t
 
     # Fancy getter for whether `Of` is in the set or not.
-    ::[Of, fn(@Maybe True?): ~t]: t
+    ::[Of, fn(MAYBE_true?): ~t]: t
 
     ::count(): count_with
 
@@ -6500,11 +6505,11 @@ you can do `if Whatever -> Then[my_if_block_type]:`.
 ```
 if Some_condition -> Then:
     # do stuff
-    if Some_other_condition -> @Some_namespace Then:
+    if Some_other_condition -> SOME_NAMESPACE_then:
         if Something_else1
             Then exit()
         if Something_else2
-            @Some_namespace Then exit()
+            SOME_NAMESPACE_then exit()
     # do other stuff
 
 Result: what Some_value -> Then[str]:
@@ -7188,11 +7193,11 @@ block[of, declaring: null]:
     #   Value; 0
     #   what indent
     #   (   fn(Block[str]): never
-    #           @Old Value: Value
+    #           OLD_value: Value
     #           Value = Value // 2 + 9
     #           # sequence should be: 0, 9, 4+9=13, 6+9=15, 7+9=16, 8+9=17
-    #           if @Old Value == Value
-    #               Block exit("exited at ${@Old Value}")
+    #           if OLD_value == Value
+    #               Block exit("exited at ${OLD_value}")
     #           # note we need to `loop` otherwise we won't satisfy the `never`
     #           # part of the indent function.
     #           Block loop()
@@ -7321,9 +7326,9 @@ its result into the immediate future.  If `h` takes a long time to run, prefer
 # you don't even need to type your function as `um[~]`, but it's highly recommended:
 some_very_long_running_function(Int): um[string]
     Result; ""
-    range(Int) each @New Int:
-        sleep(Seconds: @New Int)
-        Result += str(@New Int)
+    Int each COUNT_int:
+        sleep(Seconds: COUNT_int)
+        Result += str(COUNT_int)
     Result
 
 # this approach calls the default `string` return overload, which blocks:
@@ -7739,9 +7744,9 @@ However, you can also achieve the same thing using namespaces,
 if you don't want to add specific names for the `one_of`s.
 
 ```
-# arguments short for `@A One_of: one_of[int, str]` and `@B One_of: one_of[u8, i32, dbl]`.
-my_function(@A One_of[int, str], @B One_of[u8, i32, dbl]): dbl
-    return dbl(@A One_of) * @B One_of
+# arguments short for `A_one_of: one_of[int, str]` and `B_one_of: one_of[u8, i32, dbl]`.
+my_function(A_one_of[int, str], B_one_of[u8, i32, dbl]): dbl
+    return dbl(A_one_of) * B_one_of
 ```
 
 Again, this fans out into multiple function overloads for each of the cases

@@ -16,19 +16,19 @@ array[of, capacity: count]: all_of
     ::count(): m count
         M Count
 
-    ;;count[Require: of is defaultable](@New Count): hm[count]
-        @Old Count: M Count
-        if @New Count == @Old Count
-            return ok(@Old Count)
-        if @New Count > @Old Count
+    ;;count[Require: of is defaultable](NEW_count): hm[count]
+        OLD_count: M Count
+        if NEW_count == OLD_count
+            return ok(OLD_count)
+        if NEW_count > OLD_count
             M capacity(At_least: Count) assert()
-            while M Count < @New Count
+            while M Count < NEW_count
                 append(of())
         else
-            assert(@New Count >= 0, er Invalid_count)
-            while M Count > @New Count
-                @Unused Of: M pop()
-        ok(@Old Count)
+            assert(NEW_count >= 0, er Invalid_count)
+            while M Count > NEW_count
+                UNUSED_of: M pop()
+        ok(OLD_count)
 
     clear: one_of[Keeping_capacity, Dropping_capacity]
     {   @alias Keep_capacity: Keeping_capacity
@@ -37,7 +37,7 @@ array[of, capacity: count]: all_of
 
     ;;clear(Clear: clear = Keeping_capacity): null
         while M Count > 0
-            @Unused Of: M pop()
+            UNUSED_of: M pop()
         what One_of
             Keeping_capacity
                 pass
@@ -53,7 +53,7 @@ array[of, capacity: count]: all_of
         what M in_bounds(Index)
             Ok.
                 M[Ok]!
-            @Ignore Er.
+            IGNORE_er.
                 Null
 
     ;;[In_bounds.]!: of
@@ -69,9 +69,9 @@ array[of, capacity: count]: all_of
         what M in_bounds(Index)
             Ok.
                 M pop(Ok)
-            @Ignore Er.
+            IGNORE_er.
                 Null
-        # alternatively: `M in_bounds(Index) map({M pop($Ok)}, {$Er_, Null})`
+        # alternatively: `M in_bounds(Index) map({M pop($Ok)}, {$_er, Null})`
 
     ;;pop(In_bounds.): of
         debug assert(In_bounds >= 0 and In_bounds < M count())
