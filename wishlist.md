@@ -3,6 +3,8 @@
 oh-lang tries to achieve **consistency** above all else.  
 **Convenience**, **clarity**, **concision**, **coolness**, and **simplicity** come next.
 
+If you don't care about the why, you may be interested in [general syntax](#general-syntax).
+
 ## consistency
 
 In most languages, primitive types have different casing than class types that are
@@ -11,93 +13,77 @@ e.g., `PascalCase` for class names and `snake_case` for primitive types in C++,
 but Rust requires this inconsistency by fiat.
 In oh-lang, functions and types are `trailing_underscore_lower_snake_case_`,
 like `my_function_` and `dbl_` or `str_` for types.
-All variables and identifiers are `lower_snake_case`, like like `true`, `false`,
+All variables and identifiers are `lower_snake_case`, like `true`, `false`,
 or `my_var_x`.  oh-lang doesn't recommend distinguishing
 between constant identifiers and non-constant identifiers with casing.
 In fact, any capital letters in an identifier create a [namespace](#namespace)
 which can be used to disambiguate variables with the same name.
 
-TODO: we might want to switch to `_type_case` and `variable_case` because `variable_case`
-is probably more common.  if we want to dredge up OLD hm-lang logic, we could use
-`__type_case`, `_func_case`, and `var_case`.  that would allow us to do things like this
-`my_class: [Count; __count] {__count: count_arch, ::_count(): __count}`, and import
-all functions via `[_my_func]: \/import/from/here`.
-if we go this route, i actually like the `_` at the end, since it makes function
-calls look like `my_func_(x, y)`, which helps give space and highlights `()`.
-alternatively, should we use a different symbol like `my_func$(x, y)`??
-i like how `_` is obviously a part of the identifier; you might be tempted to do `my_func $(x, y)`,
-but if we want to distinguish types and functions, it would be more efficient if we had a different symbol.
 TODO: do we use SFO to allow defining types like `x: int`?
-TODO: update the remainder of the file to use the new cases, although we should decide on
-the previous TODO first.
 
 Why snake case: long names are hard to parse with Pascal case, and we want to support descriptive
 names.  Code is read more than it is written, so we don't need to optimize underscores out
 (e.g., like in `PascalCase`) at the cost of making the code harder to read.
-We'll automatically convert `CamelCase` or `dromedaryCase` to their respective
-oh-lang types (e.g., `_camel_case` and `dromedary_case`, respectively).  The reason
-why we use `_initial_underscore_lower_snake_case` for identifiers is because it's too
-easy to refactor a type (or function) like `the_array` into something like `special_array`
+The reason why we use similar casing for identifiers and functions is because it's too
+easy to refactor a type (or function) like `the_array_` into something like `special_array_`
 and miss the corresponding update for variables like `The_array` into `Special_array`.
 It also makes internationalization not dependent on unicode parsing; we can immediately
-determine whether something is a variable based on the initial `_`.
-For the remainder of this document, we'll use `_variable_case`,
-`type_case`, and `function_case`, although the latter two are indistinguishable without context.
+determine whether something is a function if it has a trailing `_`.
+For the remainder of this document, we'll use `variable_case`,
+`type_case_`, and `function_case_`, although the latter two are indistinguishable without context.
 In context, functions and types are followed by optional generics (in `[]` brackets),
 while functions alone have parentheses `()` with optional arguments inside.
+Because types can act as functions, we don't syntactically distinguish between `type_case_`
+and `function_case_` otherwise.
 
 Another change is that oh-lang uses `:` (or `;`) for declarations and `=` for reassignment,
 so that declaring a variable and specifying a variable will work the same inside and outside
-function arguments.  For example, declaring a function that takes an integer named `X`,
-`my_function(X: int): null`, and declaring an integer variable named `X` uses the same syntax:
-`X: int`.  Similarly, calling a function with arguments specified as `my_function(X: 5)` and
-defining a variable works the same outside of a function: `X: 5`.  There is a slight difference
+function arguments.  For example, declaring a function that takes an integer named `x`,
+`my_function_(x: int_): null_`, and declaring an integer variable named `x` uses the same syntax:
+`x: int_`.  Similarly, calling a function with arguments specified as `my_function_(x: 5)` and
+defining a variable works the same outside of a function: `x: 5`.  There is a slight difference
 because we can declare variables with `.` in function arguments, which indicates a temporary.  E.g.,
-in `(X: int, Y; str, Z. dbl)`, we declare `X` as a readonly reference, `Y` a writable reference,
-and `Z` a temporary, whereas outside of function arguments, `[X: int, Y; str]` indicates
-that `X` is readonly (though it can be written in constructors or first assignment) and `Y`
-is writable.  TODO: we could make `Z. int` (outside of function arguments) indicate a volatile.
+in `(x: int_, y; str_, z. dbl_)`, we declare `x` as a readonly reference, `y` a writable reference,
+and `z` a temporary, whereas outside of function arguments, `[x: int_, y; str_]` indicates
+that `x` is readonly (though it can be written in constructors or first assignment) and `y`
+is writable.  TODO: we could make `z. int_` (outside of function arguments) indicate a volatile.
 
 In some languages, e.g., JavaScript, objects are passed by reference and primitives
 are passed by value when calling a function with these arguments.  In oh-lang,
 arguments are passed by reference by default, for consistency.  I.e., on the left
-hand side of an expression like `X = 5`, we know that we're referring to `X` as a reference,
-and we extend that to function calls like `do_something(X)`.  Note that it's possible
+hand side of an expression like `x = 5`, we know that we're using `x` as a reference,
+and we extend that to function calls like `do_something_(x)`.  Note that it's possible
 to pass by value as well; see [passing by reference or by value](#pass-by-reference-or-pass-by-value). 
 See [passing by reference gotchas](#passing-by-reference-gotchas) for the edge cases.
-For a default (i.e., not using a declaration operator `;`, `:`, or `.`), if the variable
-is readonly, we'll pass as a readonly reference, and if the variable is writable
-(i.e., defined with `;` or `.`), we'll pass as a writable reference.  If there is no
-overload defined with a writable reference, the compiler will retry with a readonly reference.
 
 In oh-lang, determining the number of elements in a container uses the same
-method name for all container types; `count(Container)` or `Container count()`,
-which works for `Array`, `Lot` (map/dict), `Set`, etc.  In some languages, e.g., JavaScript,
-arrays use a property (`Array.length`) and maps use a different property (`Map.size`).
+method name for all container types; `count_(container)` or `container count_()`,
+which works for `array_`, `lot_` (map/dict), `set_`, etc.  In some languages, e.g., JavaScript,
+arrays use a property (`array.length`) and maps use a different property (`map.size`).
 
 ## convenience
 
 oh-lang also prioritizes convenience; class methods can be called like a function with
-the instance as an argument or as a method on the instance, e.g., `the_method(My_class)`
-or `Class the_method()`.  This extends to functions with definitions like
-`my_two_instance_function(My_class_a, My_class_b, Width: int, Height: int)` which
-can be called as `(My_class_a, My_class_b) my_two_instance_function(Width: 5, Height: 10)`,
+the instance as an argument or as a method on the instance, e.g., `the_method_(my_class)`
+or `class the_method_()`.  This extends to functions with definitions like
+`my_two_instance_function_(my_class_a, my_class_b, width: int_, height: int_)` which
+can be called as `(my_class_a, my_class_b) my_two_instance_function_(width: 5, height: 10)`,
 or by calling it as a method on either one of the instances, e.g.,
-`My_class_a my_two_instance_function(My_class_b, Width: 5, Height: 10)`, without needing to
-define, e.g., `My_class_b my_two_instance_function(My_class_a, Width: 5, Height: 10)` as well.
+`my_class_a my_two_instance_function_(my_class_b, width: 5, height: 10)`, without needing to
+define, e.g., `my_class_b my_two_instance_function_(my_class_a, width: 5, height: 10)` as well.
 
-For convenience, `Array[3] = 5` will work even if `Array` is not already at least size 4;
+For convenience, `array[3] = 5` will work even if `array` is not already at least size 4;
 oh-lang will resize the array if necessary, populating it with default values,
 until finally setting the fourth element to 5.  This is also to be consistent with
-other container types, e.g., lots (oh-lang's version of a map/dictionary), since `Lot["At"] = 50`
-works in a similar fashion, e.g., resizing the `lot` as necessary to add an element.
-In some standard libraries (e.g., C++), `Array[3] = 5` is undefined behavior
+other container types, e.g., lots (oh-lang's version of a map/dictionary), since `lot["At"] = 50`
+works in a similar fashion, e.g., resizing the `lot_` as necessary to add an element.
+In some standard libraries (e.g., C++), `array[3] = 5` is undefined behavior
 if the array is not already at least size 4.
 
-Similarly, when referencing `Array[10]` or `Lot["At"]`, a default will be provided
-if necessary, so that e.g. `++Array[10]` and `++Lot["At"]` don't need to be guarded
-as `Array[10] = if count(Array) > 10 {Array[10] + 1} else {Array count(11), 1}` or
-`Lot["At"] = if Lot["At"] != Null {Lot["At"] + 1} else {1}`.
+Similarly, when referencing `array[10]` or `lot["At"]`, a default will be provided
+if necessary, so that e.g. `++array[10]` and `++lot["At"]` don't need to be guarded
+as `array[10] = if count_(array) > 10 {array[10] + 1} else {array count_(11), 1}` or
+`lot["At"] = if lot["At"] != null {lot["At"] + 1} else {1}`.
 
 ## clarity
 
@@ -105,60 +91,65 @@ Functions are called with named arguments always, although names can be omitted 
 certain circumstances [when calling a function](#calling-a-function).
 
 Nullable variables should always be annotated by `?`, both in a declaration
-`Y?: some_possibly_null_returning_function()` and also when used as a function
-argument, e.g., `call_with_nullable(Some_value?: Y)`.  This is to avoid surprises
-with null, since `call_with_nullable(Some_value?: Null)` is equivalent to
-`call_with_nullable()`, which can be a different overload.
+`y?: some_possibly_null_returning_function_()` and also when used as a function
+argument, e.g., `call_with_nullable_(some_value?: y)`.  This is to avoid surprises
+with null, since `call_with_nullable_(some_value?: null)` is equivalent to
+`call_with_nullable_()`, which can be a different overload.
 
 ## concision
 
 When defining a function, variable arguments that use the default name for a type can
-elide the type name; e.g., `my_function(Int): str` will declare a function that takes 
-an instance of `int`.  See [default-named arguments](#default-name-arguments-in-functions).
-This is also true if [namespaces](#namespaces) are used, e.g., `my_function(MY_NAMESPACE_int): str`.
+elide the type name; e.g., `my_function_(int): str_` will declare a function that takes 
+an instance of `int_`, i.e., `int` expands to `int: int_`.
+See [default-named arguments](#default-name-arguments-in-functions).
+This is also true if [namespaces](#namespaces) are used, e.g., `my_function_(MY_NAMESPACE_int): str_`.
 If a declaration operator (like `;`, `:`, or `.`) is not used, we'll default to creating
 a readonly reference `:` overload but guess at a few weak overloads for `;` and `.` that
 make sense.  These weak overloads can be overridden with explicit `;` and `.` overloads.
-TODO: if we want to go `fn(X int)` route, could we also mostly define functions as
-readonly via `fn(X int) int` (i.e., for `fn(X int): int`)?  i like how `:` guides the eye, tho.
-If not using a default name, you can get the same weak overloads using e.g., `fn(X int)`,
+TODO: if we want to go the v-lang `fn(x int_)` route, could we also mostly define functions as
+readonly via `fn_(x int_) int_` (i.e., for `fn_(x: int_): int_`)?  i like how `:` guides the eye, tho.
+If not using a default name, you can get the same weak overloads using e.g., `fn_(x int_)`,
 i.e., not using an explicit `:;.` operator between an argument and the type.
 We can use `:` to explicitly only create the readonly reference overload, e.g.,
-`my_function(Int:): str` to create a function which takes a readonly integer reference, or
-you can use `my_function(Int;): str` for a function which can mutate the passed-in integer
-reference or `my_function(Int.): str` for a function which takes a temporary integer.
-This also works for generic classes like `my_generic[of]` where `of` is a template type;
-`my_function(My_generic[int];)` is short for `my_function(My_generic; my_generic[int])`.
+`my_function_(int:): str_` to create a function which takes a readonly integer reference, or
+you can use `my_function_(int;): str_` for a function which can mutate the passed-in integer
+reference or `my_function_(int.): str_` for a function which takes a temporary integer.
+This also works for generic classes like `my_generic_[of_]` where `of_` is a template type;
+`my_function_(my_generic_[int_];)` is short for `my_function_(my_generic; my_generic_[int_])`.
 
-When calling a function, we don't need to use `my_function(X: X)` if we have a local
-variable named `X` that shadows the function's argument named `X`.  We can just
-call `my_function(:X)` to specify the readonly reference overload (`X: X`),
-`other_function(;Y)` to specify the writable reference overload (`Y; Y`), or
-`tmp_function(.Z)` to specify a temporary overload `Z. @hide(Z)!`, which also
-stops you from using `Z` again in the rest of the block.  Using `tmp_function(Z!)`
-calls the temporary overload and would allow `Z` to still be used afterwards,
-but `Z` will be [reset to the default](#prefix-and-postfix-exclamation-points).
-If no declaration operator is used when calling a function, e.g., `my_function(X)`,
-then we'll infer `:` if `X` is readonly (i.e., defined with `:`)
-and `;` if `X` is writable (i.e., defined with `.` or `;`).
+When calling a function, we don't need to use `my_function_(x: x)` if we have a local
+variable named `x` that shadows the function's argument named `x`.  We can just
+call `my_function_(:x)` to specify the readonly reference overload (`x: x`),
+`other_function_(;y)` to specify the writable reference overload (`y; y`), or
+`tmp_function_(.z)` to specify a temporary overload `z. @hide z!`, which also
+stops you from using `z` again in the rest of the block.  Using `tmp_function_(z!)`
+calls the temporary overload and would allow `z` to still be used afterwards,
+but `z` will be [reset to the default](#prefix-and-postfix-exclamation-points).
+Alternatively, you can do `tmp_function_(z clone_())` to make a (deep) copy, and
+this will also automatically call the temporary overload without specifying `.`.
+If no declaration operator is used when calling a function, e.g., `my_function_(x)`,
+then we'll infer `:` if `x` is readonly (i.e., defined with `:`)
+and `;` if `x` is writable (i.e., defined `;`), or `.` if `x` is a temporary.
+(In this last case, oh-lang acts like Rust and will disable `x` from being reused
+in the rest of the block, since it was "used up" in the temporary overload.)
+If no temporary overload is present, the compiler will retry for a writable overload.
 If no writable overload is present, the compiler will retry for a readonly overload.
-Note the declaration operator (`.;:`) goes on the left
-when calling a function with an existing variable for an argument, and on the right
-when defining a function and declaring an argument.  I.e., `X;` expands to `X; x`, while
-`;X` expands to `X; X`.
+Note the declaration operator (`.;:`) goes on the left when calling a function
+with an existing variable, and on the right when declaring a variable or argument.
+I.e., `;x` expands to `x; x`, while `x;` expands to `x; x_`.
 
-Class methods technically take an argument for `M` everywhere, which is somewhat
+Class methods technically take an argument for `m` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
-writing `the_method(M:, X: int): str`, we can write `::the_method(X: int): str`.
-This parallels `my_class::the_method` in C++, but in oh-lang we can analogously use
-`;;a_mutating_method` for a method that can mutate `M`, i.e.,
-`a_mutating_method(M;, X: int): str` becomes `;;a_mutating_method(X: int): str`,
-or `..one_temporary_method()` for a method on a temporary `M`, i.e.,
-`one_temporary_method(M.)`.  You can use `M` in an instance method to refer
-to the class instance.
+writing `the_method_(m:, x: int_): str_`, we can write `::the_method_(x: int_): str_`.
+this parallels `my_class::the_method` in C++, but in oh-lang we can analogously use
+`;;a_mutating_method_` for a method that can mutate `m`, i.e.,
+`a_mutating_method_(m;, x: int_): str_` becomes `;;a_mutating_method_(x: int_): str_`,
+or `..one_temporary_method_()` for a method on a temporary `m`, i.e.,
+`one_temporary_method_(m.)`.  Inside an instance method definition, you can use `m`
+to refer to the class instance, regardless of how it was defined.
 
 Inside of class methods, any variables or methods that are defined inline in the class
-are available without using `M` as a prefix, for concision.  However, we do not support
+are available without using `m` as a prefix, for concision.  However, we do not support
 shadowing any global variables or overloads inside a class, so import renaming may be
 required.
 
@@ -184,51 +175,51 @@ my_generic_[at_, of_]: [m: [lot;]]
 [lot_]: \\core/lot
 ```
 
-In the example above, outside the class we can use `some_type: my_generic[at, of] lot`
-to refer to the nested type, but can we also use `some_type: lot[m: my_generic[at, of]]`.
-We don't override `lot[my_generic[at, of]]` because a single type might be an override of `lot[of]`;
-not necessarily for `lot` but for `array` it's definitely the case.
+After fixing the compile error in the example above, we can use `some_type: my_generic_[at_, of_] lot_`
+to refer to the nested type, but can we also use `some_type: lot_[m_: my_generic_[at_, of_]]`.
+We don't override `lot_[my_generic_[at_, of_]]` because a single type might be an override of `lot_[of_]`;
+this isn't the case for `lot_` specifically but for other types like `array_` there are definitely overloads.
 See [type manipulation](#type-manipulation) for more details.
 
 Note this is actually ok, because we can distinguish overloads based on arguments.
 
 ```
-vector2: [X: dbl, Y: dbl]
+vector2_: [x: dbl_, y: dbl_]
 {   ::atan_(): dbl
-        atan_(X, Y)      # also ok: `\\math atan(X, Y)`
+        atan_(x, y)      # also ok: `\\math atan_(x, y)`
 }
-[atan_(X: dbl, Y: dbl): dbl]: \\math
+[atan_(x: dbl_, y: dbl_): dbl_]: \\math
 ```
 
 We're just not allowed to import any overloads that would be shadow a method or function
 on the class body, where ambiguity could arise with or without the class instance being
-supplied.  E.g., if `do_something(X: int)` is defined outside the class, then inside a
-class body `::do_something(X: int)` as an instance method (or even `do_something(X: int)`
+supplied.  E.g., if `do_something_(x: int_)` is defined outside the class, then inside a
+class body `::do_something_(x: int_)` as an instance method (or even `do_something_(x: int_)`
 as a static class function) would throw a compile error.
 TODO: we're getting a bit into the weeds, this should be somewhere besides the intro.
 
-Also in the spirit of conciseness, `O` can be used for an *O*ther instance of the same type,
-and `g` can be used for the current generic class (without the specification) while
-`m` always refers to the current class type (including the specification if generic).
+Also in the spirit of conciseness, `o` can be used for an *o*ther instance of the same type,
+and `g_` can be used for the current generic class (without the specification) while
+`m_` always refers to the current class type (including the specification if generic).
 
 ```
-vector3[of: number]: [X; of, Y; of, Z; of]
-{   # `g` is used for this generic class without the current specification,
-    # in this case, `vector3`.
-    g(FIRST_value: ~value, SECOND_value, THIRD_value): g[value]
-        [X: FIRST_value, Y: SECOND_value, Z: THIRD_value]
+vector3_[of_: number_]: [x; of_, y; of_, z; of_]
+{   # `g_` is used for this generic class without the current specification,
+    # in this case, `vector3_`.
+    g_(FIRST_value: ~value, SECOND_value, THIRD_value): g_[value]
+        [x: FIRST_value, y: SECOND_value, z: THIRD_value]
 
-    ::dot(O): of
-        # `M X`, etc. is optional, since `[X, Y, Z]` are in scope for this instance method.
-        X * O X + Y * O Y + Z * O Z
+    ::dot_(o): of_
+        # `m x`, etc. is optional, since `[x, y, z]` are in scope for this instance method.
+        x * o x + y * o y + z * o z
 }
 
-dot(vector3(1, 2, 3), vector3(-6, 5, 4)) == -6 + 10 + 12
+dot_(vector3_(1, 2, 3), vector3_(-6, 5, 4)) == 1 * -6 + 2 * 5 + 3 * 4
 ```
 
-Class getters/setters *do not use* `::get_x(): dbl` or `;;set_x(Dbl.): null`, but rather
-just `::x(): dbl` and `;;x(Dbl.): null` for a private variable `X; dbl`.  This is one
-of the benefits of using `function_case` for functions/methods and `Variable_case`
+Class getters/setters *do not use* `::get_x_(): dbl_` or `;;set_x_(dbl.): null_`, but rather
+just `::x_(): dbl_` and `;;x_(dbl.): null_` for a private variable `x; dbl_`.  This is one
+of the benefits of using `function_case_` for functions/methods and `variable_case`
 for variables; we can easily distinguish intent without additional verbs.
 Of course, overloads are also required here to make this possible.
 
@@ -236,62 +227,62 @@ Because we use `::` for readonly methods and `;;` for writable methods, we can
 easily define "const template" methods via `:;` which work in either case `:` or `;`.
 This is mostly useful when you can call a few other methods internally that have specific
 `::` and `;;` overloads, since there's usually some distinct logic for readonly vs. writable.
-E.g., `;:the_method(X;: str): M check(;:X)` where `check` has distinct overloads for `::` and `;;`.
+E.g., `;:the_method_(x;: str_): m check_(;:x)` where `check_` has distinct overloads for `::` and `;;`.
 See [const templates](#const-templates) for more details.
 
 oh-lang uses result-passing instead of exception-throwing in order to make it clear
-when errors can occur.  The `hm[ok, er]` class handles this, with `ok` being the
-type of a valid result, and `er` being the type of an error result.  You can specify
-the types via `hm[ok: int, er: str]` for `ok` being `int` and `er` being a `str`.
-If the `ok` and `er` types are distinct, you don't need to wrap a return value in
-`ok(Valid_result)` and `er(Error_result)`; you can just return `Valid_result` or `Error_result`.
-See [the `hm` section](#hm) for more details.  It is a compile error not to handle
-errors when they are returned (e.g., something like a `no-unused-result`).
+when errors can occur.  The `hm_[ok_, er_]` class handles this, with `ok_` being the
+type of a valid result, and `er_` being the type of an error result.  You can specify
+the types via `hm_[ok_: int_, er_: str_]` for `ok_` being `int_` and `er_` being a `str_`.
+If the `ok_` and `er_` types are distinct, you don't need to wrap a return value in
+`ok_(valid_result)` and `er_(error_result)`; you can just return `valid_result` or `error_result`.
+See [the `hm` section](#hm) for more details.  It is a compile error to not handle
+errors when they are returned (e.g., something like a `no-unused-result`), although
+often there are overloads (without an `hm_` result being returned) which just panic
+at runtime in case of an error.
 
 ## coolness
 
 **Coolness** is a fairly subjective measure, but we do use it to break ties.
 While there are a lot of good formatting options out there, 
 [Horstmann brace style](https://en.wikipedia.org/wiki/Indentation_style#Horstmann) is
-hands-down the raddest indentation style.  Similarly, `lower_snake_case`
-and `Initial_upper_snake_case` make for more readable long names, but they also
+hands-down the raddest indentation style.  Similarly, `variable_case`
+and `function_case_`/`type_case_` make for more readable long names, but they also
 look cooler than their `dromedaryCase` and `PascalCase` counterparts.
-(`_initial_underscore_snake_case` would be even cooler to replace `Initial_upper_snake_case`
-but the ergonomics of `_true` and `_false` aren't great.)
 
 ## simplicity
 
 We don't require a different function name for each method to convert a result class
-into a new one, e.g., to transform the `ok` result or the `er` error.  In oh-lang, we
+into a new one, e.g., to transform the `ok_` result or the `er_` error.  In oh-lang, we
 allow overloading, so converting a result from one type to another, or extracting a
 default value for an error, all use an overloaded `map` method, so there's no mental
 overhead here.  Since overloads are not possible in Rust, there is an abundance of methods, e.g.,
 [`Result::map_*` documentation](https://doc.rust-lang.org/std/result/enum.Result.html#method.map),
-which can be challenging to remember.  
+which can require constantly poring over documentation just to find the right one.  
 
 We also don't use a different concept for interfaces and inheritance.
 The equivalent of an interface in oh-lang is simply an abstract class.  This way
 we don't need two different keywords to `extend` or `implement` a class or interface.
 In fact, we don't use keywords at all; to just add methods (or class functions/variables),
-we use this syntax, `child_class: parent_class { ::extra_methods(): int, ... }`,
+we use this syntax, `child_class_: parent_class_ { ::extra_methods_(): int_, ... }`,
 and to add instance variables to the child class we use this notation:
-`child_class: all_of[parentClass, m: [Child_x: int, Child_y: str]] { ... methods }`.
+`child_class_: all_of_[parent_class_, m_: [child_x: int_, child_y: str_]] { ... methods }`.
 
 oh-lang handles generics/templates in a way more similar to zig or python rather than C++ or Rust.
-When compiled on their own, templates are only tested for syntax/grammar correctness.
+When compiled without any usage, templates are only tested for syntax/grammar correctness.
 When templates are *used* in another piece of code, that's when the specification kicks in
 and all expressions within the generic are compiled to see if they are allowed with the
 specified types.  Any errors are still compile-time errors, but you get to have the simplicity
 of duck typing without needing to specify your type constraints fully.
 
 ```
-my_generic[of](A: ~of, B: of): of
-    # this clearly requires `of` to implement `*`
-    # but we didn't need to specify `[of: number]` or similar in the generic template.
-    A * B
+my_generic_[of_](a: ~of_, b: of_): of_
+    # this clearly requires `of_` to implement `*`
+    # but we didn't need to specify `[of_: number_]` or similar in the generic template.
+    a * b
 
-print(my_generic(A: 3, B: 4))   # OK
-print(my_generic(A: [1, 2, 3], B: [4, 5]))  # COMPILE ERROR: no definition for `array[int] * array[int]`
+print_(my_generic_(a: 3, b: 4))                 # OK
+print_(my_generic_(a: [1, 2, 3], b: [4, 5]))    # COMPILE ERROR: no definition for `array_[int_] * array_[int_]`
 ```
 
 Similarly, duck typing means that if you define an appropriate `::hash` function on your class,
@@ -302,148 +293,154 @@ are defined.
 ## safety
 
 oh-lang supports "safe" versions of functions where it's possible that we'd run out of
-memory or otherwise throw.  By default, `Array[100] = 123` will increase the size
+memory or otherwise throw.  By default, `array[100] = 123` will increase the size
 of the array if necessary, and this could potentially throw in a memory-constrained
 environment (or if the index was large).  If you need to check for these situations,
-there is a safe API, e.g., `Hm: (Array[100] = 123)` and the result `Hm` can then
-be checked for `is_er()`, etc.  In order to avoid another syntax for safe assignment,
+there is a safe API, e.g., `hm: (array[100] = 123)` and the result `hm` can then
+be checked for `is_er_()`, etc.  In order to avoid another syntax for safe assignment,
 we use operator overloading (via return name).  Most of the time you don't want to
 hide errors from other developers, however, but if you do, you should make the
 program panic/terminate rather than continue.  Example code:
 
 ```
-custom_container[of]: [Vector[10, of];]
-{   # make an overload for `M[Ordinal]` where `Ordinal` is a 1-based indexing scheme.
-    :;[Ordinal]: hm[ok: (Of:;), er: str]
-        if Ordinal > 10
-            er("index too high")
+custom_container_[of_]: [vector[10, of_];]
+{   # make an overload for `m[ordinal]` where `ordinal_` is a 1-based indexing type.
+    :;[ordinal]: hm_[ok_: (of:;), er_: str_]
+        if ordinal > 10
+            er_("index too high")
         else
-            ok((Of:; Vector[Ordinal]))
+            ok_((of:; vector[ordinal]))
 
     @can_panic
-    :;[Ordinal]: (Of:;)
-        M[Ordinal] Hm assert()
+    :;[ordinal]: (of:;)
+        m[ordinal] hm assert_()
 
     # for short, you can use this `@hm_or_panic` macro, which will essentially
     # inline the logic into both methods but panic on errors.
-    :;[Ordinal]: @hm_or_panic[ok: (Of:;), er: str]
-        if Ordinal > 10
-            er("index too high")
+    :;[ordinal]: @hm_or_panic_[ok_: (of:;), er_: str_]
+        if ordinal > 10
+            er_("index too high")
         else
-            ok((Of:; Vector[Ordinal]))
+            ok_((of:; vector[ordinal]))
 }
 ```
 
 Almost all operations similarly have a result-like syntax, because they can fail.
-E.g., `A * B` can overflow for fixed-width integers (or run out of memory for `int`).
-Similarly for `A + B` and `A - B`.  (`A // B` is safe for fixed-width, but could
+E.g., `a * b` can overflow for fixed-width integers (or run out of memory for `int`).
+Similarly for `a + b` and `a - b`.  (`a // b` is safe for fixed-width, but could
 potentially OOM for `int`.)  If overflow/underflow is desired, use the overload
-which returns a variable named `Wrap`, e.g., `X: (A + B) Wrap` or `Wrap: A + B`.
-Otherwise `A + B` will panic on overflow and terminate the program.  The alternative
-is to handle the error explicitly: `Hm: A + B` then something like this:
-`what Hm {Ok: {print(Ok)}, Er: {print("got error: ${Er})}}`.
+which returns a variable named `wrap`, e.g., `x: (a + b) wrap` or `wrap: a + b`.
+Otherwise `a + b` will panic on overflow and terminate the program.  The alternative
+is to handle the error explicitly: `hm: a + b` then something like this:
+`what hm {ok: {print_(ok)}, er: {print_("got error: ${er})}}`.
 
-TODO: do we want primitive types to NOT panic on overflow, but types like `count`
-to panic?
+TODO: do we want primitive types to NOT panic on overflow, but wrapper types
+like `count` and `index` to panic?
 
 # general syntax
 
-* `print(...)` to echo some values (in ...) to stdout, `error(...)` to echo to stderr
-    * use string interpolation for printing dynamic values: `print("hello, ${Variable_1}")`
-    * use `print(No_newline: "keep going ")` to print without a newline
+* `print_(...)` to echo some values (in ...) to stdout, `error_(...)` to echo to stderr
+    * use string interpolation for printing dynamic values: `print_("hello, ${variable_1}")`
+    * use `print_(no_newline: "keep going ")` to print without a newline
     * default overload is to print to null, but you can request the string that was printed
-        if you use the `print(Str.): str` or `error(Str.): str` overloads.
-        e.g., `another_fn(Value: int): print("Value is ${Value}")` will return `Null`,
-        whereas `another_fn(Value: int): str {print("Value is ${Value}")}` will
-        return "Value is 12" (and print that) if you call `another_fn(Value: 12)`.
-* `type_case`/`function_case` identifiers like `x` are function/type-like, see [identifiers](#identifiers)
-* `Variable_case` identifiers like `X` are instance-like, see [identifiers](#identifiers)
+        if you use the `print_(str.): str_` or `error_(str.): str_` overloads.
+        e.g., `another_fn_(value: int): print_("Value is ${value}")` will return `Null`,
+        whereas `another_fn_(value: int): str {print_("Value is ${value}")}` will
+        return "Value is 12" (and print that) if you call `another_fn_(value: 12)`.
+* `type_case_`/`function_case_` identifiers like `x_` are function/type-like, see [identifiers](#identifiers)
+* `variable_case` identifiers like `x` are instance-like, see [identifiers](#identifiers)
 * use `#` for [comments](#comments)
 * outside of arguments, use `:` for readonly declarations and `;` for writable declarations
 * for an argument, `:` is a readonly reference, `;` is a writable reference, and `.` is a temporary
     (i.e., passed by value), see [pass-by-reference or pass-by-value](#pass-by-reference-or-pass-by-value)
 * use `:` to declare readonly things, `;` to declare writable things.
-    * use `A: x` to declare `A` as an instance of type `x`, see [variables](#variables),
-        with `A` any `Initial_upper_snake_case` identifier.
-    * use `fn(): x` to declare `fn` as a function returning an instance of type `x`, see [functions](#functions),
-        with any arguments inside `()`.  `fn` can be renamed to anything `lower_snake_case`, but `fn` is the default.
-    * use `a: y` to declare `a` as a constructor that builds instances of type `y`
-        with `a` any `lower_snake_case` identifier.
-    * use `new[]: y` to declare `new` as a function returning a type `y`, with any arguments inside `[]`.
-        `new` can be renamed to anything `lower_snake_case`, but `new` is the default.
+    * use `a: x_` to declare `a` as an instance of type `x_`, see [variables](#variables),
+        with `a` any `variable_case` identifier.
+    * use `fn_(): x_` to declare `fn_` as a function returning an instance of type `x_`, see [functions](#functions),
+        with any arguments inside `()`.  `fn_` can be renamed to anything
+        `function_case_`, but `fn_` is the default.
+    * use `a_: y_` to declare `a_` as a constructor that builds instances of type `y_`
+        with `a_` any `type_case_` identifier.
+    * use `new_[]: y_` to declare `new_` as a function returning a type `y_`, with any arguments inside `[]`.
+        `new_` can be renamed to anything `type_case_`, but `new_` is the default.
     * while declaring *and defining* something, you can avoid the type if you want the compiler to infer it,
-        e.g., `A: some_expression()`
+        e.g., `a: some_expression_()`
+    * thus `:=` is usually equivalent to `:` (and similarly for `;=`), except in the case of defining
+        a function via another function, i.e., function aliasing.  E.g.,
+        `fn_(x: int_): str_ = other_fn_` will alias `other_fn_(x: int_): str_` to `fn_`, while
+        `fn_(x: int_): return_type_` just declares a function that returns an instance of `return_type_`.
 * when not declaring things, `:` is not used; e.g., `if` statements do not require a trailing `:` like python
 * commas `,` are equivalent to a line break at the current tab and vice versa
-    * `do_something(), do_something_else()` executes both functions sequentially 
+    * `do_something_(), do_something_else_()` executes both functions sequentially 
     * see [line continuations](#line-continuations) for how commas can be elided across newlines for e.g., array elements
 * `()` for reference objects, organization, and function calls/declarations
-    * `(W: str = "hello", X: dbl, Y; dbl, Z. dbl)` to declare a reference object type, `W` is an optional field
-        passed by readonly reference, `X` is a readonly reference, `Y` is a writable reference,
-        and `Z` is passed by value.  See [reference objects](#reference-objects) for more details.
-    * `My_str: "hi", (X: str) = My_str` to create a [reference](#references) to `My_str` in the variable `X`.
-    * `(Some_instance x(), Some_instance Y;, W: "hi", Z. 1.23)` to instantiate a reference object instance
-        with `X` and `W` as readonly references, `Y` as mutable reference, and `Z` as a temporary.
-    * `"My String Interpolation is $(X, Y: Z)"` to add `(X: *value-of-X*, Y: *value-of-Z*)` to the string.
-    * `f(A: 3, B: "hi")` to call a function, and `f(A: int, B: str): null` to declare a function.
-    * `A@ (x(), Y)` to call `A x()` then `A Y` with [sequence building](#sequence-building)
-        and return them in a reference object with fields `X` and `Y`, i.e., `(X: A x(), Y: A Y)`.
-        This allows `X` and `Y` to be references.  This can be useful e.g., when `A` is an expression
-        that you don't want to add a local variable for, e.g., `my_long_computation()@ (x(), Y)`.
+    * `(w: str_ = "hello", x: dbl_, y; dbl_, z. dbl_)` to declare a reference object type, `w` is an optional field
+        passed by readonly reference, `x` is a readonly reference, `y` is a writable reference,
+        and `z` is passed by value.  See [reference objects](#reference-objects) for more details.
+    * `my_str: "hi", (x: str_) = my_str` to create a [reference](#references) to `my_str` in the variable `x`.
+    * `(some_instance x_(), some_instance Y;, w: "hi", z. 1.23)` to instantiate a reference object instance
+        with `x` and `w` as readonly references, `y` as mutable reference, and `z` as a temporary.
+    * `"My String Interpolation is $(x, y: z)"` to add `(x: *value-of-x*, y: *value-of-z*)` to the string.
+    * `f_(a: 3, b: "hi")` to call a function, and `f_(a: int_, b: str_): null_` to declare a function.
+    * `a@ (x_(), y)` to call `a x_()` then `a y` with [sequence building](#sequence-building)
+        and return them in a reference object with fields `x` and `y`, i.e., `(x: a x_(), y: a y)`.
+        This allows `x` and `y` to be references.  This can be useful e.g., when `a` is an expression
+        that you don't want to add a local variable for, e.g., `my_long_computation_()@ (x_(), Y)`.
 * `[]` are for types, containers (including objects, arrays, and lots), and generics
-    * `[X: dbl, Y: dbl]` to declare a plain-old-data class with two double-precision fields, `X` and `Y`
-    * `[X: 1.2, Y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `X` and `Y`
-    * `"My String interpolation is $[X, Y]"` to add `[*value-of-X*, *value-of-Y*]` to the string.
-    * `some_class[A: int, of]: some_other_class[Count: A, at: int, of]` to define a class type
-        `some_class` being related to `some_other_class`.
-    * For generic/template classes, e.g., classes like `array[Count, of]` for a fixed array of size
-        `Count` with elements of type `of`, or `lot[int, at: str]` to create a map/dictionary
+    * `[x: dbl_, y: dbl_]` to declare a plain-old-data class with two double-precision fields, `x` and `y`
+    * `[x: 1.2, y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `x` and `y`
+    * `"My String interpolation is $[x, y]"` to add `[*value-of-x*, *value-of-y*]` to the string.
+    * `some_class_[n: number_, of_]: some_other_class_[count: n, at_: int_, of_]` to define a class type
+        `some_class` being related to `some_other_class`, e.g., `some_class_[n: 3, str_]` would be
+        `some_other_class_[count: 3, at_: int, of_: str_]`.
+    * For generic/template classes, e.g., classes like `array_[count, of_]` for a fixed array of size
+        `count` with elements of type `of_`, or `lot_[int_, at_: str_]` to create a map/dictionary
         of strings mapped to integers.  See [generic/template classes](#generictemplate-classes).
-    * For generic/template functions with type constraints, e.g., `my_function[of: non_null](X: of, Y: int): of`
-        where `of` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
-    * `[Greeting: str, Times: int] = destructure_me()` to do destructuring of a return value
+    * For generic/template functions with type constraints, e.g., `my_function_[of_: non_null_](x: of_, y: int_): of_`
+        where `of_` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
+    * `[greeting: str_, times: int_] = destructure_me_()` to do destructuring of a return value
         see [destructuring](#destructuring).
-    * `A@ [x(), Y]` to call `A x()` then `A Y` with [sequence building](#sequence-building)
-        and return them in an object with fields `X` and `Y`, i.e., `[X: A x(), Y: A Y]`.
+    * `a@ [x_(), y]` to call `a x_()` then `a y` with [sequence building](#sequence-building)
+        and return them in an object with fields `x` and `y`, i.e., `[x: a x_(), y: a y]`.
         You can also consider them as ordered, e.g.,
-        `Results: A@ [x(), Y], print("${Results[0]}, ${Results[1]})`.
+        `results: a@ [x_(), y], print_("${results[0]}, ${results[1]})`.
 * `{}` for blocks and sequence building
-    * `{...}` to effectively indent `...`, e.g., `if Condition {do_thing()} else {do_other_thing(), 5}`
-        * Used for defining a multi-statement function inline, e.g., `fn(): {do_this(), do_that()}`.
-            (Note that you can avoid `{}` if the block is one statement, like `fn(): do_this()`.)
+    * `{...}` to effectively indent `...`, e.g., `if condition {do_thing_()} else {do_other_thing_(), 5}`
+        * Used for defining a multi-statement function inline, e.g., `fn_(): {do_this_(), do_that_()}`.
+            (Note that you can avoid `{}` if the block is one statement, like `fn_(): do_this_()`.)
         * Note that braces `{}` are optional if you actually go to the next line and indent,
             but they are recommended for long blocks.
-    * `A@ {x(), Y}` with [sequence building](#sequence-building), 
-        calling `A x()` and `A Y`, returning `A` if it's a temporary otherwise `A Y`
-    * `"My String Interpolation is ${missing(), X}"` to add `X` to the string.
-        Note that only the last element in the `${}` is added, but `missing()` will still be evaluated.
+    * `a@ {x_(), y}` with [sequence building](#sequence-building), 
+        calling `a x_()` and `a y`, returning `a` if it's a temporary otherwise `a y`
+    * `"My String Interpolation is ${missing_(), x}"` to add `x` to the string.
+        Note that only the last element in the `${}` is added, but `missing_()` will still be evaluated.
 * `~` to infer or generalize a type
-    * `my_generic_function(Value: ~u): u` to declare a function that takes a generic type `u`
+    * `my_generic_function_(value: ~u_): u_` to declare a function that takes a generic type `u_`
         and returns it.  For more details, see [generic/template functions](#generictemplate-functions).
-    * `My_result; array[~] = do_stuff()` is essentially equivalent to `My_result; do_stuff() Array`, i.e.,
-        asking for the first array return-type overload.  This infers an inner type but doesn't name it.
-    * `Named_inner; array[~infer_this] = do_stuff()` asks for the first array return-type overload,
-        but defines the inner type so it can be used later in the same block, e.g.,
-        `First_value; infer_this = Named_inner[0]`.
-        Any `lower_snake_case` identifier can be used for `infer_this`.
+    * `my_result; array_[~] = do_stuff_()` is essentially equivalent to `my_result; do_stuff_() array`, i.e.,
+        asking for the first array return-type overload.  This infers an inner type via `[~]` but doesn't name it.
+    * `named_inner; array_[~infer_this_] = do_stuff_()` asks for the first array return-type overload,
+        and defines the inner type so it can be used later in the same block, e.g.,
+        `first_value; infer_this_ = named_inner[0]`.
+        Any `type_case_` identifier can be used for `infer_this_`.
 * `$` for inline block and lambda arguments
     * [inline blocks](#block-parentheses-and-commas) include:
         * `$[...]` as shorthand for a new block defining `[...]`, e.g., for a return value:
-            `Array: if Some_condition $[1, 2, 3] else $[4, 5]`
+            `array: if some_condition $[1, 2, 3] else $[4, 5]`
         * `$(...)` as shorthand for a new block defining `(...)`, e.g., a reference object:
-            `Result: if X > Y $(Max: X, Min: Y) else $(Min: X, Max: Y)`
+            `result: if x > y $(max: x, min: y) else $(min: x, max: y)`
         * `${...}` is almost always equivalent to `{...}`, except inside of string interpolation,
             so we'll likely alias `${...}` to `{...}` outside of strings.
-    * `$Arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
-        * `My_array map({$Int * 2 + 1})` will iterate over e.g., `My_array: [1, 2, 3, 4]`
+    * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
+        * `my_array map_({$int * 2 + 1})` will iterate over e.g., `my_array: [1, 2, 3, 4]`
             as `[3, 5, 7, 9]`.  The `$` variables attach to the nearest brace/indent as
-            function arguments.
+            function arguments, variables with `$$` would attach to the second nearest brace/indent, etc.
 * all arguments are specified by name so order doesn't matter, although you can have default-named arguments
-  for the given type which will grab an argument with that type (e.g., `Int` for an `int` type).
-    * `(X: dbl, Int)` can be called with `(1234, X: 5.67)` or even `(Y, X: 5.67)` if `Y` is an `int`
+  for the given type which will grab an argument with that type (e.g., `int` for an `int_` type).
+    * `(x: dbl_, int)` can be called with `(1234, x: 5.67)` or even `(y, x: 5.67)` if `y` is an `int_`
 * variables that are already named after the correct argument can be used without `:`
-    * `(X: dbl, Y: int)` can be called with `(X, Y)` if `X` and `Y` are already defined in the scope,
-        i.e., eliding duplicate entries like `(X: X, Y: Y)`.
+    * `(x: dbl_, y: int_)` can be called with `(x, y)` if `x` and `y` are already defined in the scope,
+        i.e., eliding duplicate entries like `(x: x, y: y)`.
 * [Horstmann indentation](https://en.wikipedia.org/wiki/Indentation_style#Horstmann) to guide
     the eye when navigating multiline braces/brackets/parentheses
 * operators that diverge from some common languages:
@@ -489,7 +486,7 @@ other_var; explicit_type_
 name: "Barnabus"
 
 # using interpolation in a string:
-greeting: "hello, ${Name}!"
+greeting: "hello, ${name}!"
 
 # declaring a multiline string
 important_items:
@@ -513,8 +510,8 @@ multiline_interpolation:
 # and it's hard to know what the indent should be on the second line.
 evil_long_line: "this is going to be a long discussion, ${
         name}, can you confirm your availability?"
-# INSTEAD, use string concatenation:
-Good_long_line: "this is going to be a long discussion,"
+# INSTEAD, use string concatenation, which automatically adds a space if necessary:
+good_long_line: "this is going to be a long discussion,"
     &   "${name}, can you confirm your availability?"
 
 # you can also nest interpolation logic, although this isn't recommended:
@@ -528,7 +525,7 @@ on the right operand to ensure things like `'123\n \n' & '\n456'` are still just
 This makes it the perfect operator for string concatenation across lines where we want
 to ensure a space between words on one line and the next.
 TODO: it could also be used as a postfix or prefix operator, e.g., `&'   hi'` is 'hi'
-and `'hey\n  '&` is 'hey'.  not sure this is better than `'   hi' strip()` though.
+and `'hey\n  '&` is 'hey'.  not sure this is better than `'   hi' strip_()` though.
 
 ## defining arrays
 
@@ -536,28 +533,28 @@ See [arrays](#arrays) for more information.
 
 ```
 # declaring a readonly array
-my_array: array[element_type]
+my_array: array_[element_type_]
 
 # defining a writable array:
-Array_var; array[int](1, 2, 3, 4)
+array_var; array_[int_](1, 2, 3, 4)
 # We can also infer types implicitly via one of the following:
-#   * `Array_var; array([1, 2, 3, 4])`
-#   * `Array_var; [1, 2, 3, 4]`
-Array_var[5] = 5    # Array_var == [1, 2, 3, 4, 0, 5]
-++Array_var[6]      # Array_var == [1, 2, 3, 4, 0, 5, 1]
-Array_var[0] += 100 # Array_var == [101, 2, 3, 4, 0, 5, 1]
-Array_var[1]!       # returns 2, zeroes out Array_var[1]:
-                    # Array_var == [101, 0, 3, 4, 0, 5, 1]
+#   * `array_var; array_(1, 2, 3, 4)`
+#   * `array_var; [1, 2, 3, 4]`
+array_var[5] = 5    # array_var == [1, 2, 3, 4, 0, 5]
+++array_var[6]      # array_var == [1, 2, 3, 4, 0, 5, 1]
+array_var[0] += 100 # array_var == [101, 2, 3, 4, 0, 5, 1]
+array_var[1]!       # returns 2, zeroes out array_var[1]:
+                    # array_var == [101, 0, 3, 4, 0, 5, 1]
 
 # declaring a long array (note the Horstmann indent):
-Long_implicitly_typed:
+long_implicitly_typed:
 [   4   # commas aren't needed here.
     5
     6
 ]
 
 # declaring a long array with an explicit type:
-Long_explicitly_typed: array[i32]
+long_explicitly_typed: array_[i32_]
 (   5   # commas aren't needed here.
     6
     7
@@ -573,19 +570,19 @@ See [lots](#lots) for more information.
 
 ```
 # declaring a readonly lot
-My_lot: lot[at: id_type, value_type]
+my_lot: lot_[at: id_type_, value_type_]
 
 # defining a writable lot:
-Votes_lot; lot[at: str, int]("Cake": 5, "Donuts": 10, "Cupcakes": 3)
+votes_lot; lot_[at_: str_, int_]("Cake": 5, "Donuts": 10, "Cupcakes": 3)
 # We can also infer types implicitly via one of the following:
-#   * `Votes_lot; lot(["Cake": 5, ...])`
-#   * `Votes_lot; ["Cake": 5, ...]`
-Votes_lot["Cake"]           # 5
-++Votes_lot["Donuts"]       # 11
-++Votes_lot["Ice Cream"]    # inserts "Ice Cream" with default value, then increments
-Votes_lot["Cupcakes"]!      # deletes from the Lot (but returns `3`)
-Votes_lot::["Cupcakes"]     # Null
-# now Votes_lot == ["Cake": 5, "Donuts": 11, "Ice Cream": 1]
+#   * `votes_lot; lot_(["Cake": 5, ...])`
+#   * `votes_lot; ["Cake": 5, ...]`
+votes_lot["Cake"]           # 5
+++votes_lot["Donuts"]       # 11
+++votes_lot["Ice Cream"]    # inserts "Ice Cream" with default value, then increments
+votes_lot["Cupcakes"]!      # deletes from the lot (but returns `3`)
+votes_lot::["Cupcakes"]     # null
+# now votes_lot == ["Cake": 5, "Donuts": 11, "Ice Cream": 1]
 ```
 
 ## defining sets
@@ -594,18 +591,18 @@ See [sets](#sets) for more details.
 
 ```
 # declaring a readonly set
-My_set: set[element_type]
+my_set: set_[element_type_]
 
 # defining a writable set:
-Some_set; set[str]("friends", "family", "fatigue")
+some_set; set_[str_]("friends", "family", "fatigue")
 # We can also infer types implicitly via the following:
-#   * `Some_set; set("friends", ...)`
-Some_set::["friends"]   # `True`
-Some_set::["enemies"]   # Null (falsey)
-Some_set["fatigue"]!    # removes "fatigue", returns `True` since it was present.
-                        # Some_set == set("friends", "family")
-Some_set["spools"]      # adds "spools", returns Null (wasn't in the set)
-                        # Some_set == set("friends", "family", "spools")
+#   * `some_set; set_("friends", ...)`
+some_set::["friends"]   # `true`, without changing the set.
+some_set::["enemies"]   # null (falsey), without changing the set.
+some_set["fatigue"]!    # removes "fatigue", returns `true` since it was present.
+                        # `some_set == set_("friends", "family")`
+some_set["spools"]      # adds "spools", returns null (wasn't in the set), but now is.
+                        # `some_set == set_("friends", "family", "spools")`
 ```
 
 ## defining functions
@@ -614,69 +611,72 @@ See [functions](#functions) for a deeper dive.
 
 ```
 # declaring a "void" function:
-do_something(With: int, X; int, Y; int): null
+do_something_(with: int_, x; int_, y; int_): null_
 
 # defining a void function
 # braces {} are optional (as long as you go to the next line and indent)
 # but recommended for long functions.
-do_something(With: int, X; int, Y; int): null
-    # because `X` and `Y` are defined with `;`, they are writable
+do_something_(with: int_, x; int_, y; int_): null
+    # because `x` and `y` are defined with `;`, they are writable
     # in this scope and their changes will persist back into the
     # caller's scope.
-    X = With + 4
-    Y = With - 4
+    x = with + 4
+    y = with - 4
 
-# calling a function with temporaries:
-do_something(With: 5, X; 12, Y; 340)
+# calling a function with temporaries is allowed, even with references:
+do_something_(with: 5, x; 12, y; 340)
 
 # calling a function with variables matching the argument names:
-With: 1000
-X; 1
-Y; 2
-# Note that readonly arguments (`:`) are the default,
-# so you need to specify `;` for writable arguments.
-do_something(With, X;, Y;)
+with: 1000
+x; 1
+y; 2
+# because `with`, `x`, and `y` are defined in the same way
+# as the arguments, you can avoid specifying the `;` or `:`
+do_something_(with, x, y)
+# but you can also be explicit, which is recommended
+# if you want to ensure a specific overload is used.
+do_something_(:with, ;x, ;y)
 
 # calling a function with argument renaming:
-Mean: 1000
-Mutated_x; 1
-Mutated_y; 2
-do_something(With: Mean, X; Mutated_x, Y; Mutated_y)
+mean: 1000
+mutated_x; 1
+mutated_y; 2
+do_something_(with: mean, x; mutated_x, y; mutated_y)
 ```
 
 ```
 # declaring a function that returns other values:
-do_something(X: int, Y: int): [W: int, Z: int]
+do_something_(x: int_, y: int_): [w: int_, z: int_]
 
 # defining a function that returns other values.
 # braces are optional as long as you go to the next line and indent.
-do_something(X: int, Y: int): [W: int, Z: int]
-{   # NOTE! return fields `W` and `Z` are in scope and can be assigned
+do_something_(x: int_, y: int_): [w: int_, z: dbl_]
+{   # NOTE! return fields `w` and `z` are in scope and can be assigned
     # directly in option A:
-    Z = \\math atan(X, Y)
-    W = 123
-    # option B: can just return `W` and `Z` in an object:
-    [Z: \\math atan(X, Y), W: 123]
+    z = \\math atan_(x, y)
+    w = 123
+    # option B: can just return `w` and `z` in an object:
+    [z: \\math atan_(x, y), w: 123]
 }
 ```
 
 We don't require `{}` in function definitions because we can distinguish between
 (A) creating a function from the return value of another function, (B) passing a function
 as an argument, and (C) defining a function inline in the following ways.  (A) uses
-`my_fn(Args): return_type = fn_returning_a_fn()` in order to get the correct type on `my_fn`,
-(B) uses `outer_fn(rename_to_this(Args): return_type = use_this_fn)` and requires a single
-`function_case` identifier on the RHS, while (C) uses `defining_fn(Args): do_this(Args)`
-and uses inference to get the return type (for the default `do_this(Args)` function).
+`my_fn_(args): return_type_ = fn_returning_a_fn_()` in order to get the correct type on `my_fn_`,
+(B) uses `outer_fn_(rename_to_this_(args): return_type = use_this_fn_)` and requires a single
+`function_case_` identifier on the RHS, while (C) uses `defining_fn_(args): do_this_(args)`
+and uses inference to get the return type (for the default `do_this_(args)` function).
 
 ```
 # case (A): defining a function that returns a lambda function
-make_counter(Counter; int): do(): int
-    do(): ++Counter
-# TODO: equivalent? `make_counter(Counter; int): do(): ++Counter`
-Counter; 123
-counter(): int = make_counter(Counter;)
-print(counter())    # 124
-# `Counter` is also 124 now.
+make_counter_(counter; int_): do_(): int_
+    do_(): ++counter
+# TODO: equivalent? `make_counter_(counter; int_): do_(): ++counter`
+counter; 123
+counter_(): int = make_counter_(;counter)
+print_(counter_())    # 124
+# `counter` is also 124 now.
 ```
 
 Note that because we support [function overloading](#function-overloads), we need
@@ -684,70 +684,75 @@ to specify the *whole* function [when passing it in as an argument](#functions-a
 
 ```
 # case (B): defining a function with some lambda functions as arguments
-do_something(you(): str, greet(Name: str): str): str
-    greet(Name: you())
+do_something_(you_(): str_, greet_(name: str_): str_): str_
+    greet_(name: you_())
 
 # calling a function with some functions as arguments:
-my_name(): "World"
-do_something
-(   you(): str = my_name
-    greet(Name: str): str
-        "Hello, ${Name}"
+my_name_(): "World"
+do_something_
+(   you_(): str_ = my_name_
+    greet_(name: str_): str_
+        "Hello, ${name}"
 )
 
 # case (C): defining a few functions inline without `{}`
-hello_world(): print(do_something(you(): "world", greet(Name: str): "Hello, ${Name}"))
+hello_world_(): print_(do_something_(you_(): "world", greet_(name: str_): "Hello, ${name}"))
 ```
 
 ### defining generic functions
 
 There are two ways to define a generic function: (1) via type inference `~x`
-and (2) with an explicit generic specification `[types...]` after the function name.
+and (2) with an explicit generic specification `[types_...]` after the function name.
 You can combine the two methods if you want to infer a type and specify a
-condition that the type should satisfy, e.g., `fn[x: number](X: ~x): x`
-to require that `x` is a number type.  Any types that are not inferred
+condition that the type should satisfy, e.g., `fn_[x_: number_](~x): x_`,
+where `~x` expands to `x: ~x_`, meaning that `x_` is inferred, and the
+brackets require `x_` to be a number type.  Any types that are not inferred
 but are explicitly given in brackets must be added at the callsite, e.g.,
-`fn[x: number, y](~X, After: y): y` should be called as `fn[y: int](123.4, After: 5)`.
-At the callsite, the specified generics in brackets `[]` must not be abstract.
+`fn_[x_: number_, y_](~x, after: y_): y_` should be called like `fn_[y_: int_](123.4, after: 5)`.
 
-Note that default names apply to either case; `~X` is shorthand for `X: ~x`
-which would not need an argument name, and `fn[value](Value): null` would
-require `value` specified in the brackets but not in the argument list,
-e.g., `fn[value: int](123)`.  In brackets, the "default name" for a type is
-`of`, so you can call a function like `fn[of](Of): null` as `fn[int](123)`.
+Note that default names apply to either case; `~x` is shorthand for `x: ~x_`
+which would not need an argument name, and `fn_[value_](value): null` would
+require `value_` specified in the brackets but not in the argument list,
+e.g., `fn_[value_: int_](123)`.  In brackets, the "default name" for a type is
+`of_`, so you can call a function like `fn_[of_](of): null_` as `fn_[int_](123)`.
 
 Some examples:
 
 ```
 # this argument type is inferred, with a default name
-fn(~X): x
+fn_(~x): x_
 # call it like this:
-fn(512)
+fn_(512)
 
 # this argument type is inferred but need to name it as `x: ...`
-fn(~NAMED_x): x
+fn_(~NAMED_x): x_
 # call it like this:
-fn(x: 512)
+fn_(x: 512)
 
 # another way to infer an argument but require naming it as `x: ...`
-fn(X: ~t): t
+fn_(x: ~t_): t_
 # we call it like this:
-fn(X: 512)
+fn_(x: 512)
 
 # explicit generic with condition, not inferred:
-fn[x: condition](X): x
-# call it like this, where `int` should satisfy `condition`
-fn[x: int](5)
+fn_[x_: condition_or_parent_type_](x): x_
+# call it like this, where `int_` should satisfy `condition_or_parent_type_`
+fn_[x_: int_](5)
 
 # explicit generic with condition, inferred
-fn[x: condition](X: ~x): x
-# call it like this, where `dbl` should satisfy `condition`
-fn[x: dbl](3.14)
+fn_[x_: condition_](~x): x_
+# call it like this, where `dbl_` should satisfy `condition_`
+fn_[x_: dbl_](3.14)
 
 # explicit generic without a default name:
-fn[x](Value: x): null
+fn_[x_](value: x_): null_
 # call it like this:
-fn[x: str](Value: "asdf")
+fn_[x_: str_](value: "asdf")
+
+# explicit default-named generic, but argument is not default named:
+fn_[of_](value: of_): of_
+# call it like this; you can omit `of_: ...` in brackets:
+fn_[int_](value: 123)
 ```
 
 See [generic/template functions](#generictemplate-functions) for more details.
@@ -759,91 +764,94 @@ See [classes](#classes) for more information on syntax.
 
 ```
 # declaring a simple class
-vector3: [X: dbl, Y: dbl, Z: dbl]
+vector3_: [x: dbl_, y: dbl_, z: dbl_]
 
 # declaring a "complicated" class.  the braces `{}` are optional
 # but recommended due to the length of the class body.
-my_class: [X; int]
+my_class_: [x; int_]
 {   # here's a class function that's a constructor
-    m(X. int): m
-        ++Count
-        [X]
+    m_(x. int_): m_
+        ++count
+        [x]
 
-    ;;descope(): null
-        --Count
+    ;;descope_(): null_
+        --count
 
     # here's a class variable (not defined per instance)
     @private
-    Count; count_arch = 0
+    count; count_arch_ = 0
 
     # here's a class function (not defined per instance)
-    # which can be called via `my_class count()` outside this class
-    # or `count()` inside it.
-    count(): count_arch
-        Count
-    # for short, `count(): Count`
+    # which can be called via `my_class_ count_()` outside this class
+    # or `count_()` inside it.
+    count_(): count_arch_
+        count
+    # for short, `count_(): count`
 
     # methods which keep the class readonly use a `::` prefix
-    ::do_something(Y: int): int
-        X * Y
+    ::do_something_(y: int): int_
+        x * y
 
     # methods which mutate the class use a `;;` prefix
-    ;;update(Y: int): null
-        # because there's an implicit `M;` here, it'll look for
-        # ;;do_something(Y) first, but resolve to `::do_something(Y)`:
-        X = do_something(Y)
+    ;;update_(y: int_): null_
+        # because there's an implicit `m;` here, it'll look for
+        # ;;do_something_(y) first, but resolve to `::do_something_(y)`:
+        x = do_something_(y)
 }
 ```
 
-Inside a class body, we don't need to use `M` to scope instance variables/functions
-or `m` to scope class variables/functions, because we always produce a
+Inside a class body, we don't need to use `m` to scope instance variables/functions
+or `m_` to scope class variables/functions, because we always produce a
 compile error if we notice any variables/functions that would shadow
 global variables/functions.  Import renaming is recommended to solve
 this issue.
 TODO: is everything ok for keywords like `each` and `is` which can also be methods?
+i think so because we would use LHS expressions for anything that would conflict,
+so we wouldn't resolve to `m`, we'd use the LHS.
 
 Inheritance of a concrete parent class and implementing an abstract class
-work the same way, by specifying the parent class/interface in an `all_of`
+work the same way, by specifying the parent class/interface in an `all_of_`
 expression alongside any child instance variables, which should be tucked
-inside an `m` field.  Despite requiring the `m` field in the `all_of`,
-we don't need to specifically look up fields in the child via `M Field_name`;
-we can still just use `Field_name` since `m` fields are automatically
+inside an `m_` field.  Despite requiring the `m_` field in the `all_of_`,
+we don't need to specifically look up fields in the child via `m field_name`;
+we can still just use `field_name` since `m` fields are automatically
 brought into scope for any methods.
 TODO: make sure that's desired; it kinda makes sense to only enscope
-it as `M`.
+it as `m` if we have an `all_of_[m_: [field_name: ...]]`.
 
 ```
-parent1: [P1: str]
-{   ::do_p1(): null
-        print("doing p1 ${P1}")
+parent1_: [p1: str]
+{   ::do_p1_(): null_
+        print_("doing p1 ${p1}")
 }
 
-parent2: [P2: str]
-{   ::do_p2(): null
-        print("doing p2 ${P2}")
+parent2_: [p2: str]
+{   ::do_p2_(): null_
+        print_("doing p2 ${p2}")
 }
 
-child3: all_of[parent1, parent2, m: [C3: int]]
-{   # this passes P1 to parent1 and C3 to child3 implicitly,
-    # and P2 to parent2 explicitly.
-    ;;renew(Parent1 P1. str, P2. str, M C3. int): null
-        # same as `parent2 renew(M;, P2)` or `parent2;;renew(P2)`.
-        Parent2 renew(P2)
+child3_: all_of_[parent1_, parent2_, m_: [c3: int_]]
+{   # this passes p1 to parent1 and c3 to child3 implicitly,
+    # and p2 to parent2 explicitly.
+    ;;renew_(parent1 p1. str_, p2. str_, m c3. int_): null_
+        # same as `parent2_ renew_(m;, p2)` or `parent2_;;renew_(p2)`:
+        parent2 renew_(p2)
 
-    ::do_p1(): null
-        # this logic repeats `Parent1 do_p1())` `M C3` times.
-        M C3 each Int_:
-            # same as `parent1 do_p1(M)` or `parent1::do_p1()`.
-            Parent1 do_p1()
+    ::do_p1_(): null_
+        # this logic repeats `parent1 do_p1_())` `m c3` times.
+        m c3 each _int:
+            # same as `parent1_ do_p1_(m)` or `parent1_::do_p1_()`.
+            parent1 do_p1_()
     
-    # do_p2 will be used from parent2 since it is not overridden here.
+    # do_p2_ will be used from parent2_ since it is not overridden here.
 }
 ```
 
-For those aware of storage layout, order matters when using `all_of`;
-the struct will be started with fields in `a` for `all_of[a, b, c]`
-and finish with fields in `c`; the child fields do not need to be first
-(or last); they can be added as `a`, `b`, or `c`, of course as `m: [...]`.
+For those aware of storage layout, order matters when using `all_of_`;
+the struct will be started with fields in `a_` for `all_of_[a_, b_, c_]`
+and finish with fields in `c_`; the child fields do not need to be first
+(or last); they can be added as `a_`, `b_`, or `c_`, of course as `m_: [...]`.
+Generally it's recommended to add child fields last.
 
 ### defining generic classes
 
@@ -852,43 +860,41 @@ Any conditions on the types can be specified via `[the_type: the_condition, ...]
 
 ```
 # default-named generic
-generic[of]: [@private Of]
-{   # you can use inference in functions, so you can use `generic(12)`
-    # to create an instance of `generic` with `of: int` inferred.
-    # You don't need this definition if `[Of]` is public.
-    # NOTE: `g` is like `m` for generic classes but without the specification.
-    g(~T): g[t]
-        [Of. T] 
+generic_[of_]: [@private of]
+{   # you can use inference in functions, so you can use `generic_(12)`
+    # to create an instance of `generic_` with `of_: int_` inferred.
+    # You don't need this definition if `[of]` is public.
+    # NOTE: `g_` is like `m_` for generic classes but without the specification.
+    g_(~t.): g_[t_]
+        [of. t] 
 }
 
-Generic[int](1)             # shorthand for `Generic: generic[int](1)`.
-My_generic: generic(1.23)   # infers `generic[dbl]` for this type.
+generic[int_](1)            # shorthand for `generic: generic_[int_](1)`.
+my_generic: generic_(1.23)  # infers `generic_[dbl_]` for this type.
+WOW_generic("hi")           # shorthand for `WOW_generic: generic_("hi")`, infers `generic_[str_]`
 
 # not default named:
-entry[at: hashable, of: number]: [At, Value; of]
-{   ::add(Of): null
-        Value += Of
+entry_[at_: hashable_, of_: number_]: [at, value; of_]
+{   ::add_(of): null_
+        value += of
 }
 
-Entry[at: str, int](At: "cookies", Value: 123)  # shorthand for `Entry: entry[at: str, int](...)`
-My_entry: entry(At: 123, Value: 4.56)           # infers `at: int` and `of: dbl`.
-My_entry add(1.23)
-My_entry Value == 5.79
+entry[at_: str_, int_](at: "cookies", value: 123)   # shorthand for `entry: entry_[at_: str_, of_: int_](...)`
+my_entry: entry_(at: 123, value: 4.56)              # infers `at_: int_` and `of_: dbl_`.
+my_entry add_(1.23)
+my_entry value == 5.79
 ```
 
 See [generic/template classes](#generictemplate-classes) for more information.
 
 ## identifiers
 
-Identifiers in oh-lang are very important.  The capitalization (or lack thereof)
-of the first letter indicates whether the identifier is a variable or a function.
-Since we think of functions as verb-like, they are `function_case` identifiers, e.g.,
-`make_toast` or `run_marathon`.  On the other hand, variables are names, and we think
-of them as proper nouns (like names), e.g., `Sam` or `Max_array_count`, so they are
-`Variable_case` identifiers.  Class names are `type_case`, since they
-act more functions than variables; e.g., you can convert one class instance into
-another class's instance, like `int(My_number_string)` which converts `My_number_string`
-(presumably a `string` type) into a big integer.
+Identifiers in oh-lang are very important.  The trailing underscore (or lack thereof)
+indicates whether the identifier is a function/type (or a variable), which gives some
+space to guide the eye with function calls like `my_function_(x: 3)`.  Similarly for
+type (or class) names, since types can work like functions (e.g., `int_(number_string)`).
+Variable names like `x` and `max_array_count` do not include a trailing underscore.
+Any capitalized letters belong to a [namespace](#namespaces).
 
 There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
 `what`, `in`, `each`, `for`, `while`, `pass`, `where`,
@@ -897,14 +903,14 @@ E.g., `return X + 5` will return the value `(X + 5)` from the enclosing function
 There are some reserved namespaces with side effects like `FIRST_`, `SECOND_`,
 `THIRD_`, `NAMED_`, `AS_`,
 which should be used for their side effects.  For example, `FIRST_` and `SECOND_`
-are reserved for binary operations like `&&` and `*`.  See [namespaces](#namespaces)
+should be used for binary operations like `&&` and `*`.  See [namespaces](#namespaces)
 for more details.
 
-There are some reserved variable names, like `M`, which can only
-be used as a reference to the current class instance, and `O` which
-can only be used as a reference to an *O*ther instance of the same type;
-`O` must be explicitly added as an argument, though, in contrast to `M` which can be implicit.
-(The corresponding types `m`, and `o` are reserved for the same reasons.)
+There are some reserved variable names, like `m`, which can only
+be used as a reference to the current class instance, and `o` which
+can only be used as a reference to an *o*ther instance of the same type;
+`o` must be explicitly added as an argument, though, in contrast to `m` which can be implicit.
+(The corresponding types `m_`, and `o_` are reserved for the same reasons.)
 
 Most ASCII symbols are not allowed inside identifiers, e.g., `*`, `/`, `&`, etc., but
 underscores (`_`) have some special handling.  They are ignored in numbers,
@@ -946,14 +952,14 @@ Also note, if there is no operator between two lines at the same indent,
 we'll assume we should add a comma.
 
 ```
-# the following are equivalent to `My_array: [5, 6, 7]`.
+# the following definitions are equivalent to `my_array: [5, 6, 7]`.
 
 # this is the block-definition style for a variable
-My_array:
+my_array:
     [5, 6, 7]
 
 # this is similar to the block definition.
-My_array:   # OK, but...
+my_array:   # OK, but...
     [   5
         6
         7
@@ -961,18 +967,18 @@ My_array:   # OK, but...
 
 # note it's unnecessary because we also allow opening brackets
 # to get attached to the previous line if the internals are indented.
-My_array:   # better!
+my_array:   # better!
 [   5
     6
     7
 ]
 
 # if you want to one-line it on a second line it's also possible with a +2 indent.
-My_array:
+my_array:
         [5, 6, 7]
 
 # the parentheses trick only works if the inside is indented.
-Not_defined_correctly:
+not_defined_correctly:
 [5, 6, 7]       # not attached to the previous line.
 ```
 
@@ -981,78 +987,64 @@ from a function, since we may try to pair it with the previous line.
 If you *don't* want to pair a block with the previous line, use `pass` or `return`.  
 
 ```
-# example of returning `[X, Y]` values from a function.
-# there's no issue here because we're not indenting in `[X, Y]`:
-my_function(Int): [X: int, Y: int]
-    do_something(Int)
-    [X: 5 - Int, Y: 5 + Int]
+# example of returning `[x, y]` values from a function.
+# there's no issue here because we're not indenting in `[x, y]`:
+my_function_(int): [x: int_, y: int_]
+    do_something_(int)
+    [x: 5 - int, y: 5 + int]
 
-# this indents `[X, Y]` (i.e., to split into a multi-line array),
-# but note that we need `return` to avoid parsing as `do_something(Int)[X: ...]`.
-my_function(Int): [X: int, Y: int]
-    do_something(Int)
+# this indents `[x, y]` (i.e., to split into a multi-line array),
+# but note that we need `return` to avoid parsing as `do_something_(int)[x: ...]`.
+my_function_(int): [x: int_, y: int_]
+    do_something_(int)
     return
-    [   X: 5 - Int
-        Y: 5 + Int
+    [   x: 5 - int
+        y: 5 + int
     ]
 
 # alternatively, you could add a comma between the two statements
-# to ensure it doesn't parse as `do_something(Int)[X: ...]`:
-my_function(Int): [X: int, Y: int]
-    do_something(Int),
-    [   X: 5 - Int
-        Y: 5 + Int
+# to ensure it doesn't parse as `do_something_(int)[x: ...]`:
+my_function_(int): [x: int, y: int]
+    do_something_(int),
+    [   x: 5 - int
+        y: 5 + int
     ]
 ```
 
 Because parentheses indicate [reference objects](#reference-objects),
-which can be returned like brackets, similar care must be taken with
-indents in `()`.
-
-```
-my_function(Str): int
-    Results: if Str == "hello"
-        do_something(Str),
-        [   X: Str + ", world!"
-            Y: Str count()
-        ]
-    else $[X: "oh no", Y: 3]
-    print(Results X)
-    return Results Y
-```
-
+which can be returned like brackets, similar care must be taken with `()`.
 When it comes to parentheses, you are welcome to use
 [one-true-brace style](https://en.wikipedia.org/wiki/Indentation_style#:~:text=One%20True%20Brace),
 which will be converted into Horstmann style.
 
 ```
-Some_variable: some_very_long_function_name_because_it_is_good_to_be_specific(10)
-    +   3             # indent at +2 ensures that 3 is added into Some_variable.
-    -   Other_variable # don't keep adding more indents, keep at +2 from original.
+some_variable: some_very_long_function_name_because_it_is_good_to_be_specific_(10)
+    +   3               # indent at +2 ensures that 3 is added into Some_variable.
+    -   other_variable  # don't keep adding more indents, keep at +2 from original.
 
-Array_variable:
+array_variable:
 [   1   # we insert commas
     2   # between each newline
     3   # as long as the indent is the same.
-    Other_array # here we don't insert a comma after `Other_array`
+    other_array # here we don't insert a comma after `Other_array`
     [   3       # because the indent changes
-    ]           # so we parse this as `Other_array[3],`
+    ]           # so we parse this as `other_array[3],`
     5           # and this gets a comma before it.
 ]
 
-# this is inferred to be a `lot` with a string ID and a `one_of[int, str]` value.
-Lot_variable;
+# this is inferred to be a `lot` with a string ID and a `one_of_[int_, str_]` value.
+lot_variable;
 [   "Some_value": 100
     "Other_value": "hi"
 ]
-Lot_variable["Some_other_value"] = if Condition {543} else {"hello"}
+lot_variable["Some_other_value"] = if condition {543} else {"hello"}
 
-# This is different than the `Lot_variable` because it is an instance
-# of a `[Some_value: int, Other_value: str]` plain-old-data type,
+# This is different than the `lot_variable` because it is an instance
+# of a `[some_value: int, other_value: str]` plain-old-data type,
 # which cannot have new fields added, even if it was mutable.
-Object_variable:
-[   Some_value: 100
-    Other_value: "hi"
+object_variable:
+[   some_value: 100
+    other_value: "hi"
 ]
 ```
 
@@ -1061,27 +1053,27 @@ The starting indent of the line is what matters, so a close parenthesis can be o
 line as an open parenthesis.
 
 ```
-Some_value:
+some_value:
 (       (20 + 45)
-    *   Continuing + The + Line + At_plus_2_indent -
-        (       Nested * Parentheses / Are + Ok
-            -   Too
+    *   continuing + the + line + at_plus_2_indent -
+        (       nested * parentheses / are + ok
+            -   too
         )
 )
 
-Another_line_continuation_variable: Can_optionally_start_up_here
-    +   Ok_to_not_have_a_previous_line_starting_at_plus_two_indent * 
-        (       Keep_going_if_you_like
-            -   However_long
+another_line_continuation_variable: can_optionally_start_up_here
+    +   ok_to_not_have_a_previous_line_starting_at_plus_two_indent * 
+        (       keep_going_if_you_like
+            -   however_long
         ) + (70 - 30) * 3
 
 # note that the formatter will take care of converting indents like this:
-Non_horstmann_indent: (
-    20 + some_function(45)
+non_horstmann_indent: (
+    20 + some_function_(45)
 )
 # into this:
-Non_horstmann_indent:   # FIXME: update name :)
-(   20 + some_function(45)
+non_horstmann_indent:   # FIXME: update name :)
+(   20 + some_function_(45)
 )
 ```
 
@@ -1090,22 +1082,22 @@ Unless there are parentheses involved, all indents for subsequent line continuat
 should be the same.
 
 ```
-Example_plus_three_indent; some_type
+example_plus_three_indent; some_type_
 ...
-Example_plus_three_indent
-    =       Hello
-        +   World
-        -   Continuing
+example_plus_three_indent
+    =       hello
+        +   world
+        -   continuing
 ```
 
 Arguments supplied to functions are similar to arrays/lots and only require +1 indent
 if they are multiline.
 
 ```
-if some_function_call
-(   X
-    Y: 3 + sin(X)   # default given for Y, can be given in terms of other arguments.
-    Available_digits:
+if some_function_call_
+(   x
+    y: 3 + sin_(x)   # default given for y, can be given in terms of other arguments.
+    available_digits:
     [   1
         3
         5
@@ -1113,68 +1105,68 @@ if some_function_call
         9
     ]
 )
-    do_something()
+    do_something_()
 
-defining_a_function_with_multiline_arguments
-(   Times: int
-    Greeting: string
-    Name: string("World")   # argument with a default
-):  string                  # indent here is optional/aesthetic
+defining_a_function_with_multiline_arguments_
+(   times: int_
+    greeting: string_
+    name: string_("World")  # argument with a default
+):      string_             # indent here is optional/aesthetic
     # "return" is optional for the last line of the block,
     # unless you're returning a multiline array/object.
-    "${Greeting}, ${Name}! " * Times
+    "${greeting}, ${name}! " * times
 
-defining_a_function_with_multiline_return_values
-(   Argument0: int
+defining_a_function_with_multiline_return_values_
+(   argument0: int_
 ):
-[   Value0: int     # you may need to add comments because
-    Value1: str     # the formatter may 1-line these otherwise
+[   value0: int_    # you may need to add comments because
+    value1: str_    # the formatter may 1-line these otherwise
 ]
-    do_something(Argument0)
+    do_something_(argument0)
     # here we can avoid the `return` since the internal
     # part of this object is not indented.
-    [Value0: Argument0 + 3, Value1: str(Argument0)]
+    [value0: argument0 + 3, value1: str_(argument0)]
 
 # ALTERNATIVE: multiline return statement
-defining_a_function_with_multiline_return_values
-(   Argument0: int
-    Argument1: str
-):  [Value0: int, Value1: str]
-    do_something(Argument0)
+defining_a_function_with_multiline_return_values_
+(   argument0: int_
+    argument1: str_
+):  [value0: int_, value1: str_]
+    do_something_(argument0)
     # this needs to `return` or `pass` since it looks like an indented block
     # otherwise, which would attach to the previous line like
-    # `do_something(Argument0)[Value0: ...]`
+    # `do_something_(argument0)[value0: ...]`
     return
-    [   Value0: Argument0 + 3
-        Value1: Argument1 + str(Argument0)
+    [   value0: argument0 + 3
+        value1: argument1 + str_(argument0)
     ]
     # if you are in a situation where you can't return -- e.g., inside
     # an if-block where you want to pass a value back without returning --
     # use `pass`.
 
-defining_another_function_that_returns_a_generic
-(   Argument0: str
-    Argument1: int
-):  some_generic_type
-[   type0: int
-    type1: str
+defining_another_function_that_returns_a_generic_
+(   argument0: str_
+    argument1: int_
+):  some_generic_type_
+[   type0_: int_
+    type1_: str_
 ]
-    do_something(Argument0)
-    print("got arguments ${Argument0}, ${Argument1}")
+    do_something_(argument0)
+    print_("got arguments ${argument0}, ${argument1}")
     return ...
 ```
 
 Putting it all together in one big example:
 
 ```
-Some_line_continuation_example_variable:
-        Optional_expression_explicitly_at_plus_two_indent
-    +   5 - some_function
-        (       Another_optional_expression
-            +   Next_variable
-            -   Can_keep_going
-            /   Indefinitely
-                R: 123.4
+some_line_continuation_example_variable:
+        optional_expression_explicitly_at_plus_two_indent
+    +   5 - some_function_
+        (       another_optional_expression
+            +   next_variable
+            -   can_keep_going
+            /   indefinitely
+                r: 123.4
         )
 ```
 
@@ -1182,7 +1174,7 @@ Some_line_continuation_example_variable:
 
 You can use `{` ... `}` to define a block inline.  The braces block is grammatically
 the same as a standard block, i.e., going to a new line and indenting to +1.
-This is useful for short `if` statements, e.g., `if Some_condition {do_something()}`.
+This is useful for short `if` statements, e.g., `if some_condition {do_something_()}`.
 Similarly, you can return normal objects or reference objects in blocks via
 `$[...]` or `$(...)`, respectively.
 
@@ -1192,18 +1184,18 @@ in any block, by using commas.  E.g.,
 
 ```
 # standard version:
-if Some_condition
-    print("toggling shutoff")
-    shutdown()
+if some_condition
+    print_("toggling shutoff")
+    shutdown_()
 
 # comma version:
-if Some_condition
+if some_condition
     # WARNING: NOT RECOMMENDED, since it's easy to accidentally skip reading
     # the statements that aren't first:
-    print("toggling shutoff"), shutdown()
+    print_("toggling shutoff"), shutdown_()
 
 # block parentheses version
-if Some_condition { print("toggling shutoff"), shutdown() }
+if some_condition { print_("toggling shutoff"), shutdown_() }
 ```
 
 If the block parentheses encapsulate content over multiple lines, note that
@@ -1213,11 +1205,11 @@ begin and end, which helps some editors navigate more quickly to the beginning/e
 
 ```
 # multiline block parentheses via an optional `{`
-if Some_condition
-{   print("toggling shutdown")
-    print("waiting one more tick")
-    print("almost..."), print("it's a bit weird to use comma statements")
-    shutdown()
+if some_condition
+{   print_("toggling shutdown")
+    print_("waiting one more tick")
+    print_("almost..."), print_("it's a bit weird to use comma statements")
+    shutdown_()
 }
 ```
 
@@ -1255,42 +1247,43 @@ Standard types whose instances can take up an arbitrary amount of memory:
 
 Other types which have a fixed amount of memory:
 
-* `null`: should take up no memory, but can require an extra bit for an optional type.
-* `flt`: single-precision floating-point number, AKA `f32`
-* `dbl`: double-precision floating-point number, AKA `f64`
-* `bool`: can hold a True or False value
-* `rune`: a utf8 character, presumably held within an `i32`
-* `u8`: unsigned byte (can hold values from 0 to 255, inclusive)
-* `u16` : unsigned integer which can hold values from 0 to 65535, inclusive
-* `u32` : unsigned integer which can hold values from 0 to `2^32 - 1`, inclusive
-* `u64` : unsigned integer which can hold values from 0 to `2^64 - 1`, inclusive
-* `uXYZ` : unsigned integer which can hold values from 0 to `2^XYZ - 1`, inclusive,
+* `null_`: should take up no memory, but can require an extra bit for an optional type.
+* `flt_`: single-precision floating-point number, AKA `f32_`
+* `dbl_`: double-precision floating-point number, AKA `f64_`
+* `bool_`: can hold a True or False value
+* `rune_`: a utf8 character, presumably held within an `i32`
+* `u8_`: unsigned byte (can hold values from 0 to 255, inclusive)
+* `u16_` : unsigned integer which can hold values from 0 to 65535, inclusive
+* `u32_` : unsigned integer which can hold values from 0 to `2^32 - 1`, inclusive
+* `u64_` : unsigned integer which can hold values from 0 to `2^64 - 1`, inclusive
+* `uXYZ_` : unsigned integer which can hold values from 0 to `2^XYZ - 1`, inclusive,
     where `XYZ` is 128 to 512 in steps of 64, and generically we can use
-    `unsigned[Bits: count]: what Bits {8 {u8}, 16 {u16}, 32 {u32}, ..., Count: {disallowed}}`
-* `count` : `s64` under the hood, intended to be >= 0 to indicate the amount of something.
-* `index` : signed integer, `s64` under the hood.  for indexing arrays starting at 0.
-* `ordinal` : signed integer, `s64` under the hood.  for indexing arrays starting at 1.
+    `unsigned_[Bits: count]: what Bits {8 {u8}, 16 {u16}, 32 {u32}, ..., else {disallowed}}`
+* `count_` : `u64_` under the hood, intended to be <= `i64_ max_() + 1` to indicate the amount of something.
+* `index_` : signed integer, `i64_` under the hood.  for indexing arrays starting at 0, can be negative
+    to indicate we're counting from the back of the array.
+* `ordinal_` : `u64_` under the hood.  for indexing arrays starting at 1.
 
-and similarly for `i8` to `i512`, using two's complement.  For example,
-`i8` runs from -128 to 127, inclusive, and `u8(i8(-1))` equals `255`.
-The corresponding generic is `signed[Bits: count]`.  We also define the
-symmetric integers `s8` to `s512` using two's complement, but disallowing
-the lowest negative value of the corresponding `i8` to `i512`, e.g.,
--128 for `s8`.  This allows you to fit in a null type with no extra storage,
-e.g., `one_of[s8, null]` is exactly 8 bits, since it uses -128 for null.
+and similarly for `i8_` to `i512_`, using two's complement.  For example,
+`i8_` runs from -128 to 127, inclusive, and `u8_(wrap: i8_(-1))` equals `255`.
+The corresponding generic is `signed_[bits: count]`.  We also define the
+symmetric integers `s8_` to `s512_` using two's complement, but disallowing
+the lowest negative value of the corresponding `i8_` to `i512_`, e.g.,
+-128 for `s8_`.  This allows you to fit in a null type with no extra storage,
+e.g., `one_of_[s8_, null_]` is exactly 8 bits, since it uses -128 for null.
 (See [nullable classes](#nullable-classes) for more information.)
-Symmetric integers are useful when you want to ensure that `-Symmetric`
-is actually the opposite sign of `Symmetric`; `-i8(-128)` is still `i8(-128)`.
-The corresponding generic for symmetric integers is `symmetric[Bits: count]`.
+Symmetric integers are useful when you want to ensure that `-symmetric`
+is actually the opposite sign of `symmetric`; `-i8_(-128)` is still `i8_(-128)`.
+The corresponding generic for symmetric integers is `symmetric_[bits: count]`.
 
-Note that the `ordinal` type behaves exactly like a number but can be used
-to index arrays starting at 1.  E.g., `Array[ordinal(1)]` corresponds to `Array[index(0)]`
+Note that the `ordinal_` type behaves exactly like a number but can be used
+to index arrays starting at 1.  E.g., `array[ordinal_(1)]` corresponds to `array[index_(0)]`
 (which is equivalent to other numeric but non-index types, e.g., `Array[0]`).
-There is an automatic delta by +-1 when converting from `index` to `ordinal`
-or vice versa, e.g., `ordinal(index(1)) == 2` and `index(ordinal(1)) == 0`.
+There is an automatic delta by +-1 when converting from `index_` to `ordinal_`
+or vice versa, e.g., `ordinal_(index_(1)) == 2` and `index_(ordinal_(1)) == 0`.
 Note however, that there's a bit of asymmetry here; non-index, numeric types
-like `u64`, `count`, or `i32` will convert to `index` or `ordinal` without any delta.
-It's only when converting between `index` and `ordinal` that a delta occurs.
+like `u64_`, `count_`, or `i32_` will convert to `index_` or `ordinal_` without any delta.
+It's only when converting between `index_` and `ordinal_` that a delta occurs.
 
 ## casting between types
 
@@ -1308,134 +1301,138 @@ Notice we use `assert` to shortcircuit function evaluation and return an error r
 
 ```
 # Going from a floating point number to an integer should be done carefully...
-X: dbl(5.43)
-Safe_cast: X int()                  # Safe_cast is a result type (`hm[ok: int, Number_conversion er]`)
-# also OK: `Safe_cast: int(X)`.
-Q: X int() assert()                 # returns an error since `X` is not representable as an integer
-Y: X round(Down) int() assert()     # Y = 5.  equivalent to `X floor()`
-Z: X round(Up) int() assert()       # Z = 6.  equivalent to `X ceil()`.
-R: X round() int() assert()         # R = 5.  rounds to closest integer, breaking ties at half
+X: dbl_(5.43)
+Safe_cast: X int_()                 # Safe_cast is a result type (`hm_[ok_: int_, number_ er_]`)
+# also OK: `Safe_cast: int_(X)`.
+Q: X int_() assert_()               # returns an error since `X` is not representable as an integer
+Y: X round_(Down) int_() assert_()  # Y = 5.  equivalent to `X floor_()`
+Z: X round_(Up) int_() assert_()    # Z = 6.  equivalent to `X ceil_()`.
+R: X round_() int_() assert_()      # R = 5.  rounds to closest integer, breaking ties at half
                                     #         to the integer larger in magnitude.
 
 # Note, representable issues arise for conversions even between different integer types.
-A: u32(1234)
-Q: A u8() assert()                  # RUN-TIME ERROR, `A` is not representable as a `u8`.
-B: u8(A & 255) assert()             # OK, communicates intent and puts `A` into the correct range.
+A: u32_(1234)
+Q: A u8_() assert_()                # RUN-TIME ERROR, `A` is not representable as a `u8`.
+B: u8_(A & 255) assert_()           # OK, communicates intent and puts `A` into the correct range.
 ```
 
-Casting to a complex type, e.g., `one_of[int, str](Some_value)` will pass through `Some_value`
-if it is an `int` or a `str`, otherwise try `int(Some_value)` if that is allowed, and finally
-`str(Some_value)` if that is allowed.  If none of the above are allowed, the compiler will
+Casting to a complex type, e.g., `one_of_[int_, str_](some_value)` will pass through `some_value`
+if it is an `int_` or a `str_`, otherwise try `int_(some_value)` if that is allowed, and finally
+`str_(some_value)` if that is allowed.  If none of the above are allowed, the compiler will
 throw an error.  Note that nullable types absorb errors in this way (and become null), so
-`one_of[int, null](Some_safe_cast)` will be null if the cast was invalid, or an `int` if the
+`one_of_[int_, null_](some_safe_cast)` will be null if the cast was invalid, or an `int_` if the
 cast was successful.
 
 To define a conversion from one class to another, you can define a global function
 or a class method, like this:
 
 ```
-scaled8:
+scaled8_:
 [   # the actual value held by a `scaled8` is `Scaled_value / Scale`.
     @private
-    Scaled_value: u8
+    scaled_value: u8
 ]
 {   # static/class-level variable:
     @private
-    Scale: 32_u8
+    scale: 32_u8
 
-    m(Flt): hm[ok: m, er: one_of[Negative, Too_big]]
-        Scaled_value: round(Flt * Scale)
-        if Scaled_value < 0
-            return Negative
-        if Scaled_value > u8 max() flt()
-            return Too_big
-        scaled8(Scaled_value u8() ?? panic())
+    m_(flt): hm_[ok_: m_, er_: one_of_[negative, too_big]]
+        scaled_value: round_(flt * scale)
+        if scaled_value < 0
+            er_(negative)
+        elif scaled_value > u8 max_()
+            er_(too_big)
+        else
+            scaled8_(scaled_value u8_() ?? panic_())
+        # probably a preferred way to implement this is with less logic,
+        # and just return the `number_ er_` instead:
+        # `what u8_(scaled_value) { ok. {scaled8_(ok)}, er. {er} }`
 
     # if there are no representability issues, you can create
     # a direct method to convert to `flt`;
-    # this can be called like `flt(Scaled8)` or `Scaled8 flt()`.
-    ::flt(): flt
-        # `u8` types have a `flt` method.
-        Scaled_value flt() / Scale flt()
+    # this can be called like `flt_(scaled8)` or `scaled8 flt_()`.
+    ::to_(): flt_
+        # `u8_` types have a non-failing `flt_` method.
+        scaled_value flt_() / scale flt_()
 
     # if you have representability issues, you can return a result instead.
-    ::int(): hm[ok: int, Number_conversion er]
-        if Scaled_value % Scale != 0
-            Number_conversion Not_an_integer
+    ::to_(): hm[ok_: int_, number_ er_]
+        if scaled_value % scale != 0
+            er_(not_an_integer)
         else
-            Scaled_value // Scale
+            scaled_value // scale
 }
 
-# global function; can also be called like `Scaled8 dbl()`.
-dbl(Scaled8): dbl
-    # note that we can access private variables of the class *in this file/module*
-    # but if we weren't in this file we wouldn't have this access.
-    Scaled8 Scaled_value dbl() / scaled8 Scale dbl()
+# global function; can also be called like `scaled8 dbl_()`.
+dbl_(scaled8): dbl_
+    # note that we can access private variables of the class *in this file*
+    # but if we weren't in the same file we wouldn't have this access.
+    scaled8 scaled_value dbl_() / scaled8 scale dbl_()
 
-# global function which returns a result, can be called like `Scaled8 u16()`
-u[Bits: count](Scaled8): hm[ok: u[Bits], Number_conversion er]
-    if Scaled8 Scaled_value % scaled8 Scale != 0
-        Number_conversion Not_an_integer
+# global function which returns a result, can be called like `scaled8 u16_()`
+u16_(scaled8): hm_[ok_: u16_, number_ er_]
+    if scaled8 scaled_value % scaled8 scale != 0
+        er_(not_an_integer)
     else
-        Scaled8 Scaled_value // scaled8 Scale
+        scaled8 scaled_value // scaled8 scale
 ```
 
 ## types of types
 
 Every variable has a reflexive type which describes the object/primitive that is held
-in the variable, which can be accessed via the `type_case` version of the
-`Variable_case` variable name.  
+in the variable, which can be accessed via the `type_case_` version of the
+`variable_case` variable name.  
 
 ```
-# implementation note: `int` should come first so it gets tried first;
-# `dbl` will eat up many values that are integers, including `4`.
-X; one_of[int, dbl] = 4
-Y; x = 4.56     # use the type of `X` to define a variable `Y`.
+# implementation note: `int_` comes first so it gets tried first;
+# `dbl_` will eat up many values that are integers, including `4`.
+x; one_of_[int_, dbl_] = 4
+y; x_ = 4.56    # use the type of `x` to define a variable `y`.
 ```
 
-Note that the `type_case` version of the `Variable_case` name does not have
-any information about the instance, so `x` is `one_of[int, dbl]` in the above
-example and `Y` is an instance of the same `one_of[int, dbl]` type.  For 
-ways to handle different types differently within a `one_of`, see 
-[this](#one_of-types).
+Note that the `type_case_` version of the `variable_case` name does not have
+any information about the instance, so `x` is `one_of_[int_, dbl_]` in the above
+example and `y` is an instance of the same `one_of_[int_, dbl_]` type.  For other
+ways to handle different types within a `one_of_`, [go here](#one_of-types).
 
 Some more examples:
 
 ```
-vector3: [X; dbl, Y; dbl, Z; dbl]
+vector3_: [x; dbl_, y; dbl_, z; dbl_]
 
-My_vector3: vector3(X: 1.2, Y: -1.4, Z: 1.6)
+my_vector3: vector3_(x: 1.2, y: -1.4, z: 1.6)
 
-print(my_vector3)                # prints `vector3`
-print(vector3 == my_vector3)     # this prints true
+print(my_vector3_)              # prints `vector3`
+print(vector3_ == my_vector3_)  # this prints true
 ```
 
 Variables that refer to types cannot be mutable, so something
 like `some_type; vector3` is not allowed.  This is to make it
 easier to reason about types.
 
-TODO: types of functions, shouldn't really have `new`.
-TODO: we should discuss the things functions do have, like `my_function Inputs`
-and `my_function Outputs`.
-TODO: if we define `my_fn(~X): x` and then use `Y: x(3)` internally, that's fine,
-we're creating an `x` instance with initialization of `3`.
-but if we do `Z: X x()` then we have a bit of a shadowing problem; are we referring
-to `x(X)`, e.g., `X clone()`, or are we referring to a method `x:;x()`?
+TODO: we should discuss the things functions do have, like `my_function_ inputs_`
+and `my_function_ outputs_`.
+TODO: if we define `my_fn_(~x): x_` and then use `y: x_(3)` internally, that's fine,
+we're creating an `x_` instance with initialization of `3`.
+but if we do `z: x x_()` then we have a bit of a shadowing problem; are we referring
+to `x_(x)`, e.g., `x clone_()`, or are we referring to a method `x:;x_()`?
 presumably we may want to refer to either, so we need ways to disambiguate.
-in this case, we probably want `x(X)` to do the clone operation and `X x()` to request
-the method `:;x()`.  e.g., if `x == vector3`, then `x(X)` is `vector3(X x(), X y(), X z())`
-and `X x()` is component x of the vector.
-TODO: don't use `X clone()`, use `x(X)` because we can do copy-constructors
-like `m(O): hm[ok: m, er: Out_of_memory]` or whatever.
+in this case, we probably want `x_(x)` to do the clone operation and `x x_()` to request
+the method `:;x_()`.  e.g., if `x_ == vector3_`, then `x_(x)` is `vector3_(x x_(), x y_(), x z_())`
+and `x x_()` is component x of the vector.
+ALTERNATIVELY: we throw a compile error because of disambiguity/shadowing.
+this might not be super fair to a *user* of an API, if they can't go in and change it easily.
+TODO: don't use `x clone_()`, use `x_(x)` because we can do copy-constructors
+like `m_(o): hm_[ok_: m_, er_: out_of_memory]` or whatever.
 
 ## type overloads
 
 Similar to defining a function overload, we can define type overloads for generic types.
-For example, the generic result class in oh-lang is `hm[ok, er]`, which
-encapsulates an ok value (`ok`) or a non-nullable error (`er`).  For your custom class you
-may not want to specify `hm[ok: my_ok_type, er: my_class_er]` all the time for your custom
-error type `my_class_er`, so you can define `hm[of]: hm[ok: of, er: my_class_er]` and
-use e.g. `hm[int]` to return an integer or an error of type `my_class_er`.  Shadowing variables is
+For example, the generic result class in oh-lang is `hm_[ok_, er_]`, which
+encapsulates an ok value (`ok_`) or a non-nullable error (`er_`).  For your custom class you
+may not want to specify `hm_[ok_: my_ok_type_, er_: my_class_er_]` all the time for your custom
+error type `my_class_er_`, so you can define `hm_[of_]: hm_[ok_: of_, er_: my_class_er_]` and
+use e.g. `hm_[int_]` to return an integer or an error of type `my_class_er_`.  Shadowing variables is
 invalid in oh-lang, but overloads are valid.  Note however that we disallow redefining
 an overload, as that would be the equivalent of shadowing.
 
@@ -1444,20 +1441,19 @@ an overload, as that would be the equivalent of shadowing.
 Plain-old-data objects can be thought of as merging all fields
 in this way:
 ```
-object == merge[object fields(), {[$Field Name: $Field value]}]
+object_ == merge_[object_ fields_(), {[$field name: $field value_]}]
 ```
 
 TODO: good ways to do keys and values for an object type (e.g., like TypeScript).
-see if there's a better way to do it, e.g., `object valued[{um[$value]}]`, so
+see if there's a better way to do it, e.g., `object_ valued_[{um_[$value_]}]`, so
 it's easy to see that all field names are the same, just values that change.
-TODO: do we even need `{um[$of]}`?  isn't `um` already functable as an `um[of]`?
 
 Here are some examples of changing the nested fields on an object
 or a container, e.g., to convert an array or object to one containing futures.
 
 ```
 # base case, needs specialization.
-nest[m, new[of]: ~n]: disallowed
+nest_[m_, new_[of_]: ~n]: disallowed
 
 # container specialization.
 # TODO: can we do `nest[$um]` instead of `nest[{um[$of]}]`?
@@ -1502,8 +1498,8 @@ Note that if we have a function that returns a type, we must use brackets, e.g.,
 `the_function[...]: the_return_type`, but we can use instances like booleans
 or numbers inside of the brackets (e.g., `array[3, int]` for a fixed size array type).
 Conversely, if we have a function that returns an instance, we must use parentheses,
-e.g., `the_function(...): instance_type`.  In either case, we can use a type as
-an argument, e.g., `nullable(of): bool` or `array3[of]: array[3, of]`.
+e.g., `the_function_(...): instance_type`.  In either case, we can use a type as
+an argument, e.g., `nullable(of): bool` or `array3_[of_]: array_[3, of_]`.
 Type functions can be specialized in the manner shown above, but instance functions
 cannot be.  TODO: would we want to support that at some point??
 
@@ -1512,22 +1508,22 @@ Here is some nullable type manipulation:
 ```
 # the `null` type should not be considered nullable because there's
 # nothing that can be unnulled, so ensure there's something not-null in a nullable.
-#   nullable(one_of[dbl, int, str]) == False
-#   nullable(one_of[dbl, int, null]) == True
-#   nullable(one_of[int, null]) == True
-#   nullable(one_of[null]) == False
-#   nullable(null) == False
-nullable(of): of contains(not[null], null)
+#   nullable_(one_of_[dbl_, int_, str_]) == False
+#   nullable_(one_of_[dbl_, int_, null_]) == True
+#   nullable_(one_of_[int_, null_]) == True
+#   nullable_(one_of_[null_]) == False
+#   nullable_(null_) == False
+nullable_(of_): of_ contains_(not_[null_], null_)
 
 # examples
-#   unnull[int] == int
-#   unnull[int?] == int
-#   unnull[one_of[array[int], set[dbl], null]] == one_of[array[int], set[dbl]]
-unnull[of]: if nullable(of) {unnest[of]} else {of}
+#   unnull_[int_] == int_
+#   unnull_[int_?] == int_
+#   unnull_[one_of_[array_[int_], set_[dbl_], null_]] == one_of_[array_[int_], set_[dbl_]]
+unnull_[of_]: if nullable_(of_) {unnest_[of_]} else {of_}
 
 # a definition without nullable, using template specialization:
-unnull[of]: of
-unnull[one_of[...~nested, null]]: nested
+unnull_[of_]: of_
+unnull_[one_of_[...~nested_, null_]]: nested_
 ```
 
 # operators and precedence
@@ -1588,14 +1584,14 @@ TODO: discussion on `~`
 
 ## function calls
 
-Function calls are assumed whenever a function identifier (i.e., `function_case`)
+Function calls are assumed whenever a function identifier (i.e., `function_case_`)
 occurs before a parenthetical expression.  E.g., `print(X)` where `X` is a variable name or other
 primitive constant (like `5`), or `any_function_name(Any + Expression / Here)`.
 In case a function returns another function, you can also chain like this:
 `get_function(X)(Y, Z)` to call the returned function with `(Y, Z)`.
 
 It is recommended to use parentheses where possible, to help people see the flow more easily.
-E.g., `some_function(Some_instance Some_field some_method()) Final_field` looks pretty complicated.
+E.g., `some_function(Some_instance Some_field some_method_()) Final_field` looks pretty complicated.
 This would compile as `(some_function(Some_instance)::Some_field::some_method())::Final_field`,
 and including these parentheses would help others follow the flow.  Even better would be to
 add descriptive variables as intermediate steps.
@@ -2027,7 +2023,7 @@ See [then statements](#then-statements) for more examples and details.
 
 # variables
 
-Variables are named using `Variable_case` identifiers.  The `:` symbol is used
+Variables are named using `variable_case` identifiers.  The `:` symbol is used
 to declare deeply constant, non-reassignable variables, and `;` is used to declare
 writable, reassignable variables.  Note when passed in as arguments to a function,
 `:` has a slightly different meaning; a variable with `:` is readonly and not
@@ -2353,7 +2349,7 @@ do_something(Date: str("2023-01-01")):
 
 # functions
 
-Functions are named using `function_case` identifiers.  The syntax to declare
+Functions are named using `function_case_` identifiers.  The syntax to declare
 a function is `function_case_name(Function_arguments...): return_type`, but if
 you are also defining the function the `return_type` is optional (but generally
 recommended for multiline definitions).  Defining the function can occur inline
@@ -2648,7 +2644,7 @@ print(My_reference) # prints `6`
 
 For functions with one argument (per type) where the variable name doesn't matter,
 you can use default-named variables.  For standard ASCII identifiers, the default-name identifier
-is just the `Variable_case` version of the `type_case` type.
+is just the `variable_case` version of the `type_case_` type (i.e., remove the trailing `_`).
 
 ```
 # this function declaration is equivalent to `f(Int: int): int`:
@@ -2762,8 +2758,8 @@ an inline function to pass into the other function.  Because we support
 [function overloading](#function-overloads), any externally defined functions need to be
 fully specified.  (E.g., this is not allowed: `greet(Int): "hello" + "!" * Int, do_greet(greet)`.)
 This is also because we allow passing in types as function arguments, so anything that is
-`function_case` without a subsequent parenthesized argument list `(Args...)` will be considered
-`type_case` instead.
+`function_case_` without a subsequent parenthesized argument list `(Args...)` will be considered
+`type_case_` instead.
 
 ```
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
@@ -2915,7 +2911,7 @@ match X
 
 We can also pass in named types as arguments.  Here is an example
 where we also return a type constructor.  Named types are just
-`type_case` on both left and right sides (e.g., `class_name: t`).
+`type_case_` on both left and right sides (e.g., `class_name: t`).
 
 ```
 random_class[~x, named_new: ~y]: one_of[x, y]
@@ -3110,7 +3106,7 @@ to convert it to a `dbl`.
 
 One downside of overloads is that we must specify the whole function
 [when passing it in as an argument](#functions-as-arguments).  But we also need to specify
-the whole function because we want to be able to distinguish `type_case` from `function_case`
+the whole function because we want to be able to distinguish `type_case_` from `function_case_`
 (where some parenthesized arguments `(Args...)` follow).
 
 ### nullable input arguments
@@ -3664,7 +3660,7 @@ to define `Ref1` as a readonly reference, `Ref2` as a writeable reference, and
 `(Ref1, Ref2); do_stuff()` works to define them as writable references, and
 `(Ref1, Ref2). do_stuff()` works to define them as unique, writable instances.
 Notice that the only distinction between destructuring references and defining a function
-is that the function requires a `function_case` identifier before the parentheses
+is that the function requires a `function_case_` identifier before the parentheses
 (e.g., `fn(): ...` or `do_stuff(Ref1, Ref2); ...`).
 
 You can also use destructuring to specify return types explicitly.
@@ -4116,8 +4112,8 @@ or use `~FIRST_t` and `~SECOND_u` to indicate order is ok.
 or need to use `@Named` on some of them.
 maybe we see if there's an issue when compiling the generics and then complain at compile time.
 
-Similar to the non-generic case, if the `Variable_case` identifier
-matches the `type_case` type of a generic, then it's a default-named argument.
+Similar to the non-generic case, if the `variable_case` identifier
+matches the `type_case_` type of a generic, then it's a default-named argument.
 For example, `My_type; ~my_type` or `T: ~t`.  There is a shorthand for this
 which is more idiomatic: `~My_type;` or `~T`.  Here is a complete example:
 
@@ -4152,8 +4148,8 @@ logger[int](3)  # returns the integer `3`
 logger[dbl](3)  # will return `3.0`
 ```
 
-If we have a named generic type, just name the `type_case` type the
-same as the `Variable_case` variable name (besides initial capitalization)
+If we have a named generic type, just name the `type_case_` type the
+same as the `variable_case` variable name (besides initial capitalization)
 so default names can apply.
 
 ```
@@ -4252,7 +4248,7 @@ so if possible, i think i'd prefer to keep it as a template.
 
 # classes
 
-A class is defined with a `type_case` identifier, an object `[...]`
+A class is defined with a `type_case_` identifier, an object `[...]`
 defining instance variables and instance functions (i.e., variables and
 functions that are defined *per-instance* and take up memory), and an
 optional indented block (optionally in `{}`) that includes methods and functions that are
@@ -4556,30 +4552,6 @@ which will be called with default-constructed arguments (if any) if a default
 instance of the class is needed.  It is a compiler error if a constructor with
 zero arguments is defined after another constructor with arguments.
 
-## localization support
-
-We intend oh-lang to support all languages, and so the upper/lower-case requirements
-may seem a bit strange in other alphabets.  To set a custom `Variable_case` default name
-for an instance of the class, use this syntax:
-
-```
-örsted: [...]
-{   # define a custom Upper_camel_case name.
-    M: Örsted 
-    # probably could also parse `Örsted: (M)` as well here.
-
-    ... usual class methods ...
-}
-
-# Now we can use `Örsted` to mean a default-named variable of the class `örsted`:
-do_something(Örsted): bool
-    return ...
-```
-
-We will throw a compile error when a class begins with a non-ascii letter, unless
-the class defines the default-name of a variable of the class.  Also, you'll get
-a compile error unless the custom default name is the first statement in the class
-definition.
 
 ## public/private/protected visibility
 
@@ -4639,7 +4611,7 @@ Note that all variables defined on a class are given methods to access/set
 them, but this is done with syntactical sugar.  That is,
 *all uses of a class instance variable are done through getter/setter methods*,
 even when accessed/modified within the class.  The getters/setters are methods
-named the `function_case` version of the `Variable_case` variable,
+named the `function_case___` version of the `variable_case` variable,
 with various arguments to determine the desired action.
 TODO: at some point we need to have a "base case" so that we don't infinitely recurse;
 should a parent class not call the child class accessors?  or should we only
@@ -4868,8 +4840,8 @@ cat: all_of[animal, m: [Fur_balls: int]]
 {   # here we define a `renew` method, so the parent `renew` methods
     # become hidden to users of this child class:
     ;;renew(): null
-        # can refer to parent methods using the `Variable_case`
-        # version of the `type_case` class name:
+        # can refer to parent methods using the `variable_case`
+        # version of the `type_case_` class name:
         Animal renew(Name: "Cat-don't-care-what-you-name-it")
         Fur_balls = 0
 
@@ -5381,13 +5353,13 @@ All classes have a few compiler-provided methods which cannot be overridden.
     This allows any writable variable to reset without doing `X = x(...) assert()`,
     which may be painful for long type names `x`, and instead do `X renew(...) assert()`.
 * `Xyz;: (xyz;:)` gives a reference to the class instance, where `xyz` is the actual
-    `type_case` type and `Xyz` is the `Variable_case` version of it.
+    `type_case_` type and `Xyz` is the `variable_case` version of it.
     This is mostly useful for inheritance.
 
 ## singletons
 
 Defining a singleton class is quite easy, simply by instantiating a class 
-by using `Variable_case` when defining it.
+by using `variable_case` when defining it.
 
 ```
 Awesome_service: all_of
@@ -5400,7 +5372,7 @@ Awesome_service: all_of
 }
 ```
 
-Using `@singleton type_case` on the LHS defines an abstract singleton.
+Using `@singleton type_case_` on the LHS defines an abstract singleton.
 These are useful when you want to be able to grab an instance of the concrete
 child-class but only through the parent class reference.
 
@@ -5709,7 +5681,7 @@ use a backslash to escape the space, e.g., `\\library/path/with\ spaces` or
 (using backslashes) will probably be supported.
 
 Note that we take the entire import as
-if it were an `Variable_case` identifier.  E.g., `\\math` acts like one identifier, `Math`,
+if it were an `variable_case` identifier.  E.g., `\\math` acts like one identifier, `Math`,
 so `\\math atan(X, Y)` resolves like `Math atan(X, Y)`, i.e., member access or drilling down
 from `Math: \\math`.  Similarly for any relative import; `\/relative/import/file some_function(Q)`
 correctly becomes like `File some_function(Q)` for `File: \/relative/import/file`.
@@ -7421,9 +7393,9 @@ use `um(Immediate: ...)` to make it clear that you want it that way.
 ## enumerations
 
 We can create a new type that exhaustively declares all possible values it can take.
-The syntax is `type_case: one_of` followed by a list of named values
-(each an `Variable_case` identifier), with optional values they take, or subtypes
-(each a `type_case` identifier) with their corresponding type definitions.  Enumerations
+The syntax is `type_case_: one_of` followed by a list of named values
+(each an `variable_case` identifier), with optional values they take, or subtypes
+(each a `type_case_` identifier) with their corresponding type definitions.  Enumerations
 are mutually exclusive -- no two values may be held simultaneously.  See
 masks for a similar class type that allows multiple options at once.
 
@@ -7744,8 +7716,8 @@ However, you can also achieve the same thing using namespaces,
 if you don't want to add specific names for the `one_of`s.
 
 ```
-# arguments short for `A_one_of: one_of[int, str]` and `B_one_of: one_of[u8, i32, dbl]`.
-my_function(A_one_of[int, str], B_one_of[u8, i32, dbl]): dbl
+# arguments short for `A_one_of: one_of_[int_, str_]` and `B_one_of: one_of_[u8_, i32_, dbl_]`.
+my_function(A_one_of[int_, str_], B_one_of[u8_, i32_, dbl_]): dbl
     return dbl(A_one_of) * B_one_of
 ```
 
@@ -8100,12 +8072,13 @@ Note on terminology:
 
 * Definition: declaration along with an assignment of the function or variable.
 
-* `Identifier`: starts with an alphabetical character, can have numerical characters after that.
-    Note that underscores are **not** permitted, since they are an operator.  
+* `Identifier`: starts with a non-numeric character, can have numerical characters after that.
 
-* `function_case`/`type_case`: Identifier which starts with a lowercase alphabetical character.
+* `function_case_`/`type_case_`: Identifier which ends with a trailing underscore.
+    A leading underscore is allowed to indicate an unused function/type.
 
-* `Variable_case`: Identifier which starts with an uppercase alphabetical character.
+* `variable_case`: Identifier which does *not* end with a trailing underscore.
+    A leading underscore is allowed to indicate an unused variable.
 
 TODO: use an oh-lang version.
 See [the grammar definition](https://github.com/hm-lang/core/blob/main/transpiler/grammar.hm).
