@@ -1,8 +1,10 @@
-" Vim syntax file
+" Vim syntax file for oh-lang
+" Add to `vimXX/filetype.vim`: `au BufNewFile,BufRead *.oh	setf oh`
+" Add this file to the `vimXX/syntax/` directory.
 " Language:	oh
 " Last Change:	2025 Apr 14
 " Credits:	Zvezdan Petkovic <zpetkovic@acm.org>
-" 		Neil Schemenauer <nas@python.ca>
+"		Neil Schemenauer <nas@python.ca>
 "		Dmitry Vasiliev
 
 " quit when a syntax file was already loaded.
