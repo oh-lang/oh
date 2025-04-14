@@ -1,39 +1,37 @@
-mode: one_of
-[   Read_only
-    Read_write
+mode_: one_of_
+[   read_only
+    read_write
     # file is created or truncated if already present
-    Truncate_write
+    truncate_write
 ]
-{   ::is_writable(): bool
-        what M
-            Read_write
-                True
-            Truncate_write
-                True
-            Read_only
-                False
+{   ::is_writable_(): bool_
+        what m
+            read_write, truncate_write
+                true
+            read_only
+                false
 
-    @alias is_writeable: is_writable
+    @alias is_writeable_: is_writable_
 
-    ::is_readable(): bool
-        what M
-            Read_only
-            Read_write
-                True
-            Truncate_write
-                False
+    ::is_readable_(): bool
+        what m
+            read_only
+            read_write
+                true
+            truncate_write
+                false
 }
 
-er: one_of
-[   Unknown
-    File_not_found
-    Expected_regular_file
-    Expected_directory
+er_: one_of_
+[   unknown
+    file_not_found
+    expected_regular_file
+    expected_directory
 ]
 
-hm[of]: hm[ok: of, er]
+hm_[of_]: hm_[ok_: of_, er_]
 
-[path]: \/path
+[file_path_]: \/file/path
 
 @test_only
-Mocked_files: lot[at: File_path, In_memory_file]
+mocked_files: lot_[at_: file_path_, \/file/in_memory_file in_memory_file_]

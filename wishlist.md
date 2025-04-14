@@ -1294,26 +1294,26 @@ representable in the other type, the run-time will return an error.  Therefore y
 need to be explicit about rounding when casting floating point numbers to integers,
 unless you are sure that the floating point number is an integer.  Even if the float
 is an integer, the maximum floating point integer is larger than most fixed-width integer
-types (e.g., `u32` or `i64`), so errors can be returned in that case.  The big-integer type
+types (e.g., `u32_` or `i64_`), so errors can be returned in that case.  The big-integer type
 `int` will not have this latter issue, but may return errors depending on memory constraints.
 Notice we use `assert` to shortcircuit function evaluation and return an error result
 (like throwing).  See [errors and asserts](#errors-and-asserts) for more details.
 
 ```
 # Going from a floating point number to an integer should be done carefully...
-X: dbl_(5.43)
-Safe_cast: X int_()                 # Safe_cast is a result type (`hm_[ok_: int_, number_ er_]`)
-# also OK: `Safe_cast: int_(X)`.
-Q: X int_() assert_()               # returns an error since `X` is not representable as an integer
-Y: X round_(Down) int_() assert_()  # Y = 5.  equivalent to `X floor_()`
-Z: X round_(Up) int_() assert_()    # Z = 6.  equivalent to `X ceil_()`.
-R: X round_() int_() assert_()      # R = 5.  rounds to closest integer, breaking ties at half
+x: dbl_(5.43)
+safe_cast: x int_()                 # Safe_cast is a result type (`hm_[ok_: int_, number_ er_]`)
+# also OK: `safe_cast: int_(x)`.
+q: x int_() assert_()               # panics since `x` is not representable as an integer
+y: x round_(down) int_() assert_()  # y = 5.  equivalent to `x floor_()`
+z: x round_(up) int_() assert_()    # z = 6.  equivalent to `x ceil_()`.
+r: x round_() int_() assert_()      # r = 5.  rounds to closest integer, breaking ties at half
                                     #         to the integer larger in magnitude.
 
 # Note, representable issues arise for conversions even between different integer types.
-A: u32_(1234)
-Q: A u8_() assert_()                # RUN-TIME ERROR, `A` is not representable as a `u8`.
-B: u8_(A & 255) assert_()           # OK, communicates intent and puts `A` into the correct range.
+a: u32_(1234)
+q: a u8_() assert_()                # RUN-TIME ERROR, `a` is not representable as a `u8`.
+b: u8_(a & 255) assert_()           # OK, communicates intent and puts `a` into the correct range.
 ```
 
 Casting to a complex type, e.g., `one_of_[int_, str_](some_value)` will pass through `some_value`
@@ -1422,6 +1422,8 @@ the method `:;x_()`.  e.g., if `x_ == vector3_`, then `x_(x)` is `vector3_(x x_(
 and `x x_()` is component x of the vector.
 ALTERNATIVELY: we throw a compile error because of disambiguity/shadowing.
 this might not be super fair to a *user* of an API, if they can't go in and change it easily.
+ALTERNATIVELY: require using `x clone_()` instead of `x_(x)`, and always make
+`x_(x)` or `x x_()` do the method `:;x_()`.
 TODO: don't use `x clone_()`, use `x_(x)` because we can do copy-constructors
 like `m_(o): hm_[ok_: m_, er_: out_of_memory]` or whatever.
 
@@ -1453,21 +1455,20 @@ or a container, e.g., to convert an array or object to one containing futures.
 
 ```
 # base case, needs specialization.
-nest_[m_, new_[of_]: ~n]: disallowed
+nest_[m_, new_[of_]: ~n_]: disallowed_
 
 # container specialization.
-# TODO: can we do `nest[$um]` instead of `nest[{um[$of]}]`?
-# e.g., `array[int] nest[{um[$of]}] == array[um[int]]`,
-# or you can do `nest[m: array[int], {um[$of]}]` for the same effect.
-nest[c: container, m: ~c[of: ~nested, ~at], new[of]: ~n]: c[of: new[nested], at]
+# e.g., `array_[int_] nest_[{um_[$of_]}] == array_[um_[int_]]`,
+# or you can do `nest_[m_: array_[int_], {um_[$of_]}]` for the same effect.
+nest_[c_: container_, m_: ~c_[of_: ~nested_, ~at_], new_[of_]: ~n_]: c_[of_: new_[nested_], at_]
 
 # object specialization.
-# e.g., `[X: int, Y: str] nest[{hm[ok: $of, er: some_er]}]`
-# or you can do `nest[{hm[ok: $of, er: some_er]}, m: [X: int, Y: str]]` for the same effect.
-# to make `[X: hm[ok: int, er: some_er], Y: hm[ok: str, er: some_er]]`,
-nest[m: object, new[of]: ~n]: merge
-[   m fields()
-    {[$Field Name: new[$Field value]]}
+# e.g., `[x: int_, y: str_] nest_[{hm_[ok_: $of_, er_: some_er_]}]`
+# or you can do `nest_[{hm_[ok_: $of_, er_: some_er_]}, m_: [x: int_, y: str_]]` for the same effect.
+# to make `[x: hm_[ok_: int_, er_: some_er_], y: hm_[ok_: str_, er_: some_er_]]`,
+nest_[m_: object_, new_[of_]: ~n_]: merge_
+[   m_ fields_()
+    {[$field name: new_[$field value_]]}
 ]
 ```
 
@@ -1475,31 +1476,35 @@ Here are some examples of unnesting fields on an object/future/result.
 
 ```
 # base case, needs specialization
-unnest[of]: disallowed
+unnest_[of_]: disallowed_
 
 # container specialization
-# e.g., `unnest[array[int]] == int` and `unnest[set[dbl]] == dbl`.
-unnest[container[of: ~nested, ~at]]: nested
+# e.g., `unnest_[array_[int_]] == int_`
+unnest_[container_[of_: ~nested_, ~_at_]]: nested_
+
+# `set` needs its own specialization because it has interesting
+# `container_` dynamics.  e.g., `unnest_[set_[str_]] == str_`.
+unnest_[set_[~nested_]]: nested_
 
 # future specialization
-# e.g., `unnest[um[str]] == str`.
-unnest[um[~nested]]: nested
+# e.g., `unnest_[um_[str_]] == str_`.
+unnest_[um_[~nested_]]: nested_
 
 # result specialization
-# e.g., `unnest[hm[str, er: int]] == str`.
-unnest[hm[ok: ~nested, ~er]]: nested
+# e.g., `unnest_[hm_[ok_: str_, er_: int_]] == str`.
+unnest_[hm_[ok_: ~nested_, ~_er_]]: _nested
 
 # null specialization
-# e.g., `unnest[int?] == int`.
-unnest[one_of[...~nested, null]]: one_of[...nested]
+# e.g., `unnest_[int_?] == int`.
+unnest_[one_of_[...~nested_, null_]]: one_of_[...nested_]
 ```
 
 Note that if we have a function that returns a type, we must use brackets, e.g.,
-`the_function[...]: the_return_type`, but we can use instances like booleans
-or numbers inside of the brackets (e.g., `array[3, int]` for a fixed size array type).
+`the_function_[...]: the_return_type_`, but we can use instances like booleans
+or numbers inside of the brackets (e.g., `array_[3, int_]` for a fixed size array type).
 Conversely, if we have a function that returns an instance, we must use parentheses,
-e.g., `the_function_(...): instance_type`.  In either case, we can use a type as
-an argument, e.g., `nullable(of): bool` or `array3_[of_]: array_[3, of_]`.
+e.g., `the_function_(...): instance_type_`.  In either case, we can use a type as
+an argument, e.g., `nullable_(of_): bool_` or `array3_[of_]: array_[3, of_]`.
 Type functions can be specialized in the manner shown above, but instance functions
 cannot be.  TODO: would we want to support that at some point??
 
@@ -1523,7 +1528,7 @@ unnull_[of_]: if nullable_(of_) {unnest_[of_]} else {of_}
 
 # a definition without nullable, using template specialization:
 unnull_[of_]: of_
-unnull_[one_of_[...~nested_, null_]]: nested_
+unnull_[one_of_[...~nested_, null_]]: one_of_[...nested_]
 ```
 
 # operators and precedence
@@ -1534,49 +1539,49 @@ e.g., `my_function(A: 3, B: 2, ...My_object)` will call `my_function(A: 3, B: 4,
 
 | Precedence| Operator  | Name                      | Type/Usage        | Associativity |
 |:---------:|:---------:|:--------------------------|:-----------------:|:-------------:|
-|   1       |   `()`    | parentheses               | grouping: `(A)`   | ??            |
-|           |   `[]`    | parentheses               | grouping: `[A]`   |               |
-|           |   `{}`    | parentheses               | grouping: `{A}`   |               |
+|   1       |   `()`    | parentheses               | grouping: `(a)`   | ??            |
+|           |   `[]`    | parentheses               | grouping: `[a]`   |               |
+|           |   `{}`    | parentheses               | grouping: `{a}`   |               |
 |           | `\\x/y/z` | library module import     | special: `\\a/b`  |               |
 |           | `\/x/y/z` | relative module import    | special: `\/a/b`  |               |
-|   2       |  ` ()`    | function call             | on fn: `a(B)`     | LTR           |
-|           |   `::`    | impure read scope         | binary: `A::B`    | LTR           |
-|           |   `;;`    | impure read/write scope   | binary: `A;;B`    |               |
-|           |   ` `     | implicit member access    | binary: `A B`     |               |
-|           |   ` []`   | subscript                 | binary: `A[B]`    |               |
-|           |   `!`     | postfix moot = move+renew | unary:  `A!`      |               |
-|           |   `?`     | postfix nullable          | unary:  `A?`/`a?` |               |
-|           |   `??`    | nullish OR                | binary: `A??B`    |               |
-|   3       |   `^`     | superscript/power         | binary: `A^B`     | RTL           |
-|           |   `**`    | also superscript/power    | binary: `A**B`    |               |
-|           |   `--`    | unary decrement           | unary:  `--A`     |               |
-|           |   `++`    | unary increment           | unary:  `++A`     |               |
-|           |   `~`     | template/generic scope    | unary:  `~b`      |               |
-|   4       |   `<>`    | bitwise flip              | unary:  `<>A`     | RTL           |
-|           |   `-`     | unary minus               | unary:  `-A`      |               |
-|           |   `+`     | unary plus                | unary:  `+A`      |               |
-|           |   `!`     | prefix boolean not        | unary:  `!A`      |               |
-|   5       |   `>>`    | bitwise right shift       | binary: `A>>B`    | LTR           |
-|           |   `<<`    | bitwise left shift        | binary: `A<<B`    |               |
-|   6       |   `*`     | multiply                  | binary: `A*B`     | LTR           |
-|           |   `/`     | divide                    | binary: `A/B`     |               |
-|           |   `%`     | modulus                   | binary: `A%B`     |               |
-|           |   `//`    | integer divide            | binary: `A//B`    |               |
-|           |   `%%`    | remainder after //        | binary: `A%%B`    |               |
-|   7       |   `+`     | add                       | binary: `A+B`     | LTR           |
-|           |   `-`     | subtract                  | binary: `A-B`     |               |
-|   8       |   `&`     | bitwise AND + string cat  | binary: `A&B`     |               |
-|           |   `\|`    | bitwise OR                | binary: `A\|B`    |               |
-|           |   `><`    | bitwise XOR               | binary: `A><B`    |               |
-|   9       |   `==`    | equality                  | binary: `A==B`    | LTR           |
-|           |   `!=`    | inequality                | binary: `A!=B`    |               |
-|   10      |   `&&`    | logical AND               | binary: `A && B`  | LTR           |
-|           |  `\|\|`   | logical OR                | binary: `A \|\| B`|               |
-|           |  `!\|`    | logical XOR               | binary: `A !\| B` |               |
-|   11      |   `=`     | assignment                | binary: `A = B`   | LTR           |
-|           |  `???=`   | compound assignment       | binary: `A += B`  |               |
-|           |   `<->`   | swap                      | binary: `A <-> B` |               |
-|   12      |   `->`    | ergo                      | binary: `A -> B`  | LTR           |
+|   2       |  ` ()`    | function call             | on fn: `a_(b)`    | LTR           |
+|           |   `::`    | impure read scope         | binary: `a::b`    | LTR           |
+|           |   `;;`    | impure read/write scope   | binary: `a;;b`    |               |
+|           |   ` `     | implicit member access    | binary: `a b`     |               |
+|           |   ` []`   | subscript                 | binary: `a[b]`    |               |
+|           |   `!`     | postfix moot = move+renew | unary:  `a!`      |               |
+|           |   `?`     | postfix nullable          | unary: `a?`/`a_?` |               |
+|           |   `??`    | nullish OR                | binary: `a??b`    |               |
+|   3       |   `^`     | superscript/power         | binary: `a^b`     | RTL           |
+|           |   `**`    | also superscript/power    | binary: `a**b`    |               |
+|           |   `--`    | unary decrement           | unary:  `--a`     |               |
+|           |   `++`    | unary increment           | unary:  `++a`     |               |
+|           |   `~`     | template/generic scope    | unary:  `~b_`     |               |
+|   4       |   `<>`    | bitwise flip              | unary:  `<>a`     | RTL           |
+|           |   `-`     | unary minus               | unary:  `-a`      |               |
+|           |   `+`     | unary plus                | unary:  `+a`      |               |
+|           |   `!`     | prefix boolean not        | unary:  `!a`      |               |
+|   5       |   `>>`    | bitwise right shift       | binary: `a>>b`    | LTR           |
+|           |   `<<`    | bitwise left shift        | binary: `a<<b`    |               |
+|   6       |   `*`     | multiply                  | binary: `a*b`     | LTR           |
+|           |   `/`     | divide                    | binary: `a/b`     |               |
+|           |   `%`     | modulus                   | binary: `a%b`     |               |
+|           |   `//`    | integer divide            | binary: `a//b`    |               |
+|           |   `%%`    | remainder after //        | binary: `a%%b`    |               |
+|   7       |   `+`     | add                       | binary: `a+b`     | LTR           |
+|           |   `-`     | subtract                  | binary: `a-b`     |               |
+|   8       |   `&`     | bitwise AND + string cat  | binary: `a&b`     |               |
+|           |   `\|`    | bitwise OR                | binary: `a\|b`    |               |
+|           |   `><`    | bitwise XOR               | binary: `a><b`    |               |
+|   9       |   `==`    | equality                  | binary: `a==b`    | LTR           |
+|           |   `!=`    | inequality                | binary: `a!=b`    |               |
+|   10      |   `&&`    | logical AND               | binary: `a && b`  | LTR           |
+|           |  `\|\|`   | logical OR                | binary: `a \|\| b`|               |
+|           |  `!\|`    | logical XOR               | binary: `a !\| b` |               |
+|   11      |   `=`     | assignment                | binary: `a = b`   | LTR           |
+|           |  `???=`   | compound assignment       | binary: `a += b`  |               |
+|           |   `<->`   | swap                      | binary: `a <-> b` |               |
+|   12      |   `->`    | ergo                      | binary: `a -> b`  | LTR           |
 |   13      |   `,`     | comma                     | binary/postfix    | LTR           |
 
 
@@ -1585,14 +1590,14 @@ TODO: discussion on `~`
 ## function calls
 
 Function calls are assumed whenever a function identifier (i.e., `function_case_`)
-occurs before a parenthetical expression.  E.g., `print(X)` where `X` is a variable name or other
-primitive constant (like `5`), or `any_function_name(Any + Expression / Here)`.
+occurs before a parenthetical expression.  E.g., `print_(x)` where `x` is a variable name or other
+primitive constant (like `5`), or `any_function_name_(any + expression / here)`.
 In case a function returns another function, you can also chain like this:
-`get_function(X)(Y, Z)` to call the returned function with `(Y, Z)`.
+`get_function_(x)(y, z)` to call the returned function with `(y, z)`.
 
 It is recommended to use parentheses where possible, to help people see the flow more easily.
-E.g., `some_function(Some_instance Some_field some_method_()) Final_field` looks pretty complicated.
-This would compile as `(some_function(Some_instance)::Some_field::some_method())::Final_field`,
+E.g., `some_function_(some_instance some_field some_method_()) final_field` looks pretty complicated.
+This would compile as `(some_function(some_instance)::some_field::some_method())::final_field`,
 and including these parentheses would help others follow the flow.  Even better would be to
 add descriptive variables as intermediate steps.
 
@@ -1600,13 +1605,13 @@ We don't allow for implicitly currying functions in oh-lang,
 but you can explicitly curry like this:
 
 ```
-some_function(X: int, Y; dbl, Z. str):
-    print("something cool with ${X}, ${Y}, and ${Z}")
+some_function_(x: int_, y; dbl_, z. str_):
+    print_("something cool with ${x}, ${y}, and ${z}")
 
-curried_function(Z. str): some_function(X: 5, Y; 2.4, Z.)
+curried_function_(z. str_): some_function_(x: 5, y; 2.4, .z)
 
 # or you can make it almost implicit like this:
-$curried_function{some_function(X: 5, Y; 2.4, $Z.)}:
+$curried_function_{some_function_(x: 5, y; 2.4, .$z)}:
 ```
 
 ## macros
@@ -1631,18 +1636,18 @@ the same, i.e., for function convenience.  oh-lang doesn't support shadowing, so
 like this would break:
 
 ```
-my_function(X: int): int
+my_function_(x: int_): int_
     # define a nested function:
     # COMPILE ERROR
-    do_stuff(X: int): null
-        # is this the `X` that's passed in from `my_function`? or from `do_stuff`?
-        # most languages will shadow so that `X` is now `do_stuff`'s argument,
+    do_stuff_(x: int_): null_
+        # is this the `x` that's passed in from `my_function_`? or from `do_stuff_`?
+        # most languages will shadow so that `x` is now `do_stuff_`'s argument,
         # but oh-lang does not allow shadowing.
-        print(X)
-    do_stuff(X)
-    do_stuff(X: X // 2)
-    do_stuff(X: X // 4)
-    X // 8
+        print_(x)
+    do_stuff(x)
+    do_stuff(x: x // 2)
+    do_stuff(x: x // 4)
+    x // 8
 ```
 
 There are two ways to get around this; one is [hiding variables](#hiding-variables).
@@ -1693,12 +1698,11 @@ Similarly, you can define new variables with namespaces, in case you need a new 
 in the current space.  This might be useful in a class method like this:
 
 ```
-my_class: [x; dbl_]
+my_class_: [x; dbl_]
 {   # this is a situation where you might like to use namespaces.
     ;;do_something_(NEW_x. dbl_): dbl_
         # NOTE: if you just want to create a swapper, you should
         # probably just use this idiom: `;;x_(dbl;): null_`.
-
         OLD_x: x!
         x = NEW_x
         OLD_x
@@ -1748,43 +1752,43 @@ the RHS operand as writable, and therefore cannot be used if the LHS variable is
 The implicit member access operator ` ` is equivalent to `::` when the LHS is a readonly variable
 and `;;` when the LHS is a writable variable.  When declaring class methods, `::` and `;;` can be
 unary prefixes to indicate readonly/writable-instance class methods.  They are shorthand for adding a
-readonly/writable `M` (self/this) as an argument.
+readonly/writable `m` (self/this) as an argument.
 
 ```
-example_class: [X: int, Y: dbl]
-{   # this `;;` prefix is shorthand for `renew(M;, ...): null`.
-    # in a `renew` method, adding `M` to the arguments like `M X` means `X` will
+example_class_: [x: int_, y: dbl_]
+{   # this `;;` prefix is shorthand for `renew_(m;, ...): null_`.
+    # in a `renew` method, adding `m` to the arguments like `m x` means `x` will
     # be initialized (or re-initialized) with the value that is passed in for `X`.
-    ;;renew(M X: int, M Y: dbl): null
-        print("X ${X} Y ${Y}")
+    ;;renew_(m x: int_, m y: dbl_): null_
+        print_("x ${x} y ${y}")
 
-    # this `::` prefix is shorthand for `multiply(M: m, ...): dbl`:
-    ::multiply(Z: dbl): dbl
-        X * Y * Z
+    # this `::` prefix is shorthand for `multiply_(m:, ...): dbl_`:
+    ::multiply_(z: dbl_): dbl_
+        x * y * z
 }
 ```
 
 
 ```
-some_class: [X: dbl, Y: dbl, A; array[str]]
-Some_class; some_class(X: 1, Y: 2.3, A: ["hello", "world"])
-print(Some_class::A)     # equivalent to `print(Some_class A)`.  prints ["hello", "world"]
-print(Some_class::A[1])  # prints "world"
-print(Some_class A[1])   # also prints "world", using ` ` (member access)
-Some_class;;A[4] = "love"    # the fifth element is love.
-Some_class::A[7] = "oops"    # COMPILE ERROR, `::` means the array should be readonly.
-Some_class;;A[7] = "no problem"
+some_class_: [x: dbl_, y: dbl_, a; array_[str_]]
+Some_class; some_class_(x: 1, y: 2.3, a: ["hello", "world"])
+print_(some_class::a)       # prints ["hello", "world"] with a readonly reference overload
+print_(some_class::a[1])    # prints "world"
+print_(some_class a[1])     # also prints "world", using ` ` (member access)
+some_class;;a[4] = "love"   # the fifth element is love.
+some_class::a[7] = "oops"   # COMPILE ERROR, `::` means the array should be readonly.
+some_class;;a[7] = "no problem"
 
-Nested_class; array[some_class]
-Nested_class[1] X = 1.234        # creates a default [0] and [1], sets [1]'s X to 1.234
-Nested_class[3] A[4] = "oops"    # creates a default [2] and [3], sets [3]'s A to ["", "", "", "", "oops"]
+nested_class; array_[some_class_]
+nested_class[1] x = 1.234        # creates a default [0] and [1], sets [1]'s x to 1.234
+nested_class[3] a[4] = "oops"    # creates a default [2] and [3], sets [3]'s a to ["", "", "", "", "oops"]
 ```
 
 For class methods, `;;` (`::`) selects the overload with a writable (readonly) class
 instance, respectively.  For example, the `array` class has overloads for sorting, (1) which
 does not change the instance but returns a sorted copy of the array (`::sort(): m`), and
 (2) one which sorts in place (`;;sort(): null`).  The ` ` (member access) operator will use
-`A:` if the LHS is a readonly variable or `A;` if the LHS is writable.  Some examples in code:
+`a:` if the LHS is a readonly variable or `a;` if the LHS is writable.  Some examples in code:
 
 ```
 # there are better ways to get a median, but just to showcase member access:
@@ -6248,13 +6252,15 @@ fast, i.e., O(1).  Like with container IDs, the set's element type must satisfy 
 You can elide `set` for default named arguments like this: `Set[element_type];` (or `:` or `.`).
 
 ```
-er: one_of
-[   Out_of_memory
+er_: one_of_
+[   out_of_memory
     # etc...
 ]
-hm[of]: hm[ok: of, er]
+hm_[of]_: hm_[ok_: of_, er_]
 
-set[of: hashable]: container[id: of, value: true]
+# TODO: is there a way we can make container dynamics better here for `unnest_`?
+# e.g., can we make it a `container_[at_: of_, of_: of_]` as well?
+set_[of_: hashable_]: container_[at_: of_, of_: true_]
 {   # Returns `True` iff `Of` is in the set, otherwise Null.
     # NOTE: the `true` type is only satisfied by the instance `True`;
     # this is not a boolean return value but can easily be converted to boolean.
