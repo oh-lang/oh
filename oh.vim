@@ -37,8 +37,19 @@ syn match	ohMacro		"@\w*\>"
 syn match	ohNamespace	"\u\+_\="
 syn match	ohFunction	"\h\w*_\>" contains=ohNamespace
 
-" TODO: midline comment
-syn match   ohComment	"#.*$" contains=ohTodo,@Spell
+syn match   ohComment	"# .*$" contains=ohTodo,@Spell
+syn region  ohMidlineComment matchgroup=ohMidlineComment
+      \ oneline display
+      \ start=+#([^#]+ end="[^#])#"
+      \ contains=ohEscape,@Spell
+syn region  ohMidlineComment matchgroup=ohMidlineComment
+      \ oneline display
+      \ start=+#\[[^#]+ end=+[^#]\]#+
+      \ contains=ohEscape,@Spell
+syn region  ohMidlineComment matchgroup=ohMidlineComment
+      \ oneline display
+      \ start=+#{[^#]+ end=+[^#]}#+
+      \ contains=ohEscape,@Spell
 syn region  ohMultilineComment matchgroup=ohMultilineComment
       \ start=+#(#+ end=+#)#+ keepend
       \ contains=ohEscape,@Spell
@@ -97,6 +108,7 @@ hi def link ohTodo		Todo
 hi def link ohString		String
 hi def link ohQuotes		String
 hi def link ohMultilineComment	ohComment
+hi def link ohMidlineComment	ohComment
 hi def link ohEscape		Special
 hi def link ohNumber		Number
 hi def link ohSpaceError	Error

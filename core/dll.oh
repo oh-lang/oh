@@ -66,5 +66,5 @@ dll_element[of]:
     # DLL for used indices (using `Next` and `Previous`),
     # and also as a SLL for free indices (using just `Next`)
     Next; index
-    Previous; index 
+    Previous; index
 ]
