@@ -30,9 +30,8 @@ syn keyword ohError		er
 syn keyword ohAsync		decide_ um um_
 syn keyword ohTodo		FIXME NOTE NOTES TODO XXX contained
 
-" TODO: skip escaped spaces
-syn match	ohInclude	"\\\\[^ ]*"
-syn match	ohInclude	"\\/[^ ]*"
+syn region	ohInclude matchgroup=ohInclude start="\\\\" end=" " skip="\\ "
+syn region	ohInclude matchgroup=ohInclude start="\\/" end=" " skip="\\ "
 syn match	ohUnused	"\<_\w*"
 syn match	ohMacro		"@\w*\>"
 syn match	ohNamespace	"\u\+_\="
