@@ -36,6 +36,7 @@ syn match   ohInclude	"\\/[^ ]*"
 syn match   ohFunction	"\h\w*_\>"
 syn match   ohUnused	"\<_\w*"
 syn match   ohMacro		"@\w*\>"
+syn match	ohNamespace	"_\=\u\+_\="
 
 " TODO: midline comment
 syn match   ohComment	"#.*$" contains=ohTodo,@Spell
@@ -90,7 +91,7 @@ hi def link ohInclude		Include
 hi def link ohAsync		Statement
 hi def link ohBuiltin		Function
 hi def link ohFunction		Function
-hi def link ohUnused	Comment
+hi def link ohUnused	Include
 hi def link ohComment		Comment
 hi def link ohTodo		Todo
 hi def link ohString		String
@@ -100,6 +101,8 @@ hi def link ohEscape		Special
 hi def link ohNumber		Number
 hi def link ohSpaceError	Error
 hi def link ohMacro		Identifier
+hi def link ohNamespace		Comment
+" TODO: make [] be a `Type`
 
 let b:current_syntax = "oh"
 

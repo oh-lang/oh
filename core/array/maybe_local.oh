@@ -1,25 +1,22 @@
 # stores up to 9_223_372_036_854_775_808 elements.
 # uses at least 8 bytes for a pointer + 8 bytes for count.
-maybe_local_array64[of, _local_bytes]:
-        maybe_local_array[of, special_count: h64, _local_bytes]
+maybe_local_array64_[of_, local_bytes_]:
+        maybe_local_array_[of_, special_count_: u64_, local_bytes_]
 
 # efficiently stores up to 2_147_483_648 elements, more being less efficient.
 # uses at least 8 bytes for a pointer + 4 bytes for count & special_count.
-maybe_local_array32[of, _local_bytes]:
-        maybe_local_array[of, special_count: h32, _local_bytes]
+maybe_local_array32[of, local_bytes]:
+        maybe_local_array[of, special_count: h32, local_bytes]
 
 # efficiently stores up to 32_768 elements, more being less efficient.
 # uses at least 8 bytes for a pointer + 2 bytes for count & special_count.
-maybe_local_array16[of, _local_bytes]:
-        maybe_local_array[of, special_count: h16, _local_bytes]
+maybe_local_array16[of, local_bytes]:
+        maybe_local_array[of, special_count: h16, local_bytes]
 
 # efficiently stores up to 128 elements, more being less efficient.
 # uses at least 8 bytes for a pointer + 1 byte for count & special_count.
-maybe_local_array8[of, _local_bytes]:
-        maybe_local_array[of, special_count: h8, _local_bytes]
-
-# for simplicity, rounds to multiples of 8 bytes.
-_local_bytes: select[16, 24, 32, 40, 48, 56, 64]
+maybe_local_array8[of, local_bytes]:
+        maybe_local_array[of, special_count: h8, local_bytes]
 
 # array that is local up to a certain capacity (`_max_local_count`)
 # and allocated on the heap past that.
@@ -27,10 +24,10 @@ _local_bytes: select[16, 24, 32, 40, 48, 56, 64]
 maybe_local_array
 [   special_count: hoisted_primitive
     of
-    _local_bytes
-    # ensure that `_efficient_allocation` doesn't increase the size of this struct past `_local_bytes`.
+    local_bytes
+    # ensure that `_efficient_allocation` doesn't increase the size of this struct past `local_bytes`.
     _require:
-    (   _local_bytes
+    (   local_bytes
             >=  count_bytes(efficient_allocation[special_count, of])
             +   count_bytes(special_count)
     ) and
@@ -48,7 +45,7 @@ maybe_local_array
 {   # while we can efficiently store only up to a count of `special_count`,
     # we expand if necessary via the `_non_local_array` to `count_arch`.
     count: count_arch
-    _max_local_count: (_local_bytes - count_bytes(special_count)) // count_bytes(of)
+    _max_local_count: (local_bytes - count_bytes(special_count)) // count_bytes(of)
     _local_zero_start: special_count(1)
     _inefficient_special_count: m _local_zero_start + m _max_local_count
 
@@ -77,3 +74,5 @@ memory: one_of
     _efficient_allocation
     _non_local_array
 ]
+
+[local_bytes_]: \/../array

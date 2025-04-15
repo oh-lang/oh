@@ -191,6 +191,10 @@ vector2_: [x: dbl_, y: dbl_]
 [atan_(x: dbl_, y: dbl_): dbl_]: \\math
 ```
 
+TODO: can we keep nested types as concise (no need for `m_`)
+but require `m` for calling methods?  this would break consistency
+but might help with `::count_(): count_`.
+
 We're just not allowed to import any overloads that would be shadow a method or function
 on the class body, where ambiguity could arise with or without the class instance being
 supplied.  E.g., if `do_something_(x: int_)` is defined outside the class, then inside a

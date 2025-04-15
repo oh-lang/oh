@@ -1,34 +1,32 @@
-array[of, capacity: count]: all_of
-[   hashable
-    indexable_sequence[of]
+array_[of_, count_with_: count_]: all_of_
+[   hashable_
+    indexable_sequence_[of_]
 ]
-{   maybe_local[Local_bytes, locality: hoisted_primitive = h16]:
-            maybe_local_array[Local_bytes, locality, of]
-    non_local[capacity: hoisted_primitive = h64]: non_local_array[capacity, of]
+{   maybe_local_[local_bytes_]:
+            maybe_local_array_[of_, local_bytes_, locality_: count_with_]
+    non_local_: non_local_array_[of_, count_with_]
 
-    @alias heap: non_local
-    @alias heap_or_local: maybe_local
+    @alias heap_: non_local_
+    @alias heap_or_local_: maybe_local_
 
-    ::capacity(): m count
+    ::capacity_(): count_with_
 
-    ;;capacity(Capacity.): null 
+    ;;capacity_(count_with.): null_
 
-    ::count(): m count
-        M Count
+    ::count_(): count_with_
 
-    ;;count[Require: of is defaultable](NEW_count): hm[count]
-        OLD_count: M Count
+    ;;count_[require: of_ is defaultable_](NEW_count_with.): hm_[null_]
+        OLD_count: m count_()
         if NEW_count == OLD_count
-            return ok(OLD_count)
+            return ok_(OLD_count)
         if NEW_count > OLD_count
-            M capacity(At_least: Count) assert()
+            capacity_(at_least_: NEW_count) assert()
             while M Count < NEW_count
                 append(of())
         else
             assert(NEW_count >= 0, er Invalid_count)
             while M Count > NEW_count
                 UNUSED_of: M pop()
-        ok(OLD_count)
 
     clear: one_of[Keeping_capacity, Dropping_capacity]
     {   @alias Keep_capacity: Keeping_capacity
@@ -143,5 +141,8 @@ array[of, capacity: count]: all_of
             return ok()
         M capacity(Current_capacity double_or_max(At_least. 4))
 }
+
+# for simplicity, rounds to multiples of 8 bytes.
+local_bytes_: select_[16, 24, 32, 40, 48, 56, 64]
 
 [allocation, hm, er]: \/allocation
