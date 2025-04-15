@@ -31,12 +31,12 @@ syn keyword ohAsync		decide_ um um_
 syn keyword ohTodo		FIXME NOTE NOTES TODO XXX contained
 
 " TODO: skip escaped spaces
-syn match   ohInclude	"\\\\[^ ]*"
-syn match   ohInclude	"\\/[^ ]*"
-syn match   ohFunction	"\h\w*_\>"
-syn match   ohUnused	"\<_\w*"
-syn match   ohMacro		"@\w*\>"
-syn match	ohNamespace	"_\=\u\+_\="
+syn match	ohInclude	"\\\\[^ ]*"
+syn match	ohInclude	"\\/[^ ]*"
+syn match	ohUnused	"\<_\w*"
+syn match	ohMacro		"@\w*\>"
+syn match	ohNamespace	"\u\+_\="
+syn match	ohFunction	"\h\w*_\>" contains=ohNamespace
 
 " TODO: midline comment
 syn match   ohComment	"#.*$" contains=ohTodo,@Spell
@@ -82,6 +82,7 @@ syn match   ohSpaceError	display " \+\t"
 syn match   ohSpaceError	display "\t\+ "
 
 " The default highlight links.  Can be overridden later.
+hi def link ohNamespace		Comment
 hi def link ohStatement		Statement
 hi def link ohConditional	Conditional
 hi def link ohRepeat		Repeat
@@ -101,7 +102,6 @@ hi def link ohEscape		Special
 hi def link ohNumber		Number
 hi def link ohSpaceError	Error
 hi def link ohMacro		Identifier
-hi def link ohNamespace		Comment
 " TODO: make [] be a `Type`
 
 let b:current_syntax = "oh"
