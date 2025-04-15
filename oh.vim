@@ -34,6 +34,9 @@ syn match	ohBraces	"{"
 syn match	ohBraces	"}"
 syn match	ohParens	"("
 syn match	ohParens	")"
+syn match	ohReadonly	":"
+syn match	ohWritable	";"
+syn match	ohTemporary	"\."
 
 syn region	ohInclude matchgroup=ohInclude start="\\\\" end=" " skip="\\ "
 syn region	ohInclude matchgroup=ohInclude start="\\/" end=" " skip="\\ "
@@ -125,6 +128,9 @@ hi def link ohMacro		Identifier
 hi def link ohBrackets		Type
 hi def link ohBraces		NonText
 hi def link ohParens		Operator
+hi def link ohReadonly		Constant
+hi def link ohWritable		Question
+hi def link ohTemporary		NonText
 
 let b:current_syntax = "oh"
 

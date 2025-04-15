@@ -7,14 +7,17 @@ dll_[of_]: all_of_
         next_free_index; index_ = -1
     ]
 ]
-{   # returns the index you can use to refer to this element.
+{   ::count_(): count_
+        m count
+
+    # returns the index you can use to refer to this element.
     # like a pointer, but indexed from this `dll_`.  if you erase
     # this element in the future, you'll invalidate its index 
     # but no one else's.  (i.e., nothing will be at the index
     # initially, but a new element might reuse the index later.)
     ;;append_(of.): hm_[index_]
-        if m count_free_() == 0
-            m expand_() assert_()
+        if count_free_() == 0
+            expand_() assert_()
         Index: M Next_free_index
         debug assert(Index >= 0)
         M Count += 1
