@@ -1,0 +1,21 @@
+# comments
+# ========
+
+1234 ^ 3 # end of line comment
+
+#{#
+multiline comment with {}
+#}#
+
+#(#
+multiline comment with ()
+#)#
+
+#[#
+multiline comment with []
+#]#
+
+
+5 + #(midline comment)# 4
+7 - #[midline comment]# 3
+10 * #{midline comment}# 2
