@@ -19,3 +19,9 @@ multiline comment with []
 5 + #(midline comment)# 4
 7 - #[midline comment]# 3
 10 * #{midline comment}# 2
+
+# internationalization (i18n)
+# ===========================
+ø_(ö: int_): null_
+    ö each _int:
+        print_("hi")

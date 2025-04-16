@@ -44,9 +44,9 @@ function arguments.  For example, declaring a function that takes an integer nam
 defining a variable works the same outside of a function: `x: 5`.  There is a slight difference
 because we can declare variables with `.` in function arguments, which indicates a temporary.  E.g.,
 in `(x: int_, y; str_, z. dbl_)`, we declare `x` as a readonly reference, `y` a writable reference,
-and `z` a temporary, whereas outside of function arguments, `[x: int_, y; str_]` indicates
-that `x` is readonly (though it can be written in constructors or first assignment) and `y`
-is writable.  TODO: we could make `z. int_` (outside of function arguments) indicate a volatile.
+and `z` a temporary, whereas outside of function arguments, `[x: int_, y; str_, z. dbl_]` indicates
+that `x` is readonly (though it can be written in constructors or first assignment),
+that `y` is writable, and `z` is volatile (and writable).
 
 In some languages, e.g., JavaScript, objects are passed by reference and primitives
 are passed by value when calling a function with these arguments.  In oh-lang,
@@ -2088,18 +2088,10 @@ w; int_ = 7
 ```
 
 Note that we use `;` and `:` as if it were an annotation on the variable name (rather
-than the type) so that we don't have to worry about needlessly complex types like a writable
-array of a constant integer.  Constant variables are deeply constant, and writable
-variables are modifiable/reassignable, and we only have to think about this
-(as programmers using the language) at the level of the variable itself,
-not based on the type of the variable.  The underlying type is the same for both
-readonly and writable variables (i.e., a writable type), but the variable is only
-allowed to mutate the memory if it is declared as a writable variable with `;`.
-
-TODO: is the above rant 100% accurate?  we theoretically have mixed `const`ness in
-types like `xy_: [x; int_, y: str_]`, which could be put into an array like
-`array_[xy_]`.  we can still modify this more sanely than in C++ because `renew`ers
-are allowed to update `y`.
+than the type) so that constant variables are deeply constant, and writable
+variables are modifiable/reassignable.  [Go here](#nestedobject-types)
+for details on how this works with nested fields, but we think we've
+come up with a more sane approach than C++ and JavaScript's `const`.
 
 ## nullable variable types
 
@@ -2295,7 +2287,7 @@ vector3_: [x: dbl_, y: dbl_, z: dbl_]
 vector3: vector3_(x: 5, y: 10)
 ```
 
-We also allow type definitions with writable fields, e.g. `[X; int, Y; dbl]`.
+We also allow type definitions with writable fields, e.g. `[x; int_, y; dbl_]`.
 Depending on how the variable is defined, however, you may not be able to change
 the fields once they are set.  If you define the variable with `;`, then you
 can reassign the variable and thus modify the writable fields.  But if you define the
@@ -2306,35 +2298,23 @@ effectively change any internal readonly fields, but only in the constructor.
 
 ```
 # mix_match has one writable field and one readonly field:
-mix_match: [Wr; dbl, Ro: dbl]
+mix_match_: [wr; dbl_, ro: dbl_]
 
-# when defined with `;`, the object `Mutable_mix` is writable: mutable and reassignable.
-Mutable_mix; mix_match = [Wr: 3, Ro: 4]
-Mutable_mix = mix_match(Wr: 6, Ro: 3)   # OK, Mutable_mix is writable and thus reassignable
-Mutable_mix renew(Wr: 100, Ro: 300) # OK, will update `Ro` to 300 and `Wr` to 100
-Mutable_mix Wr += 4                 # OK, Mutable_mix is writable and this field is writable
-Mutable_mix Ro -= 1                 # COMPILE ERROR, Mutable_mix is writable but this field is readonly
-                                    # if you want to modify the `Ro` field, you need to reassign
-                                    # the variable completely or call `renew`.
+# when defined with `;`, the object `mutable_mix` is writable: mutable and reassignable.
+mutable_mix; mix_match_ = [wr: 3, ro: 4]
+mutable_mix = mix_match_(wr: 6, ro: 3)  # OK, mutable_mix is writable and thus reassignable
+mutable_mix renew_(wr: 100, ro: 300)    # OK, will update `ro` to 300 and `wr` to 100
+mutable_mix wr += 4                     # OK, mutable_mix is writable and this field is writable
+mutable_mix ro -= 1                     # COMPILE ERROR, mutable_mix is writable but this field is readonly.
+                                        # if you want to modify the `ro` field, you need to reassign
+                                        # the variable completely or call `renew_`.
 
 # when defined with `:`, the object is readonly, so its fields cannot be changed:
-Readonly_mix: mix_match = [Wr: 5, Ro: 3]
-Readonly_mix = mix_match(Wr: 6, Ro: 4)  # COMPILE ERROR, Readonly_mix is readonly, thus non-reassignable
-Readonly_mix renew(Wr: 7, Ro: 5)        # COMPILE ERROR, Readonly_mix is readonly, thus non-renewable
-Readonly_mix Wr += 4                    # COMPILE ERROR, Readonly_mix is readonly
-Readonly_mix Ro -= 1                    # COMPILE ERROR, Readonly_mix is readonly
-
-# NOTE that in general, calling a function with variables defined by `;` is a different
-# overload than calling with `:`.  Mutable argument variables imply that the arguments will
-# be mutated inside the function, and because they are passed by reference, escape the function
-# block with changes.  Data classes have overloads with writable arguments, which indicate
-# the data class will swap out the argument (e.g., giving you the old version while taking
-# what's passed in).  In case of a constructor, the old value is the default value.
-Wr; 123
-Ro; 567
-My_mix_match: mix_match(;Wr, ;Ro)   # `;` is useful for taking arguments via a swap.
-print("got updated to ${Wr}, ${Ro}") # "got updated to 0, 0"
-# see section on writable/readonly arguments for more information.
+readonly_mix: mix_match_ = [wr: 5, ro: 3]
+readonly_mix = mix_match_(wr: 6, ro: 4) # COMPILE ERROR, readonly_mix is readonly, thus non-reassignable
+readonly_mix renew_(wr: 7, ro: 5)       # COMPILE ERROR, readonly_mix is readonly, thus non-renewable
+readonly_mix wr += 4                    # COMPILE ERROR, readonly_mix is readonly
+readonly_mix ro -= 1                    # COMPILE ERROR, readonly_mix is readonly
 ```
 
 Note that oh-lang takes a different approach than C++ when it comes to constant/readonly fields
@@ -2343,34 +2323,33 @@ inside of classes.  In C++, using `const` on a field type bars reassignment of t
 In oh-lang, readonly variables are not always deeply constant.  And in the case of readonly class
 instance fields, readonly variables are set based on the constructor and shouldn't be modified
 afterwards by other methods... except for the constructor if it's called again (i.e., via
-`renew`ing the instance or reassignment).
+`renew_`ing the instance or reassignment).
 
 ### automatic deep nesting
 
 We can create deeply nested objects by adding valid identifiers with consecutive `:`.  E.g.,
-`[X: Y: 3]` is the same as `[X: [Y: 3]]`.  Similarly for `()` and `{}`.
+`[x: y: 3]` is the same as `[x: [y: 3]]`.  Similarly for `()` and `{}`.
 
 ## temporarily locking writable variables
 
-You can also make a variable readonly
-for the remainder of the current block by using `@lock` before the variable name.
-Note that you can modify it one last time with the `@lock` annotation, if desired.
-Also note that the variable may not be deeply constant, e.g., if lambdas are called
-which modify it, but you will not be able to explicitly modify it.
+You can also make a variable readonly for the remainder of the current block
+by using `@lock` before the variable name.  Note that you can modify it one last time
+with the `@lock` annotation, if desired.  Also note that the variable may not be deeply constant,
+e.g., if lambdas are called which modify it, but you will not be able to explicitly modify it.
 
 ```
-X; int = 4  # defined as writable and reassignable
+x; int_ = 4 # defined as writable and reassignable
 
-if Some_condition
-    @lock X = 7 # locks X after assigning it to the value of 7.
-                # For the remainder of this indented block, you can use X but not reassign it.
-                # You also can't use writable, i.e., non-const, methods on X.
+if some_condition
+    @lock x = 7 # locks x after assigning it to the value of 7.
+                # For the remainder of this indented block, you can use x but not reassign it.
+                # You also can't use writable, i.e., non-const, methods on x.
 else
-    @lock X # lock X to whatever value it was for this block.
-            # You can still use X but not reassign/mutate it.
+    @lock x # lock x to whatever value it was for this block.
+            # You can still use x but not reassign/mutate it.
 
-print(X)    # will either be 7 (if Some_condition was true) or 4 (if !Some_condition)
-X += 5      # can modify X back in this block; there are no constraints here.
+print_(x)   # will either be 7 (if some_condition was true) or 4 (if !some_condition)
+x += 5      # can modify x back in this block; there are no constraints here.
 ```
 
 ## hiding variables
@@ -2381,14 +2360,14 @@ new statements/functions.  `@hide` has similar behavior to the `@lock` annotatio
 you can use the variable one last time with the annotation, if desired.
 
 ```
-Date_string; str("2023-01-01")
+date_string; str_("2023-01-01")
 
-# after this line, `Date_string` can't be accessed anymore.
-Date: date(@hide Date_string)
+# after this line, `date_string` can't be accessed anymore.
+date: date_(@hide date_string)
 
 # note in some circumstances you may also want to include `!` to avoid copying the variable,
 # if the underlying class makes use of that same type variable internally, e.g.:
-Date: date(@hide Date_string!)
+date: date_(@hide date_string!)
 # see discussion on `moot` for more information.
 ```
 
@@ -2396,56 +2375,57 @@ In fact, hiding variables make it possible to shadow identifiers; i.e.,
 for variable renaming.  See the following example:
 
 ```
-do_something(Date: str("2023-01-01")):
-    Date: date(@hide Date!)
+do_something_(date: str_("2023-01-01")):
+    date: date_(@hide date!)
 ```
 
 # functions
 
 Functions are named using `function_case_` identifiers.  The syntax to declare
-a function is `function_case_name(Function_arguments...): return_type`, but if
-you are also defining the function the `return_type` is optional (but generally
+a function is `function_case_name_(function_arguments...): return_type_`, but if
+you are also defining the function the `return_type_` is optional (but generally
 recommended for multiline definitions).  Defining the function can occur inline
 with `:` or over multiple lines using an indented block.
 
 ```
 # declaring a function with no arguments that returns a big integer
-v(): int
+v_(): int_
 
 # setting/defining/initializing the function:
-v(): int
+v_(): int_
     # `return` is optional for the last line in a block.
     # e.g., the following could have been `return 600`.
     600
 
 # inline definition
-v(): 600
+v_(): 600
 
 # inline, but with explicit type
-v(): int(600)
+v_(): int_(600)
 
 # function with X,Y double-precision float arguments that returns nothing
-v(X: dbl, Y: dbl): null
-    print("X = ${X}, Y = ${Y}, atan(Y, X) = ${\\math atan(X, Y)}")
+v_(x: dbl_, y: dbl_): null_
+    print_("x = ${x}, y = ${y}, atan_(y, x) = ${\\math atan_(x, y)}")
     # Note this could also be defined more concisely using $(),
     # which also prints the expression inside the parentheses with an equal sign and its value,
-    # although this will print `X: ..., Y: ..., Atan: ...`, e.g.:
-    # print("$(X, Y, \\math atan(X, Y))")
+    # although this will print `x: ..., y: ..., atan: ...`, e.g.:
+    # print("$(x, y, \\math atan_(x, y))")
 
 # Note that it is also ok to use parentheses around a function definition,
 # but you should use braces `{}`.
-excite(Times: int): str
-{   "hi!" * Times
+excite_(times: int_): str_
+{   "hi!" * times
 }
 
-# You can define a "multiline" function in one line like this:
-oh(Really; dbl): dbl { Really *= 2.5, return 50 + Really }
+# You can define a multi-statement function in one line like this,
+# but this is not normally recommended.
+oh_(really; dbl_): dbl_ { really *= 2.5, return 50 + really }
 ```
 
-Note that we disallow the inverted syntax of `function_name: return_type(...Args)`
+Note that we disallow the inverted syntax of `function_name_: return_type_(...Args)`
 because this looks like declaring a type (e.g., no parentheses on the left hand side)
 and the right hand side looks like how we call a function and get an instance (not a type).
-See [returning a type](#returning-a-type) for how we'd return a type.
+See [returning a type](#returning-a-type) for how we'd return a type from a function.
 
 ## calling a function
 
@@ -2457,17 +2437,17 @@ don't need to specify its name.  We'll discuss that more in the
 
 ```
 # definition:
-v(X: dbl, Y: dbl): null
+v_(x: dbl_, y: dbl_): null_
 
 # example calls:
-v(X: 5.4, Y: 3)
-v(Y: 3, Y: 5.4)
+v_(x: 5.4, y: 3)
+v_(y: 3, y: 5.4)
 
 # if you already have variables X and Y, you don't need to re-specify their names:
-X: 5.4
-Y: 3
-v(X, Y)     # equivalent to `v(X: X, Y: Y)` but the redundancy is not idiomatic.
-v(Y, X)     # equivalent
+x: 5.4
+y: 3
+v_(x, y)     # equivalent to `v(x: x, y: y)` but the redundancy is not idiomatic.
+v_(y, x)     # equivalent
 ```
 
 ### references
@@ -2476,55 +2456,55 @@ We can create references using [reference objects](#reference-objects) in the fo
 Note that you can use all the same methods on a reference as the original type.
 
 ```
-My_value; int(1234567890)
-(My_ref; int) = My_value
-# equivalent: `My_ref; (Int;) = My_value`
-(My_readonly_ref: int) = My_value
-# equivalent: `My_readonly_ref: (Int:) = My_value`
+my_value; int_(1234567890)
+(my_ref; int_) = My_value
+# equivalent: `my_ref; (int;) = my_value`
+(my_readonly_ref: int_) = my_value
+# equivalent: `my_readonly_ref: (int:) = my_value`
 
-# NOTE: `My_value` and the `My_ref` reference need to be writable for this to work.
-My_ref = 12345
-# My_readonly_ref = 123 # COMPILE ERROR!
+# NOTE: `my_value` and the `my_ref` reference need to be writable for this to work.
+my_ref = 12345
+# my_readonly_ref = 123 # COMPILE ERROR!
 
-# This is true; `My_value` was updated via the reference `My_ref`
-My_value == 12345
-My_readonly_ref == 12345 # also true.
+# This is true; `my_value` was updated via the reference `my_ref`
+my_value == 12345
+my_readonly_ref == 12345 # also true.
 
 # There is no need to "dereference" the pointer
-print(My_ref * 77)
-print(My_readonly_ref * 23)
+print(my_ref * 77)
+print(my_readonly_ref * 23)
 ```
 
 Unlike in C++, there's also an easy way to change the reference to point to
 another instance.  This does require a bit more syntax if you are pointing
-to a readonly value like `(Referent_type:)`, since you'll need to refer to it
+to a readonly value like `(referent_type:)`, since you'll need to declare it
 in a way that lets you modify the reference itself.
 
 ```
-My_value1: int(1234)
-My_value2: int(765)
-My_ref; (Int:) = My_value1
-# This works only for `My_ref;` declarations.  The actual data can be readonly,
-# as it is in this case (`My_value1` and `2` are both readonly), or writable.
-(My_ref) = My_value2
+my_value1: int_(1234)
+my_value2: int_(765)
+# define `my_ref` as a mutable pointer to an immutable variable:
+my_ref; (int:) = my_value1
+# that way we can update the pointer like this:
+(my_ref) = My_value2
 ```
 
-Note that by default, references like `(My_ref; int) = some_reference()`
-will be reassignable, i.e., defined like `My_ref; (Int;) = some_reference()`,
-and references like `(My_ref: int) = some_reference()` will not be reassignable,
-i.e., defined like `My_ref: (Int:) = some_reference()`.  If you want a readonly-
-referent reference to be reassignable, use `My_ref; (Int:) = ...`.
+Note that by default, references like `(my_ref; int_) = some_reference_()`
+will be reassignable, i.e., defined like `my_ref; (int;) = some_reference_()`,
+and references like `(my_ref: int_) = some_reference_()` will not be reassignable,
+i.e., defined like `my_ref: (int:) = some_reference_()`.  If you want a readonly-
+referent reference to be reassignable, use `my_ref; (int:) = ...`.
 
 You can grab a few references at a time using [destructuring](#destructuring)
 notation like this:
 
 ```
-Ref3; (Str:) = some_ref()
-# this declares+defines `Ref1` and `Ref2`, and reassigns `Ref3`:
-(Ref1;, Ref2:, Ref3) = some_function_that_returns_refs()
+ref3; (str:) = some_ref_()
+# this declares+defines `ref1` and `ref2`, and reassigns `ref3`:
+(ref1;, ref2:, ref3) = some_function_that_returns_refs_()
 
 # e.g., with function signature:
-some_function_that_returns_refs(): (Ref2; int, Ref2: dbl, Ref3; str)
+some_function_that_returns_refs_(): (ref2; int_, ref2: dbl_, ref3; str_)
 ```
 
 #### reference objects
@@ -2532,49 +2512,48 @@ some_function_that_returns_refs(): (Ref2; int, Ref2: dbl, Ref3; str)
 TODO: we probably need a borrow checker (like Rust):
 
 ```
-Result?; some_nullable_result()
-if Result is Non_null:
-    print(Non_null)
-    Result = some_other_function_possibly_null()
-    # this could be undefined behavior if `Non_null` is a reference to the
-    # nonnull part of `Result` but `Result` became null with `some_other_function_possibly_null()`
-    print(Non_null)
+result?; some_nullable_result_()
+if result is non_null:
+    print_(non_null)
+    result = some_other_function_possibly_null_()
+    # this could be undefined behavior if `non_null` is a reference to the
+    # nonnull part of `result` but `result` became null with `some_other_function_possibly_null_()`
+    print_(non_null)
 ```
 
 Alternatively, we pass around "full references" whenever we can't determine that
 borrowing can be done with just a pointer.  Full references include a path from
 a safely-borrowed pointer, with checks at each nested value for any additions
-that need to be made.  In the above example, we need `Non_null` to be a pointer
-from `Result` that checks if `Result` is non-null before any dereferencing.  The
-above example can be checked by the compiler, but if `Result` was itself a reference
-path then we'd need to recheck any dereferences of `Non_null`.
+that need to be made.  In the above example, we need `non_null` to be a pointer
+from `result` that checks if `result` is non-null before any dereferencing.  The
+above example can be checked by the compiler, but if `result` was itself a reference
+path then we'd need to recheck any dereferences of `non_null`.
 
 In oh-lang, parentheses can be used to define reference objects, both as types
-and instances.  As a type, `(X: dbl, Y; int, Z. str)` differs from the object
-type `[X: dbl, Y; int, Z; str]`, for more than just the reason that `.` is invalid
-in an object type.  When instantiated, reference objects with `;` and `:` fields
-contain references to variables; objects get their own copies.
+and instances.  As a type, `(x: dbl_, y; int_, z. str_)` differs from the object
+type `[x: dbl_, y; int_, z. str_]`.  When instantiated, reference objects with
+`;` and `:` fields contain references to variables; objects get their own copies.
 
 Because they contain references, reference object instances cannot outlive the lifetime
 of the variables they contain.
 
 ```
-a: (X: dbl, Y; int, Z. str)
+a_: (x: dbl_, y; int_, z. str_)
 
 # This is OK:
-X: 3.0
-Y; 123
-A: (X, Y, Z. "hello")    # `Z` is passed by value, so it's not a reference.
-A Y *= 37    # OK
+x: 3.0
+y; 123
+a: (x, y, z. "hello")    # `Z` is passed by value, so it's not a reference.
+a y *= 37    # OK
 
 # This is not OK:
-return_a(Q: int): a
-    # X and Y are defined locally here, and will be descoped at the
+return_a_(q: int_): a_
+    # x and y are defined locally here, and will be descoped at the
     # end of this function call.
-    X: Q dbl() ok_or(NaN) * 4.567
-    Y; Q * 3
-    # So we can't pass X, Y as references here.  Z is fine.
-    (X, Y, Z. "world")
+    x: (q dbl_() ?? nan) * 4.567
+    y; q * 3
+    # ERROR! we can't return x, y as references here.  z is fine.
+    (x, y, z. "world")
 ```
 
 Note that we can return reference object instances from functions, but they must be
