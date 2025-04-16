@@ -21,10 +21,11 @@ set cpo&vim
 "
 syn keyword ohBuiltin	false true null
 syn keyword ohBuiltin	context debug m
-syn keyword ohBuiltinFunction	each_ is_ m_
-syn keyword ohBuiltinFunction	abs_ ceil_ count_ floor_ max_ min_
+syn keyword ohBuiltinFunction	is_ m_ renew_
+syn keyword ohBuiltinFunction	count_ each_
+syn keyword ohBuiltinFunction	abs_ ceil_ floor_ max_ min_
 syn keyword ohBuiltinFunction	error_ print_
-syn keyword ohStatement		break continue
+syn keyword ohStatement		break continue fall_through
 syn keyword ohStatement		pass return
 syn keyword ohConditional	elif else if
 syn keyword ohConditional	what where
@@ -48,7 +49,7 @@ syn region	ohInclude matchgroup=ohInclude start="\\/" end=" " skip="\\ "
 syn match	ohUnused	"\<_\w*"
 syn match	ohMacro		"@\w*\>"
 syn match	ohNamespace	"\u\+_\="
-syn match	ohFunction	"\h\w*_\>" contains=ohNamespace
+syn match	ohFunction	"[^!-@[\\\]^_`{|} ]\S*_\>" contains=ohNamespace
 
 syn match   ohComment	"# .*$" contains=ohTodo,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
