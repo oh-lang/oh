@@ -186,7 +186,7 @@ Note this is actually ok, because we can distinguish overloads based on argument
 ```
 vector2_: [x: dbl_, y: dbl_]
 {   ::atan_(): dbl
-        atan_(x, y)      # also ok: `\\math atan_(x, y)`
+        atan_(x, y)      # also ok: `\\math atan_(x, y)` could avoid the import below.
 }
 [atan_(x: dbl_, y: dbl_): dbl_]: \\math
 ```
@@ -230,7 +230,6 @@ vector3_[of_: number_]: [x; of_, y; of_, z; of_]
         [x: FIRST_value, y: SECOND_value, z: THIRD_value]
 
     ::dot_(o): of_
-        # `m x`, etc. is optional, since `[x, y, z]` are in scope for this instance method.
         x * o x + y * o y + z * o z
 }
 
@@ -1672,11 +1671,13 @@ my_function_(x: int_): int_
 
 There are two ways to get around this; one is [hiding variables](#hiding-variables).
 In the above example, the best way is to use a namespace for one or both conflicts.
-Namespaced variables have capital letters inside them, which are ignored for function
-arguments, e.g., `MY_NAMESPACE_my_variable_name` where `MY_NAMESPACE_` will be removed
-when matching arguments, so you'd call with e.g., `my_function_(my_variable_name: 3)`.
-In fact, capital letters will be stripped from anywhere in the identifier, so
-`MY_variable_OTHER_x_OK` would reduce to `variable_x` in a function argument.
+Namespaced variables have capital letters inside them, which are ignored when matching
+function arguments, e.g., `my_function_(MY_NAMESPACE_my_variable_name: int): null_`
+where `MY_NAMESPACE_` is ignored when matching arguments, so you'd call with e.g.,
+`my_function_(my_variable_name: 3)` or even `my_function_(:ANOTHER_my_variable_name)`
+if that namespaced variable `ANOTHER_my_variable_name` is in scope.  In fact, capital
+letters will be removed from anywhere in the identifier when matching arguments, so
+`MY_variable_OTHER_x_OK` would match to `variable_x` in a function argument.
 Namespaces are most useful in function arguments, but they can
 annotate any variable that you're declaring.  It is recommended to namespace
 the "outer" variable so you don't accidentally use it in the inner scope.
@@ -1722,9 +1723,9 @@ my_class_: [x; dbl_]
 {   # this is a situation where you might like to use namespaces.
     ;;do_something_(NEW_x. dbl_): dbl_
         # NOTE: if you just want to create a swapper, you should
-        # probably just use this idiom: `;;x_(dbl;): null_`.
-        OLD_x: x!
-        x = NEW_x
+        # probably just use this idiom: `;;x_(dbl;): null_ {m x <-> dbl}`.
+        OLD_x: m x!
+        m x = NEW_x
         OLD_x
 }
 ```
@@ -1776,15 +1777,12 @@ readonly/writable `m` (self/this) as an argument.
 
 ```
 example_class_: [x: int_, y: dbl_]
-{   # this `;;` prefix is shorthand for `renew_(m;, ...): null_`.
-    # in a `renew` method, adding `m` to the arguments like `m x` means `x` will
-    # be initialized (or re-initialized) with the value that is passed in for `X`.
-    ;;renew_(m x: int_, m y: dbl_): null_
+{   ;;renew_(m x: int_, m y: dbl_): null_
         print_("x ${x} y ${y}")
 
     # this `::` prefix is shorthand for `multiply_(m:, ...): dbl_`:
     ::multiply_(z: dbl_): dbl_
-        x * y * z
+        m x * m y * z
 }
 ```
 
@@ -1812,19 +1810,19 @@ does not change the instance but returns a sorted copy of the array (`::sort(): 
 
 ```
 # there are better ways to get a median, but just to showcase member access:
-get_median_slow(Array[int]): hm[ok: int, er: string]
-    if Array count() == 0
-        return er("no elements in array, can't get median.")
+get_median_slow_(array_[int_]): hm_[ok_: int_, er_: string_]
+    if array count_() == 0
+        return er_("no elements in array, can't get median.")
     # make a copy of the array, but no longer allow access to it (via `@hide`):
-    SORTED_array: @hide Array sort()   # same as `Array::sort()` since `Array` is readonly.
-    ok(SORTED_array[SORTED_array count() // 2])
+    SORTED_array: @hide array sort_()   # same as `array::sort_()` since `array` is readonly.
+    ok(SORTED_array[SORTED_array count_() // 2])
 
 # sorts the array and returns the median.
-get_median_slow(Array[int];): hm[ok: int, er: string]
-    if Array count() == 0
-        return er("no elements in array, can't get median.")
-    Array sort()    # same as `Array;;sort()` since `Array` is writable.
-    ok(Array[Array count() // 2])
+get_median_slow_(array[int_];): hm_[ok_: int_, er_: string_]
+    if array count_() == 0
+        return er_("no elements in array, can't get median.")
+    array sort_()   # same as `array;;sort_()` since `array` is writable.
+    ok_(array[array count_() // 2])
 ```
 
 Note that if the LHS is readonly, you will not be able to use a `;;` method.
@@ -1832,58 +1830,62 @@ To sum up, if the LHS is writable, you can use `;;` or `::`, and ` ` (member acc
 effectively be `;;`.  If the LHS is readonly, you can only use `::` and ` `, which are equivalent.
 
 Subscripts `[]` have the same binding strength as member access operators since they are conceptually
-similar operations.  This allows for operations like `++A[3]` meaning `++(A[3])` and
-`--A B C[3]` equivalent to `--(((A;;B);;C)[3])`.  Member access binds stronger than exponentation
-so that operations like `A B[C]^3` mean `((A::B)[C])^3`.
+similar operations.  This allows for operations like `++a[3]` meaning `++(a[3])` and
+`--a b c[3]` equivalent to `--(((a;;b);;c)[3])`.  Member access binds stronger than exponentation
+so that operations like `a b[c]^3` mean `((a::b)[c])^3`.
 
-Note that `something() Nested_field` becomes `(something())::Nested_field` due to
-the function call having higher precedence.  (You can also use destructuring if you want
-to keep a variable for multiple uses: `[Nested_field]: something()`.)
+Note that `something_() nested_field` becomes `(something_())::nested_field` due to
+the function call having higher precedence, and is often the idiomatic way to request a
+specific overload via the return type/name.  You can also use destructuring if you want
+to keep a variable for multiple uses: `[nested_field]: something_()`.
 
 ## prefix and postfix question marks `?`
 
-The `?` operator binds strongly, but less so than member access, so `x a?` is equivalent
-to `one_of[x a, null]` and not `x one_of[a, null]`.  This is for nested classes, e.g.,
-`x: [...] {a: int}`, so that we don't need to use `(x a)?` to represent `x one_of[a, null]`.
-Generally speaking, if you want your entire variable to be nullable,
-it should be defined as `X?: int`.
+Generally speaking, if we want a variable `x` to be nullable, we use the postfix `?`
+operator when declaring `x`, and bind it to the variable itself, e.g., `x?: int_`.
+
+TODO: i think i prefer `do_something_(x: ?my_value_for_x)` so it's more obviously
+different than `do_something_(x?: my_value_for_x)` when `my_value_for_x` is nullable.
+then `do_something_(;?x)` also makes sense as `do_something_(x; ?x)`.
 
 Prefix `?` can be used to short-circuit function evaluation if an argument is null.
-for a function like `do_something(X?: int)`, we can use `do_something(?X: My_value_for_x)`
-to indicate that we don't want to call `do_something` if `My_value_for_x` is null;
-we'll simply return `Null`.  E.g., `do_something(?X: My_value_for_x)` is equivalent
-to `if My_value_for_x == Null {Null} else {do_something(X: My_value_for_x)}`.
-In this case `X` is already in scope, it becomes `do_something(?X)` to elide the
-variable name.
+For a function like `do_something_(x?: int_): null_`, we can use `do_something_(?x: my_value_for_x)`
+to indicate that we don't want to call `do_something_` if `my_value_for_x` is null;
+we'll simply return `null`.  E.g., `do_something_(?x: my_value_for_x)` is equivalent
+to `if my_value_for_x == null {null} else {do_something_(x: my_value_for_x)}`.
+In case `x` is already in scope, we elide the the variable name via `do_something_(?x)`.
+It works similarly for writable reference (or temporary) arguments:
+`do_something_(x?; int_): null_` could be called like `do_something_(?x; my_value_for_x)`
+or `do_something(?;x)` if `x` is in scope.
 
 There's also an infix `??` type which is a nullish or.
-`X Y ?? Z` will choose `X Y` if it is non-null, otherwise `Z`.
+`x y ?? z` will choose `x y` if it is non-null, otherwise `z`.
 
 ## prefix and postfix exclamation points
 
 The operator `!` is always unary (except when combined with equals for not equals,
-e.g., `!=`).  It can act as a prefix operator "not", e.g., `!A`, pronounced "not A",
-or a postfix operator on a variable, e.g., `Z!`, pronounced "Z mooted" (or "moot Z").  In the first
-example, prefix `!` calls the `!(M:): bool` (or `::!(): bool`) method defined on `A`, which creates a
-temporary value of the boolean opposite of `A` without modifying `A`.  In the second
-case, it calls a built-in method on `Z`, which moves the current data out of `Z` into
-a temporary instance of whatever type `Z` is, and resets `Z` to a blank/default state.
-The method would look like `::()!: m` or `(M:)!: m`, but again this is defined for you.
+e.g., `!=`).  It can act as a prefix operator "not", e.g., `!a`, pronounced "not A",
+or a postfix operator on a variable, e.g., `z!`, pronounced "Z mooted" (or "moot Z").  In the first
+example, prefix `!` calls the `!(m:): bool_` (or `::!(): bool_`) method defined on `a_`, which creates a
+temporary value of the boolean opposite of `a` without modifying `a`.  In the second
+case, it calls a built-in method on `z`, which moves the current data out of `z` into
+a temporary instance of whatever type `z` is (i.e., `z_`), and resets `z` to a blank/default state.
+The method would look like `::()!: m_` or `(m:)!: m_`, but again this is defined for you.
 This is a "move and reset" operation, or "moot" for short.  Overloads for prefix `!`
-should follow the rule that, after e.g., `Z!`, checking whether `Z` evaluates to false,
-i.e., by `!Z`, should return true.
+should follow the rule that, after e.g., `z!`, checking whether `z` evaluates to false,
+i.e., by `!z`, should return true.
 
 Note, it's easier to think about positive boolean actions sometimes than negatives,
-so we allow defining either `!!(M:): bool` or `::!!(): bool` on a class, the former
-allowing you to cast a value, e.g., `A`, to its positive boolean form `!!A`, pronounced
+so we allow defining either `!!(m:): bool_` (i.e., `::!!(): bool_`) or `!(m:): bool_` on a class,
+the former allowing you to cast a value, e.g., `a`, to its positive boolean form `!!a`, pronounced
 "not not A."  Note, you cannot define both `!` and `!!` overloads for a class, since
 that would make things like `!!!` ambiguous.
 
 ## superscripts/exponentiation
 
 Note that exponentiation -- `^` and `**` which are equivalent --
-binds less strongly than function calls and member access.  So something like `A[B]^2` will be
-equivalent to `(A[B])^2` and `A B^3` is equivalent to `(A::B)^3`.
+binds less strongly than function calls and member access.  So something like `a[b]^2` will be
+equivalent to `(a[b])^2` and `a b^3` is equivalent to `(a::b)^3`.
 
 ## bitshifts `<<` and `>>`
 

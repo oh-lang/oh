@@ -29,6 +29,7 @@ dll_[of_, count_with_: count_arch_]: all_of_
             offset
             next: -1
         )
+        offset
 
     # TODO: `prepend_`
 
