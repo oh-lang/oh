@@ -1258,9 +1258,9 @@ With function documentation comments, it's recommended to declare the asymptotic
 
 Standard types whose instances can take up an arbitrary amount of memory:
 
-* `int`: signed big-integer
-* `rtl`: rational number (e.g. an `int` divided by a positive, non-zero `int`)
-* `str`: array/sequence of utf8 bytes, but note that `string` is preferred for
+* `int_`: signed big-integer
+* `rtnl_`: rational number (e.g. an `int_` divided by a positive, non-zero `int_`)
+* `str_`: array/sequence of utf8 bytes, but note that `string` is preferred for
     function arguments since it includes other containers which deterministically
     provide utf8 bytes.
 
@@ -1889,13 +1889,13 @@ equivalent to `(a[b])^2` and `a b^3` is equivalent to `(a::b)^3`.
 
 ## bitshifts `<<` and `>>`
 
-The notation `A << B`, called "bitshift left", means to multiply `A` by `2^B`.  For example, 
-`A << 1 == A * 2`, `A << 2 == A * 4`, and `A << 3 == A * 8`.  Conversely, "bitshift right"
-`A >> B` means to divide `A` by `2^B`.  Typically, we use bitshifts `<<` and `>>`
-only for fixed-width integers, so that `A >> 5 == A // 32`, but there are overloads
+The notation `a << b`, called "bitshift left", means to multiply `a` by `2^b`.  For example, 
+`a << 1 == a * 2`, `a << 2 == a * 4`, and `a << 3 == a * 8`.  Conversely, "bitshift right"
+`a >> b` means to divide `a` by `2^b`.  Typically, we use bitshifts `<<` and `>>`
+only for fixed-width integers, so that `a >> 5 == a // 32`, but there are overloads
 for other types that will do the expected full division.  For floats, e.g., 16.0 >> 5 == 0.5.
-Note that `A << 0 == A >> 0 == A`, and that negating the second operand is the same
-as switching the operation, i.e., `A << B == A >> -B`.
+Note that `a << 0 == a >> 0 == a`, and that negating the second operand is the same
+as switching the operation, i.e., `a << b == a >> -b`.
 
 In contrast to C/C++, bitshifts have a higher precedence than multiplication and division because they are
 "stronger" operations: `100 << 3 == 800` whereas `100 * 3 == 300`, and the difference widens
@@ -1912,7 +1912,7 @@ Thus `2 << 3^2 == 2 << (3^2) == 1024` and not `(2 << 3)^2 == 256`, etc.
 ## division and remainder operators: `/` `//` `%` `%%`
 
 The standard division operator, `/`, will promote integer operands to a rational return value.
-E.g., `dbl(3/4) == 0.75` or `6/4 == rtl(3)/rtl(2)`.
+E.g., `dbl_(3/4) == 0.75` or `6/4 == rtnl_(3)/rtnl_(2)`.
 
 The integer division operator, `//`, will return an integer, rounded towards zero, e.g.,`3//4 == 0`
 and `-3//4 == 0`.  Also, `5//4 == 1` and `-5//4 == -1`, and `12 // 3 == 4` as expected.
@@ -1920,14 +1920,16 @@ If any operand is a double, the resulting value will be an integer double, e.g.,
 `5.1 // 2 == 2.0`.
 
 The modulus operator, `%`, will put the first operand into the range given by the second operand.
-E.g., `5 % 4 == 1`, `123.45 % 1 == 0.45`.  Mathematically, we use the relation
-`A % B == A - B * floor(A/B)`.
+E.g., `5 % 4 == 1`, `123.45 % 1 == 0.45`, and `-3 % 7 == 4`.
+Mathematically, we use the relation `a % b == a - b * floor(a/b)`.
 
-The remainder operator, `%%`, has the property that `A %% B == A - B * (A // B)`;
-i.e., it is the remainder after integer division.  The remainder operator, `%%`,
-differs from the modulus, `%`, when the operands have opposing signs.
+The remainder operator, `%%`, has the property that `a %% b == a - b * (a // b)`;
+i.e., it is the remainder after integer division, and corresponds to the C/C++
+`%` operator.  The remainder operator, `%%`, differs from the modulus, `%`,
+when the operands have opposing signs.  E.g., `-3 % 7 == -3` while
+`-3 %% 7 == 4`.  Here's a table of more examples:
 
-|  `A`  |  `B`  | `floor(A/B)`  |  `A % B`  | `A // B`  | `A %% B`  |
+|  `a`  |  `b`  | `floor_(a/b)` |  `a % b`  | `a // b`  | `a %% b`  |
 |:-----:|:-----:|:-------------:|:---------:|:---------:|:---------:|
 |   1   |   2   |      0        |     1     |     0     |     1     |
 |  -1   |   2   |     -1        |     1     |     0     |    -1     |
@@ -1948,15 +1950,16 @@ differs from the modulus, `%`, when the operands have opposing signs.
 
 The less-than, less-than-or-equal-to, greater-than, and greater-than-or-equal-to
 binary operators `<`, `<=`, `>`, and `>=` (respectively) have special return types.
-This allows chaining like `W >= X < Y <= Z`, which will evaluate as truthy iff
-`W >= X`, `X < Y`, and `Y <= Z`.  Note that these expressions are evaluated
+This allows chaining like `w >= x < y <= z`, which will evaluate as truthy iff
+`w >= x`, `x < y`, and `y <= z`.  Note that these expressions are evaluated
 left-to-right and the first inequality to fail will stop any further evaluations
 or expressions from executing.
 
-Internally, `X < Y` becomes a class which holds onto a value or reference of `Y`,
-so that it can be chained.  Any future right operands take over the spot of `Y`.
+Internally, `x < y` becomes a class which holds onto a value or reference of `y`,
+so that it can be chained.  Any future right operands take over the spot of `y`.
 Note, oh-lang doesn't expose this internal class,
-so `Q: X < Y > Z` instantiates `Q` as a boolean.
+so `q: x < y > z` instantiates `q` as a boolean.
+TODO: we probably should expose so that it can be asked for as a return overload.
 
 ## and/or/xor operators
 
@@ -1965,49 +1968,49 @@ If you are looking for bitwise `AND`, `OR`, and `XOR`, they are `&`, `|`, and `>
 The operators `and` and `or` act the same as JavaScript `&&` and `||`, as long as the
 left hand side is not nullable.  `xor` is an "exclusive or" operator.
 
-The `or` operation `X or Y` has type `one_of[x, y]` (for `X: x` and `Y: y`).
-If `X` evaluates to truthy (i.e., `!!X == True`), then the return value of `X or Y` will be `X`.
-Otherwise, the return value will be `Y`.  Note in a conditional, e.g., `if X or Y`, we'll always
-cast to boolean implicitly (i.e., `if bool(X or Y)` explicitly).
+The `or` operation `x or y` has type `one_of_[x_, y_]` (for `x: x_` and `y: y_`).
+If `x` evaluates to truthy (i.e., `!!x == true`), then the return value of `x or y` will be `x`.
+Otherwise, the return value will be `y`.  Note in a conditional, e.g., `if x or y`, we'll always
+cast to boolean implicitly (i.e., `if bool_(x or y)` explicitly).
 
-Similarly, the `and` operation `X and Y` also has type `one_of[x, y]`.  If `X` is falsey,
-then the return value will be `X`.  If `X` is truthy, the return value will be `Y`.
-Again, in a conditional, we'll cast `X and Y` to a boolean.
+Similarly, the `and` operation `x and y` also has type `one_of_[x_, y_]`.  If `x` is falsey,
+then the return value will be `x`.  If `x` is truthy, the return value will be `y`.
+Again, in a conditional, we'll cast `x and y` to a boolean.
 
 If the LHS of the expression can take a nullable, then there is a slight modification.
-`X or Y` will be `one_of[x, y, null]` and `X and Y` will be `one_of[y, null]`.
-The result will be `Null` if both (either) operands are falsey for `or` (`and`).
+`x or y` will be `one_of_[x_, y_, null_]` and `x and y` will be `one_of_[y_, null_]`.
+The result will be `null` if both (either) operands are falsey for `or` (`and`).
 
 ```
-Non_null_or: X or Y         # Non_null_or: if X {X} else {Y}
-Non_null_and: X and Y       # Non_null_and: if !X {X} else {Y}
-Nullable_or?: X or Y        # Nullable_or?: if X {X} elif Y {Y} else {Null}
-Nullable_and?: X and Y      # Nullable_and?: if !!X and !!Y {Null} else {Y}
+non_null_or: x or y         # non_null_or: if x {x} else {y}
+non_null_and: x and y       # non_null_and: if !x {x} else {y}
+nullable_or?: x or y        # nullable_or?: if x {x} elif y {y} else {null}
+nullable_and?: x and y      # nullable_and?: if !!x and !!y {null} else {y}
 ```
 
 This makes things similar to the `xor` operator, but `xor` always requires a nullable LHS.
-The exclusive-or operation `X xor Y` has type `one_of[x, y, null]`, and will return `Null`
-if both `X` and `Y` are truthy or if they are both falsey.  If just one of the operands
+The exclusive-or operation `x xor y` has type `one_of_[x_, y_, null_]`, and will return `null`
+if both `x` and `y` are truthy or if they are both falsey.  If just one of the operands
 is truthy, the result will be the truthy operand.  An example implementation:
 
 ```
-# you can define it as nullable via `xor(~X, ~Y): one_of[x, y, null]` or like this:
-xor(~X, ~Y)?: one_of[x, y]
-    X_is_true: bool(X)          # `X_is_true: !!X` is also ok.
-    Y_is_true: bool(Y)
-    if X_is_true
-        if Y_is_true {Null} else {X}
-    elif Y_is_true
-        Y
+# you can define it as nullable via `xor_(~x, ~y): one_of_[x_, y_, null_]` or like this:
+xor_(~x, ~y)?: one_of_[x_, y_]
+    x_is_true: bool_(x)     # `x_is_true: !!x` is also ok.
+    y_is_true: bool_(y)
+    if x_is_true
+        if y_is_true {null} else {x}
+    elif y_is_true
+        y
     else
-        Null
+        null
 ```
 
 Thus `xor` will thus return a nullable value, unless you do an assert.
 
 ```
-Nullable_xor?: X xor Y
-Non_null_xor: X xor Y assert()  # will shortcircuit this block if `X xor Y` is null
+nullable_xor?: x xor y
+non_null_xor: x xor y assert_() # will shortcircuit this block if `x xor y` is null
 ```
 
 ## reassignment operators
@@ -2015,11 +2018,11 @@ Non_null_xor: X xor Y assert()  # will shortcircuit this block if `X xor Y` is n
 Note that `:`, `;`, and `.` can assign values if they're also being declared.
 Thus, `=` is only used for reassignment.  Many binary (two operand) operators
 such as `*`, `/`, `+`, `-`, etc., also support being paired with reassignment.
-As long as `X @op Y` has the same type as `X`, then we can do `X @op = Y` for
-shorthand of `X = X @op Y` for any eligible binary operator `@op`.  Examples
-include `X -= 5`, `Y &= 0x12`, etc.
+As long as `x @op y` has the same type as `x`, then we can do `x @op = y` for
+shorthand of `x = x @op y` for any eligible binary operator `@op`.  Examples
+include `x -= 5`, `y &= 0x12`, etc.
 
-Swapping two variables is accomplished by something like `A <-> B`.
+Swapping two variables is accomplished by something like `a <-> b`.
 Swap uses `<->` since `<=>` is reserved for a future spaceship operator
 (encompassing `<`, `<=`, `==`, `=>` and `>` in one).  As a function, swap
 would require mutable variables, e.g., `;;x_(SWAP_x;): null_`.
@@ -2029,20 +2032,20 @@ via the shorthand notation `some_class x <-> 1234`.
 ## ergo operator
 
 `->` is called the "ergo operator" and is used in conditional logic for
-more fine-grained flow control to define a `then` instance which can
+more fine-grained flow control to define a `then_` instance which can
 break out of loops in more interesting (possibly *less readable*) ways.
 Use sparingly.
 
 ```
-X: if Some_condition -> Then:
-    if Other_condition
-        Then exit(5)
-    Then exit(7)
-else -> Then:
-    Then exit(10)
+x: if some_condition -> then:
+    if other_condition
+        then exit_(5)
+    then exit_(7)
+else -> then:
+    then exit_(10)
 
 # the above is equivalent to the following:
-X: if Some_condition { if Other_condition {5} else {7} } else {10}
+x: if some_condition { if other_condition {5} else {7} } else {10}
 ```
 
 See [then statements](#then-statements) for more examples and details.
@@ -2053,34 +2056,35 @@ Variables are named using `variable_case` identifiers.  The `:` symbol is used
 to declare deeply constant, non-reassignable variables, and `;` is used to declare
 writable, reassignable variables.  Note when passed in as arguments to a function,
 `:` has a slightly different meaning; a variable with `:` is readonly and not
-necessarily deeply constant.  That will be discussed more later.
+necessarily deeply constant.  That will be discussed more in
+[passing by reference or by value](#pass-by-reference-or-pass-by-value).
 
 ```
 # declaring and setting a non-reassignable variable that holds a big integer
-Y: int = 5
-# also equivalent: `Y: 5` or `Y: int(5)`.
+y: int_ = 5
+# also equivalent: `y: 5` or `y: int_(5)`, or `y: 5_int`
 
 # using the variable:
-print(Y * 30)
+print_(y * 30)
 
-Y = 123     # COMPILER ERROR, Y is readonly and thus non-reassignable.
-Y += 3      # COMPILER ERROR, Y is readonly and here deeply constant.
+y = 123     # COMPILER ERROR, y is readonly and thus non-reassignable.
+y += 3      # COMPILER ERROR, y is readonly and here deeply constant.
 ```
 
-Mutable/reassignable/non-constant variables can use `Variable_name = Expression`
+Mutable/reassignable/non-constant variables can use `variable_name = expression`
 after their first initialization, but they must be declared with a `;` symbol.
 
 ```
 # declaring a reassignable variable that holds a big integer
-X; int
+x; int_
 
 # X is default-initialized to 0 if not specified.
-X += 5      # now X == 5 is True.
+x += 5      # now x == 5 is true.
 
 # you can also define the value inline as well:
-W; 7
+w; 7
 # also equivalent, if you want to be explicit about the type.
-W; int = 7
+w; int_ = 7
 ```
 
 Note that we use `;` and `:` as if it were an annotation on the variable name (rather
@@ -2092,18 +2096,28 @@ not based on the type of the variable.  The underlying type is the same for both
 readonly and writable variables (i.e., a writable type), but the variable is only
 allowed to mutate the memory if it is declared as a writable variable with `;`.
 
+TODO: is the above rant 100% accurate?  we theoretically have mixed `const`ness in
+types like `xy_: [x; int_, y: str_]`, which could be put into an array like
+`array_[xy_]`.  we can still modify this more sanely than in C++ because `renew`ers
+are allowed to update `y`.
+
 ## nullable variable types
 
 To make it easy to indicate when a variable can be nullable, we reserve the question mark
-symbol, `?`, placed after the variable name like `X?: int` or after a simple type like
-`X: int?`.  Either example declares a variable `X` that
-can be an integer or null.  The default value for an optional type is `Null`.
+symbol, `?`, placed just after the variable name like `x?: int_`.  The default value for
+an optional type is `null`.
 
-For an optional type with more than one non-null type, we use `Y?: one_of[some_type, another_type]`
-or equivalently, `Y: one_of[some_type, another_type, null]` (where `null` comes last).
-Note that `null` should come last for casts to work correctly (e.g., `one_of[null, int](1234)`
-would cast to null rather than `int(1234)`).  Normally the first value in a `one_of` is the
-default, but if `null` or `Null` is an option, then null is the default.  
+TODO: do we want to allow the `one_of_[..., null_]` option?  this breaks the requirement
+to always annotate variables with `x?: ...` if they are null, which i think we want to
+keep/require for comptime considerations.
+
+For an optional type with more than one non-null type, we use
+`y?: one_of_[some_type_, another_type_]` or equivalently,
+`y: one_of_[some_type_, another_type_, null_]` (where `null_` comes last).
+Note that `null_` should come last for casts to work correctly (e.g.,
+`one_of_[null_, int_](1234)` would cast to null rather than `int_(1234)`).
+Normally the first value in a `one_of_` is the default, but if `null_` is an option,
+then null is the default.  
 
 In either case, you can use `;` instead of `:` to indicate that the variable is writable.
 Note that if you are defining a nullable variable inline, you should
