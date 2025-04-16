@@ -19,12 +19,17 @@ set cpo&vim
 
 " Keep keywords in alphabetical order inside groups.
 "
+syn keyword ohBuiltin	false true null
+syn keyword ohBuiltin	context debug m
+syn keyword ohBuiltinFunction	each_ is_ m_
+syn keyword ohBuiltinFunction	abs_ ceil_ count_ floor_ max_ min_
+syn keyword ohBuiltinFunction	error_ print_
 syn keyword ohStatement		break continue
 syn keyword ohStatement		pass return
 syn keyword ohConditional	elif else if
-syn keyword ohConditional	what
-syn keyword ohRepeat		each each_ while
-syn keyword ohOperator		and is is_ not or xor
+syn keyword ohConditional	what where
+syn keyword ohRepeat		each while
+syn keyword ohOperator		and is not or xor
 syn keyword ohError		er
 syn keyword ohAsync		decide_ um um_
 syn keyword ohTodo		FIXME NOTE NOTES TODO XXX contained
@@ -88,12 +93,6 @@ syn match   ohNumber	"\<\d\+[jJ]\>"
 syn match   ohNumber	"\<\d\+[eE][+-]\=\d\+[jJ]\=\>"
 syn match   ohNumber	"\<\d\+\.\%([eE][+-]\=\d\+\)\=[jJ]\=\%(\W\|$\)\@="
 syn match   ohNumber	"\%(^\|\W\)\zs\d*\.\d\+\%([eE][+-]\=\d\+\)\=[jJ]\=\>"
-
-syn keyword ohBuiltin	false true null
-syn keyword ohBuiltin	context debug m
-syn keyword ohBuiltinFunction	m_
-syn keyword ohBuiltinFunction	abs_ ceil_ count_ floor_ max_ min_
-syn keyword ohBuiltinFunction	error_ print_
 
 " trailing whitespace
 syn match   ohSpaceError	display excludenl "\s\+$"
