@@ -2556,18 +2556,18 @@ return_a_(q: int_): a_
     (x, y, z. "world")
 ```
 
-Note that we can return reference object instances from functions, but they must be
+Note that we *can* return reference object instances from functions, but they must be
 defined with variables whose lifetimes outlive the input reference object instance.
 For example:
 
 ```
-X: 4.56
-return_a(Q; int): (X: dbl, Y; int, Z. str)       # inline reference object type
-    Q *= 37
-    # X has a lifetime that outlives this function.
-    # Y has the lifetime of the passed-in variable, which exceeds the return type.
-    # Z is passed by value, so no lifetime concerns.
-    (X, Y; Q, Z. "sky")
+x: 4.56
+return_a_(q; int_): (x: dbl_, y; int_, z. str_)
+    q *= 37
+    # x has a lifetime that outlives this function.
+    # y has the lifetime of the passed-in variable, which exceeds the return type.
+    # z is passed by value, so no lifetime concerns.
+    (x, y; q, z. "sky")
 ```
 
 Argument objects are helpful if you want to have arguments that should be
@@ -2575,33 +2575,33 @@ references, but need nesting to be the most clear.  For example:
 
 ```
 # function declaration
-copy(From: (Pixels, Rectangle.), To: (Pixels;, Rectangle.): null
+copy_(from: (pixels, rectangle.), to: (pixels;, rectangle.): null_
 
 # function usage
-SOURCE_pixels: pixels() { #( build image )# }
-DESTINATION_pixels; pixels()
-Size: rectangle(Width: 10, Height: 7)
+SOURCE_pixels: pixels_() { #( build image )# }
+DESTINATION_pixels; pixels_()
+size: rectangle_(width: 10, height: 7)
 
-copy
-(   From: 
+copy_
+(   from: 
     (   SOURCE_pixels
-        Size + Vector2(X: 3, Y: 4)
+        size + vector2_(x: 3, y: 4)
     )
-    To:
-    (   DESTINATION_pixels;
-        Size + Vector2(X: 9, Y: 8)
+    to:
+    (   ;DESTINATION_pixels
+        size + Vector2_(x: 9, y: 8)
     )
 )
 ```
 
 We can create deeply nested reference objects by adding valid identifiers with consecutive `:`/`;`/`.`.
-E.g., `(X: Y: 3)` is the same as `(X: (Y: 3))`.  This can be useful for a function signature
-like `run(After: duration, fn(): ~t): t`.  `duration` is a built-in type that can be built
-out of units of time like `Seconds`, `Minutes`, `Hours`, etc., so we can do something like
-`run(After: Seconds: 3, (): print("hello world!"))`, which will automatically pass
-`(Seconds: 3)` into the `duration` constructor.  Of course, if you need multiple units of time,
-you'd use `run(After: (Seconds: 6, Minutes: 1), (): print("hello world!"))` or to be explicit
-you'd use `run(After: duration(Seconds: 6, Minutes: 1), (): print("hello world!"))`.
+E.g., `(x: y: 3)` is the same as `(x: (y: 3))`.  This can be useful for a function signature
+like `run_(after: duration_, fn_(): ~t_): t_`.  `duration_` is a built-in type that can be built
+out of units of time like `seconds`, `minutes`, `hours`, etc., so we can do something like
+`run_(after: seconds: 3, {print_("hello world!")})`, which will automatically pass
+`(seconds: 3)` into the `duration_` constructor.  Of course, if you need multiple units of time,
+you'd use `run_(after: (seconds: 6, minutes: 1), {print("hello world!")})` or to be explicit
+you'd use `run_(after: duration_(seconds: 6, minutes: 1), {print("hello world!")})`.
 
 
 #### reference lifetimes

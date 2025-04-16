@@ -15,7 +15,6 @@ multiline comment with ()
 multiline comment with []
 #]#
 
-
 5 + #(midline comment)# 4
 7 - #[midline comment]# 3
 10 * #{midline comment}# 2
