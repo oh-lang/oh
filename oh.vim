@@ -90,9 +90,9 @@ syn match   ohNumber	"\<\d\+\.\%([eE][+-]\=\d\+\)\=[jJ]\=\%(\W\|$\)\@="
 syn match   ohNumber	"\%(^\|\W\)\zs\d*\.\d\+\%([eE][+-]\=\d\+\)\=[jJ]\=\>"
 
 syn keyword ohBuiltin	false true null
-syn keyword ohBuiltin	m
+syn keyword ohBuiltin	context debug m
 syn keyword ohBuiltinFunction	m_
-syn keyword ohBuiltinFunction	abs_ ceil_ floor_ max_ min_
+syn keyword ohBuiltinFunction	abs_ ceil_ count_ floor_ max_ min_
 syn keyword ohBuiltinFunction	error_ print_
 
 " trailing whitespace
@@ -103,7 +103,7 @@ syn match   ohSpaceError	display "\t\+ "
 
 " The default highlight links.
 " WildMenu is interesting.  see options with `:highlight`
-hi def link ohNamespace		Question
+hi def link ohNamespace		Folded
 hi def link ohStatement		Statement
 hi def link ohConditional	Conditional
 hi def link ohRepeat		Repeat
@@ -112,7 +112,7 @@ hi def link ohError		Exception
 hi def link ohInclude		Include
 hi def link ohAsync		Statement
 hi def link ohBuiltin		Title
-hi def link ohBuiltinFunction		NonText
+hi def link ohBuiltinFunction		Question
 hi def link ohFunction		Function
 hi def link ohUnused	Include
 hi def link ohComment		Comment
@@ -129,7 +129,7 @@ hi def link ohBrackets		Type
 hi def link ohBraces		NonText
 hi def link ohParens		Operator
 hi def link ohReadonly		Constant
-hi def link ohWritable		Question
+hi def link ohWritable		Comment
 hi def link ohTemporary		NonText
 
 let b:current_syntax = "oh"

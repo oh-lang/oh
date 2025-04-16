@@ -193,7 +193,23 @@ vector2_: [x: dbl_, y: dbl_]
 
 TODO: can we keep nested types as concise (no need for `m_`)
 but require `m` for calling methods?  this would break consistency
-but might help with `::count_(): count_`.
+but might help with `::count_(): count_`.  well, we still want
+`m_ some_value_()`, if defined, to give the same result as `m some_value_()`, so
+we can't define an `m_` type/function that's the same as an `m` method.  or
+does this really matter?  we can always use the `type_case_` version of the
+`variable_case` identifier to get to `m_ some_value_()` if we want the class function.
+requiring `m` for methods does help with not needing to check two
+overloads (e.g., an `m` overload and a non-`m` overload), and i think
+it improves readability because it helps with scoping.
+does it help with things like conversions, e.g., `::i64_(): i64_`?
+actually, i think it does.
+```
+    ;;do_something_(): null_
+        # this could be `m_ count_()`:
+        val: count_()
+        # this would definitely be `::count_()`:
+        val: m count_()
+```
 
 We're just not allowed to import any overloads that would be shadow a method or function
 on the class body, where ambiguity could arise with or without the class instance being
