@@ -2121,11 +2121,13 @@ then null is the default.
 
 In either case, you can use `;` instead of `:` to indicate that the variable is writable.
 Note that if you are defining a nullable variable inline, you should
-prefix the operator with a `?`, e.g., `X?: nullable_result(...)`.  It is a compiler error
+prefix the operator with a `?`, e.g., `x?: nullable_result_(...)`.  It is a compiler error
 if a declared variable is nullable but `?` is not used, since we want the programmer to be
 aware of the fact that the variable could be null, even though the program will take care
-of null checks automatically and safely.  The `?` operator is required for any `one_of` that
-could take on a `Null` value, e.g., `one_of[Null, Bread, Tomato, Mozzarella]`.
+of null checks automatically and safely.  The `?` operator is required for any `one_of_` that
+could take on a `null` value, e.g., `one_of_[null, bread, tomato, mozzarella]`.
+TODO: `one_of_[null, ...]` would collapse to `one_of_[...]` if we strictly consider `null`
+as a missing/non-existent value.
 
 One of the cool features of oh-lang is that we don't require the programmer
 to check for null on a nullable type before using it.  The executable will automatically
@@ -2136,34 +2138,43 @@ If your code calls a method on an instance that is null, a null will be
 returned instead (and the method will not be called).
 
 ```
-# define a class with a method called `some_method`:
-some_class: []{ ::some_method(): int }
+# define a class with a method called `some_method_`:
+some_class_: []{ ::some_method_(): int }
 
-Nullable?; some_class = Null
+nullable?; some_class_ = null
 
-Value?: Nullable some_method()  # `Value` has type `one_of[int, null]` now,
+value?: nullable some_method_() # `value` has type `one_of_[int_, null_]` now,
                                 # so it needs to be defined with `?`
 
 # eventually we want to support things like this, where the compiler
 # can tell if the type is nullable or not:
-if Nullable != Null
-    Non_null_value: Nullable some_method()   # `Non_null_value` here must be `int`.
+if nullable != null
+    non_null_value: nullable some_method_() # `non_null_value` here must be `int_`.
+
+# however the easier compiler thing to do is use the `is` reduction.
+if nullable is some_class:
+    non_null_value: some_class some_method_()   # `non_null_value` here must be `int_`.
 ```
 
-It is not allowed to implicitly cast from a nullable type to a non-nullable type,
-e.g., `Value: Nullable some_method()`.  The compiler will require that we define
-`Value` with `?:`, or that we explicitly cast via whatever ending type we desire,
-e.g., `Value: int(Nullable some_method())`.  Note that `whatever_type(Null)` is
-the same as `whatever_type()`, and number types (e.g., `int()` or `flt()`)  default
-to 0.
+See the [`is` operator](#is-operator) for more details.
 
-Optional functions are defined in a similar way (cf. section on nullable functions),
-with the `?` just after the function name, e.g., `some_function?(...Args): return_type`.
+It is not allowed to implicitly cast from a nullable type to a non-nullable type,
+e.g., `value: nullable some_method_()`.  The compiler will require that we define
+`value` with `?:`, or that we explicitly cast via whatever ending type we desire,
+e.g., `value: int_(nullable some_method_())`.  Note that `whatever_type_(null)` is
+the same as `whatever_type_()`, i.e., the default constructor, and number types
+(e.g., `int_()` or `flt_()`)  default to 0.
+TODO: doesn't this break the requirement that we pass in the argument as `?:`?
+would we need `value: int_(from?: nullable some_method_())`?
+probably best to just use `value: nullable some_method_() ?? 0`.
+
+Optional functions are defined in a similar way (cf. section on [nullable functions](#nullable-functions)),
+with the `?` just after the function name, e.g., `some_function_?(...args): return_type_`.
 
 ## nullable classes
 
 We will allow defining a nullable type by taking a type and specifying what value
-is null on it.  For example, the symmetric type `s8` defines null as `-128` like this:
+is null on it.  For example, the symmetric type `s8_` defines null as `-128` like this:
 
 ```
 s8_?: s8_
@@ -2172,59 +2183,61 @@ s8_?: s8_
 }
 ```
 
-Similarly, `f32?` and `f64?` indicate that `NaN` is null via `{null: NaN, ::is_(null_): is_nan_(m)}`,
-so that you can define e.g. a nullable `f32` in exactly 32 bits.  To get this functionality,
-you must declare your variable as type `s8?` or `f32?`, so that the nullable checks
-kick in.
+Similarly, `f32_?` and `f64_?` indicate that `nan` is null via `{null: nan, ::is_(null_): is_nan_(m)}`,
+so that you can define e.g. a nullable `f32_` in exactly 32 bits.  To get this functionality,
+you must declare your variable as type `s8_?` or `f32_?`, so that the nullable checks
+kick in.  Note that while we offer a way to create a null via `f32?: null`, we always
+convert equality checks like `f32 == null` into `f32 is_(null_)` due to the fact that
+`::is_(null_)` can handle more edge cases (like `nan`, which is not equal to itself).
 
 If you are defining a class and want to also declare the nullable at the same time, you
 can do one of the following:
 
 ```
-my_class: [@private Some_state: int]
-{   ;;renew(M Some_state: int): {}
+my_class_: [@private some_state: int_]
+{   ;;renew_(m some_state: int_): {}
 
-    ::normal_method(): int
-        Some_state + 3
+    ::normal_method_(): int_
+        m some_state + 3
 
     # the nullable definition, inside a class:
-    ?: m
-    {   Null: [Some_state: -1]
-        ::is_null(): Some_state < 0
+    ?: m_
+    {   null: [some_state: -1]
+        ::is_null_(): m some_state < 0
 
-        ::null_method(): int
-            assert(Some_state >= 0)
-            Some_state * 5
+        ::additional_null_method_(): int_
+            if m is_null_() {0}
+            else {m some_state * 5}
     }
 }
 
 # nullable definition, outside a class (but same file).
 # both internal/external definitions aren't required of course.
-my_class?: my_class
-{   Null: [Some_state: -1]
-    ::is_null(): Some_state < 0
-    ::null_method(): int
-        assert(Some_state >= 0)
-        Some_state * 5
+my_class_?: my_class_
+{   null: [some_state: -1]
+    ::is_null_(): m some_state < 0
+    ::additional_null_method_(): int_
+        if m is_null_() {0}
+        else {m some_state * 5}
 }
 ```
 
-Note that any `one_of` that can be null gets nullable methods.  They are defined globally
+Note that any `one_of_` that can be null gets nullable methods.  They are defined globally
 since we don't want to make users extend from a base nullable class.
 
 ```
 # nullish or.
-# `Nullable ?? X` to return `X` if `Nullable` is null,
-# otherwise the non-null value in `Nullable`.
-non_null_or(~FIRST_a?., SECOND_a.): a
+# `nullable ?? x` to return `x` if `nullable` is null,
+# otherwise the non-null value in `nullable`.
+nullish_or_(~FIRST_a?., SECOND_a.): a_
     what FIRST_a
         non_null: {non_null}
         null {SECOND_a}
 
 # boolean or.
-# `Nullable || X` to return `X` if `Nullable` is null or falsey,
-# otherwise the non-null truthy value in `Nullable`.
-truthy_or(~FIRST_a?., SECOND_a.): a
+# `nullable || x` to return `x` if `nullable` is null or falsey,
+# otherwise the non-null truthy value in `nullable`.
+or_(~FIRST_a?., SECOND_a.): a
     what FIRST_a
         non_null:
             if non_null
@@ -2238,11 +2251,11 @@ We'll support more complicated pattern matching (like in Rust) using
 the `where` operator.  The shorter version of the above `what` statement is:
 
 ```
-truthy_or(~FIRST_a?., SECOND_a.): a
+or_(~FIRST_a?., SECOND_a.): a
     what FIRST_a
         NON_NULL_a: where !!NON_NULL_a
             NON_NULL_a
-        Null
+        null
             SECOND_a
 ```
 
@@ -2255,31 +2268,31 @@ You can declare an object type inline with nested fields.  The nested fields def
 with `:` are readonly, and `;` are writable.
 
 ```
-Vector; [X: dbl, Y: dbl, Z: dbl] = [X: 4, Y: 3, Z: 1.5]
-Vector X += 4   # COMPILER ERROR, field `X` of object is readonly 
+vector; [x: dbl_, y: dbl_, z: dbl_] = [x: 4, y: 3, z: 1.5]
+vector x += 4   # COMPILER ERROR, field `x` of object is readonly 
 
-# note however, as defined, Vector is reassignable since it was defined with `;`:
-Vector = [X: 1, Y: 7.2]
+# note however, as defined, vector is reassignable since it was defined with `;`:
+vector = [x: 1, y: 7.2]
 # note, missing fields will be default-initialized.
-Vector Z == 0   # should be True.
+vector z == 0   # should be true.
 
 # to make an object variable readonly, use : when defining:
-Vector2: [X: 3.75, Y: 3.25]
+vector2: [x: 3.75, y: 3.25]
 # or you can use `:` with an explicit type specifier and then `=`:
-Vector2: [X: dbl, Y: dbl] = [X: 3.75, Y: 3.25]
+vector2: [x: dbl, y: dbl] = [x: 3.75, y: 3.25]
 # then these operations are invalid:
-Vector2 X += 3          # COMPILER ERROR, variable is readonly, field cannot be modified
-Vector2 = [X: 1, Y: 2]  # COMPILER ERROR, variable is readonly, cannot be reassigned
+vector2 x += 3          # COMPILER ERROR, variable is readonly, field cannot be modified
+vector2 = [x: 1, y: 2]  # COMPILER ERROR, variable is readonly, cannot be reassigned
 ```
 
 You can define a type/interface for objects you use multiple times.
 
 ```
-# a plain-old-data class with 3 non-reassignable fields, X, Y, Z:
-vector3: [X: dbl, Y: dbl, Z: dbl]
+# a plain-old-data class with 3 non-reassignable fields, x, y, z:
+vector3_: [x: dbl_, y: dbl_, z: dbl_]
 
-# you can use `vector3` now like any other type, e.g.:
-Vector3: vector3(X: 5, Y: 10)
+# you can use `vector3_` now like any other type, e.g.:
+vector3: vector3_(x: 5, y: 10)
 ```
 
 We also allow type definitions with writable fields, e.g. `[X; int, Y; dbl]`.
