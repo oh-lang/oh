@@ -365,3 +365,31 @@ compile_vector3i(): null
 this would require some advanced linking logic.  would this require compiling
 everything but `main` into a library, then linking `main` with that library?
 then any new `compile` calls can rely on the library.
+
+### reference offsets
+
+the main thing that we'd like to avoid is requiring a new method for each
+logical reference thing, plus any recursion.  e.g., array, lot, etc.
+we want to do is be able to abstract over "here's a function, get a reference
+at this offset", which we can recurse with if necessary.
+i think we can store it like this, where each pointer from the root feeds
+into the next function to get the next pointer.
+`[root_ptr: ptr_[null_], array_[fn_(ptr[null_]): ptr_[null_]]`
+where each `fn_` is a lambda capture which also includes a hidden "context"
+with the correct `offset` for an `array` or an `at` key for a `lot`.
+the function itself knows to consider the context as an array context
+or a lot context.
+
+we probably shouldn't hide captures as an internal detail; we should
+be able to build them as well.  maybe something like `fn_(..., ctx: [...]): type_`,
+where `ctx` is a special keyword, can be readonly or writable (`ctx;`),
+and which is set once at the beginning like:
+TODO
+
+the following approach is probably worth trying only after doing the simple approach
+of using a pointer to the array and an offset (as a u64):
+we could use something like tagged pointers for "small" offsets, like indexing into
+an array with a small index.  when we make a reference to the third element, we hold
+`[ptr_[array_[~]], offset: 2]` *in one pointer if we can*.  the pointer tag
+will hold something like 0 = no offset, 1 = 4 bits in offset, 2 = 8 bits in offset,
+etc. up to 7 = 28 bits in offset.

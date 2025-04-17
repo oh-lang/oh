@@ -2600,8 +2600,8 @@ like `run_(after: duration_, fn_(): ~t_): t_`.  `duration_` is a built-in type t
 out of units of time like `seconds`, `minutes`, `hours`, etc., so we can do something like
 `run_(after: seconds: 3, {print_("hello world!")})`, which will automatically pass
 `(seconds: 3)` into the `duration_` constructor.  Of course, if you need multiple units of time,
-you'd use `run_(after: (seconds: 6, minutes: 1), {print("hello world!")})` or to be explicit
-you'd use `run_(after: duration_(seconds: 6, minutes: 1), {print("hello world!")})`.
+you'd use `run_(after: (seconds: 6, minutes: 1), {print_("hello world!")})` or to be explicit
+you'd use `run_(after: duration_(seconds: 6, minutes: 1), {print_("hello world!")})`.
 
 
 #### reference lifetimes
@@ -2610,12 +2610,12 @@ References are not allowed to escape the block in which their referent is define
 For example, this is illegal:
 
 ```
-Original_referent: int = 3
-My_reference: (Int) = Original_referent
-if Some_condition
-{   Nested_referent: int
-    # COMPILE ERROR: `Nested_referent` doesn't live as long as `My_reference`
-    (My_reference) = Nested_referent
+original_referent: int_ = 3
+my_reference: (int:) = original_referent
+if some_condition
+{   nested_referent: int_ = 5
+    # COMPILE ERROR: `nested_referent` doesn't live as long as `my_reference`
+    (my_reference) = nested_referent
 }
 ```
 
@@ -2623,9 +2623,11 @@ However, since function arguments can be references (e.g., if they are defined w
 `:` or `;`), references that use these function arguments can escape the function block.
 
 ```
-fifth_element(Array[int];): (Int;)
-    # this is OK because `Array` is a mutable reference
+fifth_element_(array[int_];): (int;)
+    # this is OK because `array` is a mutable reference
     # to an array that already exists outside of this scope.
+    # NOTE: this actually returns a pointer to the array with an offset (i.e., 4)
+    #       in case the array reallocates, etc.
     (;Array[4])
 
 My_array; array[int](1, 2, 3, 4, 5, 6)
