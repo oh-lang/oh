@@ -43,11 +43,14 @@ syn match	ohParens	")"
 syn match	ohReadonly	":"
 syn match	ohWritable	";"
 syn match	ohTemporary	"\."
+" TODO: add ~ as Type and ` as declarer.
+" TODO: maybe try inverting `: ` for `x: whatever_()`
 
 syn region	ohInclude matchgroup=ohInclude start="\\\\" end=" " skip="\\ "
 syn region	ohInclude matchgroup=ohInclude start="\\/" end=" " skip="\\ "
-syn match	ohUnused	"\<_\w*"
-syn match	ohMacro		"@\w*\>"
+syn match	ohUnused	"\<_\S*[^_]"
+syn match	ohUnusedFunction	"\<_\S*_"
+syn match	ohMacro		"@\S*\>"
 syn match	ohNamespace	"\u\+_\="
 syn match	ohFunction	"[^!-@[\\\]^_`{|} ]\S*_\>" contains=ohNamespace
 
@@ -114,7 +117,8 @@ hi def link ohAsync		Statement
 hi def link ohBuiltin		Title
 hi def link ohBuiltinFunction		Question
 hi def link ohFunction		Function
-hi def link ohUnused	Include
+hi def link ohUnused	Comment
+hi def link ohUnusedFunction	Include
 hi def link ohComment		Comment
 hi def link ohTodo		Todo
 hi def link ohString		String
