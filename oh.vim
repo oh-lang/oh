@@ -63,28 +63,28 @@ syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
 syn match	ohFunction	"[^!-@[\\\]^_`{|} ]\S*_\>" contains=ohNamespace
 
 syn match   ohComment	"# .*$"
-      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
+      \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ oneline display
       \ start=+#([^#]+ end="[^#])#"
-      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
+      \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ oneline display
       \ start=+#\[[^#]+ end=+[^#]\]#+
-      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
+      \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ oneline display
       \ start=+#{[^#]+ end=+[^#]}#+
-      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
+      \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMultilineComment matchgroup=ohMultilineComment
       \ start=+#(#+ end=+#)#+ keepend
-      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
+      \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMultilineComment matchgroup=ohMultilineComment
       \ start=+#\[#+ end=+#\]#+ keepend
-      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
+      \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMultilineComment matchgroup=ohMultilineComment
       \ start=+#{#+ end=+#}#+ keepend
-      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
+      \ contains=ohEscape,ohTodo,ohTick,@Spell
 
 syn region  ohString oneline matchgroup=ohQuotes
       \ start=+\z(['"]\)+ end="\z1" skip="\\\\\|\\\z1"
@@ -113,7 +113,7 @@ syn match   ohSpaceError	display excludenl "\s\+$"
 syn match   ohSpaceError	display " \+\t"
 syn match   ohSpaceError	display "\t\+ "
 
-syn region	ohTripleTick matchgroup=ohTripleTick
+syn region	ohTick matchgroup=ohTick
       \ start=+`+ end=+`+ keepend
       \ contains=ohBuiltin,ohBuiltinFunction,ohStatement,ohConditional,ohRepeat,ohOperator,ohError,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohSyntaxError,ohInclude,ohUnused,ohUnusedFunction,ohMacro,ohNamespace,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
 
