@@ -372,25 +372,10 @@ we probably shouldn't hide captures as an internal detail; we should
 be able to build them as well.  maybe something like `fn_(args, ctx. [...]): type_`,
 where `ctx` is a special keyword which is set once at the beginning like:
 `fn_(args): type_ = fn_ with ctx. [...]`.
-TODO: to avoid more keywords, is `ctx` a sort of generic?
-can we do `fn_[ctx_1; int_](args): type_`
-and then just define via `fn_(args): type_ = fn[ctx_1; 3]`?
-i'd say probably not, generics should know all their values/types at comptime
-and we'd want to pass in arbitrary runtime data.
 TODO: we can probably introduce `with` and use it to bind arguments
 more generally.  e.g., `fn_ with a. 123` or `fn_ with (b: 4, c: 3)`.
 
-we also need to know how to call these in C.  `ctx` needs to be an argument
-that is pre-filled somehow.  but that would require adding an argument to
-every function that is usually unused.  alternatively, we create a thread-local
-variable like `[extern] __thread void *OH_current_lambda_context;` and simply update
-that before we call any lambda.  however, if we call a lambda in the lambda,
-we'd need to replace the old value after the lambda is done, which may be
-tricky with jumps/blocks.
-
-`__thread` should work in gcc with some additional linking:
-https://gcc.gnu.org/onlinedocs/gcc/Thread-Local.html
-it might be something like `thread_local` in clang.
+i think we can do something like this:
 
 ```
 outer_(u64.): fn_(): u64_
