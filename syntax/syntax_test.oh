@@ -1,0 +1,14 @@
+#[#
+these lines should be commented out
+this line too.
+#]#
+my_function_(x: int_): int_
+    x + 1
+#[#
+this line should be commented out
+#]#
+6 + 1.2345
+#{#
+this line should be commented out
+#}#
+ok
