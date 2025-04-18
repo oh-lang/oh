@@ -62,28 +62,29 @@ syn match	ohNamespace	"\zs\<\u\+\ze[^A-Z_ ]"
 syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
 syn match	ohFunction	"[^!-@[\\\]^_`{|} ]\S*_\>" contains=ohNamespace
 
-syn match   ohComment	"# .*$" contains=ohTodo,@Spell
+syn match   ohComment	"# .*$"
+      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ oneline display
       \ start=+#([^#]+ end="[^#])#"
-      \ contains=ohEscape,@Spell
+      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ oneline display
       \ start=+#\[[^#]+ end=+[^#]\]#+
-      \ contains=ohEscape,@Spell
+      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ oneline display
       \ start=+#{[^#]+ end=+[^#]}#+
-      \ contains=ohEscape,@Spell
+      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
 syn region  ohMultilineComment matchgroup=ohMultilineComment
       \ start=+#(#+ end=+#)#+ keepend
-      \ contains=ohEscape,ohTripleTick,@Spell
+      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
 syn region  ohMultilineComment matchgroup=ohMultilineComment
       \ start=+#\[#+ end=+#\]#+ keepend
-      \ contains=ohEscape,ohTripleTick,@Spell
+      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
 syn region  ohMultilineComment matchgroup=ohMultilineComment
       \ start=+#{#+ end=+#}#+ keepend
-      \ contains=ohEscape,ohTripleTick,@Spell
+      \ contains=ohEscape,ohTodo,ohTripleTick,@Spell
 
 syn region  ohString oneline matchgroup=ohQuotes
       \ start=+\z(['"]\)+ end="\z1" skip="\\\\\|\\\z1"
