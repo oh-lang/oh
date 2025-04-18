@@ -45,13 +45,21 @@ syn match	ohWritable	";"
 syn match	ohTemporary	"\."
 " TODO: add ~ as Type and ` as declarer.
 " TODO: maybe try inverting `: ` for `x: whatever_()`
+" Namespace syntax errors
+syn match	ohSyntaxError	"\<\u\+\>"
+" TODO: these don't get captured, they overridden by Namespace
+syn match	ohSyntaxError	"\<_\u\+\>"
+syn match	ohSyntaxError	"\<\u\+_\>"
 
 syn region	ohInclude matchgroup=ohInclude start="\\\\" end=" " skip="\\ "
 syn region	ohInclude matchgroup=ohInclude start="\\/" end=" " skip="\\ "
 syn match	ohUnused	"\<_\S*[^_]"
 syn match	ohUnusedFunction	"\<_\S*_"
 syn match	ohMacro		"@\S*\>"
-syn match	ohNamespace	"\u\+_\="
+syn match	ohNamespace	"\u\+_"
+syn match	ohNamespace	"_\u\+\>"
+syn match	ohNamespace	"\zs\<\u\+\ze[^A-Z_ ]"
+syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
 syn match	ohFunction	"[^!-@[\\\]^_`{|} ]\S*_\>" contains=ohNamespace
 
 syn match   ohComment	"# .*$" contains=ohTodo,@Spell
@@ -135,6 +143,7 @@ hi def link ohParens		Operator
 hi def link ohReadonly		Constant
 hi def link ohWritable		Comment
 hi def link ohTemporary		NonText
+hi def link ohSyntaxError		Error
 
 let b:current_syntax = "oh"
 
