@@ -408,19 +408,29 @@ print_(uid_generator_())
 becomes something like this (name mangling omitted for readability):
 
 ```
-typedef struct captured_lambda_t
-{   uint64_t (*function_ptr)();
-    uint64_t context_start;
-}       captured_lambda_t;
-
 typedef struct inner_ctx_t
 {   uint64_t counter;
     uint64_t xorer;
 }       inner_ctx_t;
 
 uint64_t inner_(inner_ctx_t *ctx)
-{
+{   ++ctx->counter;
+    return ctx->counter ^ ctx->xorer;
 };
+
+// We don't actually need to return a function pointer here;
+// if we have an `inner_ctx_t` we know we need to pair with `inner_`.
+// See call-sites below.
+inner_ctx_t outer_(uint64_t uint64)
+{   return inner_ctx_t
+    {   .counter = uint64,
+        .xorer = 12345,
+    };
+}
+
+inner_ctx_t uid_generator_ctx = outer_(456);
+printf("%d\n", inner_(&uid_generator_ctx));
+printf("%d\n", inner_(&uid_generator_ctx));
 ```
 
 ## reference offsets
