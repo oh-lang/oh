@@ -366,7 +366,64 @@ this would require some advanced linking logic.  would this require compiling
 everything but `main` into a library, then linking `main` with that library?
 then any new `compile` calls can rely on the library.
 
-### reference offsets
+## captures
+
+we probably shouldn't hide captures as an internal detail; we should
+be able to build them as well.  maybe something like `fn_(args, ctx. [...]): type_`,
+where `ctx` is a special keyword which is set once at the beginning like:
+`fn_(args): type_ = fn_ with ctx. [...]`.
+TODO: to avoid more keywords, is `ctx` a sort of generic?
+can we do `fn_[ctx_1; int_](args): type_`
+and then just define via `fn_(args): type_ = fn[ctx_1; 3]`?
+i'd say probably not, generics should know all their values/types at comptime
+and we'd want to pass in arbitrary runtime data.
+TODO: we can probably introduce `with` and use it to bind arguments
+more generally.  e.g., `fn_ with a. 123` or `fn_ with (b: 4, c: 3)`.
+
+we also need to know how to call these in C.  `ctx` needs to be an argument
+that is pre-filled somehow.  but that would require adding an argument to
+every function that is usually unused.  alternatively, we create a thread-local
+variable like `[extern] __thread void *OH_current_lambda_context;` and simply update
+that before we call any lambda.  however, if we call a lambda in the lambda,
+we'd need to replace the old value after the lambda is done, which may be
+tricky with jumps/blocks.
+
+`__thread` should work in gcc with some additional linking:
+https://gcc.gnu.org/onlinedocs/gcc/Thread-Local.html
+it might be something like `thread_local` in clang.
+
+```
+outer_(u64.): fn_(): u64_
+    inner_(ctx. [counter; u64_, xorer: u64_]): u64_
+        ++ctx counter
+        ctx counter >< ctx xorer
+    inner_ with ctx. [counter. u64, xorer: 12345]
+
+uid_generator_(): u64 = outer_(456)
+
+print_(uid_generator_())
+print_(uid_generator_())
+```
+
+becomes something like this (name mangling omitted for readability):
+
+```
+typedef struct captured_lambda_t
+{   uint64_t (*function_ptr)();
+    uint64_t context_start;
+}       captured_lambda_t;
+
+typedef struct inner_ctx_t
+{   uint64_t counter;
+    uint64_t xorer;
+}       inner_ctx_t;
+
+uint64_t inner_(inner_ctx_t *ctx)
+{
+};
+```
+
+## reference offsets
 
 the main thing that we'd like to avoid is requiring a new method for each
 logical reference thing, plus any recursion.  e.g., array, lot, etc.
@@ -380,12 +437,6 @@ with the correct `offset` for an `array` or an `at` key for a `lot`.
 the function itself knows to consider the context as an array context
 or a lot context.
 
-we probably shouldn't hide captures as an internal detail; we should
-be able to build them as well.  maybe something like `fn_(..., ctx: [...]): type_`,
-where `ctx` is a special keyword, can be readonly or writable (`ctx;`),
-and which is set once at the beginning like:
-TODO
-
 the following approach is probably worth trying only after doing the simple approach
 of using a pointer to the array and an offset (as a u64):
 we could use something like tagged pointers for "small" offsets, like indexing into
@@ -393,3 +444,5 @@ an array with a small index.  when we make a reference to the third element, we 
 `[ptr_[array_[~]], offset: 2]` *in one pointer if we can*.  the pointer tag
 will hold something like 0 = no offset, 1 = 4 bits in offset, 2 = 8 bits in offset,
 etc. up to 7 = 28 bits in offset.
+see https://en.wikipedia.org/wiki/X86-64#Virtual_address_space_details for why we
+should be able to do stuff like this.
