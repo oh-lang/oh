@@ -1,4 +1,4 @@
-# oh
+![oh-lang](./promo/oh-lang-logo.svg)
 
 oh language tooling
 
