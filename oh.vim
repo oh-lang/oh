@@ -77,15 +77,15 @@ syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ contains=ohEscape,@Spell
 syn region  ohMultilineComment matchgroup=ohMultilineComment
       \ start=+#(#+ end=+#)#+ keepend
-      \ contains=ohEscape,@Spell
+      \ contains=ohEscape,ohTripleTick,@Spell
 syn region  ohMultilineComment matchgroup=ohMultilineComment
       \ start=+#\[#+ end=+#\]#+ keepend
-      \ contains=ohEscape,@Spell
+      \ contains=ohEscape,ohTripleTick,@Spell
 syn region  ohMultilineComment matchgroup=ohMultilineComment
       \ start=+#{#+ end=+#}#+ keepend
-      \ contains=ohEscape,@Spell
+      \ contains=ohEscape,ohTripleTick,@Spell
 
-syn region  ohString matchgroup=ohQuotes
+syn region  ohString oneline matchgroup=ohQuotes
       \ start=+\z(['"]\)+ end="\z1" skip="\\\\\|\\\z1"
       \ contains=ohEscape,@Spell
 
@@ -111,6 +111,10 @@ syn match   ohSpaceError	display excludenl "\s\+$"
 " mixed tabs and spaces
 syn match   ohSpaceError	display " \+\t"
 syn match   ohSpaceError	display "\t\+ "
+
+syn region	ohTripleTick matchgroup=ohTripleTick
+      \ start=+`+ end=+`+ keepend
+      \ contains=ohBuiltin,ohBuiltinFunction,ohStatement,ohConditional,ohRepeat,ohOperator,ohError,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohSyntaxError,ohInclude,ohUnused,ohUnusedFunction,ohMacro,ohNamespace,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
 
 " The default highlight links.
 " WildMenu is interesting.  see options with `:highlight`
