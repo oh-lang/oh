@@ -2,3 +2,4 @@
 zig/zig-out/
 zig/.zig-cache/
 rust/target/
+a.out

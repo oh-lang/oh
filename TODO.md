@@ -375,79 +375,8 @@ where `ctx` is a special keyword which is set once at the beginning like:
 TODO: we can probably introduce `with` and use it to bind arguments
 more generally.  e.g., `fn_ with a. 123` or `fn_ with (b: 4, c: 3)`.
 
-i think we can do something like this:
-
-```
-outer_(u64.): fn_(): u64_
-    inner_(ctx. [counter; u64_, xorer: u64_]): u64_
-        ++ctx counter
-        ctx counter >< ctx xorer
-    inner_ with ctx. [counter. u64, xorer: 12345]
-
-uid_generator_(): u64 = outer_(456)
-
-print_(uid_generator_())
-print_(uid_generator_())
-```
-
-becomes something like this (name mangling omitted for readability):
-
-```
-typedef struct inner_ctx_t
-{   uint64_t counter;
-    uint64_t xorer;
-}       inner_ctx_t;
-
-uint64_t inner_(inner_ctx_t *ctx)
-{   ++ctx->counter;
-    return ctx->counter ^ ctx->xorer;
-};
-
-// We don't actually need to return a function pointer here;
-// if we have an `inner_ctx_t` we know we need to pair with `inner_`.
-// See call-sites below.
-inner_ctx_t outer_(uint64_t uint64)
-{   return inner_ctx_t
-    {   .counter = uint64,
-        .xorer = 12345,
-    };
-}
-
-inner_ctx_t uid_generator_ctx = outer_(456);
-printf("%d\n", inner_(&uid_generator_ctx));
-printf("%d\n", inner_(&uid_generator_ctx));
-```
-
-to use in a space that expects a single function argument:
-
-```
-needs_ids_(fn_(): u64_): null_
-    print(fn_())
-    print(fn_())
-```
-
-we could do the complicated thread-local storage (TLS) and set/unset
-a context via `__thread` https://gcc.gnu.org/onlinedocs/gcc/Thread-Local.html.
-
-OR we when we see an argument like this function, and we see it requires a capture,
-we allow passing a context as well.
-
-```
-// standard overload, actually not needed
-void needs_ids_(uint64_t (*fn_)(void))
-{   printf("%d\n", fn_());
-    printf("%d\n", fn_());
-}
-
-// special overload, needed for our context
-void needs_ids_ctx_(uint64_t (*fn_)(void *ctx), void *ctx)
-{   printf("%d\n", fn_(ctx));
-    printf("%d\n", fn_(ctx));
-}
-
-// TODO: i think we can use casts like this.
-needs_ids_ctx_(inner_, (void *)&uid_generator_ctx);
-```
+see [explicit capture test](https://github.com/oh-lang/oh/blob/main/test/explicit_capture.c)
+for how we might translate into C code here for captures.
 
 ### implicit captures
 
