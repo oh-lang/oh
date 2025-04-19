@@ -376,46 +376,8 @@ TODO: we can probably introduce `with` and use it to bind arguments
 more generally.  e.g., `fn_ with a. 123` or `fn_ with (b: 4, c: 3)`.
 
 see [explicit capture test](https://github.com/oh-lang/oh/blob/main/test/explicit_capture.c)
-for how we might translate into C code here for captures.
-
-### implicit captures
-
-```
-# TODO: we probably should have an annotation that it's ok for this
-#       `counter` to come from a temporary, because it gets captured.
-counter_(counter; u64_): fn_(): u64_
-    fn_(): ++counter
-
-# TODO: otherwise we probably should have compile errors here if
-#       using a temporary as a reference.
-fn_(): u64_ = counter_(counter; 123)
-print_(fn_())   # should print 124
-print_(fn_())   # should print 125
-```
-
-becomes something like this (name mangling omitted for readability):
-
-```
-typedef struct counter_fn_ctx_t
-{   uint64_t *counter; // TODO: should become a "reference offsets" type
-}       counter_fn_ctx_t;
-
-uint64_t counter_fn_(counter_fn_ctx_t *ctx)
-{   return ++*(ctx->counter);
-};
-
-// We don't actually need to return a function pointer here.
-counter_fn_ctx_t counter_(uint64_t *counter)
-{   return counter_fn_ctx_t
-    {   .counter = counter,
-    };
-}
-
-uint64_t counter_unique_var = 123;
-counter_fn_ctx_t fn_ctx = counter_(&counter_unique_var);
-printf("%d\n", counter_fn_(&fn_ctx));
-printf("%d\n", counter_fn_(&fn_ctx));
-```
+for how we might translate into C code for captures explicitly, or implicitly via
+the [implicit capture test](https://github.com/oh-lang/oh/blob/main/test/implicit_capture.c).
 
 ## reference offsets
 
