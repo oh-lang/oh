@@ -1,14 +1,43 @@
 #[#
 these lines should be commented out
 this line too.
+```
+3 + 4 # inside here we can have nested comments
+"ok, " + #( midline comment )# print_("this is good")
+#{#
+probably overkill to have nested multiline comments `with nested ticks_()`
+#}#
+```
 #]#
+
 my_function_(x: int_): int_
     x + 1
+
 #[#
 this line should be commented out
+```
+# bad namespace examples
+    ASDF ASDF_A B_ASDF
+# TODO: fix these
+# bad namespaces but hard to detect with regex:
+    ASDF_ _ASDF
+# ok but weird namespaces
+    ASDFi jASDF ASDFfn_ funcASDF_ qwASDFerty
+# idomatic namespaces
+    ASDF_i j_ASDF ASDF_fn_ func_ASDF_ this_ASDF_variable some_ASDF_function_
+```
 #]#
+
 6 + 1.2345
+
 #{#
 this line should be commented out
 #}#
-ok
+
+result_(u64): hm_[ok_: u64_, er_: u64_]
+    if u64 % 2 == 0
+        ok: u64 // 2
+        ok
+    else
+        er: u64
+        er

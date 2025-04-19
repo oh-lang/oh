@@ -21,6 +21,7 @@ set cpo&vim
 "
 syn keyword ohBuiltin	false true null
 syn keyword ohBuiltin	context debug m
+syn keyword ohBuiltin	with
 syn keyword ohBuiltinFunction	is_ m_ renew_
 syn keyword ohBuiltinFunction	count_ each_
 syn keyword ohBuiltinFunction	abs_ ceil_ floor_ max_ min_
@@ -62,7 +63,7 @@ syn match	ohNamespace	"\zs\<\u\+\ze[^A-Z_ ]"
 syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
 syn match	ohFunction	"[^!-@[\\\]^_`{|} ]\S*_\>" contains=ohNamespace
 
-syn match   ohComment	"# .*$"
+syn match   ohEndOfLineComment	"# .*$"
       \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ oneline display
@@ -114,8 +115,8 @@ syn match   ohSpaceError	display " \+\t"
 syn match   ohSpaceError	display "\t\+ "
 
 syn region	ohTick matchgroup=ohTick
-      \ start=+`+ end=+`+ keepend
-      \ contains=ohBuiltin,ohBuiltinFunction,ohStatement,ohConditional,ohRepeat,ohOperator,ohError,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohSyntaxError,ohInclude,ohUnused,ohUnusedFunction,ohMacro,ohNamespace,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
+      \ start=+`+ end=+`+
+      \ contains=ohBuiltin,ohBuiltinFunction,ohStatement,ohConditional,ohRepeat,ohOperator,ohError,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohSyntaxError,ohInclude,ohUnused,ohUnusedFunction,ohMacro,ohNamespace,ohEndOfLineComment,ohMidlineComment,ohMultilineComment,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
 
 " The default highlight links.
 " WildMenu is interesting.  see options with `:highlight`
@@ -132,12 +133,12 @@ hi def link ohBuiltinFunction		Question
 hi def link ohFunction		Function
 hi def link ohUnused	Comment
 hi def link ohUnusedFunction	Include
-hi def link ohComment		Comment
+hi def link ohEndOfLineComment		Comment
+hi def link ohMultilineComment	Comment
+hi def link ohMidlineComment	Comment
 hi def link ohTodo		Todo
 hi def link ohString		String
 hi def link ohQuotes		String
-hi def link ohMultilineComment	ohComment
-hi def link ohMidlineComment	ohComment
 hi def link ohEscape		Special
 hi def link ohNumber		Number
 hi def link ohSpaceError	Error
