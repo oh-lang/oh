@@ -418,12 +418,47 @@ printf("%d\n", inner_(&uid_generator_ctx));
 printf("%d\n", inner_(&uid_generator_ctx));
 ```
 
+to use in a space that expects a single function argument:
+
+```
+needs_ids_(fn_(): u64_): null_
+    print(fn_())
+    print(fn_())
+```
+
+we could do the complicated thread-local storage (TLS) and set/unset
+a context via `__thread` https://gcc.gnu.org/onlinedocs/gcc/Thread-Local.html.
+
+OR we when we see an argument like this function, and we see it requires a capture,
+we allow passing a context as well.
+
+```
+// standard overload, actually not needed
+void needs_ids_(uint64_t (*fn_)(void))
+{   printf("%d\n", fn_());
+    printf("%d\n", fn_());
+}
+
+// special overload, needed for our context
+void needs_ids_ctx_(uint64_t (*fn_)(void *ctx), void *ctx)
+{   printf("%d\n", fn_(ctx));
+    printf("%d\n", fn_(ctx));
+}
+
+// TODO: i think we can use casts like this.
+needs_ids_ctx_(inner_, (void *)&uid_generator_ctx);
+```
+
 ### implicit captures
 
 ```
+# TODO: we probably should have an annotation that it's ok for this
+#       `counter` to come from a temporary, because it gets captured.
 counter_(counter; u64_): fn_(): u64_
     fn_(): ++counter
 
+# TODO: otherwise we probably should have compile errors here if
+#       using a temporary as a reference.
 fn_(): u64_ = counter_(counter; 123)
 print_(fn_())   # should print 124
 print_(fn_())   # should print 125
