@@ -418,6 +418,41 @@ printf("%d\n", inner_(&uid_generator_ctx));
 printf("%d\n", inner_(&uid_generator_ctx));
 ```
 
+### implicit captures
+
+```
+counter_(counter; u64_): fn_(): u64_
+    fn_(): ++counter
+
+fn_(): u64_ = counter_(counter; 123)
+print_(fn_())   # should print 124
+print_(fn_())   # should print 125
+```
+
+becomes something like this (name mangling omitted for readability):
+
+```
+typedef struct counter_fn_ctx_t
+{   uint64_t *counter; // TODO: should become a "reference offsets" type
+}       counter_fn_ctx_t;
+
+uint64_t counter_fn_(counter_fn_ctx_t *ctx)
+{   return ++*(ctx->counter);
+};
+
+// We don't actually need to return a function pointer here.
+counter_fn_ctx_t counter_(uint64_t *counter)
+{   return counter_fn_ctx_t
+    {   .counter = counter,
+    };
+}
+
+uint64_t counter_unique_var = 123;
+counter_fn_ctx_t fn_ctx = counter_(&counter_unique_var);
+printf("%d\n", counter_fn_(&fn_ctx));
+printf("%d\n", counter_fn_(&fn_ctx));
+```
+
 ## reference offsets
 
 the main thing that we'd like to avoid is requiring a new method for each
@@ -441,3 +476,10 @@ will hold something like 0 = no offset, 1 = 4 bits in offset, 2 = 8 bits in offs
 etc. up to 7 = 28 bits in offset.
 see https://en.wikipedia.org/wiki/X86-64#Virtual_address_space_details for why we
 should be able to do stuff like this.
+
+TODO: for the default `lot` (i.e., `insertion_ordered_lot`), can we give the
+user a (u64) offset rather than pass the key (possibly string, large) around?
+probably not, as referencing the lot at any point can create a new entry,
+which can get deleted by something else, etc.  potentially we could resolve
+as an offset for a certain block that we are sure that we aren't borrowing
+any of the parents/ancestors in a mutable way.
