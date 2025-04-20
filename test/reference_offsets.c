@@ -11,6 +11,9 @@ COMMON_C
 STACK_H(float_t)
 STACK_C(float_t)
 
+STACK_H(stack_float_t)
+STACK_C(stack_float_t)
+
 TEST_C
 
 int main()
@@ -23,6 +26,8 @@ int main()
     stack.data[0] = 1.234;
     stack.data[1] = 2.345;
     stack.data[2] = 3.456;
+    print_stack_float_t_(stdout, &stack);
+    fprintf(stdout, "\n");
     ASSERT_EQUAL(float_t, pop_stack_float_t_(&stack), 3.456);
     ASSERT_EQUAL(float_t, pop_stack_float_t_(&stack), 2.345);
     ASSERT_EQUAL(uint32_t, stack.count, 1);

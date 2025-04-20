@@ -13,6 +13,8 @@
     int capacity_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t uint32); \
     int append_default_stack_ ## data_t ## _(stack_ ## data_t *stack); \
     data_t pop_stack_ ## data_t ## _(stack_ ## data_t *stack); \
+    int equal_stack_ ## data_t ## _(stack_ ## data_t *a, stack_ ## data_t *b); \
+    int print_stack_ ## data_t ## _(FILE *f, stack_ ## data_t *stack); \
 /* end STACK_H */
 
 #define STACK_C(data_t) \
@@ -63,5 +65,24 @@
         {   fprintf(stderr, "no elements in stack\n"); exit(1); \
         } \
         return stack->data[--stack->count]; \
+    } \
+    int equal_stack_ ## data_t ## _(stack_ ## data_t *a, stack_ ## data_t *b) \
+    {   if (a->count != b->count) \
+        {   return 0; \
+        } \
+        for (uint32_t index = 0; index < a->count; ++index) \
+        {   if (!(equal_ ## data_t ## _(&a->data[index], &b->data[index]))) \
+            {   return 0; \
+            } \
+        } \
+        return 1; \
+    } \
+    int print_stack_ ## data_t ## _(FILE *f, stack_ ## data_t *stack) \
+    {   fprintf(f, "["); \
+        for (uint32_t index = 0; index < stack->count; ++index) \
+        {   print_ ## data_t ## _(f, &stack->data[index]); \
+            fprintf(f, ", "); \
+        } \
+        fprintf(f, "]"); \
     } \
 /* end STACK_C */
