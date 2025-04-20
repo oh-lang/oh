@@ -1,5 +1,7 @@
+// gcc reference_offsets.c -lm && ./a.out
 #include "test.h"
 
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,6 +73,26 @@ void descope_float_t_(float_t *f)
 
 STACK(float_t)
 
+int equal_uint32_t_(uint32_t *a, uint32_t *b)
+{   return *a == *b;
+}
+void print_uint32_t_(FILE *f, uint32_t *uint32)
+{   fprintf(f, "%d", *uint32);
+}
+
+int equal_float_t_(float_t *a, float_t *b)
+{   float abs_delta = fabs(*a - *b);
+    float abs_min = fmin(fabs(*a), fabs(*b));
+    if (abs_min > 0.0) {
+        return abs_delta / abs_min < 1e-5;
+    }
+    // if zero, then require absoluteness
+    return *a == *b;
+}
+void print_float_t_(FILE *f, float_t *flt)
+{   fprintf(f, "%f", *flt);
+}
+
 int main()
 {   stack_float_t stack;
     enscope_stack_float_t_(&stack);
@@ -81,6 +103,9 @@ int main()
     stack.data[0] = 1.234;
     stack.data[1] = 2.345;
     stack.data[2] = 3.456;
+    ASSERT_EQUAL(float_t, pop_stack_float_t_(&stack), 3.456);
+    ASSERT_EQUAL(float_t, pop_stack_float_t_(&stack), 2.345);
+    ASSERT_EQUAL(uint32_t, stack.count, 1);
     descope_stack_float_t_(&stack);
     return 0;
 }
