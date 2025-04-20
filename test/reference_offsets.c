@@ -14,8 +14,6 @@ STACK_C(float_t)
 STACK_H(stack_float_t)
 STACK_C(stack_float_t)
 
-TEST_C
-
 void add_values_(stack_stack_float_t *stack_stack)
 {   append_default_stack_stack_float_t_(stack_stack);
     append_default_stack_stack_float_t_(stack_stack);

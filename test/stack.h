@@ -31,15 +31,25 @@
         stack->count = 0; \
     } \
     int capacity_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t uint32) \
-    {   data_t *data; \
-        if (stack->capacity == 0) \
-        {   data = malloc(uint32 * sizeof(data_t)); \
+    {   while (stack->count > uint32) \
+        {   data_t data = pop_stack_ ## data_t ## _(stack); \
+            descope_ ## data_t ## _(&data); \
+        } \
+        data_t *data; \
+        if (uint32 == 0) \
+        {   data = NULL; \
         } \
         else \
-        {   data = realloc(stack->data, uint32 * sizeof(data_t)); \
-        } \
-        if (data == NULL) \
-        {   return 0; \
+        {   if (stack->capacity == 0) \
+            {   data = malloc(uint32 * sizeof(data_t)); \
+            } \
+            else \
+            {   data = realloc(stack->data, uint32 * sizeof(data_t)); \
+            } \
+            /* check both branches that we succeeded */ \
+            if (data == NULL) \
+            {   return 0; \
+            } \
         } \
         stack->data = data; \
         stack->capacity = uint32; \

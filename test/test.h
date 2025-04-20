@@ -14,6 +14,3 @@
         exit(1); \
     } \
 }
-
-#define TEST_C \
-/* end TEST_C */
