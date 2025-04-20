@@ -1,75 +1,15 @@
 // gcc reference_offsets.c -lm && ./a.out
 #include "test.h"
+#include "stack.h"
 
 #include <math.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define STACK(data_t) \
-    typedef struct stack_ ## data_t \
-    {   data_t *data; \
-        uint32_t capacity; \
-        uint32_t count; \
-    }       stack_ ## data_t;\
-    void descope_stack_ ## data_t ## _(stack_ ## data_t *stack) \
-    {   while (stack->count > 0) \
-        {   uint32_t index = --stack->count; \
-            descope_ ## data_t ## _(&stack->data[index]); \
-        } \
-        free(stack->data); \
-    } \
-    void enscope_stack_ ## data_t ## _(stack_ ## data_t *stack) \
-    {   stack->data = NULL; \
-        stack->capacity = 0; \
-        stack->count = 0; \
-    } \
-    int capacity_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t uint32) \
-    {   data_t *data; \
-        if (stack->capacity == 0) \
-        {   data = malloc(uint32 * sizeof(data_t)); \
-        } \
-        else \
-        {   data = realloc(stack->data, uint32 * sizeof(data_t)); \
-        } \
-        if (data == NULL) \
-        {   return 0; \
-        } \
-        stack->data = data; \
-        stack->capacity = uint32; \
-        return 1; \
-    } \
-    int append_default_stack_ ## data_t ## _(stack_ ## data_t *stack) \
-    {   if (stack->count == stack->capacity) \
-        {   uint32_t desired_capacity = stack->capacity * 2; \
-            if (desired_capacity < stack->capacity) \
-            {   return 0; \
-            } \
-            else if (desired_capacity == 0) \
-            {   desired_capacity = 2; \
-            } \
-            if (capacity_stack_ ## data_t ## _(stack, desired_capacity) == 0) \
-            {   return 0; \
-            } \
-        } \
-        enscope_ ## data_t ## _(&stack->data[stack->count++]); \
-    } \
-    data_t pop_stack_ ## data_t ## _(stack_ ## data_t *stack) \
-    {   if (stack->count == 0) \
-        {   fprintf(stderr, "no elements in stack\n"); exit(1); \
-        } \
-        return stack->data[--stack->count]; \
-    } \
+COMMON_C
 
-void enscope_float_t_(float_t *f)
-{   *f = 0.0;
-}
-
-void descope_float_t_(float_t *f)
-{   // nothing to do
-}
-
-STACK(float_t)
+STACK_H(float_t)
+STACK_C(float_t)
 
 TEST_C
 

@@ -1,6 +1,6 @@
 #pragma once
 
-typedef float float_t;
+#include "common.h"
 
 #define ASSERT_EQUAL(type_t, a, b) \
 {   type_t AE_a = (a); \
@@ -34,4 +34,4 @@ typedef float float_t;
     void print_float_t_(FILE *f, float_t *flt) \
     {   fprintf(f, "%f", *flt); \
     } \
-    /* TEST_C end */
+/* end TEST_C */
