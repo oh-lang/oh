@@ -2,6 +2,9 @@
 
 #include "common.h"
 
+// `start` is a pointer, `offset` is a value (non-referential) type.
+#define REFER_POINTER_VALUE 0
+
 #define REFERENCE_H /*
 {   */ \
     typedef void *(*reference_t_)(void *start, void *offset); \
@@ -11,13 +14,16 @@
         flt_t flt; \
         uint64_t uint64; \
         uint32_t uint32; \
-        /* see logic in `resolve_word_` for how `ptr` is used. */ \
+        /* non-referential values above, referential values below. */ \
+        /* see logic in `resolve_` for how `ptr` is used. */ \
         size_t ptr; \
         struct refer_t *refer; \
     }       word_t; \
-    void *resolve_word_(uint32_t tag, word_t *word); \
     typedef struct refer_t \
-    {   size_t tagged_reference; \
+    {   /*
+        has tags from 0-7 OR'd into the `reference_t_` function pointer.
+        */ \
+        size_t tagged_reference; \
         word_t start; \
         word_t offset; \
     }       refer_t; \
@@ -31,24 +37,20 @@
     {   const size_t seven = 7; \
         reference_t_ reference_ = (reference_t_)(refer->tagged_reference & ~seven); \
         uint32_t tag = refer->tagged_reference & seven; \
-        void *start = resolve_word_(tag & 3, &refer->start); \
-        void *offset = resolve_word_(tag >> 2, &refer->offset); \
-        return reference_(start, offset); \
-    } \
-    void *resolve_word_(uint32_t tag, word_t *word) \
-    {   switch (tag & 3) \
-        {   case 0: \
-                return word; \
-            case 1: \
+        void *start; \
+        void *offset; \
+        switch (tag) \
+        {   case REFER_POINTER_VALUE: \
                 /* we'll avoid making users do `**ptr` in `reference_` code. */ \
-                return (void *)word->ptr; \
-            case 2: \
-                /* nesting... */ \
-                return resolve_(word->refer); \
-            case 3: \
-                fprintf(stderr, "invalid tagged word: %d\n", tag); \
+                start = (void *)refer->start.ptr; \
+                offset = &refer->offset; \
+                break; \
+            default: \
+                fprintf(stderr, "invalid tagged reference: %d\n", tag); \
                 exit(1); \
+                return NULL; \
         } \
+        return reference_(start, offset); \
     } \
     /*
 } end REFERENCE_C */
