@@ -1,5 +1,6 @@
 // gcc reference_offsets.c -lm && ./a.out
 #include "test.h"
+#include "reference.h"
 #include "stack.h"
 
 #include <math.h>
@@ -7,6 +8,8 @@
 #include <stdlib.h>
 
 COMMON_C
+
+REFERENCE_H
 
 STACK_H(float_t)
 STACK_C(float_t)
