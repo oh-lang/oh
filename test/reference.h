@@ -4,11 +4,17 @@
 
 #define REFERENCE_H /*
 {   */ \
-    typedef size_t tagged_t; \
     typedef void *(*reference_t_)(void *ctx); \
     typedef struct refer_t \
-    {   reference_t_ reference_; \
-        tagged_t tagged_ctx; \
+    {   size_t tagged_reference; \
+        union \
+        {   dbl_t dbl; \
+            flt_t flt; \
+            uint64_t uint64; \
+            uint32_t uint32; \
+            void *ptr; \
+            struct refer_t *refer; \
+        }       ctx;\
     }       refer_t; \
     void *resolve_(refer_t refer); \
     /* 
@@ -18,13 +24,14 @@
 {   */ \
     void *resolve_(refer_t refer) \
     {   const size_t seven = 7; \
-        void *ctx = (void *)(refer.tagged_ctx & ~seven); \
-        int tag = refer.tagged_ctx & seven; \
+        reference_t_ reference_ = (reference_t_)(refer.tagged_reference & ~seven); \
+        int tag = refer.tagged_reference & seven; \
+        void *ctx = &refer.ctx; \
         switch (tag) \
-            case 0: \
+        {   case 0: \
                 break; \
             case 1: \
-            {   refer_t *earlier_refer = (refer_t *)ctx; \
+            {   refer_t *earlier_refer = refer.ctx.refer; \
                 ctx = resolve_(*earlier_refer); \
                 break; \
             } \
@@ -32,7 +39,7 @@
                 fprintf(stderr, "invalid tagged pointer: %d\n", tag); \
                 exit(1); \
         } \
-        return refer.reference_(ctx); \
+        return reference_(ctx); \
     } \
     /*
 } end REFERENCE_C */

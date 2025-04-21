@@ -2,14 +2,15 @@
 
 #include <stdint.h>
 
-typedef float float_t;
+typedef float flt_t;
+typedef double dbl_t;
 
 #define COMMON_C /*
 { */ \
-    void enscope_float_t_(float_t *f) \
-    {   *f = 0.0; \
+    void enscope_flt_t_(flt_t *flt) \
+    {   *flt = 0.0; \
     } \
-    void descope_float_t_(float_t *f) \
+    void descope_flt_t_(flt_t *flt) \
     {   /* nothing to do */ \
     } \
     void enscope_uint32_t_(uint32_t *uint32) \
@@ -24,7 +25,7 @@ typedef float float_t;
     void print_uint32_t_(FILE *f, uint32_t *uint32) \
     {   fprintf(f, "%d", *uint32); \
     } \
-    int equal_float_t_(float_t *a, float_t *b) \
+    int equal_flt_t_(flt_t *a, flt_t *b) \
     {   float abs_delta = fabs(*a - *b); \
         float abs_min = fmin(fabs(*a), fabs(*b)); \
         if (abs_min > 0.0) { \
@@ -33,7 +34,7 @@ typedef float float_t;
         /* if zero, then require absoluteness */ \
         return *a == *b; \
     } \
-    void print_float_t_(FILE *f, float_t *flt) \
+    void print_flt_t_(FILE *f, flt_t *flt) \
     {   fprintf(f, "%f", *flt); \
     } \
     /*

@@ -16,7 +16,8 @@
     data_t pop_stack_ ## data_t ## _(stack_ ## data_t *stack); \
     int equal_stack_ ## data_t ## _(stack_ ## data_t *a, stack_ ## data_t *b); \
     int print_stack_ ## data_t ## _(FILE *f, stack_ ## data_t *stack); \
-    void *refer_stack_(uint32_t offset); \
+    data_t *element_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t offset); \
+    refer_t refer_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t offset); \
     /*
 } end STACK_H */
 
@@ -98,5 +99,21 @@
             fprintf(f, ", "); \
         } \
         fprintf(f, "]"); \
-    } /*
+    } \
+    data_t *element_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t offset) \
+    {   if (offset == UINT32_MAX) \
+        {   fprintf(stderr, "invalid offset: %d", UINT32_MAX); \
+            exit(1); \
+        } \
+        while (offset >= stack->count) \
+        {   append_default_stack_ ## data_t ## _(stack); \
+        } \
+        return &stack->data[offset]; \
+    } \
+    refer_t refer_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t offset) \
+    {   return (refer_t) \
+        {   .tagged_reference = 2, \
+        }; \
+    } \
+    /*
 } end STACK_C */
