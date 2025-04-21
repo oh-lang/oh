@@ -52,8 +52,8 @@ void repeat_twice_(uint64_t (*fn_)(void))
 }
 
 // built-in special overload, needed for our context-requiring function.
-typedef uint64_t (*u64_fn_ctx_)(void *ctx);
-void repeat_twice_ctx_(u64_fn_ctx_ fn_, void *ctx)
+typedef uint64_t (*u64_fn_ctx_t_)(void *ctx);
+void repeat_twice_ctx_(u64_fn_ctx_t_ fn_, void *ctx)
 {   printf("%ld\n", fn_(ctx));
     printf("%ld\n", fn_(ctx));
 }
@@ -66,7 +66,7 @@ int main()
     printf("%ld\n", counter_fn_(&fn_ctx));
     printf("%ld\n", counter_fn_(&fn_ctx));
 
-    repeat_twice_ctx_((u64_fn_ctx_)counter_fn_, (void *)&fn_ctx);
+    repeat_twice_ctx_((u64_fn_ctx_t_)counter_fn_, (void *)&fn_ctx);
     return 0;
 }
 

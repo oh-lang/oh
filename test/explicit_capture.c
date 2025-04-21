@@ -60,8 +60,8 @@ void needs_ids_(uint64_t (*fn_)(void))
 }
 
 // built-in special overload, needed for our context-requiring function.
-typedef uint64_t (*u64_fn_ctx_)(void *ctx);
-void needs_ids_ctx_(u64_fn_ctx_ fn_, void *ctx)
+typedef uint64_t (*u64_fn_ctx_t_)(void *ctx);
+void needs_ids_ctx_(u64_fn_ctx_t_ fn_, void *ctx)
 {   printf("%ld\n", fn_(ctx));
     printf("%ld\n", fn_(ctx));
 }
@@ -71,6 +71,6 @@ int main()
     printf("%ld\n", inner_(&uid_generator_ctx));
     printf("%ld\n", inner_(&uid_generator_ctx));
 
-    needs_ids_ctx_((u64_fn_ctx_)inner_, (void *)&uid_generator_ctx);
+    needs_ids_ctx_((u64_fn_ctx_t_)inner_, (void *)&uid_generator_ctx);
     return 0;
 }
