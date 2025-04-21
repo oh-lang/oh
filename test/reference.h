@@ -6,6 +6,7 @@
 #define REFER_POINTER_VALUE 0
 // `start` is itself a `refer`, `offset` is a value (non-referential) type.
 #define REFER_REFER_VALUE 1
+// TODO: [`offset` is a ptr, `offset` is a refer] * [`start` pointer, `start` refer]
 
 #define REFERENCE_H /*
 {   */ \
@@ -21,10 +22,15 @@
         size_t ptr; \
         struct refer_t *refer; \
     }       word_t; \
+    /*
+    TODO: probably need to add a `descope_` function to this struct.
+    we could get the tag for the `start` from `tagged_descope`
+    and the tag for the `offset` from `tagged_reference`.
+    we probably want to handle things like "owned pointer" here, so
+    that should be a tag value.  e.g., for an offset with a string key.
+    */ \
     typedef struct refer_t \
-    {   /*
-        has tags from 0-7 OR'd into the `reference_t_` function pointer.
-        */ \
+    {   /* has tags from 0-7 OR'd into a `reference_t_` function pointer. */ \
         size_t tagged_reference; \
         word_t start; \
         word_t offset; \
