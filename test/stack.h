@@ -17,7 +17,11 @@
     int equal_stack_ ## data_t ## _(stack_ ## data_t *a, stack_ ## data_t *b); \
     int print_stack_ ## data_t ## _(FILE *f, stack_ ## data_t *stack); \
     data_t *element_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t *offset); \
-    refer_t refer_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t offset); \
+    refer_t stack_refer_ ## data_t ## _(stack_ ## data_t *stack, uint32_t offset); \
+    /* NOTE: the passed-in `refer` must live as long as the return instanced does! */ \
+    /* TODO: add an `enscope_stack_refer_` method with `refer_t refer` arg that will heap-allocate. */ \
+    refer_t refer_stack_refer_ ## data_t ## _(refer_t *refer, uint32_t offset); \
+    data_t *resolve_stack_ ## data_t ## _(refer_t *refer); \
     /*
 } end STACK_H */
 
@@ -110,13 +114,24 @@
         } \
         return &stack->data[*offset]; \
     } \
-    refer_t refer_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t offset) \
+    refer_t stack_refer_ ## data_t ## _(stack_ ## data_t *stack, uint32_t offset) \
     {   reference_t_ reference_ = (reference_t_)element_stack_ ## data_t ## _; \
         return (refer_t) \
         {   .tagged_reference = ((size_t)reference_) | REFER_POINTER_VALUE, \
             .start = (word_t){ .ptr = (size_t)stack }, \
             .offset = (word_t){ .uint32 = offset }, \
         }; \
+    } \
+    refer_t refer_stack_refer_ ## data_t ## _(refer_t *refer, uint32_t offset) \
+    {   reference_t_ reference_ = (reference_t_)element_stack_ ## data_t ## _; \
+        return (refer_t) \
+        {   .tagged_reference = ((size_t)reference_) | REFER_REFER_VALUE, \
+            .start = (word_t){ .refer = refer }, \
+            .offset = (word_t){ .uint32 = offset }, \
+        }; \
+    } \
+    data_t *resolve_stack_ ## data_t ## _(refer_t *refer) \
+    {   return (data_t *)resolve_(refer); \
     } \
     /*
 } end STACK_C */

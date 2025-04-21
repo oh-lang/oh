@@ -4,6 +4,8 @@
 
 // `start` is a pointer, `offset` is a value (non-referential) type.
 #define REFER_POINTER_VALUE 0
+// `start` is itself a `refer`, `offset` is a value (non-referential) type.
+#define REFER_REFER_VALUE 1
 
 #define REFERENCE_H /*
 {   */ \
@@ -28,6 +30,7 @@
         word_t offset; \
     }       refer_t; \
     void *resolve_(refer_t *refer); \
+    /* TODO: print_ and equal_ methods. */ \
     /* 
 } end REFERENCE_H */
 
@@ -43,6 +46,10 @@
         {   case REFER_POINTER_VALUE: \
                 /* we'll avoid making users do `**ptr` in `reference_` code. */ \
                 start = (void *)refer->start.ptr; \
+                offset = &refer->offset; \
+                break; \
+            case REFER_REFER_VALUE: \
+                start = resolve_(refer->start.refer); \
                 offset = &refer->offset; \
                 break; \
             default: \
