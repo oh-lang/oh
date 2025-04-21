@@ -2,7 +2,8 @@
 
 #include "common.h"
 
-#define STACK_H(data_t) \
+#define STACK_H(data_t) /*
+{   */ \
     typedef struct stack_ ## data_t \
     {   data_t *data; \
         uint32_t capacity; \
@@ -15,9 +16,12 @@
     data_t pop_stack_ ## data_t ## _(stack_ ## data_t *stack); \
     int equal_stack_ ## data_t ## _(stack_ ## data_t *a, stack_ ## data_t *b); \
     int print_stack_ ## data_t ## _(FILE *f, stack_ ## data_t *stack); \
-/* end STACK_H */
+    void *refer_stack_(uint32_t offset); \
+    /*
+} end STACK_H */
 
-#define STACK_C(data_t) \
+#define STACK_C(data_t) /*
+{   */ \
     void descope_stack_ ## data_t ## _(stack_ ## data_t *stack) \
     {   while (stack->count > 0) \
         {   uint32_t index = --stack->count; \
@@ -94,5 +98,5 @@
             fprintf(f, ", "); \
         } \
         fprintf(f, "]"); \
-    } \
-/* end STACK_C */
+    } /*
+} end STACK_C */

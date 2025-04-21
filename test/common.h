@@ -4,7 +4,8 @@
 
 typedef float float_t;
 
-#define COMMON_C \
+#define COMMON_C /*
+{ */ \
     void enscope_float_t_(float_t *f) \
     {   *f = 0.0; \
     } \
@@ -35,4 +36,5 @@ typedef float float_t;
     void print_float_t_(FILE *f, float_t *flt) \
     {   fprintf(f, "%f", *flt); \
     } \
-/* end COMMON_C */
+    /*
+} end COMMON_C */
