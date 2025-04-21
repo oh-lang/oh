@@ -4,17 +4,19 @@
 
 #define REFERENCE_H /*
 {   */ \
-    typedef void *(*reference_t_)(void *ctx); \
+    typedef void *(*reference_t_)(void *start, void *offset); \
+    struct refer_t; \
+    typedef union \
+    {   dbl_t dbl; \
+        flt_t flt; \
+        uint64_t uint64; \
+        uint32_t uint32; \
+        struct refer_t *refer; \
+    }       word_t; \
     typedef struct refer_t \
     {   size_t tagged_reference; \
-        union \
-        {   dbl_t dbl; \
-            flt_t flt; \
-            uint64_t uint64; \
-            uint32_t uint32; \
-            void *ptr; \
-            struct refer_t *refer; \
-        }       ctx;\
+        word_t start; \
+        word_t offset; \
     }       refer_t; \
     void *resolve_(refer_t refer); \
     /* 
@@ -26,20 +28,21 @@
     {   const size_t seven = 7; \
         reference_t_ reference_ = (reference_t_)(refer.tagged_reference & ~seven); \
         int tag = refer.tagged_reference & seven; \
-        void *ctx = &refer.ctx; \
-        switch (tag) \
-        {   case 0: \
-                break; \
-            case 1: \
-            {   refer_t *earlier_refer = refer.ctx.refer; \
-                ctx = resolve_(*earlier_refer); \
-                break; \
-            } \
-            default: \
-                fprintf(stderr, "invalid tagged pointer: %d\n", tag); \
-                exit(1); \
+        if (tag > 3) \
+        {   fprintf(stderr, "invalid tagged pointer: %d\n", tag); \
+            exit(1); \
         } \
-        return reference_(ctx); \
+        void *start = &refer.start; \
+        if (tag & 1) \
+        {   refer_t *nested_refer = refer.start.refer; \
+            start = resolve_(*nested_refer); \
+        } \
+        void *offset = &refer.offset; \
+        if (tag & 2) \
+        {   refer_t *nested_refer = refer.offset.refer; \
+            offset = resolve_(*nested_refer); \
+        } \
+        return reference_(start, offset); \
     } \
     /*
 } end REFERENCE_C */

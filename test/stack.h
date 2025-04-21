@@ -112,7 +112,7 @@
     } \
     refer_t refer_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t offset) \
     {   return (refer_t) \
-        {   .tagged_reference = 2, \
+        {   .tagged_reference = 4, \
         }; \
     } \
     /*
