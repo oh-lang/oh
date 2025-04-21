@@ -19,10 +19,9 @@ STACK_H(stack_flt_t)
 STACK_C(stack_flt_t)
 
 void add_values_(stack_stack_flt_t *stack_stack)
-{   append_default_stack_stack_flt_t_(stack_stack);
-    append_default_stack_stack_flt_t_(stack_stack);
+{   uint32_t offset = 1;
+    stack_flt_t *stack = element_stack_stack_flt_t_(stack_stack, &offset);
     ASSERT_EQUAL(uint32_t, stack_stack->count, 2);
-    stack_flt_t *stack = &stack_stack->data[1];
     append_default_stack_flt_t_(stack);
     append_default_stack_flt_t_(stack);
     append_default_stack_flt_t_(stack);
