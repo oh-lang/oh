@@ -11,8 +11,10 @@
 
 #define REFERENCE_H /*
 {   */ \
+    /* TODO: switch `offset` and `start` null logic so that we can make owned pointers. */ \
     /* `reference_` definitions will need to check `offset` for null, but not `start`. */ \
     typedef void *(*reference_t_)(void *start, void *offset); \
+    void *resolve_to_offset_(void *start, void *offset); \
     typedef void (*descope_t_)(void *object); \
     struct refer_t; \
     typedef union \
@@ -51,6 +53,9 @@
 
 #define REFERENCE_C /*
 {   */ \
+    void *resolve_to_offset_(void *start, void *offset) \
+    {   return offset; \
+    } \
     void *resolve_(refer_t *refer) \
     {   const size_t seven = 7; \
         reference_t_ reference_ = (reference_t_)(refer->tagged_reference & ~seven); \
@@ -87,11 +92,14 @@
         uint32_t offset_tag = refer->tagged_descope_offset & seven; \
         if (offset_tag == REFER_TAG_REFER) \
         {   descope_refer_t_(refer->offset.refer); \
+            free(refer->offset.refer); \
         } \
         uint32_t start_tag = refer->tagged_reference & seven; \
         if (start_tag == REFER_TAG_REFER) \
         {   descope_refer_t_(refer->start.refer); \
+            free(refer->start.refer); \
         } \
+        /* don't free `refer` itself, that might be stack-allocated. */ \
     } \
     /*
 } end REFERENCE_C */
