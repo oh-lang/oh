@@ -332,6 +332,8 @@ i'd also like code to be self-aware of whether we're using `type_id` or local ta
 e.g., if you want to squeeze out more space in your struct when `type_id` is present
 and reduce it for local tags so your entire type fits within a certain number of bytes.
 
+let's maybe converge on a name for them, e.g., "partial types" and "full types".
+
 ## jit
 
 this seems fairly tricky.  we could ship part of `tcc` (not `arm-gen.c`) inside of
@@ -409,3 +411,11 @@ probably not, as referencing the lot at any point can create a new entry,
 which can get deleted by something else, etc.  potentially we could resolve
 as an offset for a certain block that we are sure that we aren't borrowing
 any of the parents/ancestors in a mutable way.
+
+## high precision numbers
+
+could use `x << e` where `x` and `e` are `int` types, with `e` negative to represent
+small numbers.  however, if we start adding large and small numbers together, `x`
+will get really large (`e` will be the min exponent).  can we do something like
+where we represent numbers like this? `x << a + y << b`, and try to manage the
+size of all `int`s involved?
