@@ -2,15 +2,16 @@
 
 #include "common.h"
 
-// tagged field is a value (non-referential) type.
-#define REFER_TAG_VALUE 0
 // tagged field is a pointer type.
-#define REFER_TAG_POINTER 1
+#define REFER_TAG_POINTER 0
+// tagged field is a value (non-referential) type.
+#define REFER_TAG_VALUE 1
 // tagged field is a refer type.
 #define REFER_TAG_REFER 2
 
 #define REFERENCE_H /*
 {   */ \
+    /* `reference_` definitions will need to check `offset` for null, but not `start`. */ \
     typedef void *(*reference_t_)(void *start, void *offset); \
     typedef void (*descope_t_)(void *object); \
     struct refer_t; \
@@ -34,13 +35,15 @@
     typedef struct refer_t \
     {   /* has tag for `start` OR'd into a `reference_t_` function pointer. */ \
         size_t tagged_reference; \
+        word_t start; \
         /* has tag for `offset` OR'd into a `descope_t_` function pointer. */ \
         size_t tagged_descope_offset; \
-        word_t start; \
         word_t offset; \
     }       refer_t; \
     void *resolve_(refer_t *refer); \
     void *resolve_word_(uint32_t tag, word_t *word); \
+    /* enscopes a NULL reference, i.e., resolving it will return NULL. */ \
+    void enscope_refer_t_(refer_t *refer); \
     void descope_refer_t_(refer_t *refer); \
     /* TODO: print_ and equal_ methods. */ \
     /* 
@@ -52,18 +55,19 @@
     {   const size_t seven = 7; \
         reference_t_ reference_ = (reference_t_)(refer->tagged_reference & ~seven); \
         uint32_t start_tag = refer->tagged_reference & seven; \
-        uint32_t offset_tag = refer->tagged_descope_offset & seven; \
         void *start = resolve_word_(start_tag, &refer->start); \
+        if (start == NULL) return NULL; \
+        uint32_t offset_tag = refer->tagged_descope_offset & seven; \
         void *offset = resolve_word_(offset_tag, &refer->offset); \
         return reference_(start, offset); \
     } \
     void *resolve_word_(uint32_t tag, word_t *word) \
     {   switch (tag) \
-        {   case REFER_TAG_VALUE: \
-                return word; \
-            case REFER_TAG_POINTER: \
+        {   case REFER_TAG_POINTER: \
                 /* we'll avoid making users do `**ptr` in `reference_` code. */ \
                 return (void *)word->ptr; \
+            case REFER_TAG_VALUE: \
+                return word; \
             case REFER_TAG_REFER: \
                 return (void *)word->refer; \
             default: \
@@ -72,13 +76,19 @@
                 return NULL; \
         } \
     } \
+    void enscope_refer_t_(refer_t *refer) \
+    {   refer->tagged_reference = REFER_TAG_POINTER; \
+        refer->start.ptr = 0; \
+        refer->tagged_descope_offset = REFER_TAG_POINTER; \
+        refer->offset.ptr = 0; \
+    } \
     void descope_refer_t_(refer_t *refer) \
     {   const size_t seven = 7; \
-        uint32_t start_tag = refer->tagged_reference & seven; \
         uint32_t offset_tag = refer->tagged_descope_offset & seven; \
         if (offset_tag == REFER_TAG_REFER) \
         {   descope_refer_t_(refer->offset.refer); \
         } \
+        uint32_t start_tag = refer->tagged_reference & seven; \
         if (start_tag == REFER_TAG_REFER) \
         {   descope_refer_t_(refer->start.refer); \
         } \
