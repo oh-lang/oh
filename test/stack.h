@@ -117,7 +117,8 @@
     refer_t stack_refer_ ## data_t ## _(stack_ ## data_t *stack, uint32_t offset) \
     {   reference_t_ reference_ = (reference_t_)element_stack_ ## data_t ## _; \
         return (refer_t) \
-        {   .tagged_reference = ((size_t)reference_) | REFER_POINTER_VALUE, \
+        {   .tagged_reference = ((size_t)reference_) | REFER_TAG_POINTER, \
+            .tagged_descope_offset = REFER_TAG_VALUE, /* no need to free. */ \
             .start = (word_t){ .ptr = (size_t)stack }, \
             .offset = (word_t){ .uint32 = offset }, \
         }; \
@@ -125,7 +126,8 @@
     refer_t refer_stack_refer_ ## data_t ## _(refer_t *refer, uint32_t offset) \
     {   reference_t_ reference_ = (reference_t_)element_stack_ ## data_t ## _; \
         return (refer_t) \
-        {   .tagged_reference = ((size_t)reference_) | REFER_REFER_VALUE, \
+        {   .tagged_reference = ((size_t)reference_) | REFER_TAG_REFER, \
+            .tagged_descope_offset = REFER_TAG_VALUE, /* no need to free. */ \
             .start = (word_t){ .refer = refer }, \
             .offset = (word_t){ .uint32 = offset }, \
         }; \
