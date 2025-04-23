@@ -16,7 +16,7 @@
     data_t pop_stack_ ## data_t ## _(stack_ ## data_t *stack); \
     int equal_stack_ ## data_t ## _(stack_ ## data_t *a, stack_ ## data_t *b); \
     int print_stack_ ## data_t ## _(FILE *f, stack_ ## data_t *stack); \
-    data_t *element_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t *offset); \
+    data_t *element_stack_ ## data_t ## _(stack_ ## data_t *stack, uint32_t *offset) ALIGN; \
     void enscope_refer_ ## data_t ## _from_stack_(refer_t *refer, stack_ ## data_t *stack, uint32_t offset); \
     /* NOTE: the passed-in `refer` must live as long as the return instanced does! */ \
     void enscope_refer_ ## data_t ## _from_refer_stack_(refer_t *refer, refer_t refer_stack, uint32_t offset); \
@@ -115,6 +115,7 @@
     } \
     void enscope_refer_ ## data_t ## _from_stack_(refer_t *refer, stack_ ## data_t *stack, uint32_t offset) \
     {   reference_t_ reference_ = (reference_t_)element_stack_ ## data_t ## _; \
+        DEBUG_ASSERT((size_t)reference_ % 8 == 0); \
         *refer = (refer_t) \
         {   .tagged_reference = ((size_t)reference_) | REFER_TAG_POINTER, \
             .start = (word_t){ .ptr = (size_t)stack }, \
@@ -124,6 +125,7 @@
     } \
     void enscope_refer_ ## data_t ## _from_refer_stack_(refer_t *refer, refer_t refer_stack, uint32_t offset) \
     {   reference_t_ reference_ = (reference_t_)element_stack_ ## data_t ## _; \
+        DEBUG_ASSERT((size_t)reference_ % 8 == 0); \
         refer_t *nested_refer = malloc(sizeof(refer_t)); \
         *nested_refer = refer_stack; \
         *refer = (refer_t) \

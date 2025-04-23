@@ -9,10 +9,10 @@
 // tagged field is a refer type.
 #define REFER_TAG_REFER 2
 
+// TODO: smart pointers: `start` is null but `offset` is an allocated pointer
 #define REFERENCE_H /*
 {   */ \
-    /* TODO: switch `offset` and `start` null logic so that we can make owned pointers. */ \
-    /* `reference_` definitions will need to check `offset` for null, but not `start`. */ \
+    /* `reference_` definitions will need to check `start` for null, but not `offset`. */ \
     typedef void *(*reference_t_)(void *start, void *offset); \
     void *resolve_to_offset_(void *start, void *offset); \
     typedef void (*descope_t_)(void *object); \
@@ -33,12 +33,20 @@
     `start`s and `offset`s.  but this  would be a nice way to do `one_of_`
     for all of the above types when at runtime we don't know what it is.
     and it would be a nice way to do `one_of_` for other referential types.
+    WARNING! `reference_` and `descope_offset_` functions *must* be `ALIGN`ed
+    so that they can be used for pointer tagging.
     */ \
     typedef struct refer_t \
-    {   /* has tag for `start` OR'd into a `reference_t_` function pointer. */ \
+    {   /*
+        has tag for `start` OR'd into a `reference_t_` function pointer.
+        underlying function MUST BE `ALIGN`ed.
+        */ \
         size_t tagged_reference; \
         word_t start; \
-        /* has tag for `offset` OR'd into a `descope_t_` function pointer. */ \
+        /*
+        has tag for `offset` OR'd into a `descope_t_` function pointer.
+        underlying function MUST BE `ALIGN`ed.
+        */ \
         size_t tagged_descope_offset; \
         word_t offset; \
     }       refer_t; \
@@ -58,12 +66,12 @@
     } \
     void *resolve_(refer_t *refer) \
     {   const size_t seven = 7; \
+        uint32_t offset_tag = refer->tagged_descope_offset & seven; \
+        void *offset = resolve_word_(offset_tag, &refer->offset); \
+        if (offset == NULL) return NULL; \
         reference_t_ reference_ = (reference_t_)(refer->tagged_reference & ~seven); \
         uint32_t start_tag = refer->tagged_reference & seven; \
         void *start = resolve_word_(start_tag, &refer->start); \
-        if (start == NULL) return NULL; \
-        uint32_t offset_tag = refer->tagged_descope_offset & seven; \
-        void *offset = resolve_word_(offset_tag, &refer->offset); \
         return reference_(start, offset); \
     } \
     void *resolve_word_(uint32_t tag, word_t *word) \

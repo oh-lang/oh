@@ -35,14 +35,19 @@ int main()
 {   stack_stack_flt_t stack_stack;
     enscope_stack_stack_flt_t_(&stack_stack);
     add_values_(&stack_stack);
-    print_stack_stack_flt_t_(stdout, &stack_stack);
-    fprintf(stdout, "\n");
+    PRINT(stdout, stack_stack_flt_t, &stack_stack);
     stack_flt_t stack = pop_stack_stack_flt_t_(&stack_stack);
-    print_stack_flt_t_(stdout, &stack);
-    fprintf(stdout, "\n");
+    PRINT(stdout, stack_flt_t, &stack);
     ASSERT_EQUAL(flt_t, pop_stack_flt_t_(&stack), 3.456);
     ASSERT_EQUAL(flt_t, pop_stack_flt_t_(&stack), 2.345);
     ASSERT_EQUAL(uint32_t, stack.count, 1);
+
+    refer_t flt;
+    enscope_refer_flt_t_from_stack_(&flt, &stack, 10);
+    ASSERT_EQUAL(uint32_t, stack.count, 1); // doesn't change immediately
+    *resolve_flt_t_from_stack_(&flt) = 10.20;
+    ASSERT_EQUAL(uint32_t, stack.count, 11);
+    PRINT(stdout, stack_flt_t, &stack);
 
     descope_stack_stack_flt_t_(&stack_stack);
     descope_stack_flt_t_(&stack);

@@ -5,6 +5,32 @@
 typedef float flt_t;
 typedef double dbl_t;
 
+#define ALIGN __attribute__((aligned(8)))
+
+#define ASSERT(x) \
+{   if (!(x)) \
+    {   const char *E = "(" #x ") was not true, exiting!\n"; \
+        fprintf(stderr, "%s", E); \
+        exit(1); \
+    } \
+}
+#ifndef NDEBUG
+#define DEBUG_ASSERT(x) \
+{   if (!(x)) \
+    {   const char *E = "(" #x ") was not true (in debug), exiting!\n"; \
+        fprintf(stderr, "%s", E); \
+        exit(1); \
+    } \
+}
+#else
+#define DEBUG_ASSERT(x) {}
+#endif
+
+#define PRINT(f, type_t, x) \
+{   print_ ## type_t ## _(f, (x)); \
+    fprintf(f, "\n"); \
+}
+
 #define COMMON_C /*
 { */ \
     void enscope_flt_t_(flt_t *flt) \
