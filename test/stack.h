@@ -128,7 +128,7 @@
         refer_t *nested_refer = malloc(sizeof(refer_t)); \
         *nested_refer = refer_stack; \
         *refer = (refer_t) \
-        {   .tagged_reference = ((size_t)reference_) | REFER_TAG_REFER, \
+        {   .tagged_reference = ((size_t)reference_) | REFER_TAG_OWNED_REFER, \
             .start = (word_t){ .refer = nested_refer }, \
             .tagged_descope_offset = REFER_TAG_VALUE, /* no need to free. */ \
             .offset = (word_t){ .uint32 = offset }, \

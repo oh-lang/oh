@@ -8,13 +8,15 @@
 #define REFER_TAG_VALUE 1
 // tagged field is a refer type.
 #define REFER_TAG_REFER 2
+// tagged field is an owned refer type.
+#define REFER_TAG_OWNED_REFER 3
 
 // TODO: smart pointers: `start` is null but `offset` is an allocated pointer
 #define REFERENCE_H /*
 {   */ \
     /* `reference_` definitions will need to check `start` for null, but not `offset`. */ \
     typedef void *(*reference_t_)(void *start, void *offset); \
-    void *resolve_to_offset_(void *start, void *offset); \
+    void *resolve_to_offset_(void *start, void *offset) ALIGN; \
     typedef void (*descope_t_)(void *object); \
     struct refer_t; \
     typedef union \
@@ -53,8 +55,8 @@
     void *resolve_(refer_t *refer); \
     void *resolve_word_(uint32_t tag, word_t *word); \
     /* enscopes a NULL reference, i.e., resolving it will return NULL. */ \
-    void enscope_refer_t_(refer_t *refer); \
-    void descope_refer_t_(refer_t *refer); \
+    void refer_t__enscope_(refer_t *refer); \
+    void refer_t__descope_(refer_t *refer); \
     /* TODO: print_ and equal_ methods. */ \
     /* 
 } end REFERENCE_H */
@@ -82,6 +84,7 @@
             case REFER_TAG_VALUE: \
                 return word; \
             case REFER_TAG_REFER: \
+            case REFER_TAG_OWNED_REFER: \
                 return (void *)word->refer; \
             default: \
                 fprintf(stderr, "invalid tagged reference: %d\n", tag); \
@@ -89,22 +92,22 @@
                 return NULL; \
         } \
     } \
-    void enscope_refer_t_(refer_t *refer) \
+    void refer_t__enscope_(refer_t *refer) \
     {   refer->tagged_reference = REFER_TAG_POINTER; \
         refer->start.ptr = 0; \
         refer->tagged_descope_offset = REFER_TAG_POINTER; \
         refer->offset.ptr = 0; \
     } \
-    void descope_refer_t_(refer_t *refer) \
+    void refer_t__descope_(refer_t *refer) \
     {   const size_t seven = 7; \
         uint32_t offset_tag = refer->tagged_descope_offset & seven; \
-        if (offset_tag == REFER_TAG_REFER) \
-        {   descope_refer_t_(refer->offset.refer); \
+        if (offset_tag == REFER_TAG_OWNED_REFER) \
+        {   refer_t__descope_(refer->offset.refer); \
             free(refer->offset.refer); \
         } \
         uint32_t start_tag = refer->tagged_reference & seven; \
-        if (start_tag == REFER_TAG_REFER) \
-        {   descope_refer_t_(refer->start.refer); \
+        if (start_tag == REFER_TAG_OWNED_REFER) \
+        {   refer_t__descope_(refer->start.refer); \
             free(refer->start.refer); \
         } \
         /* don't free `refer` itself, that might be stack-allocated. */ \
