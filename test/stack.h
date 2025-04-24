@@ -118,7 +118,7 @@
         *refer = (refer_t) \
         {   .tagged_reference = ((size_t)reference_) | REFER_TAG_POINTER, \
             .start = (word_t){ .ptr = (size_t)stack }, \
-            .tagged_descope_offset = REFER_TAG_VALUE, /* no need to free. */ \
+            .maybe_descope_offset = REFER_TAG_VALUE, /* no need to free. */ \
             .offset = (word_t){ .uint32 = offset }, \
         }; \
     } \
@@ -130,7 +130,7 @@
         *refer = (refer_t) \
         {   .tagged_reference = ((size_t)reference_) | REFER_TAG_OWNED_REFER, \
             .start = (word_t){ .refer = nested_refer }, \
-            .tagged_descope_offset = REFER_TAG_VALUE, /* no need to free. */ \
+            .maybe_descope_offset = REFER_TAG_VALUE, /* no need to free. */ \
             .offset = (word_t){ .uint32 = offset }, \
         }; \
     } \
