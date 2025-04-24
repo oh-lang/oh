@@ -43,37 +43,37 @@ typedef double dbl_t;
 #define COMMON /*
 { */ \
 IMPL \
-(   void flt_t__enscope_(flt_t *flt), \
+(   void flt_t__enscope_(flt_t *flt),, \
     {   *flt = 0.0; \
     } \
 ) \
 IMPL \
-(   void flt_t__descope_(flt_t *flt), \
+(   void flt_t__descope_(flt_t *flt),, \
     {   /* nothing to do */ \
     } \
 ) \
 IMPL \
-(   void uint32_t__enscope_(uint32_t *uint32), \
+(   void uint32_t__enscope_(uint32_t *uint32),, \
     {   *uint32 = 0; \
     } \
 ) \
 IMPL \
-(   void uint32_t__descope_(uint32_t *uint32),\
+(   void uint32_t__descope_(uint32_t *uint32),, \
     {   /* nothing to do */ \
     } \
 ) \
 IMPL \
-(   int uint32_t__equal_(uint32_t *a, uint32_t *b), \
+(   int uint32_t__equal_(uint32_t *a, uint32_t *b),, \
     {   return *a == *b; \
     } \
 ) \
 IMPL \
-(   void uint32_t__print_(FILE *f, uint32_t *uint32), \
+(   void uint32_t__print_(FILE *f, uint32_t *uint32),, \
     {   fprintf(f, "%d", *uint32); \
     } \
 ) \
 IMPL \
-(   int flt_t__equal_(flt_t *a, flt_t *b), \
+(   int flt_t__equal_(flt_t *a, flt_t *b),, \
     {   if ((*a != *a) && (*b != *b)) \
         {   /* we're breaking IEEE standard here but nan is nan. */ \
             return 1; \
@@ -88,13 +88,13 @@ IMPL \
     } \
 ) \
 IMPL \
-(   void flt_t__print_(FILE *f, flt_t *flt), \
+(   void flt_t__print_(FILE *f, flt_t *flt),, \
     {   fprintf(f, "%f", *flt); \
     } \
 ) \
 /*
 } end COMMON */
 
-#define IMPL(x, y) x;
+#define IMPL(fn, attr, impl) fn;
 COMMON
 #undef IMPL

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define IMPL(x, y) x y
+#define IMPL(fn, attr, impl) fn attr impl
 COMMON
 
 REFER_H

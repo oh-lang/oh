@@ -24,8 +24,7 @@
 #define OWNED_POINTER_C(data_t) /*
 {   */ \
     refer_t refer_ ## data_t ## _owned_(data_t data, descope_t_ descope_) \
-    {   DEBUG_ASSERT((size_t)descope_ % 8 == 0); \
-        data_t *owned_pointer = malloc(sizeof(data_t)); \
+    {   data_t *owned_pointer = malloc(sizeof(data_t)); \
         return (refer_t) \
         {   .tagged_reference = REFER_TAG_POINTER, \
             .start = (word_t){ .ptr = 0 }, \
