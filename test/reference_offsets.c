@@ -1,7 +1,8 @@
 // gcc reference_offsets.c -lm && ./a.out
-#include "test.h"
-#include "reference.h"
-#include "stack.h"
+#define ILL_DO_IT_MYSELF
+#include "../c/test.h"
+#include "../c/reference.h"
+#include "../c/stack.h"
 
 #include <math.h>
 #include <stdio.h>
