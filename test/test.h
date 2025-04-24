@@ -27,3 +27,23 @@
         exit(1); \
     } \
 }
+
+#ifndef NDEBUG
+/*
+{ DEBUG
+*/
+
+/*
+END DEBUG 
+} */
+#else
+/*
+{ RELEASE
+*/
+
+/*
+END RELEASE
+} */
+#endif
+
+#define TEST_H    

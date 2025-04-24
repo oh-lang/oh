@@ -122,6 +122,10 @@
             .offset = (word_t){ .uint32 = offset }, \
         }; \
     } \
+    /*
+    TODO: if we add a `refer_t *refer_stack` overload and `refer_stack` is an owned pointer,
+    we can just use `start` as a pointer that equals the owned pointer.  (i.e., we won't own it.)
+    */ \
     void refer_ ## data_t ## __enscope_from_refer_stack_(refer_t *refer, refer_t refer_stack, uint32_t offset) \
     {   reference_t_ reference_ = (reference_t_)stack_ ## data_t ## __element_; \
         DEBUG_ASSERT((size_t)reference_ % 8 == 0); \
