@@ -1,12 +1,20 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdio.h>
 
 typedef float flt_t;
 typedef double dbl_t;
 
 #define ALIGN __attribute__((aligned(8)))
 
+#ifndef NDEBUG
+#define DEBUG
+#else
+#define RELEASE
+#endif
+
+// release and debug asserts
 #define ASSERT(x) \
 {   if (!(x)) \
     {   const char *E = "(" #x ") was not true, exiting!\n"; \
@@ -14,7 +22,8 @@ typedef double dbl_t;
         exit(1); \
     } \
 }
-#ifndef NDEBUG
+#ifdef DEBUG
+// just debug asserts
 #define DEBUG_ASSERT(x) \
 {   if (!(x)) \
     {   const char *E = "(" #x ") was not true (in debug), exiting!\n"; \
@@ -31,28 +40,45 @@ typedef double dbl_t;
     fprintf(f, "\n"); \
 }
 
-#define COMMON_C /*
+#define COMMON /*
 { */ \
-    void flt_t__enscope_(flt_t *flt) \
+IMPL \
+(   void flt_t__enscope_(flt_t *flt), \
     {   *flt = 0.0; \
     } \
-    void flt_t__descope_(flt_t *flt) \
+) \
+IMPL \
+(   void flt_t__descope_(flt_t *flt), \
     {   /* nothing to do */ \
     } \
-    void uint32_t__enscope_(uint32_t *uint32) \
+) \
+IMPL \
+(   void uint32_t__enscope_(uint32_t *uint32), \
     {   *uint32 = 0; \
     } \
-    void uint32_t__descope_(uint32_t *uint32) \
+) \
+IMPL \
+(   void uint32_t__descope_(uint32_t *uint32),\
     {   /* nothing to do */ \
     } \
-    int uint32_t__equal_(uint32_t *a, uint32_t *b) \
+) \
+IMPL \
+(   int uint32_t__equal_(uint32_t *a, uint32_t *b), \
     {   return *a == *b; \
     } \
-    void uint32_t__print_(FILE *f, uint32_t *uint32) \
+) \
+IMPL \
+(   void uint32_t__print_(FILE *f, uint32_t *uint32), \
     {   fprintf(f, "%d", *uint32); \
     } \
-    int flt_t__equal_(flt_t *a, flt_t *b) \
-    {   float abs_delta = fabs(*a - *b); \
+) \
+IMPL \
+(   int flt_t__equal_(flt_t *a, flt_t *b), \
+    {   if ((*a != *a) && (*b != *b)) \
+        {   /* we're breaking IEEE standard here but nan is nan. */ \
+            return 1; \
+        } \
+        float abs_delta = fabs(*a - *b); \
         float abs_min = fmin(fabs(*a), fabs(*b)); \
         if (abs_min > 0.0) { \
             return abs_delta / abs_min < 1e-5; \
@@ -60,8 +86,15 @@ typedef double dbl_t;
         /* if zero, then require absoluteness */ \
         return *a == *b; \
     } \
-    void flt_t__print_(FILE *f, flt_t *flt) \
+) \
+IMPL \
+(   void flt_t__print_(FILE *f, flt_t *flt), \
     {   fprintf(f, "%f", *flt); \
     } \
-    /*
-} end COMMON_C */
+) \
+/*
+} end COMMON */
+
+#define IMPL(x, y) x;
+COMMON
+#undef IMPL

@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-COMMON_C
+#define IMPL(x, y) x y
+COMMON
 
 REFERENCE_H
 REFERENCE_C
