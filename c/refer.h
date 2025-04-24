@@ -36,7 +36,7 @@
     /*
 } end OWNED_POINTER_C */
 
-#define REFERENCE_H /*
+#define REFER_H /*
 {   */ \
     /*
     `reference_` definitions may need to check `start` for null,
@@ -89,9 +89,9 @@
     void refer_t__descope_(refer_t *refer); \
     /* TODO: print_ and equal_ methods. */ \
     /* 
-} end REFERENCE_H */
+} end REFER_H */
 
-#define REFERENCE_C /*
+#define REFER_C /*
 {   */ \
     void *resolve_to_offset_(void *start, void *offset) \
     {   return offset; \
@@ -178,4 +178,4 @@
         /* don't free `refer` itself, that might be stack-allocated. */ \
     } \
     /*
-} end REFERENCE_C */
+} end REFER_C */

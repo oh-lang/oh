@@ -1,7 +1,7 @@
 // gcc reference_offsets.c -lm && ./a.out
 #define ILL_DO_IT_MYSELF
 #include "../c/test.h"
-#include "../c/reference.h"
+#include "../c/refer.h"
 #include "../c/stack.h"
 
 #include <math.h>
@@ -11,8 +11,8 @@
 #define IMPL(x, y) x y
 COMMON
 
-REFERENCE_H
-REFERENCE_C
+REFER_H
+REFER_C
 
 STACK_H(flt_t)
 STACK_C(flt_t)
