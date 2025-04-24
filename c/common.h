@@ -1,5 +1,6 @@
 #pragma once
 
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -95,6 +96,12 @@ IMPL \
 /*
 } end COMMON */
 
-#define IMPL(fn, attr, impl) fn;
+#define IMPL(fn, attr, impl) fn attr;
 COMMON
 #undef IMPL
+
+#ifdef SINGLE_IMPORT
+#define IMPL(fn, attr, impl) fn impl
+COMMON
+#undef IMPL
+#endif

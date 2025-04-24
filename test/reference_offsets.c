@@ -1,5 +1,5 @@
 // gcc reference_offsets.c -lm && ./a.out
-#define ILL_DO_IT_MYSELF
+#define SINGLE_IMPORT
 #include "../c/test.h"
 #include "../c/refer.h"
 #include "../c/stack.h"
@@ -7,12 +7,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define IMPL(fn, attr, impl) fn attr impl
-COMMON
-
-REFER_H
-REFER_C
 
 STACK_H(flt_t)
 STACK_C(flt_t)

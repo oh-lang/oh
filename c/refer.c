@@ -1,7 +1,7 @@
-#include "common.h"
+#include "refer.h"
 
 #ifndef SINGLE_IMPORT
 #define IMPL(fn, attr, impl) fn impl
-COMMON
+REFER
 #undef IMPL
 #endif
