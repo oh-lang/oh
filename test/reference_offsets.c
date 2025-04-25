@@ -8,11 +8,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-STACK_H(flt_t)
-STACK_C(flt_t)
-
-STACK_H(stack_flt_t)
-STACK_C(stack_flt_t)
+#define IMPL(fn, attr, impl) fn attr;
+STACK(flt_t)
+STACK(stack_flt_t)
+#undef IMPL
+#define IMPL(fn, attr, impl) fn impl
+STACK(flt_t)
+STACK(stack_flt_t)
+#undef IMPL
 
 void add_values_(stack_stack_flt_t *stack_stack)
 {   uint32_t offset = 1;
