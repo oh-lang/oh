@@ -1,12 +1,15 @@
-_unused_variable
-_unused_function_
+_unused_variable, _unused_this_is, _unused
+_unused_function_, _un_used_function_, _unused_,
+
+$lambda_var $lambda_fn_
 
 used{asdf} used[asdf] used(asdf)
 used_{asdf} used_[asdf] used_(asdf)
 _unused{asdf} _unused[asdf] _unused(asdf)
 _unused_{asdf} _unused_[asdf] _unused_(asdf)
 f*234_(asdf)
-123_456.789_e+10
+743_567+1234_5e7
+-1-123_456.789_e+10+7.123_456e-3
 
 #[#
 these lines should be commented out

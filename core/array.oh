@@ -34,11 +34,11 @@ array_[of_, count_with_: select_count_]: all_of_
             return ok_(OLD_count)
         if NEW_count > OLD_count
             capacity_(at_least_: NEW_count) assert()
-            while m count < NEW_count
+            while m count_() < NEW_count
                 append_(of_())
         else
             assert_(NEW_count >= 0, er invalid_count)
-            while m count > NEW_count
+            while m count_() > NEW_count
                 UNUSED_of: m pop_()
 
     # call as `array clear_(keeping. no_capacity)` to deallocate

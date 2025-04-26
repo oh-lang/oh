@@ -9,34 +9,32 @@ count8_: count_[u8_]
 
 @final
 count_[of_: unsigned_primitive_]: all_of_
-[   [@private value; of_]
+[   m_: [@private value; of_]
     integer_
 ]
-{   m(wrapping.): hm[m]
-        if Wrapping <= max()
-            [Value: Wrapping]
+{   m_(of.): hm_[m_]
+        if of <= max_() value
+            [value. of]
         else
-            Unrepresentable
+            unrepresentable
 
     ?:
-    {   ::is(null): bool
-            Value > max()
-        Null: [Value: of(Wrapping: -1)]
+    {   ::is(null_): bool
+            m value > max_() value
+        null: [value: max_() value]
 
-        ::null_boxing(): of
-            Value
-        ;;null_boxing(Of;): null
-            Value <-> Of
-        ;;null_boxing(Of.): null
-            Value = Of
+        ::null_boxing_(): of_
+            m value
+        ;;null_boxing_(of.): null_
+            m value = of
     }
 
-    @integer(Value)
+    @integer(m value)
 
-    min(): m
+    min_(): m
         [Value: 0]
 
-    max(): m
+    max_(): m
         [Value: signed[of] max() + 1]
 
     m(Signed. signed[of]): hm[m]
@@ -55,4 +53,4 @@ count_[of_: unsigned_primitive_]: all_of_
             [Value: max(At_least, Value * 2)]
 }
 
-hm[of]: hm[ok: of, number er]
+hm_[of_]: hm_[ok_: of_, number_ er_]
