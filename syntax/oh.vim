@@ -44,6 +44,8 @@ syn match	ohParens	")"
 syn match	ohReadonly	":"
 syn match	ohWritable	";"
 syn match	ohTemporary	"\."
+syn match	ohNullSymbol	"?"
+syn match	ohLambdaStarter	"\$"
 " TODO: add ~ as Type and ` as declarer.
 " TODO: maybe try inverting `: ` for `x: whatever_()`
 " Namespace syntax errors
@@ -61,7 +63,7 @@ syn match	ohNamespace	"\u\+_"
 syn match	ohNamespace	"_\u\+\>"
 syn match	ohNamespace	"\zs\<\u\+\ze[^A-Z_ ]"
 syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
-syn match	ohFunction	"[^_ ()\[\]^`{|}!-@\\][^ ()\[\]^`{|}!-@\\]*_\>" contains=ohNamespace
+syn match	ohFunction	"[^_ ()\[\]^`{|}!-@\\][^ ()\[\]^`{|}!-/:-@\\]*_\>" contains=ohNamespace
 
 syn match   ohEndOfLineComment	"# .*$"
       \ contains=ohEscape,ohTodo,ohTick,@Spell
@@ -115,7 +117,7 @@ syn match   ohSpaceError	display "\t\+ "
 
 syn region	ohTick matchgroup=ohTick
       \ start=+`+ end=+`+
-      \ contains=ohBuiltin,ohBuiltinFunction,ohStatement,ohConditional,ohRepeat,ohOperator,ohError,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohSyntaxError,ohInclude,ohUnused,ohUnusedFunction,ohMacro,ohNamespace,ohEndOfLineComment,ohMidlineComment,ohMultilineComment,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
+      \ contains=ohBuiltin,ohBuiltinFunction,ohStatement,ohConditional,ohRepeat,ohOperator,ohError,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohLambdaStarter,ohNullSymbol,ohSyntaxError,ohInclude,ohUnused,ohUnusedFunction,ohMacro,ohNamespace,ohEndOfLineComment,ohMidlineComment,ohMultilineComment,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
 
 " The default highlight links.
 " WildMenu is interesting.  see options with `:highlight`
@@ -142,6 +144,8 @@ hi def link ohEscape		Special
 hi def link ohNumber		Number
 hi def link ohSpaceError	Error
 hi def link ohMacro		Identifier
+hi def link ohLambdaStarter		Identifier
+hi def link ohNullSymbol		Identifier
 hi def link ohBrackets		Type
 hi def link ohBraces		NonText
 hi def link ohParens		Operator
