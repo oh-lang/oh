@@ -1,4 +1,4 @@
-array_[of_, count_with_: count_]: all_of_
+array_[of_, count_with_: select_count_]: all_of_
 [   hashable_
     indexable_sequence_[of_]
 ]
@@ -11,9 +11,22 @@ array_[of_, count_with_: count_]: all_of_
 
     ::capacity_(): count_with_
 
-    ;;capacity_(count_with.): null_
+    # prefer `array capacity_(at_least. count_with)` because it will grow the array
+    # in an amortized way if you are increasing the capacity over time.
+    ;;capacity_(count_with.): hm_[null_]
 
     ::count_(): count_with_
+
+    # called as `array append_(3, assuming. capacity)`
+    ;;append_(of., assuming. one_of_[capacity]): null_
+
+    ;;pop_()?: of_
+
+    ;;capacity_(at_least. count_with): hm_[null_]
+        # TODO: can implement here
+
+    ;;append_(of.): hm_[null_]
+        # TODO: can implement here
 
     ;;count_[require: of_ is defaultable_](NEW_count_with.): hm_[null_]
         OLD_count: m count_()
@@ -21,57 +34,47 @@ array_[of_, count_with_: count_]: all_of_
             return ok_(OLD_count)
         if NEW_count > OLD_count
             capacity_(at_least_: NEW_count) assert()
-            while M Count < NEW_count
-                append(of())
+            while m count < NEW_count
+                append_(of_())
         else
-            assert(NEW_count >= 0, er Invalid_count)
-            while M Count > NEW_count
-                UNUSED_of: M pop()
+            assert_(NEW_count >= 0, er invalid_count)
+            while m count > NEW_count
+                UNUSED_of: m pop_()
 
-    clear: one_of[Keeping_capacity, Dropping_capacity]
-    {   @alias Keep_capacity: Keeping_capacity
-        @alias Drop_capacity: Dropping_capacity
-    }
-
-    ;;clear(Clear: clear = Keeping_capacity): null
-        while M Count > 0
-            UNUSED_of: M pop()
-        what One_of
-            Keeping_capacity
+    # call as `array clear_(keeping. no_capacity)` to deallocate
+    # or `array clear_(keeping. same_capacity)` to keep the allocation.
+    ;;clear_(keeping. one_of_[no_capacity, same_capacity]): null_
+        while m count > 0
+            UNUSED_of: m pop()
+        what keeping
+            same_capacity
                 pass
-            Dropping_capacity
-                M capacity(0)
+            no_capacity
+                m capacity_(0)
 
-    ;;append(Of.): hm[null]
-   
-    :;[In_bounds.]: (Of:;)
+    :;[in_bounds.]: (of:;)
 
     # moves out and resets the value at this index.
-    ;;[Index.]!?: of
-        what M in_bounds(Index)
-            Ok.
-                M[Ok]!
+    ;;[index.]!?: of_
+        what m in_bounds_(index)
+            ok.
+                m[ok]!
             IGNORE_er.
-                Null
+                null
 
-    ;;[In_bounds.]!: of
-
-    ;;pop()?: of
-        # TODO: can implement here in terms of moot
-    
     # returns a value of the array element at the specified index,
     # or the end of the array if not specified.  returns null if the element
-    # would be out of bounds (e.g., `Index >= M count()`).
-    ;;pop(Index.)?: of
-        # don't resize the array in case `Index >= M Count`.
-        what M in_bounds(Index)
-            Ok.
-                M pop(Ok)
+    # would be out of bounds (e.g., `index >= m count_()`).
+    ;;pop_(index.)?: of_
+        # don't resize the array in case `index >= m count`.
+        what m in_bounds_(index)
+            ok.
+                m pop_(ok)
             IGNORE_er.
                 Null
-        # alternatively: `M in_bounds(Index) map({M pop($Ok)}, {$_er, Null})`
+        # alternatively: `m in_bounds_(index) map_({m pop_($ok)}, {$_er, null})`
 
-    ;;pop(In_bounds.): of
+    ;;pop_(in_bounds.): of_
         debug assert(In_bounds >= 0 and In_bounds < M count())
         Result: M[In_bounds]!
         M erase(In_bounds)

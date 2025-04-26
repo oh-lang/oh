@@ -1,19 +1,18 @@
-# TODO: some logic like `@if u_arch > u32 {count64}` here:
-count_primitive: select[count64, count32, count16, count8]
+select_count_: select_[count64_, count32_, count16_, count8_]
 
-count_arch: count64 # TODO: fix for 32 bit
+count_arch_: count_[u_arch_]
 
-count64: count[u64]
-count32: count[u32]
-count16: count[u16]
-count8: count[u8]
+count64_: count_[u64_]
+count32_: count_[u32_]
+count16_: count_[u16_]
+count8_: count_[u8_]
 
 @final
-count[of: unsigned_primitive]: all_of
-[   [@private Value; of]
-    integer
+count_[of_: unsigned_primitive_]: all_of_
+[   [@private value; of_]
+    integer_
 ]
-{   m(Wrapping.): hm[m]
+{   m(wrapping.): hm[m]
         if Wrapping <= max()
             [Value: Wrapping]
         else
