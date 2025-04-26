@@ -18,13 +18,15 @@
 #define REFER_TAG_RESERVED2 6
 #define REFER_TAG_RESERVED3 7
 
-#define OWNED_POINTER(data_t) /*
+#define OWNED_POINTER(d) /*
 { */ \
 IMPL \
-(   refer_t refer_ ## data_t ## _owned_(data_t data, descope_t_ descope_),, \
-    {   data_t *owned_pointer = malloc(sizeof(data_t)); \
+(   refer_t ##d##_t__owned_(d##_t data, descope_f descope_),, \
+    {   d##_t *owned_pointer = malloc(sizeof(d##_t)); \
+        size_t reference = (size_t)ignore_start_p__offset_p__reference_rp_; \
+        DEBUG_ASSERT(reference % 8 == 0); \
         return (refer_t) \
-        {   .tagged_reference = REFER_TAG_POINTER, \
+        {   .tagged_reference = reference | REFER_TAG_POINTER, \
             .start = (word_t){ .ptr = 0 }, \
             .maybe_descope_offset = (size_t)descope_, \
             .offset = (word_t){ .ptr = (size_t)owned_pointer }, \
@@ -40,11 +42,11 @@ returns a pointer to some data based on a start value and an offset.
 but not `offset`, which is guaranteed to be non-null.
 WARNING! these functions need to be `ALIGN`ed so they can be tagged.
 */
-typedef void *(*reference_t_)(void *start, void *offset);
+typedef void *(*reference_f)(void *start, void *offset);
 /*
 destructor function.
 */
-typedef void (*descope_t_)(void *object);
+typedef void (*descope_f)(void *object);
 
 struct refer_t;
 typedef union
@@ -68,14 +70,14 @@ can be used for pointer tagging.
 */
 typedef struct refer_t
 {   /*
-    has tag for `start` OR'd into a `reference_t_` function pointer.
+    has tag for `start` OR'd into a `reference_f` function pointer.
     underlying function MUST BE `ALIGN`ed.
     */
     size_t tagged_reference;
     word_t start;
     /*
     if small (e.g., < 8), then should be interpreted as a tag for `offset`,
-    otherwise should be interpreted as a `descope_t_` function pointer
+    otherwise should be interpreted as a `descope_f` function pointer
     for `offset` which is an owned pointer type.
     */
     size_t maybe_descope_offset;
@@ -85,7 +87,7 @@ typedef struct refer_t
 #define REFER /*
 { */ \
 IMPL \
-(   void *reference_offset_(void *start, void *offset), ALIGN, \
+(   void *ignore_start_p__offset_p__reference_rp_(void *start, void *offset), ALIGN, \
     {   return offset; \
     } \
 ) \
@@ -94,7 +96,7 @@ IMPL \
     {   const size_t seven = 7; \
         void *offset = refer_resolve_offset_(refer->maybe_descope_offset, &refer->offset); \
         if (offset == NULL) return NULL; \
-        reference_t_ reference_ = (reference_t_)(refer->tagged_reference & ~seven); \
+        reference_f reference_ = (reference_f)(refer->tagged_reference & ~seven); \
         uint32_t start_tag = refer->tagged_reference & seven; \
         void *start = refer_resolve_start_(start_tag, &refer->start); \
         return reference_(start, offset); \
@@ -168,7 +170,7 @@ IMPL \
             case REFER_TAG_RESERVED3: \
                 break; \
             default: \
-            {   descope_t_ descope_ = (descope_t_)(refer->maybe_descope_offset); \
+            {   descope_f descope_ = (descope_f)(refer->maybe_descope_offset); \
                 void *ptr = (void *)refer->offset.ptr; \
                 descope_(ptr); \
                 free(ptr); \

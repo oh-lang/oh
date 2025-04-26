@@ -2,47 +2,48 @@
 
 #include "common.h"
 
-#define STACK(data_t) /*
+#define STACK(T) /*
 { */ \
 IMPL \
-(,  typedef struct stack_ ## data_t \
-    {   data_t *data; \
+(,  typedef struct stack_##T##_t \
+    {   T##_t *data; \
         uint32_t capacity; \
         uint32_t count; \
-    }       stack_ ## data_t \
+    }       stack_##T##_t \
 ,) \
 IMPL \
-(   void stack_ ## data_t ## __descope_(stack_ ## data_t *stack),, \
+(   void stack_##T##_p__descope_(stack_##T##_t *stack),, \
     {   while (stack->count > 0) \
         {   uint32_t index = --stack->count; \
-            data_t ## __descope_(&stack->data[index]); \
+            T##_p__descope_(&stack->data[index]); \
         } \
         free(stack->data); \
     } \
 ) \
 IMPL \
-(   void stack_ ## data_t ## __enscope_(stack_ ## data_t *stack),, \
+(   void stack_##T##_p__enscope_(stack_##T##_t *stack),, \
     {   stack->data = NULL; \
         stack->capacity = 0; \
         stack->count = 0; \
     } \
 ) \
+/* TODO: add a `stack_capacity` overload that calls this overload and exits on failure. */ \
 IMPL \
-(   int stack_ ## data_t ## __capacity_(stack_ ## data_t *stack, uint32_t uint32),, \
-    {   while (stack->count > uint32) \
-        {   data_t data = stack_ ## data_t ## __pop_(stack); \
-            data_t ## __descope_(&data); \
+(   success_t stack_##T##_p__capacity_t__success_rt_(stack_##T##_t *stack, uint32_t capacity),, \
+    {   while (stack->count > capacity) \
+        {   T##_t element = stack_##T##_p__pop_(stack); \
+            T##_p__descope_(&element); \
         } \
-        data_t *data; \
-        if (uint32 == 0) \
+        T##_t *data; \
+        if (capacity == 0) \
         {   data = NULL; \
         } \
         else \
         {   if (stack->capacity == 0) \
-            {   data = malloc(uint32 * sizeof(data_t)); \
+            {   data = malloc(capacity * sizeof(T##_t)); \
             } \
             else \
-            {   data = realloc(stack->data, uint32 * sizeof(data_t)); \
+            {   data = realloc(stack->data, capacity * sizeof(T##_t)); \
             } \
             /* check both branches that we succeeded */ \
             if (data == NULL) \
@@ -50,12 +51,12 @@ IMPL \
             } \
         } \
         stack->data = data; \
-        stack->capacity = uint32; \
+        stack->capacity = capacity; \
         return 1; \
     } \
 ) \
 IMPL \
-(   int stack_ ## data_t ## __append_default_(stack_ ## data_t *stack),, \
+(   success_t stack_##T##_p__append_default_(stack_##T##_t *stack),, \
     {   if (stack->count == stack->capacity) \
         {   uint32_t desired_capacity = stack->capacity * 2; \
             if (desired_capacity < stack->capacity) \
@@ -64,15 +65,15 @@ IMPL \
             else if (desired_capacity == 0) \
             {   desired_capacity = 2; \
             } \
-            if (stack_ ## data_t ## __capacity_(stack, desired_capacity) == 0) \
+            if (stack_##T##_p__capacity_t__success_rt_(stack, desired_capacity) == 0) \
             {   return 0; \
             } \
         } \
-        data_t ## __enscope_(&stack->data[stack->count++]); \
+        T##_p__enscope_(&stack->data[stack->count++]); \
     } \
 ) \
 IMPL \
-(   data_t stack_ ## data_t ## __pop_(stack_ ## data_t *stack),, \
+(   T##_t stack_##T##_p__pop_(stack_##T##_t *stack),, \
     {   if (stack->count == 0) \
         {   fprintf(stderr, "no elements in stack\n"); exit(1); \
         } \
@@ -80,43 +81,43 @@ IMPL \
     } \
 ) \
 IMPL \
-(   int stack_ ## data_t ## __equal_(stack_ ## data_t *a, stack_ ## data_t *b),, \
+(   bool_t stack_##T##_p__equal_(stack_##T##_t *a, stack_##T##_t *b),, \
     {   if (a->count != b->count) \
-        {   return 0; \
+        {   return false; \
         } \
         for (uint32_t index = 0; index < a->count; ++index) \
-        {   if (!(data_t ## __equal_(&a->data[index], &b->data[index]))) \
-            {   return 0; \
+        {   if (!(T##_p__equal_(&a->data[index], &b->data[index]))) \
+            {   return false; \
             } \
         } \
-        return 1; \
+        return true; \
     } \
 ) \
 IMPL \
-(   int stack_ ## data_t ## __print_(FILE *f, stack_ ## data_t *stack),, \
+(   void stack_##T##_p__print_(FILE *f, stack_##T##_t *stack),, \
     {   fprintf(f, "["); \
         for (uint32_t index = 0; index < stack->count; ++index) \
-        {   data_t ## __print_(f, &stack->data[index]); \
+        {   T##_p__print_(f, &stack->data[index]); \
             fprintf(f, ", "); \
         } \
         fprintf(f, "]"); \
     } \
 ) \
 IMPL \
-(   data_t *stack_ ## data_t ## __element_(stack_ ## data_t *stack, uint32_t *offset), ALIGN, \
+(   T##_t *stack_##T##_p__offset_p_(stack_##T##_t *stack, uint32_t *offset), ALIGN, \
     {   if (*offset == UINT32_MAX) \
         {   fprintf(stderr, "invalid offset: %d", UINT32_MAX); \
             exit(1); \
         } \
         while (*offset >= stack->count) \
-        {   stack_ ## data_t ## __append_default_(stack); \
+        {   stack_##T##_p__append_default_(stack); \
         } \
         return &stack->data[*offset]; \
     } \
 ) \
 IMPL \
-(   void refer_ ## data_t ## __enscope_from_stack_(refer_t *refer, stack_ ## data_t *stack, uint32_t offset),, \
-    {   reference_t_ reference_ = (reference_t_)stack_ ## data_t ## __element_; \
+(   void refer_##T##_p__enscope_from_stack_(refer_t *refer, stack_##T##_t *stack, uint32_t offset),, \
+    {   reference_f reference_ = (reference_f)stack_##T##_p__offset_p_; \
         DEBUG_ASSERT((size_t)reference_ % 8 == 0); \
         *refer = \
         (   (refer_t) \
@@ -129,12 +130,12 @@ IMPL \
     } \
 ) \
 IMPL \
-(   void refer_ ## data_t ## __enscope_from_refer_stack_(refer_t *refer, refer_t refer_stack, uint32_t offset),, \
+(   void refer_##T##_p__enscope_from_refer_stack_(refer_t *refer, refer_t refer_stack, uint32_t offset),, \
     /*
     TODO: if we add a `refer_t *refer_stack` overload and `refer_stack` is an owned pointer,
     we can just use `start` as a pointer that equals the owned pointer.  (i.e., we won't own it.)
     */ \
-    {   reference_t_ reference_ = (reference_t_)stack_ ## data_t ## __element_; \
+    {   reference_f reference_ = (reference_f)stack_##T##_p__offset_p_; \
         DEBUG_ASSERT((size_t)reference_ % 8 == 0); \
         refer_t *nested_refer = malloc(sizeof(refer_t)); \
         *nested_refer = refer_stack; \
@@ -149,8 +150,8 @@ IMPL \
     } \
 ) \
 IMPL \
-(   data_t *data_t ## __resolve_from_stack_ (refer_t *refer),, \
-    {   return (data_t *)resolve_(refer); \
+(   T##_t *T##_p__from__refer_p_stack_(refer_t *stack),, \
+    {   return (T##_t *)resolve_(stack); \
     } \
 ) \
 /*
