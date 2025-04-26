@@ -54,14 +54,14 @@ syn match	ohSyntaxError	"\<\u\+_\>"
 
 syn region	ohInclude matchgroup=ohInclude start="\\\\" end=" " skip="\\ "
 syn region	ohInclude matchgroup=ohInclude start="\\/" end=" " skip="\\ "
-syn match	ohUnused	"\<_\S*[^_]"
-syn match	ohUnusedFunction	"\<_\S*_"
-syn match	ohMacro		"@\S*\>"
+syn match	ohUnused	"\<_[^ ()\[\]^`{|}!-@\\]*\>"
+syn match	ohUnusedFunction	"\<_[^ ()\[\]^`{|}!-@\\]*_"
+syn match	ohMacro		"@[^ ()\[\]{}]*\>"
 syn match	ohNamespace	"\u\+_"
 syn match	ohNamespace	"_\u\+\>"
 syn match	ohNamespace	"\zs\<\u\+\ze[^A-Z_ ]"
 syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
-syn match	ohFunction	"[^!-@[\\\]^_`{|} ]\S*_\>" contains=ohNamespace
+syn match	ohFunction	"[^_ ()\[\]^`{|}!-@\\][^ ()\[\]^`{|}!-@\\]*_\>" contains=ohNamespace
 
 syn match   ohEndOfLineComment	"# .*$"
       \ contains=ohEscape,ohTodo,ohTick,@Spell
@@ -99,14 +99,13 @@ syn match   ohEscape	"\%(\\u\x\{4}\|\\U\x\{8}\)" contained
 syn match   ohEscape	"\\N{\a\+\%(\s\a\+\)*}" contained
 " TODO: we need ${}, $(), and $[] in strings.
 
-syn match   ohNumber	"\<0[oO]\=\o\+[Ll]\=\>"
-syn match   ohNumber	"\<0[xX]\x\+[Ll]\=\>"
-syn match   ohNumber	"\<0[bB][01]\+[Ll]\=\>"
-syn match   ohNumber	"\<\%([1-9]\d*\|0\)[Ll]\=\>"
-syn match   ohNumber	"\<\d\+[jJ]\>"
-syn match   ohNumber	"\<\d\+[eE][+-]\=\d\+[jJ]\=\>"
-syn match   ohNumber	"\<\d\+\.\%([eE][+-]\=\d\+\)\=[jJ]\=\%(\W\|$\)\@="
-syn match   ohNumber	"\%(^\|\W\)\zs\d*\.\d\+\%([eE][+-]\=\d\+\)\=[jJ]\=\>"
+syn match   ohNumber	"\<0[oO][0-7][0-7_]*\>"
+syn match   ohNumber	"\<0[xX]\x[0-9a-fA-F_]*\>"
+syn match   ohNumber	"\<0[bB][01][01_]*\>"
+syn match   ohNumber	"\<\d[0-9_]*\>"
+syn match   ohNumber	"\<\d[0-9_]*\.[0-9_]*\>"
+syn match   ohNumber	"\<\d[0-9_]*[eE][+-]\=\d[0-9_]*\>"
+syn match   ohNumber	"\<\d[0-9_]*\.[0-9_]*[eE][+-]\=\d[0-9_]*\>"
 
 " trailing whitespace
 syn match   ohSpaceError	display excludenl "\s\+$"

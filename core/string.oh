@@ -1,29 +1,29 @@
-str: str16
+str_: str128_
 
 # takes up 16 bytes = 128 bits.
 # has room for 128 bytes efficiently,
 # can fit up to 15 bytes locally if unallocated.
-str8: str[special_count: h8, Local_bytes: 16]
+usually_short_str128_: str_[special_count_: u8_, local_bytes: 16]
 
 # takes up 16 bytes = 128 bits.
 # has room for 32_768 bytes efficiently,
 # can fit up to 14 bytes locally if unallocated.
-str16: str[special_count: h16, Local_bytes: 16]
+str128_: str_[special_count_: u16_, local_bytes: 16]
 
 # takes up 24 bytes = 192 bits.
 # has room for 2^31 bytes efficiently,
 # can fit up to 20 bytes locally if unallocated.
-str32: str[special_count: h32, Local_bytes: 24]
+str192_: str_[special_count_: u32_, local_bytes: 24]
 
 # takes up 32 bytes = 256 bits.
 # has room for 2^63 bytes efficiently,
 # can fit up to 24 bytes locally if unallocated.
-str64: str[special_count: h64, Local_bytes: 32]
+str256_: str_[special_count_: u64_, local_bytes: 32]
 
 @align(8)
-str[special_count, Local_bytes]: all_of
-[   m: str_array[special_count, Local_bytes]
+str_[special_count_: unsigned_primitive_, local_bytes]: all_of_
+[   m_: str_array_[special_count_, local_bytes]
 ]
 
-str_array[special_count, Local_bytes]: heap_or_local_array[u8, special_count, Local_bytes]
+str_array_[special_count_, local_bytes]: heap_or_local_array_[u8_, special_count_, local_bytes]
 
