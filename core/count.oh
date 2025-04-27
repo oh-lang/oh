@@ -31,26 +31,18 @@ count_[of_: unsigned_primitive_]: all_of_
 
     @integer(m value)
 
-    min_(): m
-        [Value: 0]
+    min_(): m_
+        [value: 0]
 
-    max_(): m
-        [Value: signed[of] max() + 1]
+    max_(): m_
+        [value: signed_[of_] max_() + 1]
 
-    m(Signed. signed[of]): hm[m]
-        [Value: of(.Signed) assert()]
+    m_(signed. signed_[of_]): hm_[m_]
+        [value: of_(signed) assert_()]
 
-    ::double_or_max(At_least. of): m
-        if Value >= max() Value
-            @cold_path
-            # TODO: do we need a cast here `(M as m?) is_null()`
-            if is_null()
-                error("Count was null in ::double_or_max, assuming 0")
-                [Value. At_least]
-            else
-                max()
-        else
-            [Value: max(At_least, Value * 2)]
+    ::double_or_max_(): m_
+        doubled_value: of_ = m value * 2
+        [value: min_(max_() value, doubled_value)]
 }
 
 hm_[of_]: hm_[ok_: of_, number_ er_]

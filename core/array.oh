@@ -17,25 +17,32 @@ array_[of_, count_with_: select_count_]: all_of_
 
     ::count_(): count_with_
 
+    :;[in_bounds.]: (of:;)
+
     # called as `array append_(3, assuming. capacity)`
     ;;append_(of., assuming. one_of_[capacity]): null_
 
     ;;pop_()?: of_
 
-    ;;capacity_(at_least. count_with): hm_[null_]
-        # TODO: can implement here
+    ;;capacity_(at_least. count_with_): hm_[null_]
+        current_capacity: m capacity_()
+        if at_least <= current_capacity
+            return ok_()
+        doubled_capacity: current_capacity double_or_max_()
+        m capacity_(max_(at_least, doubled_capacity))
 
     ;;append_(of.): hm_[null_]
-        # TODO: can implement here
+        m capacity_(at_least: _count() + 1) assert_()
+        m append_(.of, assuming. capacity)
 
     ;;count_[require: of_ is defaultable_](NEW_count_with.): hm_[null_]
         OLD_count: m count_()
         if NEW_count == OLD_count
             return ok_(OLD_count)
         if NEW_count > OLD_count
-            capacity_(at_least_: NEW_count) assert()
+            capacity_(at_least_: NEW_count) assert_()
             while m count_() < NEW_count
-                append_(of_())
+                append_(of_(), assuming. capacity)
         else
             assert_(NEW_count >= 0, er invalid_count)
             while m count_() > NEW_count
@@ -52,15 +59,11 @@ array_[of_, count_with_: select_count_]: all_of_
             no_capacity
                 m capacity_(0)
 
-    :;[in_bounds.]: (of:;)
+    ::[index.]?: (of:)
+        # TODO: use m[in_bounds]
 
-    # moves out and resets the value at this index.
-    ;;[index.]!?: of_
-        what m in_bounds_(index)
-            ok.
-                m[ok]!
-            IGNORE_er.
-                null
+    ;;[index.]: hm_[(of;)]
+        # TODO: use m[in_bounds]
 
     # returns a value of the array element at the specified index,
     # or the end of the array if not specified.  returns null if the element
@@ -71,81 +74,68 @@ array_[of_, count_with_: select_count_]: all_of_
             ok.
                 m pop_(ok)
             IGNORE_er.
-                Null
+                null
         # alternatively: `m in_bounds_(index) map_({m pop_($ok)}, {$_er, null})`
 
     ;;pop_(in_bounds.): of_
-        debug assert(In_bounds >= 0 and In_bounds < M count())
-        Result: M[In_bounds]!
-        M erase(In_bounds)
-        Result
+        debug assert_(in_bounds < m count_())
+        result: m[in_bounds]!
+        m erase_(in_bounds)
+        result
 
-    ;;erase(Index.): m count
-        if M in_bounds(Index) is Ok.
-            M erase(Ok)
+    # returns the number of elements erased
+    ;;erase_(index.): count_with_
+        if m in_bounds_(index) is ok.
+            m erase_(ok)
         else
             0
 
-    ;;erase(In_bounds.): m count
-        debug assert(In_bounds >= 0 and In_bounds < M count())
-        range(In_bounds, M count() - 1) each Destination_index:
-            M[Destination_index] = M[In_bounds: Destination_index + 1]!
-        M pop()
+    ;;erase_(in_bounds.): count_with_(1)
+        debug assert_(in_bounds < m count_())
+        range_(in_bounds, m count_() - 1) each DESTINATION_in_bounds:
+            m[DESTINATION_in_bounds] = M[in_bounds: DESTINATION_in_bounds + 1]!
+        m pop_()
         1
 
-    !!(M): bool
-        count(M) > 0
+    !!(m): bool_
+        count_(m) > 0
 
     # returns a copy of this array, but sorted.
-    # only makes sense if `of` is orderable.
-    ::sort[Require: of is orderable](): you
+    ::sort_[require: of_ is orderable_](): o_
 
     # sorts this array in place.
-    # only makes sense if `of` is orderable.
-    ;;sort[Require: of is orderable](): null
+    ;;sort_[require: of_ is orderable_](): null_
 
-    # returns a sorted copy with a custom comparator that acts on a single element at a time.
-    # `fn(By)` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
-    # the result type `t` should be easily comparable via `<`, `<=`, etc.
-    # examples:
-    #   Array sort((By): By count())    # results in ["f", "de", "abc", "ghij"]
-    #   Array::sort($By count())        # same, but without the lambda $
-    ::sort[Require: t is orderable](fn(By: of): ~t): you
+    #[#
+    sorts with a custom comparator that acts on a single element at a time.
+    `fn_(by: of_): ~t_` should be easy to calculate on the fly, otherwise
+    you should run `tabulated`.  the result type `t_` should be easily
+    comparable via `<`, `<=`, etc.  examples:
+    ```
+    array: ["abc", "de", "f", "ghij"]
+    print_(array sort_((by): by count_()))  # prints ["f", "de", "abc", "ghij"]
+    print_(array::sort_($by count_()))      # same, but via lambda arguments
+    ```
+    #]#
+    :;sort_[require: t_ is orderable_](fn_(by: of_): ~t_): respectively_[o_, null_]
 
-    # sorts in place with a custom comparator that acts on a single element at a time.
-    # `fn(By)` should be easy to calculate on the fly, otherwise you should run with `Tabulate`.
-    # the result type `t` should be easily comparable via `<`, `<=`, etc.
-    # examples:
-    #   Array; ["abc", "de", "f", "ghij"]
-    #   Array sort($By count())         # `Array` becomes ["f", "de", "abc", "ghij"]
-    #   Array;;sort((By): By count())   # same, but without the lambda $
-    ;;sort[Require: t is orderable](fn(By: of): ~t): null
-
-    # sorts using a tabulated work array (additional `O(N * size_of(t))` memory cost).
-    # should be called in the case `fn(By)` is expensive to compute.
-    :;sort[Require: t is orderable]
-    (   fn(By: of): ~t, Tabulated. one_of[Tabulated]
-    ):  respectively[you, null]
+    # sorts using a tabulated work array (with an additional cost of
+    # `O(m count_() * bytes_(t_))`).  should be used in case `fn_(by)`
+    # is expensive to compute.
+    :;sort_[require: t_ is orderable_]
+    (   fn_(by: of_): ~t_, tabulated. one_of_[tabulated]
+    ):  respectively_[o_, null_]
 
     # sorts with a custom comparator that acts on two elements at a time.
     # without certain transitive properties, the result's order may not make sense.
-    :;sort(fn(Left: of, Right: of): comparison): respectively[you, null]
+    :;sort_(fn_(left: of_, right: of_): ordering_): respectively_[o_, null_]
 
-    ::hash(~Builder;):
-    {   Builder hash(of)  # make array hashes distinct based on type.
-        M each (Index., Of:)
-            Builder hash(Index)
-            Builder hash(Of)
-    }
-
-    ;;capacity(At_least: m count): hm[null]
-        Current_capacity: M capacity()
-        if At_least <= Current_capacity 
-            return ok()
-        M capacity(Current_capacity double_or_max(At_least. 4))
+    ::hash_(~builder;): null_
+        m each of:
+            builder hash_(of)
 }
 
 # for simplicity, rounds to multiples of 8 bytes.
 local_bytes_: select_[16, 24, 32, 40, 48, 56, 64]
 
-[allocation, hm, er]: \/allocation
+[hm_, er_]: \/container
