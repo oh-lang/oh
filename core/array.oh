@@ -111,11 +111,11 @@ array_[of_, count_with_: select_count_]: all_of_
     `fn_(by: of_): ~t_` should be easy to calculate on the fly, otherwise
     you should run `tabulated`.  the result type `t_` should be easily
     comparable via `<`, `<=`, etc.  examples:
-    ```
-    array: ["abc", "de", "f", "ghij"]
-    print_(array sort_((by): by count_()))  # prints ["f", "de", "abc", "ghij"]
-    print_(array::sort_($by count_()))      # same, but via lambda arguments
-    ```
+        ```
+        array: ["abc", "de", "f", "ghij"]
+        print_(array sort_((by): by count_()))  # prints ["f", "de", "abc", "ghij"]
+        print_(array::sort_($by count_()))      # same, but via lambda arguments
+        ```
     #]#
     :;sort_[require: t_ is orderable_](fn_(by: of_): ~t_): respectively_[o_, null_]
 

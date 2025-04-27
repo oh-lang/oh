@@ -21,12 +21,11 @@ count_[of_: unsigned_primitive_]: all_of_
     ?:
     {   ::is(null_): bool
             m value > max_() value
+
         null: [value: max_() value]
 
-        ::null_boxing_(): of_
+        :;null_boxing_(): (of:;)
             m value
-        ;;null_boxing_(of.): null_
-            m value = of
     }
 
     @integer(m value)
@@ -41,8 +40,22 @@ count_[of_: unsigned_primitive_]: all_of_
         [value: of_(signed) assert_()]
 
     ::double_or_max_(): m_
-        doubled_value: of_ = m value * 2
-        [value: min_(max_() value, doubled_value)]
+        if m value < max_() value // 2
+            [value: m value * 2]
+        else
+            max_()
 }
 
 hm_[of_]: hm_[ok_: of_, number_ er_]
+
+@test "double_or_max_"
+    @test "count8_"
+        c_: count8_
+        test_(c_(0) double_or_max_()) == 0
+        test_(c_(3) double_or_max_()) == 6
+        test_(c_(63) double_or_max_()) == 126
+        test_(c_(64) double_or_max_()) == 128
+        test_(c_(65) double_or_max_()) == 128
+        test_(c_(65) double_or_max_()) == 128
+        test_(c_(127) double_or_max_()) == 128
+        test_(c_(128) double_or_max_()) == 128

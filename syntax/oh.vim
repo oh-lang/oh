@@ -23,7 +23,7 @@ syn keyword ohBuiltin	false true null
 syn keyword ohBuiltin	context debug m
 syn keyword ohBuiltin	with
 syn keyword ohBuiltinFunction	is_ m_ renew_
-syn keyword ohBuiltinFunction	count_ each_
+syn keyword ohBuiltinFunction	count_ each_ test_
 syn keyword ohBuiltinFunction	abs_ ceil_ floor_ max_ min_
 syn keyword ohBuiltinFunction	error_ print_
 syn keyword ohStatement		break continue fall_through
