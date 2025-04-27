@@ -1,4 +1,4 @@
-select_count_: select_[count64_, count32_, count16_, count8_]
+count_primitive_: select_[count64_, count32_, count16_, count8_]
 
 count_arch_: count_[u_arch_]
 
@@ -19,7 +19,7 @@ count_[of_: unsigned_primitive_]: all_of_
             unrepresentable
 
     ?:
-    {   ::is(null_): bool
+    {   ::is(null_): bool_
             m value > max_() value
 
         null: [value: max_() value]

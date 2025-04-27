@@ -1,22 +1,22 @@
 # stores up to 9_223_372_036_854_775_808 elements.
 # uses at least 8 bytes for a pointer + 8 bytes for count.
-maybe_local_array64_[of_, local_bytes_]:
-        maybe_local_array_[of_, special_count_: u64_, local_bytes_]
+maybe_local_array64_[of_, local_bytes]:
+        maybe_local_array_[of_, special_count_: u64_, local_bytes]
 
 # efficiently stores up to 2_147_483_648 elements, more being less efficient.
 # uses at least 8 bytes for a pointer + 4 bytes for count & special_count.
-maybe_local_array32[of, local_bytes]:
-        maybe_local_array[of, special_count: h32, local_bytes]
+maybe_local_array32_[of_, local_bytes]:
+        maybe_local_array_[of_, special_count_: u32_, local_bytes]
 
 # efficiently stores up to 32_768 elements, more being less efficient.
 # uses at least 8 bytes for a pointer + 2 bytes for count & special_count.
-maybe_local_array16[of, local_bytes]:
-        maybe_local_array[of, special_count: h16, local_bytes]
+maybe_local_array16_[of_, local_bytes]:
+        maybe_local_array_[of_, special_count_: u16_, local_bytes]
 
 # efficiently stores up to 128 elements, more being less efficient.
 # uses at least 8 bytes for a pointer + 1 byte for count & special_count.
-maybe_local_array8[of, local_bytes]:
-        maybe_local_array[of, special_count: h8, local_bytes]
+maybe_local_array8_[of_, local_bytes]:
+        maybe_local_array_[of_, special_count_: u8_, local_bytes]
 
 # array that is local up to a certain capacity (`_max_local_count`)
 # and allocated on the heap past that.
