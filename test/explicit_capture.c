@@ -60,17 +60,22 @@ void needs_ids_(uint64_t (*fn_)(void))
 }
 
 // built-in special overload, needed for our context-requiring function.
-typedef uint64_t (*u64_fn_ctx_t_)(void *ctx);
-void needs_ids_ctx_(u64_fn_ctx_t_ fn_, void *ctx)
+typedef uint64_t (*u64_fn_ctx_f)(void *ctx);
+void needs_ids_ctx_(u64_fn_ctx_f fn_, void *ctx)
 {   printf("%ld\n", fn_(ctx));
     printf("%ld\n", fn_(ctx));
 }
+
+// if we want to be efficient in not creating more arguments, we could
+// pass in a single `struct { void *ctx, u64_fn_ctx_f fn_} _t` argument
+// to a new overload `needs_ids_fnctx_`, but ultimately it will do the
+// same thing.
 
 int main()
 {   inner_ctx_t uid_generator_ctx = outer_(456);
     printf("%ld\n", inner_(&uid_generator_ctx));
     printf("%ld\n", inner_(&uid_generator_ctx));
 
-    needs_ids_ctx_((u64_fn_ctx_t_)inner_, (void *)&uid_generator_ctx);
+    needs_ids_ctx_((u64_fn_ctx_f)inner_, (void *)&uid_generator_ctx);
     return 0;
 }
