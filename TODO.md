@@ -136,6 +136,8 @@ ideally we'd keep track of it somewhere, e.g., in `.my_file.generated.c`/`.h` fi
 where `my_file.oh` is where the generic *itself* is defined, so that we can re-use them
 across the codebase.  we'd need to support this for library functions as well.
 maybe library files need to be copied over anyway into their own directory (at least 3rd party code).
+it would require recompiling your library whenever you add a child (see inheritance).
+but this is ok or even expected because oh-lang does things at comptime.
 
 alternatively, as an even rougher first pass, we could put everything into one big `.c` file,
 with some DAG logic for where things should be defined.
@@ -189,24 +191,59 @@ when creating a class, we give it a positive `Type_id` (probably `u_arch`) only 
 *has any fields* (e.g., instance variables or instance functions defined in `[]`).
 otherwise we'll set the `Type_id` to be 0; it's abstract and shouldn't perform any
 of the following logic.  when we notice anyone is inheriting from a non-zero `Type_id`,
-i.e., via an `child_type: all_of[parent_type, m: child_fields]`, we tag add to a list
-keyed on `parent_type Type_id` (and same for any ancestors of `parent_type`).
-this can be a "short tag" when we know the type is at least `parent_type` already.
+i.e., via an `child_type_: all_of_[parent_type_, m_: child_fields_]`, we add to a list
+keyed on `parent_type_ type_id` (and same for any ancestors of `parent_type`).
+this can be a "short tag" when we know the type is at least `parent_type_` already.
 the short tag should be 8 bits only, but we probably can make this configurable (e.g., for 32 bit arch).
 if we don't mark a non-final instance variable as `@only`, it will take up at least 64 bits of space.
 this is because we'll use 56 bits to store a pointer to a child in the worst case, with 8 bits as the
 short tag afterwards.  if we are storing a variable as `any` type, we'll use the full `u_arch`
-size to store `Type_id` then the variable data.
+size to store `type_id` then the variable data.
 
 TODO: does this short pointer work logic work for multiple parents?  they'd need to have the same
 offset/value, no?
 
 TODO: we need to disallow `all_of` if `parent1` and `parent2` have any of the same instance fields.
 
+when classes *implicitly* inherit from a parent, e.g., for duck typing, we don't add them to
+the parent's vtable at first...
+
+```
+# `hashable_`'s vtable includes `explicitly_hashable_`:
+explicitly_hashable_: all_of_[hashable_, m_: [str;]]
+{   ::hash_(~builder): builder hash_(m str)
+}
+
+x; hashable_, ..., x = explicitly_hashable_("hi")
+print_(hash_(x)) # OK
+
+# `hashable_`'s vtable doesn't include `implicitly_hashable_`:
+implicitly_hashable_: [str;]
+{   ::hash_(~builder): builder hash_(m str)
+}
+
+# you can still use `hash_` here:
+y; implicitly_hashable_("hi"J)
+print_(hash_(y)) # OK
+```
+
+however, if we see that there's the possibility of using the implicit child as the parent class,
+we'll add it to the parent's vtable.
+
+```
+do_something_[of_: hashable_](~of): null_
+    print_(hash_(of))
+
+# this triggers adding `implicitly_hashable_` to the `hashable_` vtable.
+do_something_(implicitly_hashable_("asdf"))
+# so would this:
+x; hashable_, ..., x = implicitly_hashable_("hi")
+```
+
 ### generics
 
 generic templates with generic methods is disallowed by C++, but we should
-be able to make it happen.
+be able to make it happen because we specialize at comptime, not before.
 
 ```
 generic[of]: [Value; of]
@@ -419,3 +456,104 @@ small numbers.  however, if we start adding large and small numbers together, `x
 will get really large (`e` will be the min exponent).  can we do something like
 where we represent numbers like this? `x << a + y << b`, and try to manage the
 size of all `int`s involved?
+
+## translation process
+
+we need to keep track of which names are needed where.
+
+```
+outer_: [a; i64_, inner;]
+inner_: [b; dbl_, super_inner;]
+super_inner_: [c; str_]
+
+# needs to get ordered as
+typedef struct super_inner_t { str_t c; } super_inner_t;
+typedef struct inner_t { dbl_t b; super_inner_t super_inner; } inner_t;
+typedef struct outer_t { i64_t a; inner_t inner; } outer_t;
+```
+
+note that if a reference or pointer to a struct is used, we don't
+add it to the list of dependencies.
+
+```
+type_name_: str_
+type_dependency_: type_name_
+type_data_:
+[   name;
+    dependencies; stack_[dependency_]
+]
+{   name_: type_name_
+    dependency_: type_dependency_
+}
+
+type_datas[type_data_, at_: type_name_];
+# populate the dependencies, when looking at declarations inside the type.
+...
+    type_data ... each dependency
+        type_datas[type_data name] dependencies append_(dependency)
+
+
+type_names; set_[vertex_]
+type_datas each type_data:
+    never_visited;;[type_data name]
+dag_sort_(vertex_set. type_names, 
+
+# returns DAG in dependency order.
+dag_sort_
+(   vertex_set. set_[~vertex_]
+    edges_(vertex): (stack_[vertex_]:)
+): hm_[stack_[vertex_], dag_ er_]
+    (never_visited;) = @hide vertex_set
+    # for detecting cycles, list of elements we're considering, or descendents of one.
+    currently_visiting; set_[vertex_]
+
+    sorted; stack_[vertex_]
+    while never_visited pop_() is visiting. vertex_
+        dag_visit_
+        (   .visiting
+            edges_
+            ;currently_visiting
+            ;never_visited
+            ;sorted
+        )
+    sorted
+
+@private
+dag_visit_
+(   visiting. ~vertex_
+    edges_(vertex): (stack_[vertex_]:)
+    currently_visiting; set_[vertex_]
+    never_visited; set_[vertex_]
+    sorted; stack_[vertex_]
+): hm_[null_]
+    debug assert_(never_visited::[visiting])
+    if currently_visiting::[visiting]
+        return er_ cyclic_dependency_(.visiting)
+    currently_visiting;;[visiting clone_()]
+
+    edges_(vertices,  
+    type_datas::[visiting] dependencies each type_dependency:
+        # use depth first search (DFS) on non-visited vertices
+        if never_visited::[type_dependency name]
+            dag_visit_
+            (   visiting. type_dependency name clone_()
+                :vertices
+                ;currently_visiting
+                ;never_visited
+                ;sorted
+            )
+    to_visit_stack append_(visiting clone_())
+
+    currently_visiting pop_(:visiting)
+    sorted append_(.visiting)
+```
+
+```
+# this has a cycle that's not obvious.
+# NEEDS TO BE A COMPILE ERROR:
+type1_: [a; int_, type2;]
+type2_: [b; dbl_, type3;]
+type3_: [c; str_, type1;]
+```
+
+
