@@ -240,6 +240,44 @@ do_something_(implicitly_hashable_("asdf"))
 x; hashable_, ..., x = implicitly_hashable_("hi")
 ```
 
+because we want to support duck typing, we don't want to require users to explicitly add the
+`hashable_` parent class, but we do need to add it.  it will translate to code like this
+inside the `.hash.generated.c` file (generated from the library `hash.oh`):
+
+```
+typedef struct oh_dynamic_hashable_t
+{   u64_t type_id;
+    union
+    {   // child classes if they fit within 3 words:
+        explicitly_hashable_t explicitly_hashable;
+        // child classes if they don't fit into 3 words....
+        big_child_t *big_child;
+    };
+}       oh_dynamic_hashable_t;
+
+void oh__hash__dynamic_hashable_q
+(   const oh_dynamic_hashable_t *dynamic_hashable,
+    ...
+)
+{   switch (dynamic_hashable->type_id)
+    {   case oh_type_id__explicitly_hashable:
+            return oh__hash__explicitly_hashable_
+            (   &dynamic_hashable->explicitly_hashable,
+                ...
+            );
+        case oh_type_id__big_child:
+            return oh__hash__big_child_
+            (   dynamic_hashable->big_child,
+                ...
+            );
+    }
+    exit(1);
+}
+```
+
+the `implicitly_hashable` switch-case will only be added if we ask for
+the `implicitly_hashable_` class as a `hashable_`.
+
 ### generics
 
 generic templates with generic methods is disallowed by C++, but we should

@@ -1,33 +1,31 @@
-container[of: not[null], at]: []
-{   ::count(): count
+container_[of_: not_[null_], at_, count_with_: count_arch_]: []
+{   ::count_(): count_with_
 
-    # get a reference to an element.
-    # it is expected that doing `Container[At] = Of` will
-    # add `Of` to the container at `At` if not already present,
-    # or overwrite the current value at `At` if present.
-    :;[At.]: (Of?:;)
+    # get a nullable reference to an element.
+    :;[at.]: (of?:;)
 
-    # setter.
-    ;;set(At., Of.): null
+    # get a non-null reference to an element.
+    # this will add a default `of` if `at` is
+    # not already in the container.
+    ;;[at.]: (of;)
 
-    # returns the element at `At` or null if not present.
+    # returns the element at `at` or null if not present,
+    # removing it from the container while doing so.
     # TODO: good way to do "define one of ;;pop, ;;swap, etc."
     #       and to indicate that in the code so we can rely on it
     #       in the other "undefined" methods.
-    #       maybe `if @specialized ;;pop { ... }`
-    #       and `@Require: @specialized ;;pop || @specialized ;;swap`...
-    #       this `@Require` is only needed for a non-abstract class.
-    ;;pop(At)?: of
+    #       maybe `if @specialized ;;pop_ { ... }`
+    #       and `@require: @specialized ;;pop_ || @specialized ;;swap_`...
+    #       this `@require` is only needed for a non-abstract class.
+    ;;pop_(at)?: of_
 
-    # setter that also returns the old value (or null if not previously present).
-    ;;swap(At., Of.)?: of
+    # TODO: `::min_()`, `::max_()`, and `::order_(count_with.)` methods.
+    #       these should just pass through to the iterator, but `[require: of_ is orderable_]`
 
-    # swapper that uses the passed-in reference to swap.
-    # pass in `Null` to delete the element at `At`.
-    #   Old_value?; str
-    #   Container swap(At. 123, Old_value;)
-    ;;swap(At., Of?;): null
+    # TODO: is this the correct way to define the iterator?
+    #       we probably need a "preblock" since we'll run the block
+    #       using something like `preblock_(defining_: ...)`
+    :;each_(block[defining_:; of_, ~t_]:)?: t_
 
-    # TODO: `::min()`, `::max()`, and `::order(Count)` methods.
-    #       these should just pass through to the iterator, but `[Require: of is orderable]`
+    :;each_(block[defining_: (at::, of:;), ~t_]:)?: t_
 }
