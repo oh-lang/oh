@@ -2785,42 +2785,46 @@ A function can have a function as an argument, and there are a few different way
 it in that case.  This is usually a good use-case for lambda functions, which define
 an inline function to pass into the other function.  Because we support
 [function overloading](#function-overloads), any externally defined functions need to be
-fully specified.  (E.g., this is not allowed: `greet(Int): "hello" + "!" * Int, do_greet(greet)`.)
+fully specified.  (E.g., this is not allowed: `greet_(int): "hello" + "!" * int, do_greet_(greet_)`.)
 This is also because we allow passing in types as function arguments, so anything that is
-`function_case_` without a subsequent parenthesized argument list `(Args...)` will be considered
+`function_case_` without a subsequent parenthesized argument list `(args...)` will be considered
 `type_case_` instead.
+TODO: is there a meaningful distinction here?  since types are functions.  although
+functions can return multiple different types, types will return only a single type.
+(although they can return a result type for a constructor.)  i bet we could use
+the default overload for a function that we pass in as `greet_`.
 
 ```
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
 # if it can't find it.
-detect(greet(Int): string): int
+detect_(greet_(int): string_): int_
     100 each CHECK_int:
-        if greet(CHECK_int) == "hello, world!"
+        if greet_(CHECK_int) == "hello, world!"
             return CHECK_int
     return -1
 
 # if your function is named the same as the function argument...
-greet(Int): string
+greet_(int): string_
     return "hay"
 # you can use it directly, although you still need to specify which overload you're using,
-detect(greet(Int): string)  # returns -1
+detect_(greet_(int): string_)   # returns -1
 # also ok, but a bit verbose:
-detect(greet(Int): greet(Int) String)
+detect_(greet_(int): greet_(int) string)
 
 # if your function is not named the same, you can do argument renaming;
 # internally this does not create a new function:
-say_hi(Int): string
-    return "hello, world" + "!" * Int
-detect(greet(Int): string = say_hi) # returns 1
+say_hi_(int): string_
+    return "hello, world" + "!" * int
+detect_(greet_(int): string_ = say_hi_) # returns 1
 
 # you can also create a function named correctly inline -- the function
 # will not be available outside, after this call (it's scoped to the function arguments).
-detect
-(   greet(Int): string
-        "hello, world!!!!" substring(Length: Int)
+detect_
+(   greet_(int): string_
+        "hello, world!!!!" substring_(length: int)
 )   # returns 13
 
-detect(greet(Int): {["hi", "hey", hello"][Int % 3] + ", world!"}) # returns 2
+detect_(greet_(int): {["hi", "hey", hello"][int % 3] + ", world!"}) # returns 2
 ```
 
 ### lambda functions
@@ -2828,29 +2832,29 @@ detect(greet(Int): {["hi", "hey", hello"][Int % 3] + ", world!"}) # returns 2
 Lambda functions are good candidates for [functions as arguments](#functions-as-arguments),
 since they are very concise ways to define a function.  They utilize an indented block
 or set of braces  like `{...function-body...}` with function arguments defined inside using
-`$The_argument_name`.  There is no way to specify the type of a lambda function argument,
+`$the_argument_name`.  There is no way to specify the type of a lambda function argument,
 so the compiler must be able to infer it (e.g., via using the lambda function as an argument,
-or by using a default name like `$Int` to define an integer).  Some examples:
+or by using a default name like `$int` to define an integer).  Some examples:
 
 ```
-run_asdf(do(J: int, K: str, L: dbl): null): null
-    print(do(J: 5, K: "hay", L: 3.14))
+run_asdf_(do_(j: int_, k: str_, l: dbl_): null)_: null_
+    print_(do_(j: 5, k: "hay", l: 3.14))
 
-# Note that `$K`, `$J`, and `$L` attach to the same lambda based on looking
+# Note that `$k`, `$j`, and `$l` attach to the same lambda based on looking
 # for the first matching `{}`.
-run_asdf({$K * $J + str($L)})   # prints "hayhayhayhayhay3.14"
+run_asdf_({$k * $j + str_($l)})     # prints "hayhayhayhayhay3.14"
 
 # One example with brackets:
-My_array: [0.06, 0.5, 4.0, 30.0, 200.0, 1000.0]
-# Again, `$K`, `$J`, and `$L` attach to the same lambda.
-run_asdf({$K + str(My_array[$J] * $L)})  # prints "hay3140
+my_array: [0.06, 0.5, 4.0, 30.0, 200.0, 1000.0]
+# Again, `$k`, `$j`, and `$l` attach to the same lambda.
+run_asdf_({$k + str_(my_array[$j] * $l)})   # prints "hay3140"
 # The same example with an indent:
-run_asdf
-(   $K + str(My_array[$J] * $L)
+run_asdf_
+(   $k + str_(my_array[$j] * $l)
 )
 # this is wrong, this looks like line continuation.
-run_asdf
-(       $K + str(My_array[$J] * $L)
+run_asdf_
+(       $k + str_(my_array[$j] * $l)
 )
 ```
 
@@ -2859,14 +2863,14 @@ one variable into the parent scope, e.g.,
 
 ```
 # with function signatures
-# `run(fn(X: any): any): any` and
-# `run_nested(fn(Y: any): any): any`
-run({$X + run_nested({$Y + $$X})})
+# `run_(fn_(x: any_): any_): any_` and
+# `run_nested_(fn_(y: any_): any_): any_`
+run_({$x + run_nested_({$y + $$x})})
 
 # or with indents
-run
-(   $X + run_nested
-    (   $Y + $$X
+run_
+(   $x + run_nested_
+    (   $y + $$x
     )
 )
 ```
@@ -2874,9 +2878,8 @@ run
 But it would probably be more readable to just define the functions normally in this instance.
 
 There is currently no good way to define the name of a lambda function; we may use
-`@named(whatever_name) {$X + $Y}`, but it's probably more readable to just define
-the function inline as `whatever_name(X, Y): X + Y`.
-TODO: would `$named{$X + $Y}` work??
+`@named(whatever_name_) {$x + $y}`, but it's probably more readable to just define
+the function inline as `whatever_name_(x, y): x + y`.
 
 ### types as arguments
 
