@@ -2628,50 +2628,50 @@ fifth_element_(array[int_];): (int;)
     # to an array that already exists outside of this scope.
     # NOTE: this actually returns a pointer to the array with an offset (i.e., 4)
     #       in case the array reallocates, etc.
-    (;Array[4])
+    (;array[4])
 
-My_array; array[int](1, 2, 3, 4, 5, 6)
-(Fifth;) = fifth_element(;My_array)
-Fifth += 100
-My_array == [1, 2, 3, 4, 105, 6]    # should be true
+my_array; array_[int_](1, 2, 3, 4, 5, 6)
+(fifth;) = fifth_element_(;my_array)
+fifth += 100
+my_array == [1, 2, 3, 4, 105, 6]    # should be true
 ```
 
 #### refer function
 
 If you need some special logic before returning a reference, e.g., to create a default,
-you can use the `refer` function with the following signature: `refer(~R;, fn(R;): (~T;)`
+you can use the `refer_` function with the following signature: `refer_(~r;, fn_(r;): (~t;)`
 and similarly for a constant reference (swap `;` with `:` everywhere).  There's also a
 key-like interface (e.g., for arrays or lots):
 
 ```
-# if `At` is passed as a temporary, it should be easily copyable.
-refer(~R;:, At` ~k, fn(R;:, K:): (~T;:)): (T;:)`
+# if `at` is passed as a temporary, it should be easily copyable.
+refer_(~r;:, at` ~k_, fn_(r;:, k:): (~t;:)): (t;:)`
 ```
 
-You can also create a reference via getters and setters using the `refer` function, which
-has the following signature: `refer(~R;, @Getter fn(R): ~t, @Setter fn(R;, T.): null): (T;)`.
-It extends a base reference to `R` to provide a reference to a `t` instance.
+You can also create a reference via getters and setters using the `refer_` function, which
+has the following signature: `refer_(~r;, GETTER_fn_(r:): ~t_, SETTER_fn_(r;, t.): null_): (t;)`.
+It extends a base reference to `r` to provide a reference to a `t_` instance.
 There's also a key-like interface (e.g., for arrays or lots):
 
 ```
-# if `At` is passed as a temporary, it should be easily copyable.
-refer(~R;:, At` ~k, @Getter fn(R:, K:): ~t, @Setter fn(R;:, K:, T.): null): (T;)`
+# if `at` is passed as a temporary, it should be easily copyable.
+refer_(~r;:, at` ~k_, GETTER_fn_(r:, k:): ~t_, SETTER_fn_(r;:, k:, t.): null_): (t;)`
 ```
 
-When calling `refer`, we want the getters and setters to be known at compile time,
+When calling `refer_`, we want the getters and setters to be known at compile time,
 so that we can elide the reference object creation when possible.
 
 ```
-My_array; [1, 2, 3, 4]
+my_array; [1, 2, 3, 4]
 
-# here we can elide `refer` here that is inside the method
-# `array[int];;[Index]: (Int;)`, and call the setter immediately:
-My_array[0] = 0     # My_array == [0, 2, 3, 4]
+# here we can elide `refer_` here that is inside the method
+# `array_[int_];;[index]: (int;)`
+my_array[0] = 0     # my_array == [0, 2, 3, 4]
 
-# here we cannot elide `refer`
-(My_reference;) = My_array[2]
-My_reference += 3   # My_array == [0, 2, 6, 4]
-print(My_reference) # prints `6`
+# here we cannot elide `refer_`
+(my_reference;) = my_array[2]
+my_reference += 3   # my_array == [0, 2, 6, 4]
+print(my_reference) # prints `6`
 ```
 
 ### default-name arguments in functions
@@ -2681,19 +2681,20 @@ you can use default-named variables.  For standard ASCII identifiers, the defaul
 is just the `variable_case` version of the `type_case_` type (i.e., remove the trailing `_`).
 
 ```
-# this function declaration is equivalent to `f(Int: int): int`:
-f(Int:): int
-    Int + 5
+# this function declaration is equivalent to `f_(int: int_): int_`:
+f_(int:): int_
+    int + 5
 
-Z: 3
-f(Z)                    # ok
-f(4.3 floor() int())    # ok
-f(5)                    # ok
-f(Int: 7)               # ok but overly verbose
+z: 3
+f_(z)                   # ok
+f_(4.3 floor_() int_()) # ok
+f_(5)                   # ok
+f_(int: 7)              # ok but overly verbose
 ```
 
 If passing functions as an argument where the function name doesn't matter,
-there are actually a few options: `a`, `an`, `f`, `fn`, and `do`.
+there are actually a few options: `a_`, `an_`, `f_`, `fn_`, and `do_`.
+TODO: do we want to support `_` as a default function name?
 We recommend `a` and `an` for `map`-like operations with a single argument,
 choosing `an` if the argument name starts with a vowel (and `a` otherwise),
 and `do` for multi-argument functions.  We keep `f` and `fn` around

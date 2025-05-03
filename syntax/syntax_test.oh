@@ -1,6 +1,9 @@
 _unused_variable, _unused_this_is, _unused
 _unused_function_, _un_used_function_, _unused_,
 
+# this is a one-letter function, named `_`:
+_(x: int): null_
+
 $lambda_var $lambda_fn_
 
 used{asdf} used[asdf] used(asdf)
