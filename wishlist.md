@@ -2693,8 +2693,7 @@ f_(int: 7)              # ok but overly verbose
 ```
 
 If passing functions as an argument where the function name doesn't matter,
-there are actually a few options: `a_`, `an_`, `f_`, `fn_`, and `do_`.
-TODO: do we want to support `_` as a default function name?
+there are actually a few options: `_`, `a_`, `an_`, `f_`, `fn_`, and `do_`.
 We recommend `a` and `an` for `map`-like operations with a single argument,
 choosing `an` if the argument name starts with a vowel (and `a` otherwise),
 and `do` for multi-argument functions.  We keep `f` and `fn` around

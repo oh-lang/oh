@@ -19,9 +19,8 @@ set cpo&vim
 
 " Keep keywords in alphabetical order inside groups.
 "
-syn keyword ohBuiltin	false true null
-syn keyword ohBuiltin	context debug m
-syn keyword ohBuiltin	with
+syn keyword ohBuiltinVariable	false true null
+syn keyword ohBuiltinVariable	ctx debug m
 syn keyword ohBuiltinFunction	is_ m_ renew_
 syn keyword ohBuiltinFunction	count_ each_ test_
 syn keyword ohBuiltinFunction	abs_ ceil_ floor_ max_ min_
@@ -30,7 +29,7 @@ syn keyword ohStatement		break continue fall_through
 syn keyword ohStatement		pass return
 syn keyword ohJump	assert_ exit_
 syn keyword ohConditional	elif else if
-syn keyword ohConditional	what where
+syn keyword ohConditional	what where with
 syn keyword ohRepeat		each while
 syn keyword ohOperator		and is not or xor
 syn keyword ohError		er
@@ -57,13 +56,14 @@ syn match	ohSyntaxError	"\<\u\+_\>"
 
 syn region	ohInclude matchgroup=ohInclude start="\\\\" end=" " skip="\\ "
 syn region	ohInclude matchgroup=ohInclude start="\\/" end=" " skip="\\ "
-syn match	ohUnused	"\<_[^ ()\[\]^`{|}!-@\\]*\>"
+syn match	ohUnusedVariable	"\<_[^ ()\[\]^`{|}!-@\\]\+\>"
 syn match	ohUnusedFunction	"\<_[^ ()\[\]^`{|}!-@\\]*_"
 syn match	ohMacro		"@[^ ()\[\]{}]*\>"
 syn match	ohNamespace	"\u\+_"
 syn match	ohNamespace	"_\u\+\>"
 syn match	ohNamespace	"\zs\<\u\+\ze[^A-Z_ ]"
 syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
+syn match	ohFunction	"\<_\>"
 syn match	ohFunction	"[^_ ()\[\]^`{|}!-@\\][^ ()\[\]^`{|}!-/:-@\\]*_\>" contains=ohNamespace
 
 syn match   ohEndOfLineComment	"# .*$"
@@ -118,7 +118,7 @@ syn match   ohSpaceError	display "\t\+ "
 
 syn region	ohTick matchgroup=ohTick
       \ start=+`+ end=+`+
-      \ contains=ohBuiltin,ohBuiltinFunction,ohStatement,ohJump,ohConditional,ohRepeat,ohOperator,ohError,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohLambdaStarter,ohNullSymbol,ohSyntaxError,ohInclude,ohUnused,ohUnusedFunction,ohMacro,ohNamespace,ohEndOfLineComment,ohMidlineComment,ohMultilineComment,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
+      \ contains=ohBuiltinVariable,ohBuiltinFunction,ohStatement,ohJump,ohConditional,ohRepeat,ohOperator,ohError,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohLambdaStarter,ohNullSymbol,ohSyntaxError,ohInclude,ohUnusedVariable,ohUnusedFunction,ohMacro,ohNamespace,ohEndOfLineComment,ohMidlineComment,ohMultilineComment,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
 
 " The default highlight links.
 " WildMenu is interesting.  see options with `:highlight`
@@ -130,10 +130,10 @@ hi def link ohOperator		Operator
 hi def link ohError		Exception
 hi def link ohInclude		Include
 hi def link ohAsync		Statement
-hi def link ohBuiltin		Title
+hi def link ohBuiltinVariable		Title
 hi def link ohBuiltinFunction		Question
 hi def link ohFunction		Function
-hi def link ohUnused	Comment
+hi def link ohUnusedVariable	Comment
 hi def link ohUnusedFunction	Include
 hi def link ohEndOfLineComment		Comment
 hi def link ohMultilineComment	Comment
