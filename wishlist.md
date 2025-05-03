@@ -2693,96 +2693,91 @@ f_(int: 7)              # ok but overly verbose
 ```
 
 If passing functions as an argument where the function name doesn't matter,
-there are actually a few options: `_`, `a_`, `an_`, `f_`, `fn_`, and `do_`.
-We recommend `a` and `an` for `map`-like operations with a single argument,
-choosing `an` if the argument name starts with a vowel (and `a` otherwise),
-and `do` for multi-argument functions.  We keep `f` and `fn` around
+there are actually a few options: `_`, `a_`, `an_`, `fn_`, and `do_`.
+We recommend `a_` and `an_` for `map`-like operations with a single argument,
+choosing `an_` if the argument name starts with a vowel sound (and `a_` otherwise),
+and `do_` for multi-argument functions.  We keep `fn_` around
 mostly to make it easy for developers new to the language.  Note that if
 any functions are defined, including default named functions, no variables
-can shadow their `Initial_upper_snake_case` form.  And vice versa.
+can shadow their `variable_case` form.  And vice versa.
 
 ```
 # declaring a function that takes a lambda, note the default name.
-q(fn(): bool): null
+q_(fn_(): bool_): null_
 
 # defining a function that takes a lambda.
-q(fn(): bool): null
-    if fn()
-        print("function returned true!")
+q_(fn_(): bool_): null_
+    if fn_()
+        print_("function returned true!")
     else
-        print("function returned false!")
+        print_("function returned false!")
 
-q(name_it_what_you_want(): bool
-    return True
+q_
+(   name_it_what_you_want_(): true
 )   # should print "function returned true!"
 
 # or you can create a default-named function yourself:
-q
-(   fn(): bool
-        random() > 0.5
+q_
+(   fn_(): bool_
+        random_() > 0.5
 )   # will print one of the above due to randomness.
-# equivalent to `q(fn(): random() > 0.5)` or `q({random() > 0.5})`
+# equivalent to `q_(fn_(): random_() > 0.5)` or `q_({random_() > 0.5})`
 
-# defining a lambda usually requires a name, feel free to use the default:
-q(fn(): True)
+# defining a lambda usually requires a name, feel free to use a default:
+q_(_(): true)
 # or you can use this notation, without the name:
-q({True})
+q_({true})
 
 # or you can do multiline:
-X; bool
-q
-(   fn():
-        X
+x; bool_
+q_
+(   fn_():
+        x
 )
-# equivalent to `q(fn(): {X})`
-# also equivalent to `q({X})`
+# equivalent to `q_(fn_(): {x})`
+# also equivalent to `q_({x})`
 ```
-
-You need to use braces so that we can distinguish function definitions
-from function assignments, i.e., assigning the value of one function to another,
-like `my_mutable_fn(); int {original_definition()}`, followed by
-`my_mutable_fn(); int = some_other_fn`.  See [mutable functions](#mutable-functions).
 
 ### the name of a called function in a reference object
 
 Calling a function with one argument being defined by a nested function will use
 the nested function's name as the variable name.  E.g., if a function is called
-`value`, then executing `what_is_this(value())` will try to call the `what_is_this(Value)`
-overload.  If there is no such overload, it will fall back on `what_is_this(Type)` where
-`Type` is the return value of the `value()` function.
+`value_`, then executing `what_is_this_(value_())` will try to call the `what_is_this_(value)`
+overload.  If there is no such overload, it will fall back on `what_is_this_(type)` where
+`type` is the return value of the `value_()` function.
 
 ```
-value(): int
+value_(): int_
     return 1234 + 5
 
-what_is_this(Value: int): null
-    print(Value)
+what_is_this_(value: int_): null_
+    print_(value)
 
-what_is_this(Value: 10)   # prints 10
-what_is_this(value())     # prints 1239
+what_is_this_(value: 10)    # prints 10
+what_is_this_(value_())     # prints 1239
 ```
 
-You can still use `value()` as an argument for a default-named `Int` argument,
+You can still use `value_()` as an argument for a default-named `int_` argument,
 or some other named argument by renaming.
 
 ```
-takes_default(Int): string
-    string(Int)
+takes_default_(int): string_
+    string_(int)
 
-takes_default(value())   # OK.  we try `Value: value()`
-                        # and then the type of `value()` next
+takes_default_(value_())    # OK.  we try `value: value_()`
+                            # and then the type of `value_()` next
 
-other_function(Not_value: int): string
-    return "!" * Not_value
+other_function_(not_value: int_): string_
+    return "!" * not_value
 
-other_function(value())              # ERROR! no overload for `Value` or for `Int`.
-other_function(Not_value: value())    # OK
+other_function_(value_())               # ERROR! no overload for `value` or for `int`.
+other_function_(not_value: value_())    # OK
 ```
 
-This works the same for plain-old-data objects, e.g., `[value()]` corresponds to
-`[Value: value()]`.  In case class methods are being called, the class name
-and the class instance variable name are ignored, e.g., `[My_class_instance my_function()]`
-is short-hand for `[My_function: My_class_instance my_function()]`.
+This works the same for plain-old-data objects, e.g., `[value_()]` corresponds to
+`[value: value_()]`.  In case class methods are being called, the class name
+and the class instance variable name are ignored, e.g., `[my_class_instance my_function_()]`
+is short-hand for `[my_function: my_class_instance my_function_()]`.
 
 ### functions as arguments
 
