@@ -2887,26 +2887,39 @@ Generally speaking you can use generic/template programming for this case,
 which infers the types based on instances of the type.
 
 ```
-# generic function taking an instance of `x` and returning one.
-do_something(~X): x
-    return X * 2
+# generic function taking an instance of `x_` and returning one.
+do_something_(~x): x_
+    return x * 2
 
-do_something(123)    # returns 246
-do_something(0.75)   # returns 1.5
+do_something_(123)    # returns 246
+do_something_(0.75)   # returns 1.5
 ```
 See [generic/template functions](#generictemplate-functions) for more details
 on the syntax.
 
+TODO: i don't like having two ways of doing this.  should we always
+assume that arguments in parentheses are values and arguments in brackets are types?
+but we do need values in brackets.
+
 However, there are use cases where we might actually want to pass in
-the type of something.  This makes the most sense as a generic type,
-and can be done like this:
-
+the type of something.  We can use `of_` as a type name to get default naming.
 ```
-do_something(~x): x
-    return x(123)
+# `whatever_constraints_` can be something like `number_`,
+# or you can elide it if you want no constraints.
+do_something_(of_: whatever_constraints_): of_
+    return of_(123)
 
-print(do_something(dbl)) # returns 123.0
-print(do_something(u8))  # returns u8(123)
+print_(do_something_(dbl_)) # returns 123.0
+print_(do_something_(u8_))  # returns u8(123)
+```
+
+Or we could do this as a a generic type, like this:
+```
+do_something_(~x_): x_
+    return x_(123)
+
+print_(do_something_(dbl_)) # returns 123.0
+print_(do_something_(u8_))  # returns u8(123)
 ```
 
 ### returning a type
