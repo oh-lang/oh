@@ -2935,6 +2935,9 @@ related to [template classes](#generictemplate-classes) and
 TODO: maybe this is ok.  it might even be less confusing than using different
 brackets for types.  but i do really like `array_[int_]` rather than `array_(int_)`;
 so it makes generics easier to think about, especially when combined with functions.
+HOWEVER, i think it's probably best to keep it the way it is unless we want to force
+all functions to be multiline (either by `{}` or by indenting), because
+`fn_(): null` would look like we're already returning a value.
 
 TODO: this should probably be disallowed.  the compiler needs to be able
 to reason about the type in a `x_[...]` function.  come up with deterministic examples.
@@ -3082,89 +3085,92 @@ and it must have different argument names or return values.  You can also have d
 argument modifiers (i.e., `;` and `:` are different overloads, as are nullable types, `?`).
 
 ```
-greet(String): null
-    print("Hello, ${String}!")
+greet_(string): null_
+    print_("Hello, ${string}!")
 
-greet(Say: string, To: string): null
-    print("${Say}, ${To}!")
+greet_(say: string_, to: string_): null_
+    print_("${say}, ${to}!")
 
-greet(Say: string, To: string, Times: int): null
-    range(Times) each Int_:
-        greet(Say, To)
+greet_(say: string_, to: string_, times: int_): null_
+    times each _int:
+        greet_(say, to)
 
 # so you call this in different ways:
-greet("World")
-greet(To: "you", Say: "Hi")
-greet(Times: 5, Say: "Hey", To: "Sam")
+greet_("World")
+greet_(to: "you", say: "Hi")
+greet_(times: 5, say: "Hey", to: "Sam")
 
-# note this is a different overload, since it must be called with `Say;`
-greet(Say; string): null
-    Say += " wow"
-    print("${Say}, world...")
+# note this is a different overload, since it must be called with `say;`
+greet_(say; string_): null_
+    say += " wow"
+    print_("${say}, world...")
 
-My_say; "hello"
-greet(Say; My_say)   # prints "hello wow, world..."
-print(My_say)            # prints "hello wow" since My_say was modified
+my_say; "hello"
+greet_(say; my_say) # prints "hello wow, world..."
+print_(my_say)      # prints "hello wow" since `my_say` was modified
 ```
 
 Note also, overloads must be distinguishable based on argument **names**, not types.
 Name modifiers (i.e., `;`, `:`, and `?`) also count as different overloads.
+Note that default-names for different types count as different names (e.g., `fn_(dbl)`
+and `fn_(int)` are different overloads).
 
 ```
-fibonacci(Times: int): int
-    Previous; 1
-    Current; 0
-    range(Times) each Int:
-        Next_previous: Current
-        Current += Previous
-        Previous = Next_previous
-    return Current
+fibonacci_(times: int_): int_
+    previous; 1
+    current; 0
+    times each _int:
+        next_previous: current
+        current += previous
+        previous = next_previous
+    current
 
-fibonacci(Times: dbl): int
-    Golden_ratio: dbl = (1.0 + \\math sqrt(5)) * 0.5
-    Other_ratio: dbl = (1.0 - \\math sqrt(5)) * 0.5
-    return round((Golden_ratio^Times - Other_ratio^Times) / \\math sqrt(5))
-# COMPILE ERROR: function overloads of `fibonacci` must have unique argument names,
+fibonacci_(times: dbl_): int_
+    golden_ratio: dbl_ = (1.0 + \\math sqrt_(5)) * 0.5
+    other_ratio: dbl_ = (1.0 - \\math sqrt_(5)) * 0.5
+    round_((golden_ratio^times - other_ratio^times) / \\math sqrt_(5))
+# COMPILE ERROR: function overloads of `fibonacci_` must have unique argument names,
 #                not argument types.
 
-# NOTE: if the second function returned a `dbl`, then we actually could distinguish between
-# the two overloads.  This is because default names for each return would be `Int` and `Dbl`,
+# NOTE: if the second function returned a `dbl_`, then we actually could distinguish between
+# the two overloads.  This is because default names for each return would be `int` and `dbl`,
 # respectively, and that would be enough to distinguish the two functions.  The first overload
-# would still be default in the case of a non-matching name (e.g., `Result: fibonnaci(Times: 3)`),
-# but we could determine `Int: fibonacci(Times: 3)` to definitely be the first overload and
-# `Dbl: fibonacci(Times: 7.3)` to be the second overload.
+# would still be default in the case of a non-matching name (e.g., `result: fibonnaci_(times: 3)`),
+# but we could determine `int: fibonacci_(times: 3)` to definitely be the first overload and
+# `dbl: fibonacci_(times: 7.3)` to be the second overload.
 ```
 
 There is the matter of how to determine which overload to call.  We consider
 only overloads that possess all the specified input argument names.  If there are some
 unknown names in the call, we'll check for matching types.  E.g., an unnamed `4.5`, 
-as in `fn(4.5)` or `fn(X, 4.5)`, will be checked for a default-named `Dbl` since `4.5`
-is of type `dbl`.  Similarly, if a named variable, e.g., `Q` doesn't match in `fn(Q)`
-or `fn(X, Q)`, we'll check if there is an overload of `fn` with a default-named type
-of `Q`; e.g., if `Q` is of type `animal`, then we'll look for the `fn(Animal):` 
-or `fn(X, Animal)` overload.
+as in `fn_(4.5)` or `fn_(X, 4.5)`, will be checked for a default-named `dbl` since `4.5`
+is of type `dbl_`.  Similarly, if a named variable, e.g., `q` doesn't match in `fn_(q)`
+or `fn_(x, q)`, we'll check if there is an overload of `fn_` with a default-named type
+of `q`; e.g., if `q` is of type `animal_`, then we'll look for the `fn_(animal):` 
+or `fn(x, animal)` overload.
 
 NOTE: we cannot match a function overload that has more arguments than we supplied in
 a function call.  If we want to allow missing arguments in the function call, the declaration
-should be explicit about that; e.g., `fn(X?: int): ...` or `fn(X: 0): ...`.
+should be explicit about that; e.g., `fn_(x?: int): ...` or `fn_(x: 0): ...`.
 Similarly, we cannot match an overload that has fewer arguments than we supplied in the call.
 
 Output arguments are similar, and are also matched by name.  This is pretty obvious with
-something like `X: calling(Input_args...)`, which will first look for an `X` output name
-to match, such as `calling(Input_args...): [X: whatever_type]`.  If there is no `X` output
+something like `x: calling_(INPUT_args...)`, which will first look for an `x` output name
+to match, such as `calling_(INPUT_args...): [x: whatever_type_]`.  If there is no `x` output
 name, then the first non-null, default-named output overload will be used.  E.g., if
-`calling(Input_args...): dbl` was defined before `calling(Input_args...): str`, then `dbl`
-will win.  For an output variable with an explicit field request, e.g., `X: calling(Input_args...) Dbl`,
-this will look for an overload with output name `Dbl` first.  If there is no output named `X`,
-then `X: dbl = calling(Input_args...)` will also work to get the `Dbl` field.  For function calls like
-`X: dbl(calling(Input_args...))`, we will lose all `X` output name information because
-`dbl(...)` will hide the `X` name.  In this case, we'll use the default overload and attempt
-to convert it to a `dbl`.
+`calling_(INPUT_args...): dbl_` was defined before `calling_(INPUT_args...): str_`, then `dbl_`
+will win.  For an output variable with an explicit field request, e.g., `x: calling_(INPUT_args...) dbl`,
+this will look for an overload with output name `dbl` first.  If there is no output named `x`,
+then `x: dbl_ = calling_(INPUT_args...)` will also work to get the `dbl` field.  For function calls like
+`x: dbl_(calling_(INPUT_args...))`, we will lose all `x` output name information because
+`dbl_(...)` will hide the `x` name.  In this case, we'll use the default overload and attempt
+to convert it to a `dbl_`.
+TODO: we may want to do it as a compile error because it's a conversion not a type specification.
 
 One downside of overloads is that we must specify the whole function
 [when passing it in as an argument](#functions-as-arguments).  But we also need to specify
 the whole function because we want to be able to distinguish `type_case_` from `function_case_`
-(where some parenthesized arguments `(Args...)` follow).
+(where some parenthesized arguments `(args...)` follow).
 
 ### nullable input arguments
 
