@@ -2925,44 +2925,51 @@ print_(do_something_(u8_))  # returns u8(123)
 ### returning a type
 
 We use a different syntax for functions that return types; namely `()` becomes `[]`,
-e.g., `type_fn[Args...]: the_type`.  This is because we do not need
+e.g., `type_fn_[args...]: the_type_`.  This is because we do not need
 to support functions that return instances *or* constructors, and it becomes clearer
 that we're dealing with a type if we use `[]`.  The alternative would be to use
-`fn(Int): Int` to return an `int` instance and `fn(Int): int` to return the
-`int` constructor, but again we never need to mix and match.  The bracket syntax is
+`fn_(int): int` to return an `int_` instance and `fn_(int): int_` to return the
+`int_` constructor, but again we never need to mix and match.  The bracket syntax is
 related to [template classes](#generictemplate-classes) and
 [overloading generic types](#overloading-generic-types).
+TODO: maybe this is ok.  it might even be less confusing than using different
+brackets for types.  but i do really like `array_[int_]` rather than `array_(int_)`;
+so it makes generics easier to think about, especially when combined with functions.
+
+TODO: this should probably be disallowed.  the compiler needs to be able
+to reason about the type in a `x_[...]` function.  come up with deterministic examples.
 
 ```
 # it's preferable to return a more specific value here, like
-# `one_of[int, dbl, string]`, but `any` works as well.
-random_class[]: any
-    if random(dbl) < 0.5
-        int
-    elif random(dbl) < 0.5
-        dbl
+# `one_of_[int_, dbl_, string_]`, but `any_` works as well.
+random_class_[]: any_
+    if random_(dbl_) < 0.5
+        int_
+    elif random_(dbl_) < 0.5
+        dbl_
     else
-        string
+        string_
 
-X: random_class[] = 123
-match X
-    Int:
-        print("X is an int")
-    Dbl:
-        print("X is a dbl")
-    String:
-        print("X is a string")
+x: random_class_[] = 123
+match x
+    int:
+        print("x is an int_: ${int}")
+    dbl:
+        print("x is a dbl_: ${dbl}")
+    string:
+        print("x is a string_: ${string}")
 ```
 
 We can also pass in named types as arguments.  Here is an example
 where we also return a type constructor.  Named types are just
-`type_case_` on both left and right sides (e.g., `class_name: t`).
+`type_case_` on both left and right sides (e.g., `class_name_: t_`).
 
 ```
-random_class[~x, named_new: ~y]: one_of[x, y]
-    return if random(dbl) < 0.5 {x} else {named_new}
+random_class_[~x_, named_new_: ~y_]: one_of_[x_, y_]
+    if random_(dbl_) < 0.5 {x_} else {named_new_}
 
-print(random_class[int, named_new: dbl])  # will print `int` or `dbl` with 50-50 probability
+# will print `int_` or `dbl_` with 50-50 probability
+print_(random_class_[int_, named_new_: dbl_])
 ```
 
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
@@ -2970,97 +2977,102 @@ To return multiple types, you can use the [type tuple syntax](#type-tuples).
 ### unique argument names
 
 Arguments must have unique names; e.g., you must not declare a function with two arguments
-that have the same name.  This is obvious because we wouldn't be able to distinguish between
+that have the same name.  This is because we wouldn't be able to distinguish between
 the two arguments inside the function body.
 
 ```
-my_fun(X: int, X: dbl): one_of[int, dbl] = X    # COMPILER ERROR.  duplicate identifiers
+# COMPILER ERROR.  duplicate identifiers
+my_fun_(x: int_, x: dbl_): one_of_[int_, dbl_]
 ```
 
 However, there are times where it is useful for a function to have two arguments with the same
 name, and that's for default-named arguments in a function where (1) *order doesn't matter*,
 or (2) order does matter but in an established convention, like two sides of a binary operand.
-An example of (1) is in a function like `max`:
+An example of (1) is in a function like `max_`:
 
 ```
 @order_independent
-max(Int, OTHER_int): int
-    return if Int > OTHER_int
-        Int
+max_(int, OTHER_int): int_
+    if int >= OTHER_int
+        int
     else
         OTHER_int
 
-max(5, 3) == max(3, 5)
+max_(5, 3) == max_(3, 5)
 ```
 
 The compiler is not smart enough to know whether order matters or not, so we need to annotate
 the function with `@order_independent` -- otherwise it's a compiler error -- and we need to use
-namespaces (e.g., `@Other` with `OTHER_int`) in order to distinguish between the two variables
-inside the function block.  When calling `max`, we don't need to use those namespaces, and
+namespaces (e.g., `OTHER_int`) in order to distinguish between the two variables
+inside the function block.  When calling `max_`, we don't need to use those namespaces, and
 can't (since they're invisible to the outside world).
 
 There is one place where it is not obvious that two arguments might have the same name, and
 that is in method definitions.  Take for example the vector dot product:
 
 ```
-vector2: [X; dbl, Y; dbl]
-{   ;;renew(M X. dbl, M Y. dbl): {}
+vector2_: [x; dbl_, y; dbl_]
+{   ;;renew_(m x. dbl_, m y. dbl_): {}
+
+    # this is required to create vectors like this: `vector2_(1.0, 2.0)`
+    # since we are explicit about `FIRST_` and `SECOND_` we don't need the
+    # `@order_dependent` annotation.
+    m(FIRST_dbl., SECOND_dbl.): m_
+        m(x. FIRST_dbl, y. SECOND_dbl)
 
     @order_independent
-    ::dot(Vector2): dbl
-        return M X * Vector2 X + M Y * Vector2 Y
+    # can also use `o` instead of `vector2` as the argument name for an `o`ther
+    # of the same type as `m`, and then you can omit the `@order_independent`
+    # (or `@order_dependent`) annotation.
+    ::dot_(vector2): dbl_
+        m x * vector2 x + m y * vector2 y
 }
-Vector2: vector2(1, 2)
-Other_vector2: vector2(3, -4)
-print(Vector2 dot(Other_vector2))    # prints -5
-print(dot(Vector2, Other_vector2))   # equivalent, prints -5
+vector2: vector2_(1, 2)
+other_vector2: vector2_(3, -4)
+print_(vector2 dot_(other_vector2))     # prints -5
+print_(dot_(vector2, other_vector2))    # equivalent, prints -5
 ```
 
-The method `::dot(Vector2): dbl` has a function signature `dot(M, Vector2): dbl`,
-where `M` is an instance of `vector2`, so ultimately this function creates a global
-function with the function signature `dot(Vector2, Vector2): dbl`.  Therefore this function
-*must* be order independent and should be annotated as such.  Otherwise it is
-a compiler error.
+The method `::dot_(vector2): dbl_` has a function signature `dot_(m, vector2): dbl_`,
+where `m` is an instance of `vector2_`, so ultimately this function creates a global
+function with the function signature `dot_(vector2, vector2): dbl`.  Therefore this function
+*must* be annotated as `@order_independent` or `@order_dependent`, to avoid confusion.
+Otherwise it is a compiler error.  Alternatively to using annotations, you can use
+namespaces like `FIRST_` and `SECOND_`.  `m` is assumed to be `FIRST_vector2` in the
+above example, but if you use `o` it will be assumed to be `SECOND_vector2`.
 
 As mentioned earlier, we can have order dependence in certain established cases, but these
 should be avoided in oh-lang as much as possible, where we prefer unique names.
 One example is the cross product of two vectors, where order matters but the
 names of the vectors don't.  (The relationship between the two orders is also
-somewhat trivial, `A cross(B) == -B cross(A)`, and this simplicity should be aspired to.)
-The way to accomplish this in oh-lang is to use `@First` and `@Second` namespaces for
-each variable.  If defined in a method, `M` will be assumed to be namespaced as `@First`,
-so you can use `@Second` for the other variable being passed in.  Using `@First` and `@Second`
-allows you to avoid the compiler errors like `@order_independent` does.  You can also
-use `O` as the variable name which in the class body is the same as `SECOND_m`.
+somewhat trivial, `a cross_(b) == -b cross_(a)`, and this simplicity should be aspired to.)
 
 ```
-vector3: [X; dbl, Y; dbl, Z; dbl]
-{   ;;renew(M X. dbl, M Y. dbl, M Z. dbl): {}
+vector3_: [x; dbl_, y; dbl_, z; dbl_]
+{   ;;renew_(m x. dbl_, m y. dbl_, m z. dbl_): {}
 
     # defined in the class body, we do it like this:
-    ::cross(O): vector3
-    {   # we could drop `M X` for just `X` here but i like the symmetry with `O`.
-        vector3
-        (   X. M Y * O Z - M Z * O Y
-            Y. M Z * O X - M X * O Z
-            Z. M X * O Y - M Y * O X
-        )
-    }
+    ::cross_(o): m_
+    (   x. m y * o z - m z * o y
+        y. m z * o x - m x * o z
+        z. m x * o y - m y * o x
+    )
 }
 
 # defined outside the class body, we do it like this:
 # NOTE: both definitions are *not* required, only one.
-cross(FIRST_vector3, SECOND_vector3): vector3
-(   X: FIRST_vector3 Y * SECOND_vector3 Z - FIRST_vector3 Z * SECOND_vector3 Y
-    Y: FIRST_vector3 Z * SECOND_vector3 X - FIRST_vector3 X * SECOND_vector3 Z
-    Z: FIRST_vector3 X * SECOND_vector3 Y - FIRST_vector3 Y * SECOND_vector3 X
+cross_(FIRST_vector3, SECOND_vector3): vector3_
+(   x: FIRST_vector3 y * SECOND_vector3 z - FIRST_vector3 z * SECOND_vector3 y
+    y: FIRST_vector3 z * SECOND_vector3 x - FIRST_vector3 x * SECOND_vector3 z
+    z: FIRST_vector3 x * SECOND_vector3 y - FIRST_vector3 y * SECOND_vector3 x
 )
 ```
 
 One final note is that operations like `+` should be order independent, whereas `+=` should be
-order dependent, since the method would look like this: `;;+=(Vector2)`, which is
-equivalent to `+=(M;, Vector2)`, where the first argument is writable.  These
-two arguments can be distinguished because of the writeability.
+order dependent, since the method would look like this: `;;+=(vector2)`, which is
+equivalent to `+=(m;, vector2)`, where the first argument is writable.  These
+two arguments can be distinguished because of the writeability, so it's not necessary
+to annotate these.  But we still recommend `o` in these cases for code copy-pastability.
 
 ## function overloads
 
@@ -3899,11 +3911,11 @@ call:
         Output[Any is() Class_name] = Any
 
     # adds a field to the return type with a default value.
-    # e.g., `Call output(Field_name: 123)` will ensure
-    # `{Field_name}` is defined in the return value, with a
-    # default of 123 if `Field_name` is not set in the function.
-    ;;output(~Name: any):
-        output(Name: @NAME,_value: Name)
+    # e.g., `call output_(field_name: 123)` will ensure
+    # `{field_name}` is defined in the return value, with a
+    # default of 123 if `field_name` is not set in the function.
+    ;;output_(~name: any_):
+        output_(name: @@name, value: name)
 
     # adds a field to the return type with a default value.
     # e.g., `Call output(Name: "Field_name", Value: 123)` will ensure
@@ -7611,6 +7623,9 @@ that you are looking at the different values for `option` in the different cases
 
 ## one_of types
 
+TODO: i think we want to converge on `one_of_[dbl, int]`, so that we can do renaming
+like this: `one_of_[value1: dbl_, value2: dbl_]`, in case we want to have two different
+names that correspond to the same type.
 TODO: what's the difference between `one_of[Dbl, Int]` and `one_of[dbl, int]`?
 probably nothing??  but `one_of[New_identifier: 0, Other_identifier: 3]` would
 be different than `one_of[new_identifier: 0, other_identifier: 3]`? or not??
