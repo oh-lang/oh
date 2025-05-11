@@ -363,7 +363,7 @@ like `count` and `index` to panic?
     * use `print_(no_newline: "keep going ")` to print without a newline
     * default overload is to print to null, but you can request the string that was printed
         if you use the `print_(str.): str_` or `error_(str.): str_` overloads.
-        e.g., `another_fn_(value: int): print_("Value is ${value}")` will return `Null`,
+        e.g., `another_fn_(value: int): print_("Value is ${value}")` will return `null`,
         whereas `another_fn_(value: int): str {print_("Value is ${value}")}` will
         return "Value is 12" (and print that) if you call `another_fn_(value: 12)`.
 * `type_case_`/`function_case_` identifiers like `x_` are function/type-like, see [identifiers](#identifiers)
@@ -3183,25 +3183,26 @@ Only functions for Cases (1) and (2) can be simultaneously defined; any other co
 results in a compile-time error.  Cases (3) and (4) can each be thought of as defining two function
 overloads, one for the case of the missing argument and one for the case of the present argument.
 
-Defining conflicting overloads, of course, is impossible.  Here are some example overloads;
+Defining conflicting overloads, of course, is undesirable.  Here are some example overloads;
 again, only Cases (1) and (2) are compatible and can be defined together.
 
 ```
 # missing argument (case 1):
-some_function(): dbl
-    return 987.6
+some_function_(): dbl_
+    987.6
 
 # present argument (case 2):
-some_function(Y: int): dbl
-    return 2.3 * dbl(Y)
+some_function_(y: int_): dbl_
+    2.3 * dbl_(y)
 
 # nullable argument (case 3):
-some_function(Y?: int): dbl
-    if Y != Null {1.77} else {Y + 2.71}
+some_function_(y?: int_): dbl_
+    if y != null {1.77} else {y + 2.71}
 
 # default argument (case 4):
-some_function(Y: 3): dbl
-    return dbl(Y)
+# `y: 3` is short for `y: @type_of(3) = 3`, and `@type_of(3)` is `int_`.
+some_function_(y: 3): dbl_
+    dbl_(y)
 ```
 
 Note that writable arguments `;` are distinct overloads, which indicate either mutating
@@ -3213,28 +3214,28 @@ What are some of the practical outcomes of these overloads?  Suppose
 we define present and missing argument overloads in the following way:
 
 ```
-overloaded(): dbl
-    return 123.4
-overloaded(Y: int): string
-    return "hi ${Y}"
+overloaded_(): dbl_
+    123.4
+overloaded_(y: int_): string_
+    "hi ${y}"
 ```
 
-The behavior that we get when we call `overloaded` will depend on whether we
-pass in a `Y` or not.  But if we pass in a null `Y`, then we also will end up
+The behavior that we get when we call `overloaded_` will depend on whether we
+pass in a `y` or not.  But if we pass in a null `y`, then we also will end up
 calling the overload that defined the missing argument case.  I.e.:
 
 ```
-Y?; int = ... # Y is maybe null, maybe non-null
+y?; int = ... # `y` is maybe null, maybe non-null
 
-# the following calls `overloaded()` if Y is Null, otherwise `overloaded(Y)`:
-Z: overloaded(Y?) # also OK, but not idiomatic: `Z: overloaded(Y?: Y)`
-# Z has type `one_of[dbl, string]` due to the different return types of the overloads.
+# the following calls `overloaded_()` if `y` is null, otherwise `overloaded_(y)`:
+z: overloaded_(y?) # also OK, but not idiomatic: `z: overloaded_(y?: y)`
+# `z` has type `one_of_[dbl_, string_]` due to the different return types of the overloads.
 ```
 
 The reason behind this behavior is that in oh-lang, an argument list is conceptually an object
 with various fields, since an argument has a name (the field name) as well as a value (the field value).
-An argument list with a field that is `Null` should not be distinguishable from an argument list that
-does not have the field, since `Null` is the absence of a value.
+An argument list with a field that is `null` should not be distinguishable from an argument list that
+does not have the field, since `null` is the absence of a value.
 
 Note that when calling a function with a nullable variable/expression, we need to
 indicate that the field is nullable if the expression itself is null (or nullable). 
@@ -3242,36 +3243,36 @@ Just like when we define nullable variables, we use `?:` or `?;`, we need to use
 `?:` or `?;` (or some equivalent) when passing a nullable field.  For example:
 
 ```
-some_function(X?: int): int
-    return X ?? 1000
+some_function_(x?: int_): int_
+    x ?? 1000
 
 # when argument is not null:
-some_function(X: 100)    # OK, expression for X is definitely not null
-some_function(X?: 100)   # ERROR! expression for X is definitely not null
+some_function_(x: 100)      # OK, expression for `x` is definitely not null
+some_function_(x?: 100)     # ERROR! expression for `x` is definitely not null
 
 # when argument is an existing variable:
-X?; Null
-print(some_function(X?))  # can do `X?: X`, but that's not idiomatic.
+x?; null
+print_(some_function_(x?))  # can do `x?: x`, but that's not idiomatic.
 
 # when argument is a new nullable expression:
-some_function(X?: some_nullish_function())  # REQUIRED since some_nullish_function can return a Null
-some_function(X: some_nullish_function())   # ERROR! some_nullish_function is nullable, need `X?:`.
+some_function_(x?: some_nullish_function_())    # REQUIRED since `some_nullish_function_` can return null
+some_function_(x: some_nullish_function_())     # ERROR! `some_nullish_function_` is nullable, need `X?:`.
 
 # where some_nullish_function might look like this:
-some_nullish_function()?: int
-    return if Some_condition { Null } else { 100 }
+some_nullish_function_()?: int_
+    if some_condition { null } else { 100 }
 ```
 
 Note however that if a value is definitely null, then we don't allow passing
 it in as a nullable argument.
 
 ```
-some_null_function(): null
-    print("go team")
+some_null_function_(): null_
+    print_("go team")
  
-# COMPILE ERROR, `X` is always null.
-# cleaner: `some_null_function(), some_function()`:
-some_function(X?: some_null_function())
+# COMPILE ERROR, `x` is always null.
+# cleaner: `some_null_function_(), some_function_()`:
+some_function_(x?: some_null_function_())
 ```
 
 We also want to make it easy to chain function calls with variables that might be null,
@@ -3280,14 +3281,15 @@ where we actually don't want to call an overload of the function if the argument
 ```
 # in other languages, you might check for null before calling a function on a value.
 # this is also valid oh-lang but it's not idiomatic:
-X?: if Y != Null { overloaded(Y) } else { Null }
+x?: if y != null { overloaded_(y) } else { null }
 
 # instead, you should use the more idiomatic oh-lang version.
 # putting a ? *before* the argument name will check that argument;
-# if it is Null, the function will not be called and Null will be returned instead.
-X?: overloaded(?Y)
+# if it is null, the function will not be called and null will be returned instead.
+# if you needed to name this argument, it would be `arg_name: ?y`:
+x?: overloaded_(?y)
 
-# either way, X has type `one_of[string, null]`.
+# either way, `x` has type `one_of_[string_, null_]`.
 ```
 
 You can use prefix `?` with multiple arguments; if any argument with prefix `?` is null,
@@ -3296,9 +3298,9 @@ then the function will not be called.
 This can also be used with the `return` function to only return if the value is not null.
 
 ```
-do_something(X?: int): int
-    Y?: ?X * 3    # Y is Null or X*3 if X is not Null.
-    return ?Y       # only returns if Y is not Null
+do_something_(x?: int_): int_
+    y?: ?x * 3    # `y` is null or `x*3` if `X` is not null.
+    return ?y       # only returns if `y` is not null
     #( do some other stuff )#
     ...
     return 3
@@ -3519,7 +3521,7 @@ fn(B; int(3)): int
 
 # This definition would have the same return value as the previous function:
 fn(B?: int): int
-    if B != Null 
+    if B != null 
         B += 3
         return B    # note that this will make a copy.
     else
@@ -3774,7 +3776,7 @@ countdown(Count): all_of[iterator[count], m: [Count]]
         if M Count > 0
             --M Count
         else
-            Null
+            null
 }
 
 My_array: array[count] = countdown(5)
@@ -3789,7 +3791,7 @@ wow(Lives: int)?: cat
     if Lives == 9
         cat()
     else
-        Null
+        null
 ```
 
 For nested object return types, there is some syntactic sugar for dealing with them.
@@ -4103,7 +4105,7 @@ Example optional_fn = null
 Example optional_fn?(Z: dbl); int = null
 
 # after setting it to null...
-Example optional_fn(Z: 3.21)    # returns Null
+Example optional_fn(Z: 3.21)    # returns null
 ```
 
 ## generic/template functions
@@ -5999,7 +6001,7 @@ er: one_of
 hm[of]: hm[ok: of, er]
 
 container[at, of: non_null, count_with: select_count]: []
-{   # Returns `Null` if `At` is not in this container,
+{   # Returns `null` if `At` is not in this container,
     # otherwise the `of` instance at that `At`.
     # This is wrapped in a reference object to enable passing by reference.
     # TODO: do we like this?  it looks a bit like SFO logic that we killed off.
@@ -6014,7 +6016,7 @@ container[at, of: non_null, count_with: select_count]: []
     # it in the container.  This may remove the `id` from
     # the container or may set its linked value to the default.
     # (Which depends on the child container implementation.)
-    # Returns Null if not present.
+    # Returns null if not present.
     ;;[At]!?: of
 
     # safe setter.
@@ -6027,8 +6029,8 @@ container[at, of: non_null, count_with: select_count]: []
     # returns an error if we ran out of memory trying to add the new value.
     ;;swap(At, Of?;): hm[null]
     
-    @alias ::has(At): M[At] != Null
-    @alias ::contains(At): M[At] != Null
+    @alias ::has(At): M[At] != null
+    @alias ::contains(At): M[At] != null
 
     # Returns the number of elements in this container.
     ::count(): count_with
@@ -6102,10 +6104,10 @@ array[of]: container[id: index, value: of]
     !!(M): bool
         count() > 0
 
-    # Returns the value in the array if `Index < count()`, otherwise Null.
+    # Returns the value in the array if `Index < count()`, otherwise null.
     # If `Index < 0`, take from the end of the array, e.g., `Array[-1]` is the last element
     # and `Array[-2]` is the second-to-last element.  If `Index < -Array count()` then
-    # we will also return Null.
+    # we will also return null.
     ::[Index]?: of
 
     # Gets the existing value at `Index` if the array count is larger than `Index`,
@@ -6320,7 +6322,7 @@ hm_[of]_: hm_[ok_: of_, er_]
 # TODO: is there a way we can make container dynamics better here for `unnest_`?
 # e.g., can we make it a `container_[at_: of_, of_: of_]` as well?
 set_[of_: hashable_]: container_[at_: of_, of_: true_]
-{   # Returns `True` iff `Of` is in the set, otherwise Null.
+{   # Returns `True` iff `Of` is in the set, otherwise null.
     # NOTE: the `true` type is only satisfied by the instance `True`;
     # this is not a boolean return value but can easily be converted to boolean.
     ::[Of]?: true
@@ -6328,23 +6330,23 @@ set_[of_: hashable_]: container_[at_: of_, of_: true_]
     # TODO: use `[]` for the unsafe API, `all()` or `put()` for the safe API (returning a `hm`)
 
     # Adds `Of` to the set and returns `True` if
-    # `Of` was already in the set, otherwise `Null`.
+    # `Of` was already in the set, otherwise `null`.
     # this can be an error in case of running out of memory.
     ;;[Of]: hm[true?]
 
     # Ejects `Of` if it was present in the set, returning `True` if true
-    # and `Null` if not.
-    # A subsequent, immediate call to `::[Of]?` returns Null.
+    # and `null` if not.
+    # A subsequent, immediate call to `::[Of]?` returns null.
     ;;[Of]!?: true 
 
     # Modifier for whether `Of` is in the set or not.
     # The current value is passed into the callback and can be modified;
-    # if the value was `Null` and is converted to `True` inside the function,
+    # if the value was `null` and is converted to `True` inside the function,
     # then the set will get `Of` added to itself.  Example:
-    #   `Set[X] = if Condition {True} else {Null}` becomes
-    #   `Set[X, fn(Maybe True?;): {Maybe True = if Condition {True} else {Null}}]`
+    #   `Set[X] = if Condition {True} else {null}` becomes
+    #   `Set[X, fn(Maybe True?;): {Maybe True = if Condition {True} else {null}}]`
     # TODO: if we used `True?` as the identifier everywhere we wouldn't need to do `Maybe True`, e.g.,
-    #   `Set[X, fn(True?;): {True? = if Condition {True} else {Null}}]`
+    #   `Set[X, fn(True?;): {True? = if Condition {True} else {null}}]`
     # TODO: remove these methods and add `refer` methods
     ;;[Of, fn(MAYBE_true?; true): ~t]: t
 
@@ -6409,12 +6411,12 @@ my_range[of: number]: all_of
     ;;next()?: of
         if Next_value < Less_than
             return Next_value++
-        return Null
+        return null
 
     ::peak()?: if Next_value < Less_than
         Next_value 
     else
-        Null
+        null
 }
 
 my_range(Less_than: index(10)) each Index:
@@ -6435,8 +6437,8 @@ assert(next(Array, Iterator;) == 2)  # you can use global `next`
 assert(Iterator::peak(Array) == 3)
 assert(peak(Iterator, Array) == 3)   # or you can use global `peak`
 assert(Iterator next(Array) == 3)
-assert(Iterator next(Array) == Null)
-assert(Iterator peak(Array) == Null)
+assert(Iterator next(Array) == null)
+assert(Iterator peak(Array) == null)
 # etc.
 ```
 
@@ -6462,12 +6464,12 @@ array_iterator[of]: all_of
     ;;next(Array[of])?: if Next < Array count()
         Array[Next++]
     else
-        Null
+        null
 
     ::peak(Array[of])?: if Next < Array count()
         Array[Next]
     else
-        Null
+        null
     
     # note that this function doesn't technically need to modify this
     # `array_iterator`, but we keep it as `;;` since other container
@@ -6475,7 +6477,7 @@ array_iterator[of]: all_of
     ;;remove(Array[of];)?: if Next < Array count()
         Array remove(Next)
     else
-        Null
+        null
 }
 ```
 
@@ -7574,9 +7576,9 @@ print(weird max())     # prints 9
 Note that the default value for a `one_of` is the first value, unless zero is an option
 (and it's not the first value), unless `null` is an option -- in increasing precedence.
 E.g., `one_of[Option_a, Option_b]` defaults to `Option_a`, `one_of[A: -1, B: 0, C: 1]` 
-defaults to `B`, and `one_of[Option_c, Null]` defaults to `Null`, and
-`one_of[A: -1, B: 0, C: 1, Null]` also defaults to `Null`.
-TODO: `[Null]` should collapse to `[]` based on how containers work.  Null is
+defaults to `B`, and `one_of[Option_c, null]` defaults to `null`, and
+`one_of[A: -1, B: 0, C: 1, null]` also defaults to `null`.
+TODO: `[null]` should collapse to `[]` based on how containers work.  Null is
 always the absence of a value and should never be considered present.  we can make
 `one_of` a macro but that might be a pain to be consistent (and use `@one_of` everywhere).
 maybe require using `?` for these sorts of things
@@ -7642,7 +7644,7 @@ TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific in
 
 Nulls are
 highly encouraged to come last in a `one_of`, because they will match any input, so
-casting like this: `one_of[null, int](1234)` would actually become `Null` rather than
+casting like this: `one_of[null, int](1234)` would actually become `null` rather than
 the expected value `1234`, since casts are attempted in order of the `one_of` types.
 
 Take this example `one_of`.
@@ -7860,7 +7862,7 @@ but may contain other values besides `This_value`.
 
 TODO: should this be `contains_this_value()` to be consistent with containers?
 
-TODO: is there a way to make this `any_of` and use 0 as the `Null` value?
+TODO: is there a way to make this `any_of` and use 0 as the `null` value?
 
 ```
 food: choose
@@ -8325,7 +8327,7 @@ check(T?` ~t, Blockable[~u, declaring` t])?: u
     what T
         T`
             Blockable block(T`)
-        Null: {Null}
+        null: {null}
 ```
 without some deep programming, we won't be able to have the option of doing things like
 `return X + Y`, since `return` breaks order of operations.
