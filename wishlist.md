@@ -3381,46 +3381,49 @@ so that means being able to resolve the overload at run-time.
 ### pass-by-reference or pass-by-value
 
 Functions can be defined with arguments that are passed-by-value using `.`, e.g., via
-`Temporary_value. type_of_the_temporary`.  This argument type can be called with
-temporaries, e.g., `fn(Arg_name. "my temp string")`, or with easily-copyable types
-like `dbl` or `i32` like `My_i32: i32 = 5, fn(My_arg. My_i32)`, or with larger-allocation
-types like `int` or `str` with an explicit copy or move: `My_str: "asdf..."` with
-`fn(Tmp_arg. str(My_str))` or `fn(Tmp_arg. My_str!)`.  In any case, the passed-by-value
-argument, if changed inside the function block, will have no effect on the
+`temporary_value. type_of_the_temporary_`.  This argument type can be called with
+temporaries, e.g., `fn_(arg_name. "my temp string")`, or with easily-copyable types
+like `dbl_` or `i32_` like `my_i32: i32_ = 5, fn_(my_arg. my_i32)`, or with larger-allocation
+types like `int_` or `str_` with an explicit copy or move: e.g., `my_str: "asdf..."`
+with `fn_(tmp_arg. my_str clone_())` or `fn_(tmp_arg. my_str!)`, respectively.
+
+TODO: i don't think we want a `copy` and `clone` method.  let's try to stick
+with just one.  maybe `::copy_(): m_` for Rust "copyable" and `::copy_(): hm_[m_, er_]`
+for a Rust cloneable.  e.g., a copy never fails, but a clone can fail (e.g., due to OOM).
+The temporary argument, if modified inside the function block, will have no effect on the
 things outside the function block.  Inside the function block, pass-by-value
 arguments are mutable, and can be reassigned or modified as desired.
-Similar to Rust, variables that can be easily copied implement a `::copy(): me`
+Similar to Rust, variables that can be easily copied implement a `::copy_(): me`
 method, while variables that may require large allocations should only implement
-`;;renew(OTHER_m): null` (essentially a C++ copy constructor).  This is done
-by default for most oh-lang classes.
+`;;renew_(o): null_` or `m_(o): m_` (essentially a C++ copy constructor).
+This is done by default for most oh-lang classes.
 
 Functions can also be defined with writable or readonly reference arguments, e.g., via
-`Mutable_argument; type_of_the_writeable` and `Readonly_argument: type_of_the_readonly` in the
-arguments list, which are passed by reference.  This choice has three important
+`mutable_argument; type_of_the_writeable_` and `readonly_argument: type_of_the_readonly_`
+in the arguments list, which are passed by reference.  This choice has three important
 effects: (1) readonly variables may not be deeply constant (see section on
 [passing by reference gotchas](#passing-by-reference-gotchas)), (2) you can modify
 writable argument variables inside the function definition, and (3) any
 modifications to a writable argument variable inside the function block persist
-in the outer scope.  Note that pass-by-constant-reference arguments are the default,
-so `fn(Int): null` is the same as `fn(Int: int): null`.
+in the outer scope.
 
 When passing by reference for `:` and `;` variables, we cannot automatically 
 cast to the correct type.  Two exceptions: (1) if the variable is a temporary
-we can cast like this, e.g., `My_value: 123` can be used for a `My_value: u8` argument,
+we can cast like this, e.g., `my_value: 123` can be used for a `my_value: u8_` argument,
 and (2) child types are allowed to be passed by reference when the function asks
 for a parent type.
 
 Return types are never inferred as references, so one secondary difference between
-`fn(Int.): ++Int` and `fn(Int;): ++Int` is that a copy/temporary is required
+`fn_(int.): ++int` and `fn_(int;): ++int` is that a copy/temporary is required
 before calling the former and a copy is made for the return type in the latter.
 The primary difference is that the latter will modify the passed-in variable in
-the outer scope.  To avoid dangling references, any calls of `fn(Int;)` with a
+the outer scope.  To avoid dangling references, any calls of `fn_(int;)` with a
 temporary will actually create a hidden `int` before the function call.  E.g.,
-`fn(Int; 12345)` will essentially become `Uniquely_named_int; 12345` then
-`fn(Int; @hide Uniquely_named_int)`, so that `Uniquely_named_int` is hidden from the
+`fn_(int; 12345)` will essentially become `uniquely_named_int; 12345` then
+`fn_(int; @hide uniquely_named_int)`, so that `uniquely_named_int` is hidden from the
 rest of the block.  See also [lifetimes and closures](#lifetimes-and-closures).
 To avoid a copy entirely, you'd need to explicitly annotate the return type;
-e.g., you can use `fn(Int;): (Int;) {++Int}` for the above example, i.e.,
+e.g., you can use `fn_(int;): (int;) {++int}` for the above example, i.e.,
 using [reference objects](#reference-objects) for the return value.
 
 In C++ terms, arguments declared as `.` are passed as temporaries (`t &&`),
@@ -3431,27 +3434,27 @@ based on the caller using `.`, `:`, or `;`.  Some examples:
 
 ```
 # this function passes by value and won't modify the external variable
-check(Arg123. string): string
-    Arg123 += "-tmp"    # OK since Arg123 is defined as writable, implicit in `.`
-    return Arg123
+check_(arg123. string_): string_
+    arg123 += "-tmp"    # OK since `arg123` is defined as writable, implicit in `.`
+    arg123
 
 # this function passes by reference and will modify the external variable
-check(Arg123; string): string
-    Arg123 += "-writable"  # OK since Arg123 is defined as writable via `;`.
-    return Arg123
+check_(arg123; string_): string_
+    arg123 += "-writable"   # OK since `arg123` is defined as writable via `;`.
+    arg123
 
 # this function passes by constant reference and won't allow modifications
-check(Arg123: string): string
-    return Arg123 + "-readonly"
+check_(arg123: string_): string_
+    arg123 + "-readonly"
 
-My_value; string = "great"
-check(Arg123. My_value copy())  # returns "great-tmp".  needs `copy` since
-                                # `.` requires a temporary.
-print(My_value)                 # prints "great"
-check(Arg123: My_value)         # returns "great-readonly"
-print(My_value)                 # prints "great"
-check(Arg123; My_value)         # returns "great-writable"
-print(My_value)                 # prints "great-writable"
+my_value; string_ = "great"
+check_(arg123. my_value copy_())    # returns "great-tmp".  needs `copy_` since
+                                    # `.` requires a temporary.
+print_(my_value)            # prints "great"
+check_(arg123: my_value)    # returns "great-readonly"
+print_(my_value)            # prints "great"
+check_(arg123; my_value)    # returns "great-writable"
+print_(my_value)            # prints "great-writable"
 ```
 
 Note that if you try to call a function with a readonly reference argument,
