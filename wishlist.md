@@ -3308,67 +3308,71 @@ do_something_(x?: int_): int_
 
 ### nullable output arguments
 
-We also support function overloads for outputs that are nullable.  Just like with overloads
+We also support function overloads for *outputs* that are nullable.  Just like with overloads
 for nullable input arguments, there are some restrictions on defining overloads with (1) a
 missing output, (2) a present output, and (3) a nullable output.  The restriction is a bit
 different here, in that we cannot define (1) and (3) simultaneously for nullable outputs.
-This enables us to distinguish between, e.g., `X?: my_overload(Y)` and `X: my_overload(Y)`,
-which defines a nullable `X` or a non-null `X`.
+This enables us to distinguish between, e.g., `x?: my_overload_(y)` and `x: my_overload_(y)`,
+which defines a nullable `x` or a non-null `x`.
+
+TODO: discussion on `fn_(): [x?: int_]` differences from `fn_()?: [x: int_]`.
 
 ```
 # case 1, missing output (not compatible with case 3):
-my_overload(Y: str): null
-    print(Y)
+my_overload_(y: str_): null_
+    print_(y)
 
 # case 2, present output:
-my_overload(Y: str): [X: int]
-    [X: int(Y) ?? panic("should be an integer")]
+my_overload_(y: str_): [x: int_]
+    [x: int_(y) ?? panic_("should be an integer")]
 
 # case 3, nullable output (not compatible with case 1):
-my_overload(Y: str): [X?: int]
-    # this is essentially an implementation of `X?: int(Y), return [X]`
-    what int(Y)
-        Ok: $[X: Ok]
-        Er: $[]
+my_overload_(y: str_): [x?: int_]
+    # this is essentially an implementation of `x?: int_(y), return [x]`
+    what int_(y)
+        ok: $[x: ok]
+        er: $[]
 
-[X]: my_overload(Y: "1234")  # calls (2) if it's defined, otherwise it's a compiler error.
-[X?]: my_overload(Y: "abc")  # calls (1) or (3) if one is defined, otherwise it's a compiler error.
+[x]: my_overload_(y: "1234")    # calls (2) if it's defined, otherwise it's a compiler error.
+[x?]: my_overload_(y: "abc")    # calls (1) or (3) if one is defined, otherwise it's a compiler error.
 ```
 
-Note that if only Case 3 is defined, we can use `assert`s to ensure that the return
-value is not null, e.g., `[X]: my_overload() assert()`.  This will throw a run-time error if the return
-value for `X` is null.  Note that this syntax is invalid if Case 2 is defined, since there is
-no need to assert a non-null return value in that case.  This will also work for an
-overload which returns a result `hm`.
+TODO: can we make `assert_` shorter?  Rust is nice with `?`, but we use that for
+nullable stuff.  we should consider being nice.  Maybe `?!`.
+Note that if only Case 3 is defined, we can use `assert_`s to ensure that the return
+value is not null, e.g., `[x]: my_overload_() assert_()`.  This will throw a run-time
+error if the return value for `x` is null.  Note that this syntax is invalid if Case 2
+is defined, since there is no need to assert a non-null return value in that case.
+This will also work for an overload which returns a result `hm`.
 
 ```
-# normal call for case 3, defines an X which may be null:
-[X?]: my_overload(Y: "123")
+# normal call for case 3, defines an `x` which may be null:
+[x?]: my_overload_(y: "123")
 
-# special call for case 3; if X is null, this will throw a run-time error,
-# otherwise will define a non-null X:
-[X]: my_overload(Y: "123") assert()
+# special call for case 3; if `x` is null, this will return a run-time error,
+# otherwise will define a non-null `x`:
+[x]: my_overload_(y: "123") assert_()
 
 # make a default for case 3, in case X comes back as null from the function
-[X: -1] = my_overload(Y: "123")
+[x: -1] = my_overload_(y: "123")
 ```
 
 If there are multiple return arguments, i.e., via an output type data class,
-e.g., `[X: dbl, Y: str]`, then we support [destructuring](#destructuring)
-to figure out which overload should be used.  E.g., `[X, Y]: my_overload()` will
-look for an overload with outputs named `X` and `Y`.  Due to assumptions with
-[single field objects](#single-field-objects) (SFO), `X: my_overload()` is
-equivalent to `[X]: my_overload()`.  You can also explicitly type the return value,
-e.g., `SOME_int: my_overload()` or `R: my_overload() Dbl`,
-which will look for an overload with an `int` or `dbl` return type, respectively.
+e.g., `[x: dbl_, y: stra_]`, then we support [destructuring](#destructuring)
+to figure out which overload should be used.  E.g., `[x, y]: my_overload_()` will
+look for an overload with outputs named `x` and `y`.  Due to assumptions with
+[single field objects](#single-field-objects) (SFO), `x: my_overload_()` is
+equivalent to `[x]: my_overload_()`.  You can also explicitly request the
+return type, e.g., `SOME_int: my_overload_()` or `r: my_overload_() dbl`, which
+will look for an overload with an `int_` or `dbl_` return type, respectively.
 
 When matching outputs, the fields count as additional arguments, which must
 be matched.  If you want to call an overload with multiple output arguments,
 but you don't need one of the outputs, you can use the `@hide` annotation to
-ensure it's not used afterwards.  E.g., `[@hide X, Y]: my_overload()`.
-You can also just not include it, e.g., `Y: my_overload()`, which is
+ensure it's not used afterwards.  E.g., `[@hide x, y]: my_overload_()`.
+You can also just not include it, e.g., `y: my_overload_()`, which is
 preferred, in case the function has an optimization which doesn't need to
-calculate `X`.
+calculate `x`.
 
 We also allow
 [calling functions with any dynamically generated arguments](#dynamically-determining-arguments-for-a-function),
