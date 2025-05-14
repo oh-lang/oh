@@ -3459,62 +3459,63 @@ print_(my_value)            # prints "great-writable"
 
 Note that if you try to call a function with a readonly reference argument,
 but there is no overload defined for it, this will be an error.  Similarly
-for writable-reference or temporary variable arguments.
+for writable-reference or temporary-variable arguments.
 
 ```
-only_readonly(A: int): str
-    return str(A) * A
+only_readonly_(a: int_): str_
+    str_(a) * a
 
-My_a; 10
-only_readonly(A; My_a)      # COMPILE ERROR, no writable overload for `only_readonly(A;)`
-only_readonly(A. int(My_a)) # COMPILE ERROR, no temporary overload for `only_readonly(A.)`
+my_a; 10
+only_readonly_(a; my_a)         # COMPILE ERROR, no writable overload
+only_readonly_(a. int_(my_a))   # COMPILE ERROR, no temporary overload
 
-print(only_readonly(A: 3))      # OK, prints "333"
-print(only_readonly(A: My_a))   # OK, prints "10101010101010101010"
+print_(only_readonly_(a: 3))    # OK, prints "333"
+print_(only_readonly_(a: my_a)) # OK, prints "10101010101010101010"
 
-only_mutable(B; int): str
-    Result: str(B) * B
-    B /= 2
-    return Result
+only_mutable_(b; int_): str_
+    result: str_(b) * b
+    b /= 2
+    result
 
-My_b; 10
-only_mutable(B: My_b)           # COMPILE ERROR, no readonly overload for `only_mutable(B:)`
-only_mutable(B. int(My_b))      # COMPILE ERROR, no temporary overload for `only_mutable(B.)`
+my_b; 10
+only_mutable_(b: my_b)          # COMPILE ERROR, no readonly overload
+only_mutable_(b. int_(my_b))    # COMPILE ERROR, no temporary overload
 
-print(only_mutable(B; My_b))    # OK, prints "10101010101010101010"
-print(only_mutable(B; My_b))    # OK, prints "55555"
+print_(only_mutable_(b; my_b))  # OK, prints "10101010101010101010"
+print_(only_mutable_(b; my_b))  # OK, prints "55555"
 
-only_temporary(C. int): str
-    Result; ""
-    while C != 0
-        Result append(str(C % 3))
-        C /= 3
-    Result reverse()
-    Result
+only_temporary_(c. int_): str_
+    result; ""
+    while c != 0
+        result append_(str_(c % 3))
+        c /= 3
+    result reverse_()
+    result
 
-My_c; 5
-only_temporary(C: My_c)     # COMPILE ERROR, no readonly overload for `only_temporary(C:)`
-only_temporary(C; My_c)     # COMPILE ERROR, no temporary overload for `only_temporary(C;)`
+my_c; 5
+only_temporary_(c: my_c)        # COMPILE ERROR, no readonly overload
+only_temporary_(c; my_c)        # COMPILE ERROR, no temporary overload
 
-print(only_temporary(C. 3))     # OK, prints "10"
-print(only_temporary(C. My_c!)) # OK, prints "12"
+print_(only_temporary_(c. 3))       # OK, prints "10"
+print_(only_temporary_(c. my_c!))   # OK, prints "12"
 ```
 
 Note there is an important distinction between variables defined as writable inside a block
 versus inside a function argument list.  Mutable block variables are never reference types.
-E.g., `B; A` is always a copy of `A`, so `B` is never a reference to the variable at `A`.
+E.g., `b; a` is always a copy of `a`, so `b` is never a reference to the variable at `a`.
 For a full example:
 
 ```
-reference_this(A; int): int
-    B; A  # B is a mutable copy of A.  if you want a reference, use `(B;) = A`
-    A *= 2
-    B *= 3
-    return B
+reference_this_(a; int_): int_
+    b; a    # `b` is a mutable copy of `a`.
+            # if you want a reference, use `(b;) = a` or `(b); a`.
+    a *= 2
+    b *= 3
+    b
 
-A; 10
-print(reference_this(A;))   # prints 30, not 60.
-print(A)                    # A is now 20, not 60.
+my_a; 10
+print_(reference_this_(a; my_a))    # prints 30, not 60.
+print_(my_a)                        # `my_a` is now 20, not 60.
 ```
 
 You are allowed to have default parameters for reference arguments, and a suitable
@@ -3522,64 +3523,44 @@ block-scoped (but hidden) variable will be created for each function call so tha
 a reference type is allowed.
 
 ```
-fn(B; int(3)): int
-    B += 3
-    return B
+fn_(b; int_(3)): int_
+    b += 3
+    b
 
 # This definition would have the same return value as the previous function:
-fn(B?: int): int
-    if B != null 
-        B += 3
-        return B    # note that this will make a copy.
+fn_(b?; int_): int_
+    if b is non_null;
+        non_null += 3
+        non_null    # note that this will make a copy.
     else
-        return 6
+        6
 
 # and can be called with or without an argument:
-print(fn())         # returns 6
-My_b; 10
-print(fn(B; My_b))   # returns 13
-print(My_b)          # My_b is now 13 as well.
-print(fn(B; 17))    # My_b is unchanged, prints 20
+print_(fn_())           # returns 6
+my_b; 10
+print_(fn_(b; my_b))    # returns 13
+print_(my_b)            # `my_b` is now 13 as well.
+print_(fn_(b; 17))      # `my_b` is unchanged, prints 20
 ```
 
 Note that a mooted variable will automatically be considered a temporary argument
 unless otherwise specified.
 
 ```
-over(Load: int): str
-    return str(Load)
+over_(load. int_): str_
+    str_(++load)
 
-over(Load; int): str
-    return str(Load++)
-
-over(Load. int): str
-    return str(++Load)
-
-Load; 100
-print(over(Load!))  # calls `over(Load.)` with a temporary, prints 101
-print(Load)         # Load = 0 because it was mooted, and was not modified inside the function
-
-Load = 100
-print(over(Load: Load!))    # calls `over(Load)` with a const temporary, prints 100
-print(Load)                 # Load = 0 because it was mooted
-
-Load = 100
-print(over(Load; Load!))    # calls `over(Load;)` with a temporary, prints 100
-print(Load)                 # Load = 0 because it was mooted
-
-# for reference, without mooting:
-Load = 100
-print(over(Load;))          # calls `over(Load;)` with the reference, prints 100
-print(Load)                 # Load = 101 because it was passed by reference
+load; 100
+print_(over_(load!))    # calls `over_(load.)` with a temporary, prints 101
+print_(load)            # `load = 0` because it was mooted
 ```
 
 The implementation in C++ might look something like this:
 
 ```
-// these function overloads are defined for `fn(Str;)` and `fn(Str)`:
-void fn(string &String);        // reference overload for `fn(Str;)`
-void fn(string &&String);       // temporary overload for `fn(Str.)`
-void fn(const string &String);  // constant reference just for `fn(Str:)`
+void fn_(string &String);        // reference overload for `fn_(str;)`
+void fn_(string &&String);       // temporary overload for `fn_(str.)`
+void fn_(const string &String);  // constant reference for `fn_(str:)`
 ```
 
 Implementation detail: while `.` corresponds to finality as a sentence ender, and thus might
