@@ -3575,36 +3575,36 @@ syntax for writable/readonly references.  There will be some annotation/macros w
 used while before compiling, e.g., `@writable`/`@readonly` to determine if the variable is
 writable or not.  Similarly, we can use const templates like `:;.` for
 readonly-reference/writable-reference/temporary.  When we have the const template `:;.`,
-use `respectively[a, b, c]` to get type `a`  for `:`, `b` for `;`, and `c` for `.`.
-Similarly for the const template `:;`, `respectively[a, b]` will give `a` for `:` and
+use `respectively_[a, b, c]` to get type `a`  for `:`, `b` for `;`, and `c` for `.`.
+Similarly for the const template `:;`, `respectively_[a, b]` will give `a` for `:` and
 `b` when `;`.
 
 ```
-my_class[of]: [X; of]
-{   ;;take(Of.):
-        X = Of!
-    ;;take(Of:):
-        X = Of
+my_class_[of_]: [x; of_]
+{   ;;take_(of.):
+        m x = of!
+    ;;take_(of:):
+        m x = of
 
     # maybe something like this?
-    ;;take(Of;:):
-        X = @moot_or_clone(Of)
-        # `@moot_or_clone(Z)` can expand to `@if @readonly(Z) {Z clone()} @else {Z!}`
+    ;;take_(of;:):
+        m x = @moot_or_clone(of)
+        # `@moot_or_clone(z)` can expand to `@if @readonly(z) {z clone_()} @else {z!}`
 }
 ```
 
 Alternatively, we can rely on some boilerplate that the language will add for us, e.g.,
 
 ```
-my_class[of]: [X; of]
-{   # these are added automatically by the compiler since `X; of` is defined.
-    ;;x(Of; of): { X<->Of }
-    ;;x(Of: of): { X = Of }
-    ;;x(Of. of): { X = Of! }
+my_class_[of_]: [x; of_]
+{   # these are added automatically by the compiler since `x; of_` is defined.
+    ;;x_(of;): { m x<->of }
+    ;;x_(of:): { m x = of }
+    ;;x_(of.): { m x = of! }
 
-    # so `take` would become:
-    ;;take(Of:;. of):
-        x(Of:;!)
+    # so `take_` would become:
+    ;;take_(of:;.):
+        m x_(of)
 }
 ```
 
