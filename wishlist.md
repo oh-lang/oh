@@ -3610,20 +3610,20 @@ my_class_[of_]: [x; of_]
 
 ### passing by reference gotchas
 
-For example, this function call passes `Array[3]` by reference, even if `Array[3]` is a primitive.
+For example, this function call passes `array[3]` by reference, even if `array[3]` is a primitive.
 
 ```
-Array[int]; [0, 1, 2, 3, 4]
-my_function(Array[3];)   # passed as writable reference
-my_function(Array[3]:)   # passed as readonly reference
-my_function(Array[3])    # also passed as readonly reference, it's the default.
+array[int_]; [0, 1, 2, 3, 4]
+my_function_(array[3];) # passed as writable reference
+my_function_(array[3]:) # passed as readonly reference
+my_function_(array[3])  # passed as writable reference since `array` is mutable.
 ```
 
 You can switch to passing by value by using `.` or making an explicit copy:
 
 ```
-Array[int]; [0, 1, 2, 3, 4]
-my_function(int(Array[3]))   # passed by value (e.g., `my_function(Int.)`):
+array[int_]; [0, 1, 2, 3, 4]
+my_function_(int_(array[3]))    # passed by value (e.g., `my_function_(int.)`):
 ```
 
 Normally this distinction of passing by reference or value does not matter except
@@ -3633,54 +3633,58 @@ in a self-referential way.  While this is allowed, it's not recommended!  Here i
 an example with an array:
 
 ```
-Array; [0, 1, 2, 3, 4]
-saw_off_branch(Int;): null
-    Array erase(Int)
-    Int *= 10
+array; [0, 1, 2, 3, 4]
+saw_off_branch_(int;): null_
+    array erase_(int)
+    int *= 10
 
-saw_off_branch(Array[3];)
-print(Array)    # prints [0, 1, 2, 40]
+saw_off_branch_(array[3];)
+print_(array)   # prints [0, 1, 2, 40]
 # walking through the code:
-# saw_off_branch(Array[3];):
-#     Array erase(Array[3]) # Array erase(3) --> Array becomes [0, 1, 2, 4]
-#     Array[3] *= 10        # reference to 4 *= 10  --> 40
+# saw_off_branch_(array[3];):
+#     array erase_(array[3])    # `array erase_(3)` --> `array` becomes [0, 1, 2, 4]
+#     array[3] *= 10            # [reference to 4] *= 10  --> 40
 ```
 
 Note that references to elements in a container are internally pointers to the container plus the ID/offset,
-so that we don't delete the value at `Array[3]` and thus invalidate the reference `Array[3];` above.
+so that we don't delete the value at `array[3]` and thus invalidate the reference `array[3];` above.
 Containers of containers (and further nesting) require ID arrays for the pointers.
-E.g., `My_lot["Ginger"][1]["Soup"]` would be a struct which contains `&My_lot`, plus the tuple `("Ginger", 1, "Soup")`.
+E.g., `my_lot["Ginger"][1]["soup"]` would, roughly speaking, be a struct which contains `&my_lot`,
+plus the tuple `("Ginger", 1, "soup")`.  We'll call this a "deep reference", but in cases
+where we can determine there is no self-referential logic occurring, we'll be able to pass in a pointer
+directly to the element.
 
 Here is an example with a lot.  Note that the argument is readonly, but that doesn't mean
 the argument doesn't change, especially when we're doing self-referential logic like this.
 
 ```
-Animals; ["hello": cat(), "world": snake(Name: "Woodsy")]
+animals; ["hello": cat_(), "world": snake_(name: "Woodsy")]
 
-do_something(Animal): string
-    Result; Animal Name
-    Animals["world"] = cat()        # overwrites snake with cat
-    Result += " ${Animal speak()}"
-    return Result
+do_something_(animal:): string_
+    result; animal name
+    animals["world"] = cat_()       # overwrites `snake_` with a `cat_`
+    result += " ${animal speak_()}"
+    result
 
-print(do_something(Animals["world"]))    # returns "Woodsy hisss!" (snake name + cat speak)
+print_(do_something_(animals["world"])) # returns "Woodsy hisss!" (snake name + cat speak)
 ```
 
 Here is an example without a container, which is still surprising, because
 the argument appears to be readonly.  Again, it's not recommended to write your code like this;
-but these are edge cases that might pop up in a complex code base.
+but these are edge cases that might pop up in a complex code base.  Because this will be painful
+to reason about, we'll probably want to detect this (if possible) and give an error message.
 
 ```
-My_int; 123
-not_actually_constant(Int): null
-    print("Int before ${Int}")
-    My_int += Int
-    print("Int middle ${Int}")
-    My_int += Int
-    print("Int after ${Int}")
-    # Int += 5  # this would be a compiler error since `Int` is readonly from this scope.
+my_int; 100
+not_actually_constant_(int:): null_
+    print_("int before ${int}")
+    my_int += int
+    print_("int middle ${int}")
+    my_int += int
+    print_("int after ${int}")
+    # int += 5  # this would be a compiler error since `int` is readonly in this scope.
 
-not_actually_constant(My_int) # prints "Int before 123", then "Int middle 246", then "Int after 492"
+not_actually_constant_(my_int) # prints "int before 100", then "int middle 200", then "int after 400"
 ```
 
 Because of this, one should be careful about assuming that a readonly argument is deeply constant;
@@ -3688,9 +3692,9 @@ it may only be not-writable from your scope's reference to the variable.
 
 In cases where we know the function won't do self-referential logic,
 we can try to optimize and pass by value automatically.  However, we
-do want to support closures like `next_generator(Int; int): do(): ++Int`,
+do want to support closures like `next_generator_(int; int_): do_(): ++int`,
 which returns a function which increments the passed-in, referenced integer,
-so we can never pass a temporary argument (e.g., `Arg. str`) into `next_generator`.
+so we can never pass a temporary argument (e.g., `arg. str_`) into `next_generator_`.
 
 ### destructuring
 
