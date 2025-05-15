@@ -3699,63 +3699,68 @@ so we can never pass a temporary argument (e.g., `arg. str_`) into `next_generat
 ### destructuring
 
 If the return type from a function has multiple fields, we can grab them
-using the notation `[Field1:, Field2;, Field3] = do_stuff()`, where `do_stuff` has
-a function signature of `fn(): [Field1: field1, Field2: field2, Field3: field3, ...]`,
+using the notation `[field1:, field2;, field3] = do_stuff_()`, where `do_stuff_` has
+a function signature of `fn_(): [field1: field1_, field2: field2_, field3: field3_, ...]`,
 and `...` are optional ignored return fields.  In the example, we're declaring
-`Field1` as readonly, `Field2` as writable, and `Field3` is an existing variable
+`field1` as readonly, `field2` as writable, and `field3` is an existing variable
 that we're updating (which should be writeable), but any combination of `;`, `:`,
 and `=` are possible.  The standard case, however, is to declare (or reassign) all
-variables at the same time, which can be done with `[Field1, Field2]: do_stuff()`
-(`[Field1, Field2]; do_stuff()`) for readonly (writeable) declaration + assignment,
-or `[Field1, Field2] = do_stuff()` for reassignment.
+variables at the same time, which can be done with `[field1, field2]: do_stuff_()`
+(`[field1, field2]; do_stuff_()`) for readonly (writeable) declaration + assignment,
+or `[field1, field2] = do_stuff_()` for reassignment.
 
 If the returned fields are references (and we don't want to copy them into local variables),
-we can use parentheses in an analogous way:  `(Ref1:, Ref2;, Not_a_ref.) = do_stuff()`
-to define `Ref1` as a readonly reference, `Ref2` as a writeable reference, and
-`Not_a_ref` as a unique, writable instance.  Or if we want to do all fields the same,
-`(Ref1, Ref2): do_stuff()` works to define `Ref1` and `Ref2` as readonly references, or
-`(Ref1, Ref2); do_stuff()` works to define them as writable references, and
-`(Ref1, Ref2). do_stuff()` works to define them as unique, writable instances.
+we can use parentheses in an analogous way:  `(ref1:, ref2;, not_a_ref.) = do_stuff_()`
+to define `ref1` as a readonly reference, `ref2` as a writeable reference, and
+`not_a_ref` as a unique, writable instance.  Or if we want to do all fields the same,
+`(ref1, ref2): do_stuff_()` works to define `ref1` and `ref2` as readonly references, or
+`(ref1, ref2); do_stuff_()` works to define them as writable references, and
+`(ref1, ref2). do_stuff_()` works to define them as unique, writable instances.
 Notice that the only distinction between destructuring references and defining a function
 is that the function requires a `function_case_` identifier before the parentheses
-(e.g., `fn(): ...` or `do_stuff(Ref1, Ref2); ...`).
+(e.g., `fn_(): ...` or `do_stuff_(ref1, ref2); ...`).
+TODO: let's support the earlier syntax first `(ref1:, ref2;, not_a_ref.) = ...`,
+and wait to add `(ref1, ref2): ...` support until later.  Same for `[...] = ...`.
 
 You can also use destructuring to specify return types explicitly.
-The notation is `[Field1: type1, Field2; type2] = do_stuff()`.  This can be used
-to grab even a single field and explicitly type it, e.g., `[X: str] = whatever()`,
-although via [SFO](#single-field-objects) this is the same as `X: str = whatever()`.
+The notation is `[field1: type1_, field2; type2_] = do_stuff_()`.  This can be used
+to grab even a single field and explicitly type it, e.g., `[x: str_] = whatever_()`,
+although via [SFO](#single-field-objects) this is the same as `x: str_ = whatever_()`
+or `x: whatever_() str`.
 
 This notation is a bit more flexible than JavaScript, since we're
 allowed to reassign existing variables while destructuring.  In JavaScript,
-`/*js*/ const {Field1, Field2} = do_stuff();` declares and defines the fields `Field1` and `Field2`,
-but `/*js??*/ {Field1, Field2} = do_stuff();`, i.e., reassignment in oh-lang, is an error in JS.
+`/*js*/ const {field1, field2} = doStuff();` declares and defines the fields `field1` and `field2`,
+but `/*js??*/ {field1, field2} = doStuff();`, i.e., reassignment in oh-lang, is an error in JS.
 
 Some worked examples follow, including field renaming.
 
 ```
-fraction(In: string, Io; dbl): [Round_down: int, Round_up: int]
-    print(In)
-    Round_down: Io round(Down)
-    Round_up: Io round(Up)
-    Io -= Round_down
-    [Round_down, Round_up]
+fraction_(in: string_, io; dbl_): [round_down: int_, round_up: int_]
+    print_(in)
+    round_down: io round_(down)
+    round_up: io round_(up)
+    io -= round_down
+    [round_down, round_up]
 
 # destructuring
-Io; 1.234
-[Round_down]: fraction(In: "hello", Io;)
+io; 1.234
+[round_down]: fraction_(in: "hello", io;)
 
 # === calling the function with variable renaming ===
-Greeting: "hello!"
-Input_output; 1.234      # note `;` so it's writable.
-# just like when we define an argument for a function, the newly scoped variable goes on the left,
-# so too for destructuring return arguments.  this one uses the default type of `Round_down`:
-[Integer_part; round_down] = fraction(In: Greeting, Io; Input_output)
+greeting: "hello!"
+input_output; 1.234      # note `;` so it's writable.
+# just like when we define an argument for a function,
+# the newly scoped variable goes on the left,
+# so too for destructuring return arguments.
+# this one uses the default type of `round_down`:
+[integer_part; round_down_] = fraction_(in: greeting, io; input_output)
 
 # here's an example without destructuring.
-Io; 1.234
-Result: fraction(In: "hello", Io;)
-# `Result` is an object with these fields:
-print(Result Round_down, Result Round_up)
+io; 1.234
+result: fraction_(in: "hello", io;)
+# `result` is an object with these fields:
+print_(result round_down, result round_up)
 ```
 
 TODO:
@@ -3763,15 +3768,15 @@ Note that we're not allowed to cast... or are we?  we want to be able to easily 
 an iterator into a list, for example.
 
 ```
-countdown(Count): all_of[iterator[count], m: [Count]]
-{   ::next()?: count
-        if M Count > 0
-            --M Count
+countdown_(count): all_of_[iterator_[count_], m_: [count]]
+{   ::next_()?: count_
+        if m count > 0
+            --m count
         else
             null
 }
 
-My_array: array[count] = countdown(5)
+my_array: array_[count_] = countdown_(5)
 ```
 
 Note, you can also have nullable output arguments.  These will be discussed
@@ -3779,24 +3784,25 @@ more in the function overload section, but here are some examples.
 
 ```
 # standard definition:
-wow(Lives: int)?: cat
-    if Lives == 9
-        cat()
+wow_(lives: int_)?: cat_
+    if lives == 9
+        cat_()
     else
         null
 ```
 
 For nested object return types, there is some syntactic sugar for dealing with them.
-Note, however, that nested fields won't help the compiler determine the function overload.
 
 ```
-nest(X: int, Y: str): [W: [Z: [A: int], B: str, C: str]]
-    [W: [Z: [A: X], B: Y, C: Y * X]]
+nest_(x: int_, y: str_): [w: [z: [a: int_], b: str_, c: str_]]
+    [w: [z: [a: x], b: y, c: y * x]]
 
-# defines `A`, `B`, and `C` in the outside scope:
-[W: Z: A, W: B, W: C] = nest(X: 5, Y: "hi")
-print(A)    # 5
-print(B)    # "hi"
+# defines `a`, `b`, and `c` in the outside scope:
+# TODO: i'm not sure i like this syntax.  we should define the variable on the left.
+# maybe `[a: w z a, b: w b, c: w c] = nest_(x: 5, y: "hi")`??
+[w: z: a, w: b, w: c] = nest_(x: 5, y: "hi")
+print_(a)    # 5
+print_(b)    # "hi"
 ```
 
 ### single field objects
