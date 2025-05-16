@@ -3172,6 +3172,8 @@ One downside of overloads is that we must specify the whole function
 the whole function because we want to be able to distinguish `type_case_` from `function_case_`
 (where some parenthesized arguments `(args...)` follow).
 
+TODO: default output arguments.  e.g., `fn_(x: int_): [y: 3]`
+
 ### nullable input arguments
 
 When you call a function with an argument that is null, conceptually we choose the
@@ -3812,53 +3814,43 @@ type into a variable with a given name; the output variable name can help
 determine which overload will be called.  Consider the following overloads.
 
 ```
-patterns(): [Chaos: f32, Order: i32]
-patterns(): i32
-# overload when we don't need to calculate `Order`:
-patterns(): Chaos: f32      # equivalent to `patterns(): [Chaos: f32]`
+patterns_(): [chaos: f32_, order: i32_]
+patterns_(): i32_
+# overload when we don't need to calculate `order`:
+patterns_(): chaos: f32_    # equivalent to `patterns_(): [chaos: f32_]`
 
-I32: patterns()             # calls `patterns(): i32` overload
-My_value: patterns() I32    # same, but defining `My_value` via the `i32` return value.
-NAMESPACE_i32: patterns()  # same, defining `NAMESPACE_i32` via the `i32`.
-I32 as Q: patterns()        # same, defining `Q` via the `i32`.
+i32: patterns_()            # calls `patterns_(): i32_` overload
+my_value: patterns_() i32   # same, but defining `my_value` via the `i32_` return value.
+NAMESPACE_i32: patterns_()  # same, defining `NAMESPACE_i32` via the `i32_`.
+[q: i32_] = patterns_()     # same, defining `q` via the `i32`.
 
-F32: patterns()             # COMPILE ERROR: no overload for `patterns(): f32`
+f32: patterns_()            # COMPILE ERROR: no overload for `patterns_(): f32_`
 
-[Chaos]: patterns()         # calls `patterns(): [Chaos: f32]` overload via destructuring.
-Chaos: patterns()           # same, via SFO concision.
-My_value: patterns() Chaos  # same, but with renaming `Chaos` to `My_value`. 
-Chaos as Cool: patterns()   # same, but with renaming `Chaos` to `Cool`.
-[Wow; chaos] = patterns()   # same, but with renaming `Chaos` to `Wow`.
+[chaos]: patterns_()        # calls `patterns_(): [chaos: f32_]` overload via destructuring.
+chaos: patterns_()          # same, via SFO concision.
+my_value: patterns_() chaos # same, but with renaming `chaos` to `my_value`. 
+[wow; chaos_] = patterns_() # same, but with renaming `chaos` to `wow`.
 
-Result: patterns()          # calls `patterns(): [Chaos: f32, Order: i32]`
+result: patterns_()         # calls `patterns_(): [chaos: f32_, order: i32_]`
                             # because it is the default (first defined).
-[Chaos, Order]: patterns()  # same overload, but because of destructuring.
-[Order]: patterns()         # same, but will silently drop the `Chaos` return value.
-Order: patterns()           # more concise form of `[Order]: patterns()`.
-My_value: patterns() Order  # same, but with renaming `Order` to `My_value`.
-Order as U: patterns()      # same, with renaming `Order` to `U`.
-[T; order] = patterns()     # same, with renaming `Order` to `T`.
+[chaos, order]: patterns_() # same overload, but because of destructuring.
+[order]: patterns_()        # same, but will silently drop the `chaos` return value.
+order: patterns_()          # more concise form of `[order]: patterns_()`.
+my_value: patterns_() order # same, but with renaming `order` to `my_value`.
+[yo; order_] = patterns_()  # same, with renaming `order` to `yo`.
 ```
 
-The effect of SFO is to make it possible to elide `[]` when asking for a single named output.
-The danger is that your overload may change based on your return variable
-name; but this is usually desired, e.g., `Old Count: Array count(1000) assert()`
-if you care to get the old count of an array.
+The effect of SFO is to make it possible to elide `[]` when asking for a single
+named output.  The danger is that your overload may change based on your return
+variable name; but this is usually desired.
 
-IMPLEMENTATION NOTE: `X: ... assert()` will require inferring through
-the `[X: x]` return value through the result `hm[ok: [X: x], ...]`
-via `assert()`.  This may be difficult for more complicated expressions.
+IMPLEMENTATION NOTE: `x: ... assert_()` will require inferring through
+the `[x: x_]` return value through the result `hm_[ok_: [x: x_], ...]`
+via `assert_()`.  This may be difficult for more complicated expressions.
 
-SFO effectively makes any `x` return type into a `[X: x]` object.  This means
-that overloads like `patterns(): i32` and `patterns(): [I32]` would actually
+SFO effectively makes any `x_` return type into a `[x: x_]` object.  This means
+that overloads like `patterns_(): i32_` and `patterns_(): [i32]` would actually
 conflict; trying to define both would be a compile error.
-
-TODO: we probably can have `x(NEW_x: x): null` overloads where we don't need
-to always swap out the old value (e.g., `x(NEW_x: x): x`.
-TODO: we should make it clear by requiring setters to return the old value only
-if `x(NEW_x: x): [OLD_x]` is used.  or just use `;;x(X; x): null` as the
-swapper signature and `;;x(X. x): null` as the setter, and don't specify
-what `;;x(X; x): x` would mean.
 
 ### `arguments` class
 
@@ -7466,12 +7458,12 @@ masks for a similar class type that allows multiple options at once.
 
 Enums are by default the smallest standard integral type that holds all values,
 but they can be signed types (in contrast to masks which are unsigned).
-If desired, you can specify the underlying enum type using `one_of i8[...]` instead
-of `one_of[...]`, but this will be a compile error if the type is not big enough to
-handle all options.  It will not be a compile warning if the `one_of` includes types
-inside (e.g., `one_of i8[u32, f32]`); we'll assume you want the tag to be an `i8`.
+If desired, you can specify the underlying enum type using `i8_ one_of_[...]` instead
+of `one_of_[...]`, but this will be a compile error if the type is not big enough to
+handle all options.  It will not be a compile warning if the `one_of_` includes types
+inside (e.g., `i8_ one_of_[u32_, f32_]`); we'll assume you want the tag to be an `i8_`.
 However, it should be clear that the full type will be at least the size of the
-tag plus the largest element in the `one_of`; possibly more to alikely chieve alignment.
+tag plus the largest element in the `one_of_`; possibly more to achieve alignment.
 
 Here is an example enum with some values that aren't specified.  Even though
 the values aren't specified, they are deterministically chosen.
