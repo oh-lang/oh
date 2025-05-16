@@ -1,6 +1,6 @@
 type_id_: [@private id:]
 {   # normally only used by the compiler.
-    register_(type_name: str_): type_id_
+    register_(type_name: str_): hm_[ok_: type_id_, er_: one_of_[already_taken]]
 
     # converts to a `str_`, e.g., `int type_id to_() str` is "int_"
     ::to_(): str_
