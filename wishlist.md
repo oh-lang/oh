@@ -3852,77 +3852,67 @@ SFO effectively makes any `x_` return type into a `[x: x_]` object.  This means
 that overloads like `patterns_(): i32_` and `patterns_(): [i32]` would actually
 conflict; trying to define both would be a compile error.
 
-### `arguments` class
+### arguments class
 
-Variadic functions are possible in oh-lang using the `arguments[of]` class.
-We recommend only one class type, e.g., `arguments[int]` for a variable number
-of integers, but you can allow multiple classes via e.g. `arguments[one_of[x, y, z]]`
-for classes `x`, `y`, and `z`.  oh-lang disallows mixing `arguments` with any
-other arguments.  The `arguments` class has methods like `::count()`, `;:[Index]`,
-and `;;[Index]!`.  Thus, `arguments` is effectively a fixed-length array, but you
-can modify the contents if you pass as `Arguments[type];`.  It is guaranteed that
-there is at least one argument, so `Arguments[0]` is always defined.
+Variadic functions are possible in oh-lang using the `arguments_[of_]` class.
+We recommend only one class type, e.g., `arguments_[int_]` for a variable number
+of integers, but you can allow multiple classes via e.g. `arguments_[one_of_[x_, y_, z_]]`
+for classes `x_`, `y_`, and `z_`.  oh-lang disallows mixing `arguments_` with any
+other arguments.  The `arguments_` class has methods like `::count_()`, `;:[index]: (of)`,
+and `;;[index]!`.  Thus, `arguments_` is effectively a fixed-length array, but you
+can modify the contents if you pass as `arguments[type_];`.  It is guaranteed that
+there is at least one argument, so `arguments[0]` is always defined.
 
 ```
-max(Arguments[int]): int
-    Max; Arguments[0]
-    range(1, Arguments count()) each Index:
-        if Arguments[Index] > Max
-            Max = Arguments[Index]
-    Max  
+max_(arguments[int_]): int_
+    max; arguments[0]
+    range_(1, arguments count_()) each index:
+        if arguments[index] > max
+            max = arguments[index]
+    max
 ```
 
 ### dynamically determining arguments for a function
 
-We allow for dynamically setting arguments to a function by using the `call` type,
-which has a few fields: `Input` and `Output` for the arguments and return values
-of the function, as well as optional `Info`, `Warning`, and `Error` fields for any issues
-encountered when calling the function.  These fields are named to imply that the function
-call can do just about anything (including fetching data from a remote server).
+We allow for dynamically setting arguments to a function by using the `call_` type,
+which has a few fields: `input` and `output` for the arguments and return values
+of the function, as well as optional `prints` and `errors` fields for anything printed
+to `stdout` or `stderr` when calling the function.  These fields are named to imply
+that the function call can do anything (including fetching data from a remote server).
 
 ```
-call:
-[   Input; lot[at: str, reference[any]]
-    # we need to distinguish between the caller asking for specific fields
-    # versus asking for the whole output.
-    Output; lot[at: str, any]
-    # things printed to stdout via `print`:
-    Print; array[string]
-    # things printed to stderr via `error`:
-    Error; array[string]
+call_:
+[   input; lot_[at_: str_, any_]
+    output; lot_[at_: str_, any_]
+    # things printed to stdout via `print_`:
+    prints; array_[str_]
+    # things printed to stderr via `error_`:
+    errors; array_[str_]
 ]
-{   # adds an argument to the function call.
-    # e.g., `Call input(Name: "Cave", Value: "Story")`
-    ;;input(Name: str, Value: reference[any]): null
-        Input[Name] = Value
+{   # adds a named argument to the function call.
+    # e.g., `call input_(name. "Cave", value. "Story")`
+    ;;input_(name. str_, value. any_): null_
+        input[name] = value
 
-    # adds an argument to the function call.
-    # e.g., `Call input(Cave: "Story")`
-    ;;input(~Name: reference[any]): null
-        Input[@@Name] = Name
+    ;;input_(any.): null_
+        m input_(name. any type_id to_(), value. any)
 
-    # adds a single-value return type
-    ;;output(Any): null
-        assert(Output count() == 0)
-        # TODO: a better way to refer to the class name.
-        # can we just do `Any Class_name`?
-        Output[Any is() Class_name] = Any
+    # TODO: this breaks the rule that we don't hold on to references/pointers
+    # beyond the scope of the function.
+    ;;input_(name. str_, value:; any_): null_
+        input[name] = (name:; value)
 
-    # adds a field to the return type with a default value.
-    # e.g., `call output_(field_name: 123)` will ensure
-    # `{field_name}` is defined in the return value, with a
+    # adds a named field to the return type with a default value.
+    # e.g., `call output_(name. "field_name", value. 123)` will ensure
+    # `[field_name]` is defined in the return value, with a
     # default of 123 if `field_name` is not set in the function.
-    ;;output_(~name: any_):
-        output_(name: @@name, value: name)
+    ;;output_(name. str_, value. any_): null_
+        output_[name] = value 
 
-    # adds a field to the return type with a default value.
-    # e.g., `Call output(Name: "Field_name", Value: 123)` will ensure
-    # `{Field_name}` is defined in the return value, with a
-    # default of 123 if `Field_name` is not set in the function.
-    ;;output(Name: string, Value: any): null
-        Output[Name] = Value 
+    # adds a default-named return type, with a default value.
+    ;;output_(any.): null_
+        ;;output_(name. any type_id to_(), value. any)
 }
-reference[of]: one_of[writable: (Of;), readonly: (Of:)]
 ```
 
 When passing in a `call` instance to actually call a function, the `Input` field will be treated

@@ -1,0 +1,15 @@
+type_id_: [@private id:]
+{   # normally only used by the compiler.
+    register_(type_name: str_): type_id_
+
+    # converts to a `str_`, e.g., `int type_id to_() str` is "int_"
+    ::to_(): str_
+
+    # converts to a `u64_`, e.g., `int type_id to_() u64`.
+    ::to_(): u64_
+
+    @if debug
+        @private id_: str_
+    @else
+        @private id_: u64_
+}
