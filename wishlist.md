@@ -3915,52 +3915,52 @@ call_:
 }
 ```
 
-When passing in a `call` instance to actually call a function, the `Input` field will be treated
-as constant/read-only.  The `Output` field will be considered "write-only", except for the fact
-that we'll read what fields are defined in `Output` (if any) to determine which overload to use.
+When passing in a `call_` instance to actually call a function, the `input` field will be treated
+as constant/read-only.  The `output` field will be considered "write-only", except for the fact
+that we'll read what fields are defined in `output` (if any) to determine which overload to use.
 This call structure allows you to define "default values" for the output, which won't get
-overwritten if the function doesn't write to them.  To make things easier to reason about, you
-can't influence the function overload by requesting nested fields in the output (e.g., `[X: [Y: Z]]`);
-only fields directly attached to the `Output` (e.g., `[X, T]`) can influence the function overload.
-
-Let's try an example:
+overwritten if the function doesn't write to them.  Let's try an example:
 
 ```
 # define some function to call:
-some_function(X: int): string
-    return "hi" * X
+some_function_(x: int_): str_
+    "hi" * x
 # second overload:
-some_function(X: string): int
-    return X count_bytes()
+some_function_(x: str_): int_
+    x count_bytes_()
 
-My_string: string = some_function(X: 100)   # uses the first overload
-My_int: int = some_function(X: "cow")       # uses the second overload
-Check_type1: some_function(X: 123)          # uses the first overload since the type is `int`
-Check_type2: some_function(X: "asdf")       # uses the second overload since the type is `string`
-Invalid: some_function(X: 123.4)            # COMPILE ERROR: 123.4 is not referenceable as `int` or `string`
+my_string: str_ = some_function_(x: 100)    # uses the first overload
+my_int: int_ = some_function_(x: "cow")     # uses the second overload because the return type is asked for.
+NAMED_int: some_function_(x: "wow")         # also the second overload because it's asked for (via `int` name)
+check_type1: some_function_(x: 123)         # uses the first overload since it's the default for an `x` arg.
+check_type2: some_function_(x: "asdf") int  # uses the second overload because the return type is asked for.
+# TODO: we may want to support this in the future without compile errors.
+check_type3: some_function_(x: "asdf")      # COMPILE ERROR: "asdf" is not referenceable as `int`
+invalid: some_function_(x: 123.4)           # COMPILE ERROR: 123.4 is not referenceable as `int`
 
 # example which will use the default overload:
-Call; call
-Call input(X: 2)
-# use `Call` with `;` so that `Call;;Output` can be updated.
-some_function(;Call)
-print(Call Output)  # prints "hihi"
+call; call_
+call input_(name. "x", value. 2)
+# use `call` with `;` so that `call;;output` can be updated.
+some_function_(;call)
+print_(call output) # prints `["str": "hihi"]`
 
-# define a value for the object's Output field to get the other overload:
-Call; call
-Call input(X: "hello")
-some_function(;Call)
-print(Call Output)  # prints 5
+# define a value for the object's output field to get the other overload:
+call; call_
+call input_(name: "x", value. "hello")
+call output_(-1)    # defines a default-named `int` output, defaulting to -1.
+some_function_(;call)
+print_(call output) # prints `["int": 5]`
 
 # dynamically determine the function overload:
-Call; call
-if some_condition()
-    Call {input(X: 5), output("?")}
+call; call_
+if some_condition_()
+    call@ {input_(name. "x", value. 5), output_("?")}
 else
-    Call {input(X: "hey"), output(-1)}
+    call@ {input_(name. "x", value. "hey"), output_(-1)}
 
-some_function(;Call)
-print(Call Output)  # will print "hihihihihi" or 3 depending on `some_condition()`.
+some_function_(;call)
+print_(call output)  # will print `["str": "hihihihihi"]` or `["int": 3]` depending on `some_condition()`.
 ```
 
 Note that `call` is so generic that you can put any fields that won't actually
@@ -4441,6 +4441,11 @@ Const_var = example_class(X: 4) # COMPILER ERROR! variable is readonly.
 # calling class functions doesn't require an instance.
 Dont_need_an_instance: example_class some_static_function(Y; 5)
 ```
+
+Note that you normall call a static/class function like this `class_name_ class_function_(...)`,
+but you can also do it like this: `class_function_(m_: class_name_, ...)`.  This is similar to
+how you can get internal class types like `class_name_ internal_type_` in a different way like
+`internal_type_[m_: class_name_]`.
 
 ## declaring methods and class functions outside of the class
 
