@@ -4015,77 +4015,73 @@ the input and output variables need to be named inside the `callable`.
 To declare a reassignable function, use `;` after the arguments.
 
 ```
-greet(Noun: string); null
-    print("Hello, ${Noun}!")
+greet_(noun: string_); null_
+    print_("Hello, ${noun}!")
 
 # you can use the function:
-greet(Noun: "World")
+greet_(noun: "World")
 
 # or you can redefine it:
-greet(Noun: string); null
-    print("Overwriting!")
-# it's not ok if we use `greet(Noun: string): null` when redefining, since that looks like
-# we're switching from writable to readonly.
+greet_(noun: string_); null_
+    print_("Overwriting!")
+# it's not ok if we use `greet_(noun: string_): null_` when redefining
+# since that looks like we're just defining another overload.
 ```
 
 It needs to be clear what function overload is being redefined (i.e., having
 the same function signature), otherwise you're just creating a new overload
 (and not redefining the function).  You can also assign an existing function
 to a mutable function using notation like this:
-`my_mutable_fn(); int {original_definition()}`, followed by
-`my_mutable_fn(); int = some_other_fn`.  Because the overload on `my_mutable_fn`
-is fully specified (e.g., no input arguments, an `int` return value), we know
-to select that overload on `some_other_fn`.
+`my_mutable_fn_(); int {original_definition_()}`, followed by
+`my_mutable_fn_(); int = some_other_fn_`.  Because the overload on `my_mutable_fn_`
+is fully specified (e.g., no input arguments, an `int_` return value), we know
+to select that overload on `some_other_fn_`.
 
 ## nullable functions
 
-The syntax for declaring a nullable/optional function is to put a `?` after the function name
-but before the argument list.  E.g., `optional_function?(...Args): return_type` for a non-reassignable
+The syntax for declaring a nullable/optional function is to put a `?`
+after the function name but before the argument list.  E.g.,
+`optional_function_?(...args): return_type_` for a non-reassignable
 function and swapping `:` for `;` to create a reassignable function.
-When calling a nullable function, unless the function is explicitly checked for non-null,
-the return type will be nullable.  E.g., `X?: optional_function(...Args)` will have a
-type of `one_of[return_type, null]`.  Nullable functions are checked by the executable, so the
-programmer doesn't necessarily have to do it.
+When calling a nullable function, unless the function is explicitly
+checked for non-null, the return type will be nullable.  E.g.,
+`x?: optional_function_(...args)` will have a type of
+`one_of_[return_type_, null]_`.  Nullable functions are checked by
+the executable, so the programmer doesn't necessarily have to do it.
 
-A nullable function has `?` before the argument list; a `?` after the argument list
+A nullable function has `?` before the argument list; a `?` *after* the argument list
 means that the return type is nullable.  The possible combinations are therefore the following:
 
-* `normal_function(...Args): return_type` is a non-null function
-  returning a non-null `return_type` instance.
+* `normal_function_(...args): return_type_` is a non-null function
+  returning a non-null `return_type_` instance.
 
-* `nullable_function?(...Args): return_type` is a nullable function,
-  which, if non-null, will return a non-null `return_type` instance.
-  Conversely, if `nullable_function` is null, trying to call it will return null.
+* `nullable_function_?(...args): return_type_` is a nullable function,
+  which, if non-null, will return a non-null `return_type_` instance.
+  Conversely, if `nullable_function_` is null, trying to call it will return null.
 
-* `nullable_return_function(...Args)?: return_type` is a non-null function
-  which can return a nullable instance of `return_type`.
+* `nullable_return_function_(...args)?: return_type_` is a non-null function
+  which can return a nullable instance of `return_type_`.
 
-* `super_null_function?(...Args)?: return_type` is a nullable function
-  which can return a null `return_type` instance, even if the function is non-null.
-  I.e., if `super_null_function` is null, trying to call it will return null,
-  but even if it's not null `super_null_function` can still return null.
+* `super_null_function_?(...args)?: return_type_` is a nullable function
+  which can return a null `return_type_` instance, even if the function is non-null.
+  I.e., if `super_null_function_` is null, trying to call it will return null,
+  but even if it's not null `super_null_function_` may still return null.
 
 ```
 # creating an optional function in a class:
-example: [X: dbl, optional_fn?(M, Z: dbl); int]
+example_: [x: dbl_, optional_fn_?(m:, z: dbl_); int_]
 
-Example; example(X: 5)
+example; example_(x: 5)
 
-# define your own function for optional_fn:
-Example::optional_fn(Z: dbl); int
-    # need the namespace `M X` here because `X` is not obviously in scope.
-    return floor(Z * M X)
+# define your own function for `optional_fn_`:
+example::optional_fn_(z: dbl_); int_
+    floor_(z * m x)
 
-# or set it to null (would set all overloads to null):
-Example optional_fn = null
-
-# the entire overload must be specified
-# if you want to delete just one overload.
-# (i.e., in case there are multiple overloads)
-Example optional_fn?(Z: dbl); int = null
+# or set it to null:
+example optional_fn_?(z: dbl_); int_ = null
 
 # after setting it to null...
-Example optional_fn(Z: 3.21)    # returns null
+example optional_fn_(z: 3.21)   # returns null
 ```
 
 ## generic/template functions
