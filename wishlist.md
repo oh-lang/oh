@@ -3890,28 +3890,28 @@ call_:
     errors; array_[str_]
 ]
 {   # adds a named argument to the function call.
-    # e.g., `call input_(name. "Cave", value. "Story")`
-    ;;input_(name. str_, value. any_): null_
-        input[name] = value
+    # e.g., `call input_(at. "Cave", "Story")`
+    ;;input_(at. str_, any.): null_
+        input[at] = any
 
     ;;input_(any.): null_
-        m input_(name. any type_id to_(), value. any)
+        m input_(at. any type_id to_(), any)
 
     # TODO: this breaks the rule that we don't hold on to references/pointers
     # beyond the scope of the function.
-    ;;input_(name. str_, value:; any_): null_
-        input[name] = (name:; value)
+    ;;input_(at. str_, any:;): null_
+        input[at] = (at:; any)
 
     # adds a named field to the return type with a default value.
-    # e.g., `call output_(name. "field_name", value. 123)` will ensure
+    # e.g., `call output_(at. "field_name", 123)` will ensure
     # `[field_name]` is defined in the return value, with a
     # default of 123 if `field_name` is not set in the function.
-    ;;output_(name. str_, value. any_): null_
-        output_[name] = value 
+    ;;output_(at. str_, any.): null_
+        output_[at] =  any
 
     # adds a default-named return type, with a default value.
     ;;output_(any.): null_
-        ;;output_(name. any type_id to_(), value. any)
+        ;;output_(at. any type_id to_(), any)
 }
 ```
 
@@ -3940,14 +3940,14 @@ invalid: some_function_(x: 123.4)           # COMPILE ERROR: 123.4 is not refere
 
 # example which will use the default overload:
 call; call_
-call input_(name. "x", value. 2)
+call input_(at. "x", 2)
 # use `call` with `;` so that `call;;output` can be updated.
 some_function_(;call)
 print_(call output) # prints `["str": "hihi"]`
 
 # define a value for the object's output field to get the other overload:
 call; call_
-call input_(name: "x", value. "hello")
+call input_(at. "x", "hello")
 call output_(-1)    # defines a default-named `int` output, defaulting to -1.
 some_function_(;call)
 print_(call output) # prints `["int": 5]`
@@ -3955,9 +3955,9 @@ print_(call output) # prints `["int": 5]`
 # dynamically determine the function overload:
 call; call_
 if some_condition_()
-    call@ {input_(name. "x", value. 5), output_("?")}
+    call@ {input_(at. "x", 5), output_("?")}
 else
-    call@ {input_(name. "x", value. "hey"), output_(-1)}
+    call@ {input_(at. "x", "hey"), output_(-1)}
 
 some_function_(;call)
 print_(call output)  # will print `["str": "hihihihihi"]` or `["int": 3]` depending on `some_condition()`.
@@ -3967,22 +3967,22 @@ Note that `call` is so generic that you can put any fields that won't actually
 be used in the function call.  In this, oh-lang will return an error at run-time.
 
 ```
-Call; call() { input(X: "4"), output(Value1: 123), output(Value2: 456) }
-some_function(;Call) assert()    # returns error since there are no overloads with [Value1, Value2]
+call; call_() @{ output_(at. "value1", 123), output_(at: "value2", 456) }
+some_function_(;call) assert_() # returns error since there are no overloads with [value1, value2]
 ```
 
 If compile-time checks are desired, one should use the more specific
-`my_fn call` type, with `my_fn` the function you want arguments checked against.
+`my_fn_ call_` type, with `my_fn_` the function you want arguments checked against.
 
 ```
 # throws a compile-time error:
-Call; some_function call() { input(X: "4"), output(Value1: 123), output(Value2: 456) }
-# the above will throw a compile-time error, since two unexpected fields are defined for Output.
+call; some_function_ call_() @{ output_(at. "value1", 123), output_(at. "value2", 456) }
+# the above will throw a compile-time error, since two unexpected fields are defined for output.
 
 # this is ok (calls first overload):
-Call2; some_function call() { input(X: "4"), output(0) }
+call2; some_function_ call_() @{ input_(at. "x", "4"), output_(0) }
 # also ok (calls second overload):
-Call3; some_function call() { input(X: 4), output("") }
+call3; some_function_ call_() @{ input_(at. "x", 4), output_("") }
 ```
 
 Note that it's also not allowed to define an overload for the `call` type yourself.
@@ -3990,24 +3990,24 @@ This will give a compile error, e.g.:
 
 ```
 # COMPILE ERROR!!  you cannot define a function overload with a default-named `call` argument!
-some_function(;Call): null
-    print(Call Input["X"])
+some_function_(call;): null_
+    print_(call input["x"])
 ```
 
-This is because all overloads need to be representable by `Call; call`, including any
+This is because all overloads need to be representable by `call; call_`, including any
 overloads you would create with `call`.  Instead, you can create an overload with a
 `call` argument that is not default-named.
 
 ```
-some_function(My_call; call): null
-    print(Call Input["X"]) # OK
+some_function_(my_call; call_): null_
+    print_(my_call input["x"])  # OK
 ```
 
 ### callable
 
 Taking the `call` idea one step further, we can have a pointer to the function
-already ready so all we need to do is run `Callable call()`.  To specify the overload,
-the input and output variables need to be named inside the `Callable`.
+already ready so all we need to do is run `callable call_()`.  To specify the overload,
+the input and output variables need to be named inside the `callable`.
 
 
 ## mutable functions
