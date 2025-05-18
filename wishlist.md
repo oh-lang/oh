@@ -4092,57 +4092,58 @@ with generic names.
 ### argument type generics
 
 For functions that accept multiple types as input/output, we define template types
-inline, e.g., `copy(Value: ~t): t`, using `~` for where the compiler should infer
+inline, e.g., `copy_(value: ~t_): t_`, using `~` for where the compiler should infer
 what the type is.  You can use any unused identifier for the new type, e.g.,
-`~q` or `~sandwich_type`.
+`~q_` or `~sandwich_type_`.
 
 ```
-copy(Value: ~t): t
-    print("got $(Value)")
-    return Value
+copy_(value: ~t_): t_
+    print_("got $(value)")
+    t_(value)
 
-vector3: [X: dbl, Y: dbl, Z: dbl]
-Vector3: vector3(Y: 5)
-Result: copy(Value: Vector3)    # prints "got vector3(X: 0, Y: 5, Z: 0)".
-Vector3 == Result           # equals True
+vector3_: [x: dbl_, y: dbl_, z: dbl_]
+vector3: vector3_(y: 5)
+result: copy_(value: vector3)   # prints "got vector3_(x: 0.0, y: 5.0, z: 0.0)".
+vector3 == result               # equals True
 ```
 
 You can also add the new types in brackets just after the function name,
-e.g., `copy[t: my_type_constraints](Value: ~t): t`, which allows you to specify any
-type constraints (`my_type_constraints` being optional).  Note that types defined with
+e.g., `copy_[t_: my_type_constraints_](value: ~t_): t_`, which allows you to specify any
+type constraints (`my_type_constraints_` being optional).  Note that types defined with
 `~` are inferred and therefore can never be explicitly given inside of the brackets,
-e.g., `copy[t: int](Value: 3)` is invalid here, but `copy(Value: 3)` is fine.
+e.g., `copy_[t_: int_](value: 3)` is invalid here, but `copy_(value: 3)` is fine.
 
 If you want to require explicitly providing the type in brackets, don't use `~` when
 defining the function.
 
 ```
 # this generic function does not infer any types because it doesn't use `~`.
-copy[the_type](Value: the_type): the_type
+copy_[the_type_](value: the_type_): the_type_
     ...
-    the_type(Value)
+    the_type_(value)
 
 # therefore we need to specify the generics in brackets before calling the function.
-copy[the_type: int](Value: 1234)    # returns 1234
+copy_[the_type_: int_](value: 1234) # returns 1234
 ```
 
-For this example, it would be better to use `of` instead of `the_type`, since `of`
-is the "default name" for a generic type.  E.g., you don't need to specify `[of: int]`
-to specialize to `int`, you can just use `[int]` for an `[of]`-defined generic.
-See also [default named generic types](#default-named-generic-types).  For example:
+For this example, it would probably be better to use `of_` instead of `the_type_`,
+since `of_` is the "default name" for a generic type.  E.g., you don't need
+to specify `[of_: int_]` to specialize to `int_`, you can just use `[int_]
+for an `[of_]`-defined generic.  See also
+[default named generic types](#default-named-generic-types).  For example:
 
 ```
 # this generic function does not infer any types because it doesn't use `~`.
-copy[of](Value: of): of
+copy_[of_](value: of_): of_
     ...
-    of(Value)
+    of_(value)
 
 # because the type is not inferred, you always need to specify it in brackets.
-# you can use `of: the_type` but this is not idiomatic:
-copy[of: int](Value: 3) # will return the integer `3`
+# you can use `of_: the_type_` but this is not idiomatic:
+copy_[of_: int_](value: 3)  # will return the integer `3`
 
 # because it is default named, you can just put in the type without a field name.
-copy[dbl](Value: 3)     # will return `3.0`
+copy_[dbl_](value: 3)     # will interpret `3` as a double and return `3.0`
 ```
 
 ### default-named generic arguments
