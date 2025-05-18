@@ -4150,84 +4150,97 @@ copy_[dbl_](value: 3)     # will interpret `3` as a double and return `3.0`
 
 TODO: restrictions here, do we need to only have a single argument, so that
 argument names are unique?  it's probably ok if we have an `@order_independent`
-or use `~FIRST_t` and `~SECOND_u` to indicate order is ok.
-or need to use `@Named` on some of them.
+or use `~FIRST_t_` and `~SECOND_u_` to indicate order is ok.
+or need to use `NAMED_` on some of them.
 maybe we see if there's an issue when compiling the generics and then complain at compile time.
 
 Similar to the non-generic case, if the `variable_case` identifier
 matches the `type_case_` type of a generic, then it's a default-named argument.
-For example, `My_type; ~my_type` or `T: ~t`.  There is a shorthand for this
-which is more idiomatic: `~My_type;` or `~T`.  Here is a complete example:
+For example, `my_type; ~my_type_` or `t: ~t_`.  There is a shorthand for this
+which is more idiomatic: `~my_type;` or `~t:`.  Here is a complete example:
 
 ```
-logger(~T): t
-    print("got ${T}")
-    return T
+logger_(~t): t_
+    print_("got ${t}")
+    t
 
-vector3: [X: dbl, Y: dbl, Z: dbl]
-Vector3: vector3(Y: 5)
-Result: logger(Vector3)     # prints "got vector3(X: 0, Y: 5, Z: 0)".
-Vector3 == Result           # equals True
+vector3_: [x: dbl_, y: dbl_, z: dbl_]
+vector3: vector3_(y: 5)
+result: logger_(vector3)    # prints "got vector3(X: 0.0, Y: 5.0, Z: 0.0)".
+vector3 == result           # equals true
 
 # implicit type request:
-Int_result: logger(5)        # prints "got 5" and returns the integer 5.
+int_result: logger_(5)      # prints "got 5" and returns the integer 5.
 
-# explicit type request:
-Dbl_result: logger(dbl(4))   # prints "got 4.0" and returns 4.0
+# explicit type passing:
+dbl_result: logger_(dbl_(4))    # prints "got 4.0" and returns 4.0
 ```
 
-Note that you can use `my_function(~T;)` for a writable argument.
-Default naming also works if we specify the generics ahead of the function arguments
-like this:
+Note that you can use `my_function_(~t;)` for a writable argument.
+Default naming also works if we specify the generics ahead of
+the function arguments like this:
 
 ```
-logger[of: some_constraint](Of): of
-    print("got ${Of}")
-    Of
+logger_[of_: some_constraint_](of.): of_
+    print_("got ${of}")
+    of
 
 # need to explicitly add the type since it's never inferred.
-logger[int](3)  # returns the integer `3`
-logger[dbl](3)  # will return `3.0`
+logger_[int_](3)  # returns the integer `3`
+logger_[dbl_](3)  # will return `3.0`
+```
+
+If you want people to pass in the argument with the field name explicit,
+you can use the `NAMED_` namespace.  This suppresses the default naming.
+
+```
+logger_(~NAMED_of.): of_
+    print_("got ${of}")
+    of
+
+# need to explicitly add the argument name `of` but
+# the type can be inferred due to `~` in the definition.
+logger_(of. 3)  # returns the integer `3`
 ```
 
 If we have a named generic type, just name the `type_case_` type the
-same as the `variable_case` variable name (besides initial capitalization)
+same as the `variable_case` variable name (just add a trailing `_`)
 so default names can apply.
 
 ```
-logger[value](Value): value
-    print("got ${Value}")
-    Value
+logger_[value_](value.): value_
+    print_("got ${value}")
+    value
 
-logger[value: dbl](3)  # will return `3.0` and print "got 3.0"
+logger_[value_: dbl_](3)    # will return `3.0` and print "got 3.0"
 ```
 
 If we want to suppress default naming, e.g., require the function argument 
-to be `Value: XYZ`, then we need to explicitly tell the compiler that we don't
-want default names to apply, which we do using the `@Named` namespace.
+to be `value: XYZ`, then we need to explicitly tell the compiler that we don't
+want default names to apply, which we do using the `NAMED_` namespace.
 
 ```
-logger(~NAMED_value): value
-    print("got ${NAMED_value}")
+logger_(~NAMED_value.): value_
+    print_("got ${NAMED_value}")
     NAMED_value
 
-# it can be called like this, which implicitly infers the `value` type:
-logger(Value: 3)  # returns the integer `3`
+# because of the `~` on the type, it can be called like this,
+# which implicitly infers the `value_` type:
+logger_(value. 3)   # returns the integer `3`
 ```
 
-And as in other contexts, you can avoid inferring the type by avoiding using `~`.
+And as in other contexts, you can avoid inferring the type by omitting `~`.
 
 ```
 # this generic needs to be specified in brackets at the call site: 
-logger[value](NAMED_value): value
+logger_[value_](NAMED_value.): value_
     ...
-    value(NAMED_value)
+    NAMED_value
 
-# and because it's not default named (i.e., it's named `value` not `of`),
+# and because it has a `NAMED_` namespace,
 # you need to call it like this:
-logger[value: dbl](Value: 3)  # will return `3.0`
+logger_[value: dbl](value. 3)  # will return `3.0`
 ```
-
 
 ### argument name generics: with different type
 
