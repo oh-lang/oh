@@ -4281,33 +4281,37 @@ e.g., `my_function_(~my_name: ~another_type_)`.
 TODO: can we use a different syntax for `~my_name` so that new argument
 types like `fn_(~t:): t_` expanding to `fn_(t: ~t_): t_`, which should
 be the default, will not be inconsistent?  maybe `my_function_(@@my_name: ~new_type_)`.
+yeah i think i like `fn_(@@int:)`, `fn_(~@@t:)`, and `fn_(~t:`).
 
 
 ### require
 
-`Require` is a special generic field that allows you to include a function,
+`require` is a special generic field that allows you to include a function,
 method, or variable only if it meets some compile-time constraints.  It is
 effectively a keyword within a generic specification, so it can't be used
 for other purposes, and the boolean value it takes must be known at compile-time.
+It also can be used to ensure a generic specification satisfies some constraints,
+e.g., `require: n > 0` in the first line below.  `require` can *never* be
+specified by hand, e.g., `my_class_[int_, n: 0, require: true]` is a compile error.
 
 ```
-my_class[of, N: count]:
-[   Value: of
-    # this field `Second_value` is only present if `N` is 2 or more.
+my_class_[of_, n: count_, require: n > 0]:
+[   value: of_
+    # this field `second_value` is only present if `n` is 2 or more.
     # TODO: does this conflict with any other usages of generic classes?
-    # if so, let's switch to `@require(N >= 2) Second_value: of`
-    Second_value[Require: N >= 2]: of
-    # this field `Third_value` is only present if `N` is 3 or more.
-    Third_value[Require: N >= 3]: of
-    ... # plz help am i coding this right??     (no, prefer `vector[N, of]`)
+    # if so, let's switch to `@if n >= 2 {second_value: of_}`
+    second_value[require: n >= 2]: of_
+    # this field `third_value` is only present if `n` is 3 or more.
+    third_value[require: n >= 3]: of_
+    ... # plz help am i coding this right??     (no, prefer `vector_[n, of_]`)
 ]
-{   # `of is hashable` is true iff `of` extends `hashable` either explicitly
-    # or implicitly by implementing a `hash` method like this:
-    ::hash[Require: of is hashable](~Builder):
-        Builder hash(Value)
-        @if N > 1 {Builder hash(Second_value)}
-        @if N > 2 {Builder hash(Third_value)}
-        # TODO: maybe add something like `Builder hash(@?Second_value)`
+{   # `of_ is hashable_` is true iff `of_` extends `hashable_` either explicitly
+    # or implicitly by implementing a `hash_` method like this:
+    ::hash_[require: of_ is hashable_](~builder):
+        builder hash_(value)
+        @if n > 1 {builder hash_(second_value)}
+        @if n > 2 {builder hash_(third_value)}
+        # TODO: maybe add something like `builder hash_(@?second_value)`
         ...
 }
 ```
@@ -4316,8 +4320,9 @@ TODO: should we make this an annotation instead?  `@require(of is orderable)`??
 in C++, these sorts of things are templates, but that can be kinda confusing.
 but it does allow you to do things like this, where you introduce new types
 on the fly and can require them to be a certain way:
-`::do[additional_type, Require: additional_type is foo](~Additional_type): int`
+`::do_[additional_type_, require: additional_type_ is foo_](~additional_type:): int_`
 so if possible, i think i'd prefer to keep it as a template.
+the alternative is to do `@if of_ is hashable_ { ::hash_(~builder): ... }`.
 
 # classes
 
