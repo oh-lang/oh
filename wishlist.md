@@ -4330,36 +4330,39 @@ A class is defined with a `type_case_` identifier, an object `[...]`
 defining instance variables and instance functions (i.e., variables and
 functions that are defined *per-instance* and take up memory), and an
 optional indented block (optionally in `{}`) that includes methods and functions that are
-shared across all instances: class instance methods (just methods for short)
+shared across all instances: class instance methods (just *methods* for short)
 and class functions (i.e., static methods in C++/Java) that don't require an instance.
 Class definitions must be constant/non-reassignable, so they are declared using
 the `:` symbol.
 
-When defining methods or functions of all kinds, note that you can use `m`
-to refer to the current class instance type.  E.g.,
+When defining methods or functions of all kinds, note that you can use `m`/`m_`
+to refer to the current class instance/type.  E.g.,
 
 ```
 # classes can enclose their body in `{}`, which is recommended for long class definitions.
 # for short classes, it's ok to leave braces out.
-my_class: [Variable_x: int]
-    ::copy(): me    # OK
-        print("logging a copy")
-        return m(M)   # or fancier copy logic
+my_class_: [variable_x: int_]
+    ::copy_(): m_   # OK
+        print_("logging a copy")
+        m_(variable_x: m variable_x copy_())
 ```
 
-Inside the class body, you can use `M` to refer to any other instance variables or methods,
-e.g., `M X` or `M do_stuff_method()`, or you can just use them directly as `X` and `do_stuff_method()`.
-Any collisions with global variables/functions will be reported with a compile error.
+Inside the class body, you must use `m` to refer to any other instance variables or methods,
+e.g., `m x` or `m do_stuff_method_()`.  This isn't as concise as C++/Java, but it is much
+more precise and ensures you don't need to worry about too many name collisions with globals.
+You don't need to prefix `m_` on any class variables, types, or functions that are defined
+inside the class body, which does mean name collisions with globals can be an issue, but
+these will be thrown as errors by the compiler.
 
-Note that when returning a newly-declared type from a function (e.g., `my_fn(Int): [X: int, Y: dbl]`),
+Note that when returning a newly-declared type from a function (e.g., `my_fn_(int:): [x: int_, y: dbl_]`),
 we do not allow building out the class body; any indented block will be assumed
 to be a part of the function body/definition:
 
 ```
-my_fn(Int): [X: int, Y: dbl]
-{   # this is part of the `my_fn` definition,
-    # and never a part of the `[X: int, Y: dbl]` class body.
-    return [X: 5, Y: 3.0]
+my_fn_(int:): [x: int_, y: dbl_]
+{   # this is part of the `my_fn_` definition,
+    # and never a part of the `[x: int_, y: dbl_]` class body.
+    [x: 5, y: 3.0]
 }
 ```
 
@@ -4367,12 +4370,12 @@ If you want to specify methods on a return type, make sure to build it out as a 
 class first.
 
 ```
-x_and_y: [X: int, Y: dbl]
-{   ::my_method(): X + round(Y) Int
+x_and_y_: [x: int_, y: dbl_]
+{   ::my_method_(): x + round_(y) int
 }
 
-my_fn(Int): x_and_y
-    [X: Int + 5, Y: 3.0]
+my_fn_(int): x_and_y_
+    [x: int + 5, y: 3.0]
 ```
 
 ## example class definition
