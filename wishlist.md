@@ -4246,24 +4246,42 @@ logger_[value: dbl](value. 3)  # will return `3.0`
 
 You can also define an argument with a known type, but an unknown name.
 This is useful if you want to use the inputted variable name at the call site
-for logic inside the function, e.g., `this_function(I_want_to_know_this_variable_name: 5)`.
-You can access the variable name via `@@`.
-
-TODO: internally this creates an overload with a "The_name_value" int argument
-and "The_name_name" string argument.  do we really want to support this?
-functionally this is how we support creating lots like `My_lot: [Whatever: "dude"]`,
-so if it's something the compiler is able to do, it's something users should be able to.
+for logic inside the function, e.g., `this_function_(whats_my_name: 5)`.
+You can access the variable name via `@@`.  Internally this creates an overload
+for `this_function_(argument_at: str_, argument: known_type_)`, so
+`@@argument` will be an alias for `argument_at`.
 
 ```
-this_function(~Argument: int): null
-    Argument_name: str(@@Argument)
-    print("calling this_function with ${Argument_name}: ${Argument}")
+this_function_(~argument: int_): null_
+    argument_name: str_(@@argument)
+    print("calling this_function with ${argument_name}: ${argument}")
+
+# internally defines this overload:
+this_function_(argument_at: str_, argument: int_): null_
+    argument_name: str_(argument_at)
+    print("calling this_function with ${argument_name}: ${argument}")
+
+# and this overload, but this is only for `call_`ers.
+this_function_(argument: int_): null_
+    this_function(argument_at: "argument", :argument)
+
+# TODO: there's probably some way to define something like this;
+# but we don't actually want to alias this.
+@alias this_function_(@match_field(argument_at, argument): int_): null_
+    this_function_(:argument_at, argument)
 ```
 
-We cannot define an argument name and an argument type to both be
-generic and different.  `my_function(~My_name: ~another_type)` (COMPILE ERROR)
-is needlessly verbose; if the type should be generic, just rely on what
-is passed in: `my_function(~My_name: my_name)` or `my_function(~My_name) for short.
+Defining such an overload will of course make it impossible to define any
+other overloads with one argument, because overloads must be distinguishable
+by argument names.  It will also restrict any two argument overloads
+from having field names `argument` and `argument_at`.
+
+You can define both the argument name and argument type to be generic,
+e.g., `my_function_(~my_name: ~another_type_)`.
+TODO: can we use a different syntax for `~my_name` so that new argument
+types like `fn_(~t:): t_` expanding to `fn_(t: ~t_): t_`, which should
+be the default, will not be inconsistent?  maybe `my_function_(@@my_name: ~new_type_)`.
+
 
 ### require
 
