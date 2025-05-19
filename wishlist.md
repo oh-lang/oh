@@ -4381,101 +4381,97 @@ my_fn_(int): x_and_y_
 ## example class definition
 
 ```
-parent_class: [Name: str]
+parent_class_: [name: str_]
 
 # example class definition
-example_class: all_of
-[   parent_class
-    m:
-    [   # given the inheritance with `parent_class`,
-        # child instance variables should be defined in this `m: [...]` block.
-        # if they are public, a public constructor like `example_class(X;:. int)` will be created.
-        X; int
+example_class_: all_of_
+[   parent_class_
+    m_:
+    [   # given the inheritance with `parent_class_`,
+        # child instance variables should be defined in this `m_: [...]` block.
+        # if they are public, a public constructor like `example_class_(x;:. int_)`
+        # will be created.
+        x; int_
 
         # instance functions can also be defined here.  they can be set 
         # individually for each class instance, unlike a class function/method
         # which is shared.
         # we define a default for this function but you could change its definition in a constructor.
-        # NOTE: instance functions can use `M` as necessary.
-        #       even though we could use the notation `::instance_function()` here,
+        # NOTE: instance functions can use `m` as necessary.
+        #       even though we could use the notation `::instance_function_()` here,
         #       we prefer to keep that for methods, to make it more clear that
         #       this is different in principle.
-        instance_function(M): null
-            print("hello ${M X}!")
+        instance_function_(m:): null_
+            print_("hello ${m x}!")
 
         # this class instance function can be changed after the instance has been created
         # (due to being declared with `;`), as long as the instance is mutable.
-        some_mutable_function(); null
-            print("hello!")
+        some_mutable_function_(); null_
+            print_("hello!")
     ]
 ]
 {   # classes must be resettable to a blank state, or to whatever is specified
-    # as the starting value based on a `renew` function.  this is true even
+    # as the starting value based on a `renew_` function.  this is true even
     # if the class instance variables are defined as readonly.
     # NOTE:  defining this method isn't necessary since we already would have had
-    # `example_class(X: int)` based on the public variable definition of `X`, but
+    # `example_class_(x: int_)` based on the public variable definition of `x`, but
     # we include it as an example in case you want to do extra work in the constructor
     # (although avoid doing work if possible).
-    ;;renew(NEW_x. int): null
-        Parent_class renew(Name: "Example")
-        X = NEW_x!
-    # or short-hand: `;;renew(M X. int, Parent_class Name: "Example"): {}`
-    # adding `M` to the arg name will automatically set `M X` to the passed in `X`.
+    ;;renew_(x. int_): null_
+        parent_class renew_(name: "Example")
+        m x = x!
+    # or short-hand: `;;renew_(m x. int_, parent_class name: "Example"): {}`
+    # adding `m` to the arg name will automatically set `m x` to the passed in `x`.
 
     # create a different constructor.  constructors use the class reference `m` and must
-    # return either an `m` or a `hm[ok: m, er]` for any error type `er`.
-    # this constructor returns `m`:
-    # TODO: why did we switch to requiring `{}` in functions everywhere?  it doesn't help
-    # distinguish reference-object destructuring from function declarations (need a function name).
-    # probably can require it for lambda functions but not necessarily named functions like
-    # `my_fn(Int): ++Int`
-    m(K: int): m(X: K * 1000)
+    # return either an `m_` or a `hm_[ok_: m_, er_]` for any error type `er_`.
+    # this constructor returns `m_`:
+    m_(k: int_): m_(x. k * 1000)
 
     # some more examples of class methods:
-    # prefix `::` (`;;`) is shorthand for adding `M: m` (`M; m`) as an argument.
+    # prefix `::` (`;;`) is shorthand for adding `m: m_` (`m; m_`) as an argument.
     # this one does not change the underlying instance:
-    ::do_something(Int): int
-        print("My name is ${M Name}")   # `M Name` will check child first, but also look in parents.
-        # also ok, if we know it's definitely in `parent_class`:
-        print("My name is ${Parent_class Name}")
-        X + Int     # equivalent to `M X + Int`
+    ::do_something_(int:): int_
+        print_("My name is ${m name}")   # `m name` will check child first, then parents.
+        # also ok, if we know it's definitely in `parent_class_`:
+        print_("My name is ${parent_class name}")
+        x + int     # equivalent to `m x + int`
 
-    # this method mutates the class instance, so it uses `M; m` instead of `M:`:
-    ;;add_something(Int): null
-        X += Int    # equivalent to `M X += Int`
+    # this method mutates the class instance, so it uses `;;` instead of `::`:
+    ;;add_something_(int:): null_
+        x += int    # equivalent to `m x += int`
 
     # COMPILE ERROR: reassignable methods are currently not supported;
     # they may be in the future but would require hotswapping functions.
     # in case someone is running an old function, we need to let them
     # finish before reclaiming the memory of that function.
-    ::reassignable_method(Int); string
-        string(X + Int)
+    ::reassignable_method_(int:); str_
+        str_(x + int)
 
     # some examples of class functions:
-    # this function does not require an instance, and cannot use instance variables:
-    some_static_function(Y; int): int
-        Y /= 2
-        return Y!
+    # this function does not require an instance and cannot use instance variables:
+    some_static_function_(y; int_): int_
+        y /= 2
+        y!
 
-    # this function does not require an instance, and cannot use instance variables,
-    # but it can read/write global variables (or other files):
-    some_static_function(Y: int): null
-        write(Y, File: "Y")
+    # this function also does not require an instance and cannot use instance variables:
+    some_static_function_(y: int_): null_
+        write_(y, file: "y.txt")
 }
 
-Example; example_class(X: 5)
-print(Example do_something(7))   # should print 12
-Example = example_class(X: 7)    # note: variable can be reassigned.
-Example X -= 3                  # internal fields can be reassigned as well.
+example; example_class_(x: 5)
+print_(example do_something_(7))    # should print 12
+example = example_class_(x: 7)      # note: variable can be reassigned.
+example x -= 3                      # internal fields can be reassigned as well.
 
 # note that if you define an instance of the class as readonly, you can only operate
 # on the class with functions that do not mutate it.
-Const_var: example_class(X: 2)
-Const_var X += 3                # COMPILER ERROR! `Const_var` is readonly.
-Const_var = example_class(X: 4) # COMPILER ERROR! variable is readonly.
+const_var: example_class_(x: 2)
+const_var x += 3                    # COMPILER ERROR! `const_var` is readonly.
+const_var = example_class_(x: 4)    # COMPILER ERROR! variable is readonly.
 
 # calling class functions doesn't require an instance.
-Dont_need_an_instance: example_class some_static_function(Y; 5)
+dont_need_an_instance: example_class_ some_static_function_(y; 5)
 ```
 
 Note that you normall call a static/class function like this `class_name_ class_function_(...)`,
