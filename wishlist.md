@@ -4489,49 +4489,50 @@ a few methods, but don't use `:` since we're no longer declaring the class.
 
 ```
 # static function that constructs a type or errors out
-example_class(Z: dbl): hm[ok: example_class, er: str]
-    X: Z round() int() assert(Er: "Need `round(Z)` representable as an `int`.")
-    example_class(X)
+example_class_(z: dbl_): hm_[ok_: example_class_, er_: str_]
+    x: z round_() int_() assert_(er: "Need `round_(z)` representable as an `int`.")
+    example_class_(x)
 
 # static function that is not a constructor.
 # this function does not require an instance, and cannot use instance variables,
 # but it can read (but not write) global variables (or other files):
-example_class some_static_function(): int
-    Y_string: read(File: "Y")
-    return int(?Y_string) ?? 7
+example_class_ some_static_function_(): int_
+    y_string: read_(file: "y.txt")
+    return int_(?y_string) ?? 7
 
 # a method which can mutate the class instance:
-# this could also be defined as `example_class another_method(M;, Plus_k: int): null`.
-example_class;;another_method(Plus_k: int): null
-    # outside of a class body, `M` is required to namespace any instance fields,
+# this could also be defined as `example_class_ another_method_(m;, plus_k: int_): null_`.
+example_class_;;another_method_(plus_k: int_): null_
+    # outside of a class body, `m` is required to namespace any instance fields,
     # because they are not obviously in scope here like in a class body.
-    M X += Plus_k * 1000
+    m x += plus_k * 1000
 
 # Use sequence building.
-example_class@
-{   # with sequence building, `example_class my_added_class_function(K: int): example_class`
+example_class_@
+{   # with sequence building
+    # `example_class_ my_added_class_function_(k: int_): example_class_`
     # is exactly how you'd define a class function.
-    my_added_class_function(K: int): example_class
-        example_class(X: K * 1000)
+    my_added_class_function_(k: int_): example_class_
+        example_class_(x. k * 1000)
 
     # a method which keeps the instance readonly:
-    ::my_added_method(Y: int): int
-        M X * 1000 + Y * 100
+    ::my_added_method_(y: int_): int_
+        m x * 1000 + y * 100
 }
 ```
 
 If they are public, you can import these custom methods/functions in other files in two
 ways: (1) import the full module via `[*]: \/relative/path/to/file` or `[*]: \\library/module`,
 or (2) import the specific method/function via e.g.,
-`{example_class my_added_class_function(K: int): example_class} \/relative/path/to/file`
-or `{example_class::my_added_method(Y: int): int} \\library/module`.
+`{example_class_ my_added_class_function_(k: int_): example_class_} \/relative/path/to/file`
+or `{example_class_::my_added_method_(y: int_): int_} \\library/module`.
 
 Note that we recommend using named fields for constructors rather than static
 class functions to create new instances of the class.  This is because named fields
 are self descriptive and don't require named static functions for readability.
-E.g., instead of `My_date: date_class from_iso_string("2020-05-04")`, just use
-`My_date: date_class(Iso_string: "2020-05-04")` and define the
-`;;renew(Iso_string: string)` method accordingly.
+E.g., instead of `my_date: date_class_ from_iso_string_("2020-05-04")`, just use
+`my_date: date_class_(iso_string: "2020-05-04")` and define the
+`;;renew_(iso_string: string_)` method accordingly.
 
 ## destructors
 
