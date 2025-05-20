@@ -4536,30 +4536,29 @@ E.g., instead of `my_date: date_class_ from_iso_string_("2020-05-04")`, just use
 
 ## destructors
 
-The `;;renew(Args...): null` (or `: hm[ok: me, er: ...]`) constructors
+The `;;renew_(Args...): null_` (or `: hm_[ok_: m_, er_: ...]`) constructors
 are technically resetters.  If you have a custom destructor, i.e., code
 that needs to run when your class goes out of scope, you shouldn't define
-`;;renew` but instead `m(Args...): m` and `;;descope(): null`.
-It will be a compile error if you try to define both `m` and `;;renew`
-with the same arguments.
+`;;renew_` but instead `;;descope_(): null_` for the destructor and
+`m_(...): m_` for the constructor.  It will be a compile error if you try
+to define any of `m_` or `;;renew_` with the same arguments.
 
 ```
-destructor_class: [X: int]
-{   @protected
-    # TODO: the `@Debug` annotation should do something interesting, like
+destructor_class_: [x: int_]
+{   # TODO: the `@debug` annotation should do something interesting, like
     #       stop the debugger when the value is `set`ted or `get`ted.
-    m(DEBUG_x. int): m
-        print("X ${DEBUG_x}")
-        [X. DEBUG_x]
-    # `m(...): m` will also add methods like this:
-    #   ;;renew(DEBUG_x. int): null
-    #       # this will call `M descope()` just before reassignment.
-    #       M = m(.DEBUG_x)
+    m_(DEBUG_x. int_): m_
+        print_("x ${DEBUG_x}")
+        [x. DEBUG_x]
+    # `m_(...): m_` will also add methods like this:
+    #   ;;renew_(DEBUG_x. int_): null_
+    #       # this will call `m descope_()` just before reassignment.
+    #       m = m_(.DEBUG_x)
 
-    # you should define the destructor:
-    ;;descope(): null
-        print("going out of scope, had X ${X}")
-        # note that destructors of instance variables (e.g., `X`)
+    # you can define the destructor:
+    ;;descope_(): null_
+        print_("going out of scope, had x ${x}")
+        # note that destructors of instance variables (e.g., `x`)
         # will automatically be called, in reverse order of definition.
 }
 ```
@@ -4572,63 +4571,74 @@ be called).
 ## instance functions, class functions, and methods
 
 Class methods can access instance variables and call other class methods,
-and require a `M: m` argument to indicate that it's an instance method.
-Mutating methods -- i.e., that modify the class instance, `M`, i.e., by modifying
-its values/variables -- must be defined with `M;` in the arguments.
-Non-mutating methods must be defined with `M:` and can access variables but not modify them.
-Methods defined with `M.` indicate that the instance is temporary.  We'll use
-the shorthand notation `Some_class..temporary_method()` to refer to a temporary instance method,
-`Some_class;;some_mutating_method()` to refer to a mutable instance method,
-and `Some_class::some_method()` to refer to a readonly instance method, with an implicit `M` due
-to the class instance `Some_class` being present.  Calling a class method does not require
-the `..`, `;;`, or `::` prefix, but it is allowed, e.g.,
+and require a `m: m_` argument to indicate that it's an instance method.
+Mutating methods -- i.e., that modify the class instance, `m`, i.e.,
+by modifying its values/variables -- must be defined with `m;` in the
+arguments.  Non-mutating methods must be defined with `m:` and can access
+variables but not modify them.  Methods defined with `m.` indicate that
+the instance is temporary.  We'll use the shorthand notation
+`some_class..temporary_method_()` to refer to a temporary instance method,
+`some_class;;some_mutating_method_()` to refer to a mutable instance method, and
+`some_class::some_method_()` to refer to a readonly instance method.
+Calling a class method does not require the `..`, `;;`, or `::` prefix,
+but it is allowed, e.g.,
 
 ```
-Some_class; some_class("hello!")
-Some_class some_method()      # ok
-Some_class::some_method()     # also ok
-Some_class some_mutating_method()  # ok
-Some_class;;some_mutating_method() # also ok
+some_class; some_class_("hello!")
+some_class some_method_()           # ok
+some_class::some_method_()          # also ok
+some_class some_mutating_method_()  # ok
+some_class;;some_mutating_method_() # also ok
 # you can get a temporary by using moot (!):
-My_result1: Some_class!..temporary_method()
-# or you can get a temporary by creating a new class instance:
-My_result2: some_class("temporary")..temporary_method()
+# NOTE: `..` isn't necessary here because of `some_class!`
+# already being a temporary:
+my_result1: some_class!..temporary_method()
+# or you can get a temporary by creating a new class instance;
+# also `..` isn't necessary because `some_class(...)` is already a temporary.
+my_result2: some_class_("temporary")..temporary_method()
 ```
 
-Note that you can overload a class method with readonly instance `::`, writable
-instance `;;`, and temporary instance `..` versions.  If it's unclear,
-callers are recommended to be explicit and use `::`, `;;`, or `..` instead of ` ` (member access).
-See the section on member access operators for how resolution of ` ` works in this case.
-You can also call a class method via an inverted syntax, e.g., `some_method(Some_class)`,
-`some_mutating_method(Some_class;)`, or `temporary_method(Some_class!)`,
-with any other arguments to the method added as well.
+Note that you can overload a class method with readonly instance `::`,
+writable instance `;;`, and temporary instance `..` versions.  If it's
+unclear, callers are recommended to be explicit and use `::`, `;;`, or `..`
+instead of ` ` (member access).  See the section on member access operators
+for how resolution of ` ` works in this case.
+
+You can also call a class method via an inverted syntax, e.g.,
+`some_method_(:some_class)`, `some_mutating_method_(;some_class)`,
+or `temporary_method_(.some_class)`, with any other arguments to the method added as well.
 This is useful to overload e.g., the printing of your class instance, via defining
-`print(M)` as a method, so that `print(Some_class)` will then call `Some_class::print()`.
-Similarly, you can do `count(Some_class)` if `Some_class` has a `count(M)` method, which
+`print_(m:)` as a method, so that `print_(:some_class)` will then call `some_class::print_()`.
+Similarly, you can do `count_(:some_class)` if `some_class` has a `count_(m:)` method, which
 all container classes have.  This also should work for multiple argument methods, since
-`Array swap(Index1, Index2)` can easily become `swap(Array;, Index1, Index2)`.
+`array swap_(index1, index2)` can easily become `swap_(array;, index1, index2)`.
 
 And of course, class methods can also be overridden by child classes (see section on overrides).
 
-Class functions can't depend on the instance, i.e., `M`.  They can
-be called from the class name, e.g., `x my_class_function()`, or
-from an instance of the class, e.g., `X my_class_function()`.  Note that because of this,
+Class functions can't depend on the instance, i.e., `m`.  They can
+be called from the class name, e.g., `x_ my_class_function_()`, or
+from an instance of the class, e.g., `x my_class_function_()`.  Note that because of this,
 we're not allowed to define class functions with the same overload as instance methods.
 Similar to class functions are class variables, which are defined in an analogous way.
+TODO: because we have `variable: x_` with `variable_` being an alias for `x_`,
+it's not that hard to just do `variable_ my_class_function_()`; we probably
+don't need to avoid any ambiguous overloads.
 
 Instance functions are declared like instance variables, inside the `[...]` block.
 Instance functions can be different from instance to instance.
 They cannot be overridden by child classes but they can be overwritten.  [Oprah meme]
-I.e., if a child class defines the instance function of a parent class, it overwrites the parent's
-instance function; calling one calls the other.
+I.e., if a child class defines the instance function of a parent class,
+it overwrites the parent's instance function; calling one calls the other.
+(And because of this, you can't call the parent's instance function in a `super` way.)
 
-Class constructors can be defined in two ways, either as a method or as a class function.
-Class *method* constructors are defined with the function signature (a) `;;renew(Args...): null`
-or (b) `;;renew(Args...): hm[ok: null, er: ...]`, and these methods also allow you to renew an
-existing class instance as long as the variable is writable.  Class *function* constructors
-are defined like (c) `m(Args...): m` or (d) `m(Args...): hm[ok: m, er: ...]`.  In both
-(a) and (c) cases, you can use them like `My_val: my_class(Args...)`, and for (b) and (d)
-you use them like `My_var: my_class(Args...) assert()`.
+Class constructors can be defined in two ways, as a method resetter or class function.
+Class *method* resetters are defined with the function signature
+(a) `;;renew_(args...): null_` or (b) `;;renew_(args...): hm_[ok_: null_, er_: ...]`,
+and these methods also allow you to renew an existing class instance as long as
+the variable is writable.  Class *function* constructors are defined like
+(c) `m_(args...): m_` or (d) `m_(args...): hm_[ok_: m_, er_: ...]`.
+In both (a) and (c) cases, you can use them like `my_val: my_class_(args...)`,
+and for (b) and (d) you use them like `my_var: my_class_(args...) assert_()`.
 
 The first constructor defined in the class is also the default constructor,
 which will be called with default-constructed arguments (if any) if a default
