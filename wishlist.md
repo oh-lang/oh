@@ -4671,28 +4671,21 @@ file as the class definition*.  Non-friends are not able to access or modify pri
 The privacy for methods on a class follows the same table.
 Using the method depends on visibility as well
 as if the method modifies the class or not, i.e., whether the method was
-defined as `mutating_method(M;): return_type` (AKA `;;mutating_method(): return_type`)
-or `non_mutating_method(M): return_type` (AKA `::non_mutating_method(): return_type`).
-Mutating methods follow the "mutate" visibility in the table above, and non-mutating methods follow
-the "access" visibility in the table above.
+defined as `mutating_method_(m;): return_type_` (AKA `;;mutating_method_(): return_type_`)
+or `non_mutating_method_(m:): return_type_` (AKA `::non_mutating_method_(): return_type_`).
+Mutating methods follow the "mutate" visibility in the table above, and non-mutating methods
+follow the "access" visibility in the table above.
 
 To put into words -- `@public` methods can be called by anyone, regardless
 of whether the method modifies the class instance or not.  `@protected`
 methods which modify the class instance cannot be called by non-friends,
-but constant `@protected` methods can be called by anyone.  `@private` methods which
+but readonly `@protected` methods can be called by anyone.  `@private` methods which
 modify the class instance can only be called by module functions, and
-constant `@private` methods can be called by friends.
-
-Note that reassignable methods, e.g., those defined with
-`::some_constant_method(...Args); return_type` or `;;some_mutating_method(...Args); return_type`
-can only be reassigned based on their visibility as if they were variables.
-I.e., public reassignable methods can be reassigned by anyone,
-protected reassignable methods can be reassigned by friends or module,
-and private reassignable methods can only be reassigned within the module.
+readonly `@private` methods can be called by friends.
 
 One final note, child classes are considered friends of the parent class,
 even if they are defined outside of the parent's directory, and even if they
-are defined in the same module as the parent (discouraged).  What this means
+are defined in the same module as the parent.  What this means
 is they can modify public and protected variables defined on the parent instance,
 and read (but not modify) private variables.  Overriding a parent class method
 counts as modifying the method, which is therefore possible for public and protected
