@@ -137,6 +137,8 @@ If no writable overload is present, the compiler will retry for a readonly overl
 Note the declaration operator (`.;:`) goes on the left when calling a function
 with an existing variable, and on the right when declaring a variable or argument.
 I.e., `;x` expands to `x; x`, while `x;` expands to `x; x_`.
+TODO: i'm forgetting to do this and don't always like it.  can we make due without it
+and always put declarers on the right?  i like the consistency though.
 
 Class methods technically take an argument for `m` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
@@ -4672,6 +4674,11 @@ methods, but not private methods.
 
 ## getters and setters on class instance variables
 
+TODO: not sure this is actually relevant anymore; we've removed MMR in favor of reference getters.
+we probably don't actually want to do this, based on the TODO below things are a bit confusing
+on how we'd resolve different situations.  we probably don't want to make `m x = 3` do anything surprising.
+but we probably want to keep the "expands to this" example as a way to do idiomatic getters/setters/swappers.
+
 Note that all variables defined on a class are given methods to access/set
 them, but this is done with syntactical sugar.  That is,
 *all uses of a class instance variable are done through getter/setter methods*,
@@ -4680,51 +4687,51 @@ named the `function_case___` version of the `variable_case` variable,
 with various arguments to determine the desired action.
 TODO: at some point we need to have a "base case" so that we don't infinitely recurse;
 should a parent class not call the child class accessors?  or should we only
-not recurse when we're in a method like `;;x(NEW_x): { X = NEW_x }`?  or should we
+not recurse when we're in a method like `;;x_(NEW_x.): { m x = NEW_x }`?  or should we
 avoid recursing if the variable was defined in the class itself?  (probably the
 latter, as it's the least surprising.)
 
 ```
 # for example, this class:
-example: [@visibility X; str("hello")]
-W = example()
-W X += ", world"
-print(W X)  # prints "hello, world"
+example_: [@visibility x; str_("hello")]
+w; example_()
+w x += ", world"
+print_(w x) # prints "hello, world"
 
 # expands to this:
-example:
+example_:
 [   @invisible
-    X; str
+    x; str_("hello")
 ]
 {   # no-copy readonly reference getter.
     @visibility
-    ::x(): (Str:)
-        (:X)
+    ::x_(): (str:)
+        (str: m x)
 
     # no-copy writable reference getter.
-    ;;x(): (Str;)
-        (;X)
+    ;;x_(): (str;)
+        (str; m x)
 
     # copy getter; has lower priority than no-copy getters.
-    ::x(): str
-        X
+    ::x_(): str_
+        m x
 
     # setter.
-    ;;x(Str.):
-        X = Str!
+    ;;x_(str.):
+        m x = str!
 
-    # swapper: swaps the value of X with whatever is passed in.
+    # swapper: swaps the value of `x` with whatever is passed in.
     @visibility
-    ;;x(Str;):
-        X <-> Str
+    ;;x_(str;):
+        m x <-> str
 
-    # no-copy "take" method.  moves X from this temporary.
+    # no-copy "take" method.  moves `x` from this temporary.
     @visibility
-    ..x(): X!
+    ..x_(): m x!
 }
-W = example()
-W x(W x() + ", world")
-print(W x())
+w = example_()
+w x_() += ", world")
+print_(w x_())
 ```
 
 If you define overloads for any of these methods on child classes,
@@ -4737,96 +4744,98 @@ and modifier classes.
 
 ```
 # a class with a getter and setter gets reference getters automatically:
-just_copyable: [@invisible A_var; int]
-{   ::some_var(): int
-        return A_var - 1000
+just_copyable_: [@invisible a_var; int_]
+{   ::some_var_(): int_
+        m a_var - 1000
 
-    ;;some_var(Int.): null
-        A_var = Int + 1000
+    ;;some_var_(int.): null_
+        m a_var = int + 1000
 
     #(#
     # the following references become automatically defined;
     # they are just thin wrappers around the getters/setters.
 
     # writable reference
-    ;;some_var(): (Int;)
-        refer
-        (   ;M
-            {some_var(:$O)}         # getter: `O` is an instance of `just_copyable`
-            {some_var(;$O, .$Int)}  # setter
+    ;;some_var_(): (int;)
+        refer_
+        (   ;m
+            {$o some_var_()}        # getter: `o` is an instance of `just_copyable_`
+            {$o some_var_(.$int)}   # setter
         )
 
     # readonly reference
-    ::some_var(): (Int)
-        refer
-        (   :M
-            {some_var(:$O)}
+    ::some_var_(): (int:)
+        refer_
+        (   :m
+            {some_var_(:$o)}
         )
 
+    # TODO: we can use reflection to do this, but probably not in a generic way
+    # if the getter is an opaque function.
     # similarly a no-copy take method becomes defined based on the getter.
-    ..some_var(): int
-        A_var! - 1000
+    ..some_var_(): int
+        m a_var! - 1000
     #)#
 }
 
 # a class with a swapper method gets a setter and taker method automatically:
-just_swappable: [@invisible Some_var; int]
+just_swappable_: [@invisible some_var; int_]
 {   @visibility
-    ;;some_var(Int;): null
-        Some_var <-> Int
-        # you can do some checks/modifications on Some_var here if you want,
+    ;;some_var_(int;): null_
+        m some_var <-> int
+        # you can do some checks/modifications on `some_var` here if you want,
         # though it's best not to surprise developers.  a default-constructed
-        # value for `Some_var` (e.g., in this case `Int: 0`) should be allowed
+        # value for `some_var` (e.g., in this case `int: 0`) should be allowed
         # since we use it in the modifier to swap out the real value into a temp.
         # if that's not allowed, you would want to define both the swapper
         # and modifier methods yourself.
 
     #(#
     # the following setter becomes automatically defined:
-    ;;some_var(Int.): null
-        some_var(;Int)
+    ;;some_var_(int.): null_
+        m some_var_(;int)
 
     # and the following take method becomes automatically defined:
-    ..some_var(): t
-        Temporary; int
-        # swap Some_var into Temporary:
-        some_var(;Temporary)
-        Temporary!
+    ..some_var_(): int_
+        temporary; int_
+        # swap `some_var` into `temporary`:
+        m some_var_(;temporary)
+        temporary!
     #)#
 }
 
 # a class with a readonly reference getter method gets a copy getter automatically:
-just_gettable: [@invisible Some_var; int]
-{   ::some_var(): (Int:)
-        (Int: Some_var)
+just_gettable_: [@invisible some_var; int_]
+{   ::some_var_(): (int:)
+        (int: some_var)
 
     #(#
     # the following becomes automatically defined:
-    ::some_var(): int
-        # uses automatic conversion of (Int) -> int:
-        some_var()
+    ::some_var_(): int_
+        (int:) = m some_var()
+        int
     #)#
 }
 
 # a class with a writable reference method gets a swapper and taker method automatically:
-just_referable: [@invisible Some_var; int]
-{   ;;some_var(): (Int;)
-        (Int; Some_var)
+just_referable_: [@invisible some_var; int_]
+{   ;;some_var_(): (int;)
+        (int; m some_var)
 
     #(#
     # the following swapper becomes automatically defined:
-    ;;some_var(Int;): null
-        Int <-> some_var()
+    ;;some_var_(int;): null_
+        m some_var_() <-> int
 
     # the following setter becomes automatically defined:
-    ;;some_var(Int.): null
-        some_var() = Int!
+    ;;some_var_(int.): null_
+        some_var_() = int!
 
     # and the following taker method becomes automatically defined:
-    ..some_var(): t
-        Result; int
-        Result <-> some_var()
-        Result
+    ..some_var_(): int_
+        result; int_
+        result <-> some_var_()
+        result
     #)#
 }
 
