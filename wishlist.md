@@ -146,30 +146,31 @@ this parallels `my_class::the_method` in C++, but in oh-lang we can analogously 
 `a_mutating_method_(m;, x: int_): str_` becomes `;;a_mutating_method_(x: int_): str_`,
 or `..one_temporary_method_()` for a method on a temporary `m`, i.e.,
 `one_temporary_method_(m.)`.  Inside an instance method definition, you can use `m`
-to refer to the class instance, regardless of how it was defined.
-
-Inside of class methods, any variables or methods that are defined inline in the class
-are available without using `m` as a prefix, for concision.  However, we do not support
-shadowing any global variables or overloads inside a class, so import renaming may be
-required.
+to refer to the class instance, regardless of how it was defined.  You also use
+`m the_variable_name` to refer to a field `the_variable_name` defined on the class
+inside any methods.
 
 ```
 vector3_: [x: dbl_, y: dbl_, z: dbl_]
 {   ::length_(): dbl_
-        sqrt_(x * x + y * y + z * z) # no need for `m x`, etc.
+        sqrt_(m x * m x + m y * m y + m z * m z)
 }
 ```
 
-The primary reason for this is so that we can support defining nested types easily
-and use them concisely.  For example, with a generic type, it would be convenient
+We support nested types without needing a `m_` prefix, and they are available anywhere
+in the class body they are defined.  This is a minor inconsistency with instance methods
+(which always require `m`) but it makes overloads much easier to reason about.  However,
+to prevent confusion, these nested types cannot shadow any global types.
+Here is an example with a generic type, where it would be convenient
 to refer to another generic subtype if we already have the class.
 
 ```
-my_generic_[at_, of_]: [m: [lot;]]
+my_generic_[at_, of_]: [lot;]
 {   lot_: @only insertion_ordered_lot_[at_, of_]
     ...
 }
 
+# TODO: we probably don't want anyone to use `lot_`, since we'll make that globally available.
 # ERROR: `lot_` is shadowed inside of `my_generic_`, use import renaming to avoid this.
 #       e.g., `[core_lot_: lot_]: \\core/lot`
 [lot_]: \\core/lot
@@ -186,37 +187,10 @@ Note this is actually ok, because we can distinguish overloads based on argument
 ```
 vector2_: [x: dbl_, y: dbl_]
 {   ::atan_(): dbl
-        atan_(x, y)      # also ok: `\\math atan_(x, y)` could avoid the import below.
+        atan_(m x, m y)      # also ok: `\\math atan_(m x, m y)` could avoid the import below.
 }
 [atan_(x: dbl_, y: dbl_): dbl_]: \\math
 ```
-
-TODO: can we keep nested types as concise (no need for `m_`)
-but require `m` for calling methods?  this would break consistency
-but might help with `::count_(): count_`.  well, we still want
-`m_ some_value_()`, if defined, to give the same result as `m some_value_()`, so
-we can't define an `m_` type/function that's the same as an `m` method.  or
-does this really matter?  we can always use the `type_case_` version of the
-`variable_case` identifier to get to `m_ some_value_()` if we want the class function.
-requiring `m` for methods does help with not needing to check two
-overloads (e.g., an `m` overload and a non-`m` overload), and i think
-it improves readability because it helps with scoping.
-does it help with things like conversions, e.g., `::i64_(): i64_`?
-actually, i think it does.
-```
-    ;;do_something_(): null_
-        # this could be `m_ count_()`:
-        val: count_()
-        # this would definitely be `::count_()`:
-        val: m count_()
-```
-
-We're just not allowed to import any overloads that would be shadow a method or function
-on the class body, where ambiguity could arise with or without the class instance being
-supplied.  E.g., if `do_something_(x: int_)` is defined outside the class, then inside a
-class body `::do_something_(x: int_)` as an instance method (or even `do_something_(x: int_)`
-as a static class function) would throw a compile error.
-TODO: we're getting a bit into the weeds, this should be somewhere besides the intro.
 
 Also in the spirit of conciseness, `o` can be used for an *o*ther instance of the same type,
 and `g_` can be used for the current generic class (without the specification) while
@@ -230,10 +204,12 @@ vector3_[of_: number_]: [x; of_, y; of_, z; of_]
         [x: FIRST_value, y: SECOND_value, z: THIRD_value]
 
     ::dot_(o): of_
-        x * o x + y * o y + z * o z
+        m x * o x + m y * o y + m z * o z
 }
 
 dot_(vector3_(1, 2, 3), vector3_(-6, 5, 4)) == 1 * -6 + 2 * 5 + 3 * 4
+
+TODO: make sure we add `m` back to all fields.
 ```
 
 Class getters/setters *do not use* `::get_x_(): dbl_` or `;;set_x_(dbl.): null_`, but rather
@@ -4577,9 +4553,9 @@ by modifying its values/variables -- must be defined with `m;` in the
 arguments.  Non-mutating methods must be defined with `m:` and can access
 variables but not modify them.  Methods defined with `m.` indicate that
 the instance is temporary.  We'll use the shorthand notation
-`some_class..temporary_method_()` to refer to a temporary instance method,
-`some_class;;some_mutating_method_()` to refer to a mutable instance method, and
-`some_class::some_method_()` to refer to a readonly instance method.
+`some_class_..temporary_method_()` to refer to a temporary instance method,
+`some_class_;;some_mutating_method_()` to refer to a mutable instance method, and
+`some_class_::some_method_()` to refer to a readonly instance method.
 Calling a class method does not require the `..`, `;;`, or `::` prefix,
 but it is allowed, e.g.,
 
@@ -4592,10 +4568,10 @@ some_class;;some_mutating_method_() # also ok
 # you can get a temporary by using moot (!):
 # NOTE: `..` isn't necessary here because of `some_class!`
 # already being a temporary:
-my_result1: some_class!..temporary_method()
+my_result1: some_class!..temporary_method_()
 # or you can get a temporary by creating a new class instance;
-# also `..` isn't necessary because `some_class(...)` is already a temporary.
-my_result2: some_class_("temporary")..temporary_method()
+# also `..` isn't necessary because `some_class_(...)` is already a temporary.
+my_result2: some_class_("temporary")..temporary_metho_d()
 ```
 
 Note that you can overload a class method with readonly instance `::`,
@@ -4608,21 +4584,24 @@ You can also call a class method via an inverted syntax, e.g.,
 `some_method_(:some_class)`, `some_mutating_method_(;some_class)`,
 or `temporary_method_(.some_class)`, with any other arguments to the method added as well.
 This is useful to overload e.g., the printing of your class instance, via defining
-`print_(m:)` as a method, so that `print_(:some_class)` will then call `some_class::print_()`.
-Similarly, you can do `count_(:some_class)` if `some_class` has a `count_(m:)` method, which
-all container classes have.  This also should work for multiple argument methods, since
-`array swap_(index1, index2)` can easily become `swap_(array;, index1, index2)`.
+`print_(m:)` as a method, so that `print_(some_class)` will then call `some_class::print_()`.
+Similarly, you can do `count_(some_class)` if `some_class` has a `some_class::count_()`
+method, which all container classes have.  This also should work for multiple argument methods,
+since `array swap_(FIRST_index., SECOND_index.)` can easily
+become `swap_(array;, FIRST_index., SECOND_index.)`.
+TODO: we probably can allow `index_1` and `index_2` to resolve type as `index_`.  we don't want
+to disallow numbers in class names, e.g., `vector3`, so maybe we require using underscores like
+`index_1`, so we can do things like `vector3_2`.  not great, but not awful.
 
 And of course, class methods can also be overridden by child classes (see section on overrides).
 
 Class functions can't depend on the instance, i.e., `m`.  They can
-be called from the class name, e.g., `x_ my_class_function_()`, or
-from an instance of the class, e.g., `x my_class_function_()`.  Note that because of this,
-we're not allowed to define class functions with the same overload as instance methods.
-Similar to class functions are class variables, which are defined in an analogous way.
-TODO: because we have `variable: x_` with `variable_` being an alias for `x_`,
-it's not that hard to just do `variable_ my_class_function_()`; we probably
-don't need to avoid any ambiguous overloads.
+be called from the class name, e.g., `x_ my_class_function_()`.
+Because oh-lang makes it easy to refer to a variable `the_variable`'s class
+as `the_variable_` (even if `the_variable` is of type `some_other_type_`),
+it is easy to call a class function as `the_variable_ the_class_function_()`,
+which means that we can distinguish between class functions with the same name
+and arguments as shadow class methods, as long as no `m` argument is present.
 
 Instance functions are declared like instance variables, inside the `[...]` block.
 Instance functions can be different from instance to instance.
@@ -7542,10 +7521,10 @@ bool: one_of[False: 0, True: 1]
 ```
 
 Enums provide a few extra additional methods for free as well, including
-the number of values that are enumerated via the class function `count(): count_arch`,
-and the min and max values `min(): enum_type`, `max(): enum_type`.  You can also
-check if an enum instance `Enum` is a specific value `This_value` via
-`Enum is_this_value()` which will return true iff so.
+the number of values that are enumerated via the class function `count_(): count_arch_`,
+and the min and max values `min_(): enum_type_`, `max_(): enum_type_`.  You can also
+check if an enum instance `enum` is a specific value `this_value` via
+`enum is_this_value_()` which will return true iff so.
 
 ```
 Test: bool = False  # or `Test: bool False`
