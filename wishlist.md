@@ -1431,6 +1431,8 @@ maybe have a way to do this without a name, because `(:x copy_())` should by def
 create an `x`-named argument, but it looks like it should be named `copy` due to the method.
 maybe something like `x[]`.  does that play well with nulls, though?
 `x[3]` would always be the element at index 3, but `x[]` would be a copy of the array.
+OR we could use `o_` for the clone operation.  we probably shouldn't let that be used
+for anything else.  maybe make the idiomatic way to define it as `::o_(): m_`
 
 ## type overloads
 
@@ -4995,7 +4997,7 @@ weird_animal: animal_
         animal escape_(M)
 )
 
-weird_animal escape_()  # prints "Waberoo meanders away!! Waberoo meanders back... Waberoo meanders away!!"
+weird_animal escape_()  # prints "Waberoo meanders away!!", "Waberoo meanders back...", "Waberoo meanders away!!"
 ```
 
 ## operator overloading
@@ -5004,29 +5006,29 @@ To overload operators for a class, we use the following syntax.
 
 ```
 # this class checks for overflow/underflow and switches to a "null" (-128) if so.
-flow8: [I8;]
-{   ;;renew(M I8. -128): {}
+flow8_: [i8;]
+{   ;;renew_(m i8. -128): {}
 
     # cloning works without errors:
-    m(O): m
-        [I8: O I8]
+    ::o_(): m_
+        [m i8]
 
-    ::!(): bool     # overload `!M`
-        I8 == -128 || I8 == 0
+    ::!(): bool_    # overload `!m`
+        m i8 == 0 || m i8 == -128
 
-    ;;+=(O): null
-        if I8 == -128
+    ;;+=(o): null_
+        if m i8 == -128
             return
-        if O I8 == -128
-            I8 = -128
+        if o i8 == -128
+            m i8 = -128
             return
-        I16. I8 + O I8
-        I8 = i8(.I16) map({$Er_, -128})
+        i16. m i8 + o i8
+        m i8 = i8_(i16) map_({$_er, -128})
 
-    ::+(O): flow8
-        Copy; M
-        Copy += O
-        Copy
+    ::+(o): flow8_
+        copy; m o_()
+        copy += o
+        copy
 }
 ```
 
