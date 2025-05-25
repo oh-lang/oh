@@ -125,7 +125,7 @@ call `my_function_(:x)` to specify the readonly reference overload (`x: x`),
 stops you from using `z` again in the rest of the block.  Using `tmp_function_(z!)`
 calls the temporary overload and would allow `z` to still be used afterwards,
 but `z` will be [reset to the default](#prefix-and-postfix-exclamation-points).
-Alternatively, you can do `tmp_function_(z clone_())` to make a (deep) copy, and
+Alternatively, you can do `tmp_function_(z copy_())` to make a (deep) copy, and
 this will also automatically call the temporary overload without specifying `.`.
 If no declaration operator is used when calling a function, e.g., `my_function_(x)`,
 then we'll infer `:` if `x` is readonly (i.e., defined with `:`)
@@ -815,6 +815,8 @@ we can still just use `field_name` since `m` fields are automatically
 brought into scope for any methods.
 TODO: make sure that's desired; it kinda makes sense to only enscope
 it as `m` if we have an `all_of_[m_: [field_name: ...]]`.
+TODO: i think i like `reset` more than `renew`.  we don't use `new` anywhere
+except for `new_[...]` which might make sense to update now.
 
 ```
 parent1_: [p1: str]
@@ -1412,17 +1414,23 @@ and `my_function_ outputs_`.
 TODO: if we define `my_fn_(~x): x_` and then use `y: x_(3)` internally, that's fine,
 we're creating an `x_` instance with initialization of `3`.
 but if we do `z: x x_()` then we have a bit of a shadowing problem; are we referring
-to `x_(x)`, e.g., `x clone_()`, or are we referring to a method `x:;x_()`?
+to `x_(x)`, e.g., `x copy_()`, or are we referring to a method `x:;x_()`?
 presumably we may want to refer to either, so we need ways to disambiguate.
 in this case, we probably want `x_(x)` to do the clone operation and `x x_()` to request
 the method `:;x_()`.  e.g., if `x_ == vector3_`, then `x_(x)` is `vector3_(x x_(), x y_(), x z_())`
 and `x x_()` is component x of the vector.
 ALTERNATIVELY: we throw a compile error because of disambiguity/shadowing.
 this might not be super fair to a *user* of an API, if they can't go in and change it easily.
-ALTERNATIVELY: require using `x clone_()` instead of `x_(x)`, and always make
+ALTERNATIVELY: require using `x copy_()` instead of `x_(x)`, and always make
 `x_(x)` or `x x_()` do the method `:;x_()`.
-TODO: don't use `x clone_()`, use `x_(x)` because we can do copy-constructors
+TODO: don't use `x copy_()`, use `x_(x)` because we can do copy-constructors
 like `m_(o): hm_[ok_: m_, er_: out_of_memory]` or whatever.
+well, it's still nice to have a dedicated method for it, for the above disambiguity,
+and because variables can sometimes be long-winded (e.g., `my_variable_x_(my_variable_x)` seems overly verbose).
+maybe have a way to do this without a name, because `(:x copy_())` should by default
+create an `x`-named argument, but it looks like it should be named `copy` due to the method.
+maybe something like `x[]`.  does that play well with nulls, though?
+`x[3]` would always be the element at index 3, but `x[]` would be a copy of the array.
 
 ## type overloads
 
@@ -3365,7 +3373,7 @@ Functions can be defined with arguments that are passed-by-value using `.`, e.g.
 temporaries, e.g., `fn_(arg_name. "my temp string")`, or with easily-copyable types
 like `dbl_` or `i32_` like `my_i32: i32_ = 5, fn_(my_arg. my_i32)`, or with larger-allocation
 types like `int_` or `str_` with an explicit copy or move: e.g., `my_str: "asdf..."`
-with `fn_(tmp_arg. my_str clone_())` or `fn_(tmp_arg. my_str!)`, respectively.
+with `fn_(tmp_arg. my_str copy_())` or `fn_(tmp_arg. my_str!)`, respectively.
 
 TODO: i don't think we want a `copy` and `clone` method.  let's try to stick
 with just one.  maybe `::copy_(): m_` for Rust "copyable" and `::copy_(): hm_[m_, er_]`
@@ -3568,8 +3576,8 @@ my_class_[of_]: [x; of_]
 
     # maybe something like this?
     ;;take_(of;:):
-        m x = @moot_or_clone(of)
-        # `@moot_or_clone(z)` can expand to `@if @readonly(z) {z clone_()} @else {z!}`
+        m x = @moot_or_copy(of)
+        # `@moot_or_copy(z)` can expand to `@if @readonly(z) {z copy_()} @else {z!}`
 }
 ```
 
@@ -4850,141 +4858,144 @@ TODO: parent class with getter defined, child class with copy defined.
 ## parent-child classes and method overrides
 
 You can define parent-child class relationships with the following syntax.
-For one parent, `child_class: parent_class_name {#( child methods )#}`.  Multiple
-inheritance is allowed as well, via `all_of[parent1, parent2] {#( child methods )#}`.
-TODO: do we need `m` as polymorphic here like in Typescript?  we're not doing builder patterns.
-We can access the current class instance using `M`,
-and `m` will be the current instance's type.  Thus, `m` is
-the parent class if the instance is a parent type, or a subclass if the instance
-is a child class.  E.g., a parent class method can return a `m` type instance,
+For one parent, `child_class_: parent_class_name_ {#( child methods )#}`.  Multiple
+inheritance is allowed as well, via `all_of_[parent1_, parent2_] {#( child methods )#}`.
+If you want to add child instance fields, use e.g., `all_of_[parent_, m_: [field1: int_, ...]]`
+to add a big-integer `field1` to the child class.  With a slight overload of notation,
+We can access the current class instance using `m`, and `m_` will be the current instance's
+type.  Thus, `m_` is the parent class if the instance is a parent type, or a subclass
+if the instance is a child class.  E.g., a parent class method can return a `m_` type instance,
 and using the method on a subclass instance will return an instance of the subclass.
 If your parent class method truncates at all (e.g., removes information from child classes),
-make sure to return the same `parent_class_name` that defines the class.
+make sure to return the same `parent_class_name_` that defines the class.
+TODO: is there a better name for truncated classes?  or can we even really promise
+that `m_` will be polymorphic here?  maybe `m_` only returns the class itself (i.e., parent),
+unless it's a reference, in which case it could be a child class.
+or if we see that `m_` is returned in any method, we require it to be overridden
+for all child classes that add any instance fields.
 
 We can access member variables or functions that belong to that the parent type,
-i.e., without subclass overloads, using the syntax `parent_class_name some_method(M, ...Args)`
-or `parent_class_name::some_method(...Args)`.  Use `M;` to access variables or methods that will
-mutate the underlying class instance, e.g., `parent_class_name some_method(M;, ...Args)`
-or `parent_class_name;;some_method(...Args)`.  oh-lang doesn't have a `super` keyword
-because we want inheritance to be as clear as composition for how method calls work.
+i.e., without subclass overloads, using the syntax `parent_class_name some_method_(...args)`
+oh-lang doesn't have a `super` keyword because we want inheritance to be as clear as composition
+for how method calls work.
 
 Some examples:
 
 ```
-animal: [Name: string]
-{   ;;renew(M Name: string): {}
+animal_: [name: string_]
+{   ;;renew_(m name. string_): {}
 
-    # define two methods on `animal`: `speak` and `go`.
+    # define two methods on `animal_`: `speak_` and `go_`.
     # these are "abstract" methods, i.e., not implemented by this base class.
-    ::speak(): null
-    ::go(): string
+    ::speak_(): null_
+    ::go_(): string_
 
     # this method is defined, so it's implemented by the base class.
-    # derived classes can still change it, though.
-    ::escape(): null
-        print("${Name} ${go()} away!!")
+    # derived classes can still override it, but this default will be defined for them.
+    ::escape_(): null
+        print_("${m name} ${m go_()} away!!")
 
     # a method that returns an instance of whatever the class instance
     # type is known to be.  e.g., an animal returns an animal instance,
     # while a subclass would return a subclass instance:
-    ::clone(): m
-        return m(Name clone())
+    ::copy_(): m_
+        m_(name copy_())
 }
 
-snake: animal
-{   # if no `renew` functions are defined,
-    # child classes will inherit their parent `renew()` methods.
+snake_: animal_
+{   # if no `renew_` functions are defined,
+    # child classes will inherit their parent `renew_()` methods.
 
-    ::speak(): null
-        print("hisss!")
-    ::go(): string
-        return "slithers"
+    ::speak_(): null_
+        print_("hisss!")
+    ::go_(): string_
+        "slithers"
 
-    # no need to override `clone`, since we can create a snake using a name.
+    # no need to override `copy_`, since we can create a snake using a name.
 }
 
-Snake: snake(Name: "Fred")
-Snake escape()  # prints "Fred slithers away!!"
+snake: snake_(name. "Fred")
+snake escape_()  # prints "Fred slithers away!!"
 ```
 
 To define extra instance variables for a child class, you'll use this notation:
 
 ```
-cat: all_of[animal, m: [Fur_balls: int]]
-{   # here we define a `renew` method, so the parent `renew` methods
+cat_: all_of_[animal_, m_: [fur_balls: int_]]
+{   # here we define a `renew_` method, so the parent `renew_` methods
     # become hidden to users of this child class:
-    ;;renew(): null
+    ;;renew_(): null
         # can refer to parent methods using the `variable_case`
         # version of the `type_case_` class name:
-        Animal renew(Name: "Cat-don't-care-what-you-name-it")
-        Fur_balls = 0
+        animal renew_(Name: "Cat-don't-care-what-you-name-it")
+        m fur_balls = 0
 
-    ::speak(): null
-        print("hisss!")
-    ::go(): string
-        return "saunters"
+    ::speak_(): null_
+        print_("hisss!")
+    ::go_(): string_
+        "saunters"
 
-    ::escape(): null
-        print("CAT ESCAPES DARINGLY!")
+    ::escape_(): null_
+        print_("CAT ESCAPES DARINGLY!")
 
-    # the parent `clone()` method won't work, so override:
-    ::clone(): m
+    # the parent `copy_()` method won't work (`cat_` has instance fields)
+    # so we need to override:
+    ::copy_(): m
         # cats are essentially singletons, that cannot have their own name;
         m()
 }
 
-Cat: cat()
-Cat escape()    # prints "CAT ESCAPES DARINGLY!"
+cat: cat_()
+cat escape_()   # prints "CAT ESCAPES DARINGLY!"
 ```
 
-We have some functionality to make it easy to pass `renew` arguments to
-a parent class via the `Parent_class_name` namespace in the constructor arguments.
+We have some functionality to make it easy to pass `renew_` arguments to
+a parent class via the `parent_class_name` namespace in the constructor arguments.
 This way you don't need to add the boiler plate logic inside the
-constructor like this `;;renew(Parent_argument): Parent renew(Parent_argument)`,
+constructor like this `;;renew_(parent_argument:): parent renew_(:parent_argument)`,
 you can make it simpler like this instead:
 
 ```
-horse: all_of[animal, m: [Owner: str]]
-{   # this passes `Name` to the `animal` constructor and sets `Owner` on self:
-    ;;renew(Animal Name: str, M Owner: str, Neigh_times: int = 0)
-        range(Neigh_times) each Int_:
-            This speak()
+horse_: all_of_[animal_, m_: [owner: str_]]
+{   # this passes `name` to the `animal_` constructor and sets `owner` on self:
+    ;;renew_(animal name: str_, m owner: str_, neigh_times: int_ = 0)
+        neigh_times each int_:
+            m speak_()
 
-    ::speak(): null
-        print("Neigh!")
+    ::speak_(): null_
+        print_("neigh!")
 
-    ::go(): string
-        return "gallops"
+    ::go_(): string_
+        "gallops"
 }
 
-Horse: horse(Name: "James", Owner: "Fred", Neigh_times: 1)
-print(Horse Owner)  # Fred
-print(Horse Name)   # James
+horse: horse_(name: "James", owner: "Fred", neigh_times: 1)
+print_(horse owner) # Fred
+print_(horse name)  # James
 ```
 
 All abstract base classes also provide ways to instantiate using lambda functions.
 All abstract methods must be defined for the instance to be created, and if a
-`reset` method is defined on the parent, any arguments passed into the first reset
+`renew_` method is defined on the parent, any arguments passed into the first renew
 (i.e., which is the default constructor) should be defined for the lambda class.
-While these don't look like normal lambda functions, they use the notation `::speak(): null`
-as a shortcut for `speak(M): null`, which works as a lambda.
+While these don't look like normal lambda functions, they use the notation `::speak_(): null`
+as a shortcut for `speak_(m:): null_`, which works as a lambda.
 
 ```
-Weird_animal: animal
-(   Name: "Waberoo"
-    ::speak(): null
-        print("Meorooo")
-    ::go(): "meanders"
-    ::escape(): null
-        # to call the parent method `escape()` in here, we can use this:
-        animal::escape()
-        # `M` is required since `Name` and `go()` are not obviously in scope.
-        print("${M Name} ${M go()} back...")
+weird_animal: animal_
+(   name: "Waberoo"
+    ::speak_(): null_
+        print_("Meorooo")
+    ::go_(): "meanders"
+    ::escape_(): null_
+        # to call the parent method `escape_()` in here, we can use this:
+        animal::escape_()
+        print_("${m name} ${m go_()} back...")
         # or we can use this:
-        animal escape(M)
+        animal escape_(M)
 )
 
-Weird_animal escape()    # prints "Waberoo ... meanders ... meanders back ... meanders away!!"
+weird_animal escape_()  # prints "Waberoo meanders away!! Waberoo meanders back... Waberoo meanders away!!"
 ```
 
 ## operator overloading
