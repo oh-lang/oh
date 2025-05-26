@@ -5113,7 +5113,7 @@ my_generic_[of_](y: of_, z: of_): of_
 If `of_` was nullable, then `x` would potentially be nullable, and should
 be defined via `x?: y * z`.  But because oh-lang does template specialization
 only after you supply the specific type you want, this can be caught at
-compile time and only if you're requesting a dumb type.
+compile time and only if you're requesting an invalid type.
 
 To create a generic class, you put the expression `[types_...]` after the
 class identifier, or we recommend `[of_]` for a single template type, where
@@ -5203,36 +5203,35 @@ If desired, we can switch to `generic_[a_]: [a\`]` to make the specification cor
 You can also have virtual generic methods on generic classes, which is not allowed by C++.
 
 ```
-generic[of]: [Value; of]
-{   ::method(~U): u
-        U_Value: u = (U * Value) ?? panic()
-        U + U_value
+generic_[of_]: [value; of_]
+{   ::method_(~u): u_
+        u + u_(u * m value) ?? panic_()
 }
 
-Generic; generic[str]
-Generic Value = "3"
-print(Generic method(2_i32))    # prints "35" via `2_i32 + i32(2_i32 * "3")`
+generic; generic_[str_]
+generic value = "3"
+print_(generic method_(2_i32))  # prints "35" via `2_i32 + i32_(2_i32 * "3")`
 
-specific[of: number]: all_of[generic[of], m: [Scale; of]]
-{   ;;renew(M Scale; of = 1, Generic Value.): {}
+specific_[of_: number_]: all_of_[generic_[of_], m_: [scale; of_]]
+{   ;;renew_(m scale. of_ = 1, generic value.): {}
 
-    ::method(~U): u
-        Parent_result: Generic::method(U)
-        Scale * Parent_result
+    ::method_(~u): u_
+        parent_result: generic method_(U)
+        scale * parent_result
 }
 
-Specific(Value: 10_i8, Scale: 2_i8)
-print(Specific method(0.5)) # should print "11" via `2 * (0.5 + dbl(0.5 * 10))`
+specific(value. 10_i8, scale. 2_i8)
+print_(specific method_(0.5))   # should print "11.0" via `2 * (0.5 + dbl(0.5 * 10))`
 ```
 
 Just like with function arguments, we can elide a generic field value if the
 field name is already a type name in the current scope.  For example:
 
 ```
-@My_namespace at: int
-value: [X: flt, Y: flt]
-My_lot; lot[@My_namespace at, value]
-# Equivalent to `My_lot; lot[at: @My_namespace at, value]`.
+NAMESPACE_at_: int_
+value_: [x: flt_, y: flt_]
+my_lot; lot[NAMESPACE_at_, value_]
+# Equivalent to `my_lot; lot_[at_: NAMESPACE_at_, value_]`.
 ```
 
 ### generic type constraints
