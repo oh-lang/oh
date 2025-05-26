@@ -5146,44 +5146,47 @@ other_instance: generic_class_[id_: dbl_, value_: string_](id. 3, value. "4")
 
 ### default-named generics
 
-If you have a generic class like `my_generic[type1, type2]`, you can use them as a
-default-named function argument like `My_generic[type1, type2]`, which is short for
-`My_generic: my_generic[type1, type2]`.  This works even for generics over values,
-e.g., if `fixed_array[Count]` is an array of size `Count`, then `Fixed_array[3]`
+If you have a generic class like `my_generic_[type1_, type2_]`, you can use them as a
+default-named function argument like `my_generic[type1_, type2_]:`, which is short for
+`my_generic: my_generic_[type1_, type2_]`.  This works even for generics over values,
+e.g., if `fixed_array_[Count]` is a fixed-size array of size `Count`, then `fixed_array[3]:`
 can be a declaration for a fixed array of size 3.  We can distinguish between 
-`Fixed_array[3]` being (1) this declaration or (2) a request to access the fourth
-element in an array based on whether `Fixed_array` is in scope.
+`fixed_array[3]` being (1) this declaration or (2) a request to access the fourth
+element in an array based on whether `fixed_array` is in scope, but adding a trailing `:`
+helps point towards (1).
 
 ### generic class type mutability
 
 It may be useful to create a generic class that whose specified type
-can have writeable or readonly fields.  This can be done using `Variable_name\` generic_type`
+can have writeable or readonly fields.  This can be done using `variable_name\` some_type_`
 inside the generic class definition to define variables, and then specifying
-the class with `[type1: specified_readonly_type, type2; specified_writeable_type]`.
+the class with `[type1_: specified_readonly_type_, type2_; specified_writeable_type_]`.
+TODO: this is going to be a bit difficult to get right with vim syntax;
+can we use `~` instead with a space afterwards?
 
 ```
-mutable_types[x, y, z]:
+mutable_types_[x_, y_, z_]:
 [   # these fields are always readonly:
-    R_x: x
-    R_y: y
-    R_z: z
+    r_x: x_
+    r_y: y_
+    r_z: z_
     # these fields are always writeable:
-    W_x; x
-    W_y; y
-    W_z; z
+    w_x; x_
+    w_y; y_
+    w_z; z_
     # these fields are readonly/writeable based on what is passed in
-    # to `mutable_types` for each of `x`, `y`, and `z`, respectively.
-    V_x` x
-    V_y` y
-    V_z` z
+    # to `mutable_types_` for each of `x_`, `y_`, and `z_`, respectively.
+    v_x` x_
+    v_y` y_
+    v_z` z_
 ]
 {   # you can also use these in method/function definitions:
-    ::some_method(Whatever_x` x, Whatever_y` y): null
+    ::some_method_(whatever_x` x_, whatever_y` y_): null
 }
 
-# the following specification will make `V_x` and `V_z` writeable
-# and `V_y` readonly:
-my_specification: mutable_types[x; int, y: string, z; dbl]
+# the following specification will make `v_x` and `v_z` writeable
+# and `v_y` readonly:
+my_specification: mutable_types_[x_; int_, y_: string_, z_; dbl_]
 ```
 
 We use a new syntax here because it would be confusing
@@ -5192,8 +5195,8 @@ as writeable in a specification with a `;`.
 
 Note that if the generic class has no backticks inside, then it is a compile error
 if you try to specify the generic class with a `;` type.  E.g., if we have the declaration
-`generic[a]: [A]`, then the specification `My_gen: generic[a; int](5)` is a compile error.
-If desired, we can switch to `generic[a]: [A\`]` to make the specification correct.
+`generic_[a_]: [a;]`, then the specification `my_gen: generic_[a_; int_](5)` is a compile error.
+If desired, we can switch to `generic_[a_]: [a\`]` to make the specification correct.
 
 ### virtual generic methods
 
