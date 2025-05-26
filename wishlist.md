@@ -5230,55 +5230,58 @@ field name is already a type name in the current scope.  For example:
 ```
 NAMESPACE_at_: int_
 value_: [x: flt_, y: flt_]
-my_lot; lot[NAMESPACE_at_, value_]
+my_lot; lot_[NAMESPACE_at_, value_]
 # Equivalent to `my_lot; lot_[at_: NAMESPACE_at_, value_]`.
 ```
 
 ### generic type constraints
 
-To constrain a generic type, use `[type: constraints, ...]`.  In this expression,
-`constraints` is simply another type like `non_null` or `number`, or even a combination
-of classes like `all_of[container[id, value], number]`.  It may be recommended for more
+To constrain a generic type, use `[type_: constraints_, ...]`.  In this expression,
+`constraints_` is simply another type like `non_null_` or `number_`, or even a combination
+of classes like `all_of_[container_[id_, value_], number_]`.  It may be recommended for more
 complicated type constraints to define the constraints like this:
-`my_complicated_constraint_type: all_of[t1, one_of[t2, t3]]` and declaring the class as
-`new_generic~[of: my_complicated_constraint_type]`, which might be a more readable way to do
-things if `my_complicated_constraint_type` is a helpful name.
+`my_complicated_constraint_type_: all_of_[t1_, one_of_[t2_, t3_]]` and declaring the class as
+`new_generic_[of_: my_complicated_constraint_type_]`, which might be a more readable way to do
+things if `my_complicated_constraint_type_` is a helpful name.
+TODO: `all_of_` is acting a little bit differently than a child class inheritor here,
+do we need to distinguish between the two?  e.g., the child class usage of `all_of_`
+will be ordered, but `all_of_` here in a type constraint should not require a certain order.
 
 ### generic type defaults
 
 Type defaults follow the same pattern as type constraints but the default types are
-not abstract.  So we use `[type: default_type, ...]` where `default_type` is a class
+not abstract.  So we use `[type_: default_type_, ...]` where `default_type_` is a class
 that is non-abstract.
 
 ### overloading generic types
 
-Note that we can overload generic types (e.g., `array[int]` and `array[Count: 3, int]`),
-which is especially helpful for creating your own `hm` result class based on the general
-type `hm[er, ok]`, like `@Namespace er: one_of[Oops, My_bad], hm[of]: hm[ok: of, @Namespace er]`.
+Note that we can overload generic types (e.g., `array_[int_]` and `array_[Count: 3, int_]`),
+which is especially helpful for creating your own `hm_` result class based on the general
+type `hm_[er_, ok_]`, like `MY_er_: one_of_[oops, my_bad], hm_[of_]: hm_[ok_: of_, MY_er_]`.
 Here are some examples:
 
 ```
-# Note that in oh-lang we could define this as `pair[@First of, @Second of]`
-# so we don't need to specify `first: int, second: dbl`, but for illustration
+# Note that in oh-lang we could define this as `pair_[FIRST_of_, SECOND_of_]`
+# so we don't need to specify `first_: int_, second_: dbl_`, but for illustration
 # in the following examples we'll make the generic parameters named.
-pair[first, second]: [First, Second]
-pair[of]: pair[first: of, second: of]
+pair_[first_, second_]: [first;, second;]
+pair_[of_]: pair_[first_: of_, second_: of_]
 
-# examples using pair[of]: ======
+# examples using `pair_[of_]`: ======
 # an array of pairs:
-Pair_array: array[pair[int]]([[First: 1, Second: 2], [First: 3, Second: 4]])
+pair_array: array_[pair_[int_]]([[first. 1, second. 2], [first. 3, second. 4]])
 # a pair of arrays:
-Pair_of_arrays: pair[array[int]]([First: [1, 2], Second: [3, 4]])
+pair_of_arrays: pair_[array_[int_]]([first. [1, 2], second. [3, 4]])
 
-# examples using pair[first, second]: ======
+# examples using `pair_[first_, second_]`: ======
 # an array of pairs:
-Pair_array: array[pair[first: int, second: dbl]]
-(   [First: 1, Second: 2.3]
-    [First: 100, Second: 0.5]
+pair_array: array_[pair_[first_: int_, second_: dbl_]]
+(   [first. 1, second. 2.3]
+    [first. 100, second. 0.5]
 )
 # a lot of pairs:
-Pair_lot: lot[at: str, pair[first: int, second: dbl]]
-(   "hi there": [First: 1, Second: 2.3]
+pair_lot: lot_[at_: str_, pair_[first_: int_, second_: dbl_]]
+(   "hi there". [first. 1, second. 2.3]
 )
 ```
 
