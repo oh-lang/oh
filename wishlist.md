@@ -5287,37 +5287,40 @@ pair_lot: lot_[at_: str_, pair_[first_: int_, second_: dbl_]]
 
 ### default named generic types
 
-TODO: talk about inferring things here
-
-The default name for a type is `of`, mostly to avoid conflicts with
-`type` which is a valid verb (e.g., to type in characters), but also
+The default name for a type is `of_`, mostly to avoid conflicts with
+`type_` which is a valid verb (e.g., to type in characters), but also
 to reduce the letter count for generic class types.  Default names
 are useful for generics with a single type requirement, and can be
 used for overloads, e.g.:
 
 ```
-a_class[x, y, N: count]: array[[X, Y], Count: N]
+a_class_[x_, y_, n: count_]: array_[[x_, y_], count: n]
 
-a_class[of]: a_class[x: of, y: of, N: 100]
+a_class_[of_]: a_class_[x_: of_, y_: of_, n: 100]
 ```
+
+TODO: use `vector_[count:]` for a fixed-length array (all elements default-initialized)
+and `array_[max_count: count_]` for a max-length array.  unless we want
+to just overload; `vector_[count:]` will have a different API than `array_`, though.
+e.g., `vector_` is also not allocated dynamically.
 
 Similar to default-named arguments in functions, default-named generics
 allow you to specify the generic without directly using the type name.
 For example:
 
 ```
-# use the default-name `type` here:
-a_class[of, N: count]: a_class[x: of, y: of, N]
+# use the default-name `type_` here:
+a_class_[of_, n: count_]: a_class_[x_: of_, y_: of_, n]
 
 # so that we can do this:
-An_instance: a_class[dbl, N: 3]
-# equivalent but not idiomatic: `An_instance: a_class[of: dbl, N: 3]`.
+an_instance: a_class_[dbl_, n: 3]
+# equivalent but not idiomatic: `an_instance: a_class_[of_: dbl_, n: 3]`.
 ```
 
 Similar to default-named arguments in functions, there are restrictions.
 You are not able to create multiple default-named types in your generic
-signature, e.g., `my_generic[@A of, @B of]`, unless we use `@First` and
-`@Second` namespaces, e.g., `my_generic[@First of, @Second of]`.  These
+signature, e.g., `my_generic_[A_of_, B_of_]`, unless we use `FIRST_` and
+`SECOND_` namespaces, e.g., `my_generic_[FIRST_of_, SECOND_of_]`.  These
 should only be used in cases where order intuitively matters.
 
 ### generic overloads must use the original class or a descendant
