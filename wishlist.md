@@ -5330,25 +5330,27 @@ the original class or a descendant of the original class for any
 overloads.  Some examples:
 
 ```
-some_class[x, y, N: count]: [ ... ]
+some_class_[x_, y_, n: count_]: [ ... ]
 
 # this is OK:
-some_class[of, N: count]: some_class[x: of, y: of, N]
+some_class_[of_, n: count_]: some_class_[x_: of_, y_: of_, n]
 
 # this is also OK:
-child_class[of]: some_class[x: of, y: of, N: 256]
+child_class_[of_]: some_class_[x_: of_, y_: of_, n: 256]
 {   # additional child methods
     ...
 }
-some_class[of]: child_class[of]
+some_class_[of_]: child_class_[of_]
 
 # this is NOT OK:
-some_class[t, u, v]: [ ...some totally different class... ]
+some_class_[t_, u_, v_]: [ ...some totally different class... ]
 ```
 
-Note that we probably can support a completely specified generic class,
-e.g., `some_class: some_class[my_default_type]`; we can still distinguish
-between the two usages of `some_class[specified_type]` and `some_class`.
+Note that we can support a completely specified generic class, e.g.,
+`some_class_: some_class_[my_default_type_]`; we can still distinguish
+between the two usages of `some_class_[specified_type_]` and `some_class_`,
+as long as there's no default concrete specification all other types, e.g.,
+`some_class[of_: some_concrete_specified_type_]` would already specify the default.
 
 ### type tuples
 
