@@ -125,7 +125,7 @@ call `my_function_(:x)` to specify the readonly reference overload (`x: x`),
 stops you from using `z` again in the rest of the block.  Using `tmp_function_(z!)`
 calls the temporary overload and would allow `z` to still be used afterwards,
 but `z` will be [reset to the default](#prefix-and-postfix-exclamation-points).
-Alternatively, you can do `tmp_function_(z copy_())` to make a (deep) copy, and
+Alternatively, you can do `tmp_function_(z o_())` to make a deep copy, and
 this will also automatically call the temporary overload without specifying `.`.
 If no declaration operator is used when calling a function, e.g., `my_function_(x)`,
 then we'll infer `:` if `x` is readonly (i.e., defined with `:`)
@@ -909,7 +909,10 @@ There are some reserved variable names, like `m`, which can only
 be used as a reference to the current class instance, and `o` which
 can only be used as a reference to an *o*ther instance of the same type;
 `o` must be explicitly added as an argument, though, in contrast to `m` which can be implicit.
-(The corresponding types `m_`, and `o_` are reserved for the same reasons.)
+The corresponding types `m_`, and `o_` are reserved, `m_` for class bodies
+(to indicate the current type) and `o_` as a method to *clone* (or copy)
+the current instance, with function signature `::o_(): m_` or
+`::o_(): hm_[ok_: m_, er: ...]` if cloning can fail (e.g., due to OOM).
 
 Most ASCII symbols are not allowed inside identifiers, e.g., `*`, `/`, `&`, etc., but
 underscores (`_`) have some special handling.  They are ignored in numbers,
@@ -1408,31 +1411,6 @@ print(vector3_ == my_vector3_)  # this prints true
 Variables that refer to types cannot be mutable, so something
 like `some_type; vector3` is not allowed.  This is to make it
 easier to reason about types.
-
-TODO: we should discuss the things functions do have, like `my_function_ inputs_`
-and `my_function_ outputs_`.
-TODO: if we define `my_fn_(~x): x_` and then use `y: x_(3)` internally, that's fine,
-we're creating an `x_` instance with initialization of `3`.
-but if we do `z: x x_()` then we have a bit of a shadowing problem; are we referring
-to `x_(x)`, e.g., `x copy_()`, or are we referring to a method `x:;x_()`?
-presumably we may want to refer to either, so we need ways to disambiguate.
-in this case, we probably want `x_(x)` to do the clone operation and `x x_()` to request
-the method `:;x_()`.  e.g., if `x_ == vector3_`, then `x_(x)` is `vector3_(x x_(), x y_(), x z_())`
-and `x x_()` is component x of the vector.
-ALTERNATIVELY: we throw a compile error because of disambiguity/shadowing.
-this might not be super fair to a *user* of an API, if they can't go in and change it easily.
-ALTERNATIVELY: require using `x copy_()` instead of `x_(x)`, and always make
-`x_(x)` or `x x_()` do the method `:;x_()`.
-TODO: don't use `x copy_()`, use `x_(x)` because we can do copy-constructors
-like `m_(o): hm_[ok_: m_, er_: out_of_memory]` or whatever.
-well, it's still nice to have a dedicated method for it, for the above disambiguity,
-and because variables can sometimes be long-winded (e.g., `my_variable_x_(my_variable_x)` seems overly verbose).
-maybe have a way to do this without a name, because `(:x copy_())` should by default
-create an `x`-named argument, but it looks like it should be named `copy` due to the method.
-maybe something like `x[]`.  does that play well with nulls, though?
-`x[3]` would always be the element at index 3, but `x[]` would be a copy of the array.
-OR we could use `o_` for the clone operation.  we probably shouldn't let that be used
-for anything else.  maybe make the idiomatic way to define it as `::o_(): m_`
 
 ## type overloads
 
@@ -2734,6 +2712,10 @@ the nested function's name as the variable name.  E.g., if a function is called
 overload.  If there is no such overload, it will fall back on `what_is_this_(type)` where
 `type` is the return value of the `value_()` function.
 
+The only exception is the `::o_()` method, which is the copy method; this passes through
+the name of whatever `variable_case` (or `function_case_` truncated to `variable_case`)
+that was before it, e.g., `x o_()` is still named `x` and `y_() o_()` is named `y`.
+
 ```
 value_(): int_
     return 1234 + 5
@@ -3375,18 +3357,16 @@ Functions can be defined with arguments that are passed-by-value using `.`, e.g.
 temporaries, e.g., `fn_(arg_name. "my temp string")`, or with easily-copyable types
 like `dbl_` or `i32_` like `my_i32: i32_ = 5, fn_(my_arg. my_i32)`, or with larger-allocation
 types like `int_` or `str_` with an explicit copy or move: e.g., `my_str: "asdf..."`
-with `fn_(tmp_arg. my_str copy_())` or `fn_(tmp_arg. my_str!)`, respectively.
+with `fn_(tmp_arg. my_str o_())` or `fn_(tmp_arg. my_str!)`, respectively.
 
-TODO: i don't think we want a `copy` and `clone` method.  let's try to stick
-with just one.  maybe `::copy_(): m_` for Rust "copyable" and `::copy_(): hm_[m_, er_]`
-for a Rust cloneable.  e.g., a copy never fails, but a clone can fail (e.g., due to OOM).
 The temporary argument, if modified inside the function block, will have no effect on the
 things outside the function block.  Inside the function block, pass-by-value
 arguments are mutable, and can be reassigned or modified as desired.
-Similar to Rust, variables that can be easily copied implement a `::copy_(): me`
+Similar to Rust, variables that can be easily copied implement a `::o_(): m_`
 method, while variables that may require large allocations should only implement
-`;;renew_(o): null_` or `m_(o): m_` (essentially a C++ copy constructor).
-This is done by default for most oh-lang classes.
+`;;renew_(o:): hm[ok_: null_, er_: ...]` or `::o_(): hm_[ok_: m_, er_: ...]`
+which indicates that an error (like out-of-memory) can occur when trying to copy.
+A default definition for these copy constructors are created for most oh-lang classes.
 
 Functions can also be defined with writable or readonly reference arguments, e.g., via
 `mutable_argument; type_of_the_writeable_` and `readonly_argument: type_of_the_readonly_`
@@ -3438,8 +3418,8 @@ check_(arg123: string_): string_
     arg123 + "-readonly"
 
 my_value; string_ = "great"
-check_(arg123. my_value copy_())    # returns "great-tmp".  needs `copy_` since
-                                    # `.` requires a temporary.
+check_(arg123. my_value o_())   # returns "great-tmp".  needs `o_` (copy) since
+                                # `.` requires a temporary.
 print_(my_value)            # prints "great"
 check_(arg123: my_value)    # returns "great-readonly"
 print_(my_value)            # prints "great"
@@ -3579,7 +3559,7 @@ my_class_[of_]: [x; of_]
     # maybe something like this?
     ;;take_(of;:):
         m x = @moot_or_copy(of)
-        # `@moot_or_copy(z)` can expand to `@if @readonly(z) {z copy_()} @else {z!}`
+        # `@moot_or_copy(z)` can expand to `@if @readonly(z) {z o_()} @else {z!}`
 }
 ```
 
@@ -4330,9 +4310,9 @@ to refer to the current class instance/type.  E.g.,
 # classes can enclose their body in `{}`, which is recommended for long class definitions.
 # for short classes, it's ok to leave braces out.
 my_class_: [variable_x: int_]
-    ::copy_(): m_   # OK
+    ::o_(): m_   # OK
         print_("logging a copy")
-        m_(variable_x: m variable_x copy_())
+        m_(m variable_x o_())
 ```
 
 Inside the class body, you must use `m` to refer to any other instance variables or methods,
@@ -4693,7 +4673,7 @@ Note that all variables defined on a class are given methods to access/set
 them, but this is done with syntactical sugar.  That is,
 *all uses of a class instance variable are done through getter/setter methods*,
 even when accessed/modified within the class.  The getters/setters are methods
-named the `function_case___` version of the `variable_case` variable,
+named the `function_case_` version of the `variable_case` variable,
 with various arguments to determine the desired action.
 TODO: at some point we need to have a "base case" so that we don't infinitely recurse;
 should a parent class not call the child class accessors?  or should we only
@@ -4897,11 +4877,11 @@ animal_: [name: string_]
     ::escape_(): null
         print_("${m name} ${m go_()} away!!")
 
-    # a method that returns an instance of whatever the class instance
+    # copy method that returns an instance of whatever the class instance
     # type is known to be.  e.g., an animal returns an animal instance,
     # while a subclass would return a subclass instance:
-    ::copy_(): m_
-        m_(name copy_())
+    ::o_(): m_
+        m_(name o_())
 }
 
 snake_: animal_
@@ -4913,7 +4893,7 @@ snake_: animal_
     ::go_(): string_
         "slithers"
 
-    # no need to override `copy_`, since we can create a snake using a name.
+    # no need to override `o_`, since we can copy a snake just by name like the parent.
 }
 
 snake: snake_(name. "Fred")
@@ -4940,11 +4920,11 @@ cat_: all_of_[animal_, m_: [fur_balls: int_]]
     ::escape_(): null_
         print_("CAT ESCAPES DARINGLY!")
 
-    # the parent `copy_()` method won't work (`cat_` has instance fields)
+    # the parent `o_()` method won't work (`cat_` has instance fields)
     # so we need to override:
-    ::copy_(): m
+    ::o_(): m
         # cats are essentially singletons, that cannot have their own name;
-        m()
+        m_()
 }
 
 cat: cat_()
