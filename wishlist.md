@@ -2715,6 +2715,10 @@ overload.  If there is no such overload, it will fall back on `what_is_this_(typ
 The only exception is the `::o_()` method, which is the copy method; this passes through
 the name of whatever `variable_case` (or `function_case_` truncated to `variable_case`)
 that was before it, e.g., `x o_()` is still named `x` and `y_() o_()` is named `y`.
+TODO: if we want to allow `o` as a field on objects, we could use `m_` instead of `o_`.
+but i think we want both `m` and `o` ways to refer to a class instance anyways so efficiency
+isn't a big concern here.  probably could use either, but `o_` will be more idiomatic because
+you're creating an*o*ther instance.
 
 ```
 value_(): int_
@@ -5016,7 +5020,6 @@ And similarly for all other operators.
 
 ## inheritance and dynamic allocation
 
-We will likely use C/C++ to implement oh-lang at first, i.e., so that it transpiles to C/C++.
 In C++, a variable that is typed as a parent instance cannot be a child instance in disguise;
 if a child instance is assigned to the variable, the extra derived bits get sliced off.  This
 helps avoid dynamic allocation, because the memory for the parent class instance can be allocated
@@ -5027,26 +5030,27 @@ the child class fulfills the same contract as the parent class, it shouldn't mat
 implementation.  But this generally requires dynamic memory allocation, which has a cost.
 
 In oh-lang, we want to make it easy for variables of a parent class to be secretly instances
-of child classes, so by default we are paying the cost and dynamically allocating non-primitive
-types.  That way, we can easily do things like this:
+of child classes, but we don't always require paying the cost of dynamically allocating types;
+we do this by always padding out parent classes a little bit more (based on known child class
+requirements) so they have more space for child-class fields.  Children that have much higher
+memory requirements compared to the parent will get dynamically allocated, but this happens behind
+the scenes.  This makes it possible to do things like this:
 
 ```
-Some_animal; animal
-Some_animal = snake(Name: "Josie")
-Some_animal go()   # prints "slithers"
-Some_animal = cat()
-Some_animal go()   # prints "saunters"
+some_animal; animal_
+some_animal = snake_(name. "Josie")
+some_animal go_()   # prints "slithers"
+some_animal = cat_()
+some_animal go_()   # prints "saunters"
 ```
-
-TODO: discuss wrapper class which allocates enough data for any child class; if some child
-class takes up too much memory it's created as a new unique pointer.
 
 This is less surprising than the C++ behavior.  But in cases where users want to gain back
-the no-dynamically-allocated class instances, we have a `@only` annotation that can be used
-on the type.  E.g., `Some_variable: @only some_type` will ensure that `Some_variable` is
-stack allocated (non-dynamically).  If defined with `;`, the instance can still be modified,
-but it will be sliced if some child instance is copied to it.  To prevent confusion, we
-enforce that upcasting (going from child to parent) must be done *explicitly*.  For example:
+the no-extra-space and no-dynamically-allocated class instances, we have a `@only` annotation
+that can be used on the type.  E.g., `some_variable: @only some_type_` will ensure that
+`some_variable` is definitely stack-allocated and exactly the size of `some_type_`.
+If defined with `;`, the instance can still be modified, but it will be sliced if some child
+instance is copied to it.  To make this explicit (and thus prevent confusion), we require
+that upcasting (going from child to parent) must be done *explicitly*.  For example:
 
 TODO: classes should probably be allowed to be marked final.  e.g., `i64` and similar
 fixed-width integers should be `final` so that we don't need to worry about vtables,
@@ -5054,22 +5058,19 @@ or specifying `@only i64`.  classes that are `final` would not need to be marked
 
 ```
 # extra field which will get sliced off when converting from
-# mythological_cat to cat:
-mythological_cat: all_of[cat, m: [Lives; 9]]
+# `mythological_cat_` to `@only cat_`:
+mythological_cat_: all_of_[cat_, m_: [lives; 9]]
 
-Cat; @only cat
-Mythological_cat; mythological_cat()
+cat; @only cat_
+mythological_cat; mythological_cat_(lives; 7)
 
-Cat = Mythological_cat      # COMPILER ERROR, implicit cast to `@only cat` not allowed.
-Cat = cat(Mythological_cat) # OK.  explicit upcast is allowed.
+cat = mythological_cat          # COMPILER ERROR, implicit cast to `@only cat` not allowed.
+cat = cat_(mythological_cat)    # OK.  explicit upcast is allowed.
 
-Other_cat; @only cat
-Cat <-> Mythological_cat    # COMPILER ERROR.  swaps not allowed unless both types are the same.
-Other_cat <-> Cat           # OK.  both variables are `@only cat`.
+other_cat; @only cat_
+cat <-> mythological_cat    # COMPILER ERROR.  swaps not allowed unless both types are the same.
+other_cat <-> cat           # OK.  both variables are `@only cat`.
 ```
-
-We also will likely ignore `@only` annotations for tests, so that we can mock out
-classes if desired.
 
 One final note: abstract classes cannot be `@only` types for a variable, since they
 are not functional without child classes overriding their abstract methods.
