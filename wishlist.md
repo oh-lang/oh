@@ -2915,6 +2915,8 @@ all functions to be multiline (either by `{}` or by indenting), because
 
 TODO: this should probably be disallowed.  the compiler needs to be able
 to reason about the type in a `x_[...]` function.  come up with deterministic examples.
+actually, this is probably ok if we're casting to `any_`.  not really great, though,
+prefer a more reasonable example.
 
 ```
 # it's preferable to return a more specific value here, like
@@ -5354,43 +5356,44 @@ as long as there's no default concrete specification all other types, e.g.,
 
 ### type tuples
 
-One can conceive of a tuple type like `[x, y, z]` for nested types `x`, `y`, `z`.
+One can conceive of a tuple type like `[x_, y_, z_]` for nested types `x_`, `y_`, `z_`.
 They are grammatically equivalent to a `lot` of types (where usually order doesn't matter),
 and their use is make it easy to specify types for a generic class.  This must be done
 using the spread operator `...` in the following manner.
 
 ```
-tuple_type: [x, y, z]
+tuple_type_: [x_, y_, z_]
 
-# with some other definition `my_generic[w, x, y, z]: [...]`:
-some_specification: my_generic[...tuple_type, w: int]
+# with some other definition `my_generic_[w_, x_, y_, z_]: [...]`:
+some_specification_: my_generic_[...tuple_type_, w_: int_]
 
-# you can even override one of your supplied tuple_type values with your own.
+# you can even override one of your supplied `tuple_type_` values with your own.
 # make sure the override comes last.
-another_spec[@Override of]: my_generic[...tuple_type, w: str, x: @Override of]
+another_spec_[OVERRIDE_of_]: my_generic_[...tuple_type_, w_: str_, x_: OVERRIDE_of_]
 
-# Note that even if `tuple_type` completely specifies a generic class
-# `some_generic[x, y, z]: [...]`, we still need to use the spread operator
-# because `some_generic tuple_type` would not be valid syntax.  Instead:
-a_specification: some_generic[...tuple_type]
+# Note that even if `tuple_type_` completely specifies a generic class
+# `some_generic_[x_, y_, z_]: [...]`, we still need to use the spread operator
+# because `some_generic_ tuple_type_` would be syntax for something else,
+# i.e., the nested class `tuple_type_` within `some_generic_`, which will
+# be a compiler error if not present.  Instead:
+a_specification_: some_generic_[...tuple_type_]
 ```
 
 Here is an example of returning a tuple type.
 
 ```
-tuple[Dbl]: [number, vector2: any]
-    if abs(Dbl) < 128.0
-        [number: flt, vector2: [X: flt, Y: flt]]
+tuple_[dbl]: [precision_, vector2: any_]
+    if abs_(dbl) < 128.0
+        [precision_: flt_, vector2_: [x: flt_, y: flt_]]
     else
-        [number: dbl, vector2: [X: dbl, Y: dbl]]
+        [precision_: dbl_, vector2_: [x: dbl_, y: dbl_]]
 
-my_tuples: tuple[random() * 256.0]
-My_number; my_tuples number(5.0)
-My_vector; my_tuples vector2(X: 3.0, Y: 4.0)
+my_tuples_: tuple_[random_() dbl * 256.0]
+my_number; my_tuples_ precision_(5.0)
+my_vector; my_tuples_ vector2_(x: 3.0, y: 4.0)
 ```
 
-See also [`new[...]: ...` syntax](#returning-a-type).
-
+See also [`new_[...]: ...` syntax](#returning-a-type).
 
 ### default field names with generics
 
