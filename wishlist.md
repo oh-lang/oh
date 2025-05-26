@@ -5080,68 +5080,68 @@ are not functional without child classes overriding their abstract methods.
 You can define methods on your class that work for a variety of types.
 
 ```
-some_example: [Value: int]
-{   ;;renew(Int.): null
-        Value = Int!
+some_example: [value: int_]
+{   ;;renew_(int.): null_
+        m value = int!
 
-    # in your own code, prefer adding `t(Some_example): t`
-    # outside of this class body as the more idiomatic way
-    # to convert `Some_example` to a different type.
-    ::to(): ~t
-        return t(Value)
+    ::to_(): ~t_
+        t_(m value)
 }
 
-Some_example: some_example(5)
+some_example: some_example_(5)
 
 # you can explicitly ask for a type like this:
-To_string: string = Some_example to()
+to_string: string_ = some_example to_()
 
 # or like this:
-{My_value: dbl} Some_example to()
+[my_value: dbl_] = some_example to_()
 
 # but you can't implicitly ask for the type.
-Unspecified: Some_example to()      # COMPILER ERROR, specify a type for `Unspecified`
+unspecified: some_example to_()     # COMPILER ERROR, specify a type for `unspecified`
 ```
-it'd be hard to give up `Array[3]` for simplicity/convenience/conciseness, etc,
-i don't prefer `Array at(3)` or `Array index(3)`.
 
 ## generic/template classes
 
-TODO: discuss how `null` can be used as a type in most places.
+TODO: discuss how `null_` can be used as a type in most places.
 But note that if you have a generic function defined like this,
 we are already assuming some constraints:
 ```
-my_generic[of](Y: of, Z: of): of
-    X: Y * Z
-    X
+my_generic_[of_](y: of_, z: of_): of_
+    x: y * z
+    x
 ```
-If `of` was nullable, then `X` would potentially be nullable, and should
-be defined via `X?: Y * Z`.  We can probably avoid this by requiring non-null
-in certain template declarations.  i.e., if we see a definition like `X: Y * Z`
-we have to assume `Y` and `Z` are non-null.
+If `of_` was nullable, then `x` would potentially be nullable, and should
+be defined via `x?: y * z`.  But because oh-lang does template specialization
+only after you supply the specific type you want, this can be caught at
+compile time and only if you're requesting a dumb type.
 
-To create a generic class, you put the expression `[types...]` after the
-class identifier, or `[of]` for a single template type, where `of` is the
-[default name for a generic type](#default-named-generic-types).  For example, we use
-`my_single_generic_class[of]: [...]` or `my_multi_generic_class[type1, type2]: [...]`
-for single/multiple generics, respectively, to define the generic class.
-When specifying the types of the generic class, we use
-`my_single_generic_class[int]` (for an `of`-defined generic class) or
-`my_multi_generic_class[type1: int, type2: str]` (for a multi-type generic).
-Note that any static/class methods defined on the class can still be accessed
-like this: `my_single_generic_class[int] my_class_function(...)` or
-`my_multi_generic_class[type1: int, type2: str] other_class_function()`.
+To create a generic class, you put the expression `[types_...]` after the
+class identifier, or we recommend `[of_]` for a single template type, where
+`of_` is the [default name for a generic type](#default-named-generic-types).
+For example, we use `my_single_generic_class_[of_]: [...]` for a single generic
+or `my_multi_generic_class_[type1_, type2_]: [...]` for multiple generics.
+To actually specify the types for the generic class, we use the syntax
+`my_single_generic_class_[int_]` (for an `of_`-defined generic class) or
+`my_multi_generic_class_[type1_: int_, type2_: str_]` (for a multi-type generic).
+Note that any static/class methods defined on the class can be accessed
+like this: `my_single_generic_class_[int_] my_class_function_(...)` or
+`my_multi_generic_class_[type1_: int_, type2_: str_] other_class_function_()`.
 
 ```
-generic_class[id, value]: [Id, Value]
-{   ;;renew(M Id: id, M Value: value): {}
+generic_class_[id_, value_]: [id;, value;]
+{   # this gives a method to construct the instance and infer types.
+    # `g_` is like `m_` but without the template specialization, so
+    # `g_` is `generic_class_` in this class body.
+    g_(id. ~t_, value. ~u_): g_[id_: t_, value_: u_]
+        [id, value]
 }
 
-# creating an instance using type inference:
-Class_instance: generic_class(Id: 5, Value: "hello")
+# creating an instance using type inference.
+# `id_` will be an `int_` and `value_` will be a `str_`.
+class_instance: generic_class_(id. 5, value. "hello")
  
 # creating an instance with template/generic types specified:
-Other_instance: generic_class[id: dbl, value: string](Id: 3, Value: "4")
+other_instance: generic_class_[id_: dbl_, value_: string_](id. 3, value. "4")
 ```
 
 ### default-named generics
