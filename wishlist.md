@@ -5397,19 +5397,26 @@ See also [`new_[...]: ...` syntax](#returning-a-type).
 
 ### default field names with generics
 
-Note that generic classes like `generic[of]: [Of]` do not work the same way as
-generic arguments in functions like `fn[of](Of)`.  The latter uses a default-named
-argument in a reference object and the former creates an object whose field
-is always named `Of`, regardless of what the generic type `of` is.  Thus
-`fn[of](Of)` can be called with `fn[int](5)` (without `Int: 5` specified), while
-creating a generic class `generic[of]: [Of]` will always have the field named as `Of`,
-e.g., `generic[int]: [Of: int]` instead of `generic[int]: [Int: int]`, and which
-should be instanced as `Generic[int]: [Of: 3]`.
+Note that generic classes like `generic_[of_]: [of;]` do not work exactly the same way as
+generic arguments in functions like `fn_[of_](of.)`.  The latter uses a default-named
+argument in a reference object and the former creates an object whose field is always
+named `of`, regardless of what the generic type `of_` is.  Thus `fn_[of_](of.)` can be
+called like `fn[int](5)` (without `int. 5` or `of. 5` specified), while creating a generic
+class `generic_[of_]: [of;]` will always declare the field with name `of`, e.g.,
+`generic_[int_]` is `[of: int_]` instead of `[int: int_]`, and which should be instanced
+as `generic[int_]: [of: 3]`.
+TODO: should we actually use `[int: int_]`?  we should be able to accept input like this:
+`gi_: generic_[int_], gi: [5]`.  if we have two (or more arguments) that conflict,
+e.g., `element_[at_, of_]: [at;, of;]` and use `element_[at_: str_, of_: str_]`,
+then we can use namespaces like this: `[AT_str;, OF_str;]`.  i'm not sure i like this,
+however.
 
 There's a slight bit of inconsistency here, but it makes defining generic classes
-much simpler, especially core classes like `hm[ok, er]: one_of[ok, er] { ... #( extra methods )# }`,
-so we always refer to a good value as `Ok` and an error result as `Er`, rather
+much simpler, especially core classes like `hm_[ok_, er_]: one_of_[ok_, er_] {...}`,
+so we always refer to a good value as `ok` and an error result as `er`, rather
 than whatever the internal values are.
+TODO: actually `one_of_` probably follows different rules to make sure things
+are named correctly.
 
 ## common class methods
 
