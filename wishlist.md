@@ -5420,29 +5420,31 @@ are named correctly.
 
 ## common class methods
 
-All classes have a few compiler-provided methods which cannot be overridden.
+All classes have a few compiler-provided methods which have special constraints;
+some cannot be overridden, and some must have certain function signatures.
 
-* `(M;)!: m` creates a temporary with the current instance's values, while
-    resetting the current instance to a default instance -- i.e., calling `renew()`.
+* `(m;)!: m_` creates a temporary with the current instance's values, while
+    resetting the current instance to a default instance -- i.e., calling `;;renew_()`.
     Internally, this swaps pointers, but not actual data, so this method
-    should be faster than copy for types bigger than the processor's word size.
-* `..map(an(M.): ~t): t` to easily convert types or otherwise transform
-    the data held in `M`.  This method consumes `M`.  You can also overload
-    `map` to define other useful transformations on your class.
-* `::map(an(M:): ~t): t` is similar to `..map(an(M.): ~t): t`,
-    but this method keeps `M` constant (readonly).  You can overload as well.
-* `m(...): m` class constructors for any `;;renew(...): null` methods.
-* `m(...): hm[ok: m, er]` class or error constructors for any methods defined as
-    `;;renew(...): hm[ok: m, er]`
-* `;;renew(...): null` for any `m(...): m` class constructors.
-    This allows any writable variable to reset without doing `X = x(...)`,
-    which may be painful for long type names `x`, and instead do `X renew(...)`.
-* `;;renew(...): hm[er]` for any `m(...): hm[ok: m, er]` construct-or-error class functions
-    This allows any writable variable to reset without doing `X = x(...) assert()`,
-    which may be painful for long type names `x`, and instead do `X renew(...) assert()`.
-* `Xyz;: (xyz;:)` gives a reference to the class instance, where `xyz` is the actual
-    `type_case_` type and `Xyz` is the `variable_case` version of it.
-    This is mostly useful for inheritance.
+    should be faster than copy for dynamically-allocated types.
+* `..map_(an_(m.): ~t_): t_` to easily convert types or otherwise transform
+    the data held in `m`.  This method consumes `m`.  You can also overload
+    `map_` to define other useful transformations on your class, but not override.
+* `::map_(an_(m:): ~t_): t_` is similar to `..map_(an_(m.): ~t_): t_`,
+    but this method keeps `m` constant (readonly).  You can overload but not override.
+* you can define one of `m_(...): m_` (class constructors) or `;;renew_(...): null` 
+    (renew methods), and the other will be automatically defined with the same arguments.
+    `;;renew_` can be called on any writable variable even if some fields are constant.
+* you can define one of `m_(...): hm_[ok_: m_, er_]` (class-or-error constructors)
+    or `;;renew_(...): hm_[ok_: m_, er_]` (renew-or-error methods), and the other will be
+    automatically defined with the same arguments.
+* besides `m_(...): m_` and `m_(...): hm_[ok_: m_, er_]`, you are not allowed to define
+    any other methods named `m_` that return anything else.  Defining both is ok,
+    and defining overloads for different input arguments is ok.
+* you can define `::o_(): m_` (copy constructor) or `::o_(): hm_[ok_: m_, er_]`
+    (copy-or-error constructor), or both.
+* besides `::o_(): m_` and `::o_(): hm_[ok_: m_, er_]`, you are not allowed to define
+    any other methods named `o_`.  Defining both is ok.
 
 ## singletons
 
