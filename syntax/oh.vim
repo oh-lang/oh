@@ -33,6 +33,7 @@ syn keyword ohConditional	what where with
 syn keyword ohRepeat		each while
 syn keyword ohOperator		and is not or xor
 syn keyword ohError		er
+syn keyword ohOk		ok
 syn keyword ohAsync		decide_ um um_
 syn keyword ohTodo		FIXME NOTE NOTES TODO XXX contained
 syn match	ohBrackets	"\["
@@ -118,7 +119,7 @@ syn match   ohSpaceError	display "\t\+ "
 
 syn region	ohTick matchgroup=ohTick
       \ start=+`+ end=+`+
-      \ contains=ohBuiltinVariable,ohBuiltinFunction,ohStatement,ohJump,ohConditional,ohRepeat,ohOperator,ohError,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohLambdaStarter,ohNullSymbol,ohSyntaxError,ohInclude,ohUnusedVariable,ohUnusedFunction,ohMacro,ohNamespace,ohEndOfLineComment,ohMidlineComment,ohMultilineComment,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
+      \ contains=ohBuiltinVariable,ohBuiltinFunction,ohStatement,ohJump,ohConditional,ohRepeat,ohOperator,ohError,ohOk,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohLambdaStarter,ohNullSymbol,ohSyntaxError,ohInclude,ohUnusedVariable,ohUnusedFunction,ohMacro,ohNamespace,ohEndOfLineComment,ohMidlineComment,ohMultilineComment,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
 
 " The default highlight links.
 " WildMenu is interesting.  see options with `:highlight`
@@ -127,7 +128,8 @@ hi def link ohStatement		Statement
 hi def link ohConditional	Conditional
 hi def link ohRepeat		Repeat
 hi def link ohOperator		Operator
-hi def link ohError		Exception
+hi def link ohError		WarningMsg
+hi def link ohOk		CursorLine
 hi def link ohInclude		Include
 hi def link ohAsync		Statement
 hi def link ohBuiltinVariable		Title

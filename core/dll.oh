@@ -17,6 +17,7 @@ dll_[of_, count_with_: count_arch_]: all_of_
     # this element in the future, you'll invalidate its offset 
     # but no one else's.  (i.e., nothing will be at the offset
     # initially, but a new element might reuse the offset later.)
+    # other operations (like `defrag_`) will invalidate this offset.
     ;;append_(of.): hm_[offset_]
         if m count_free_() == 0
             m expand_() assert_()

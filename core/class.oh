@@ -1,1 +1,1 @@
-format_method[of](~Of, Method): str
+format_method_(~of:, method:): str_

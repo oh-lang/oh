@@ -6,14 +6,15 @@ mode_: one_of_
 ]
 {   ::is_writable_(): bool_
         what m
-            read_write, truncate_write
+            read_write
+            truncate_write
                 true
             read_only
                 false
 
     @alias is_writeable_: is_writable_
 
-    ::is_readable_(): bool
+    ::is_readable_(): bool_
         what m
             read_only
             read_write

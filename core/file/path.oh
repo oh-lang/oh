@@ -1,5 +1,5 @@
-file_path:
-[   @private m: [Array[u8];]
+file_path_:
+[   @private m_: [Array[u8];]
 ]
 {   # some operating systems have different ways of representing file paths,
     # so convert from WTF8 to the OS representation here.

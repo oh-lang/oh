@@ -11,6 +11,8 @@ array_[of_, count_with_: select_count_]: all_of_
 
     ::capacity_(): count_with_
 
+    # sets this array's capacity to exactly `count_with`, or the minimum
+    # capacity for this array if it is larger than `count_with`.
     # prefer `array capacity_(at_least. count_with)` because it will grow the array
     # in an amortized way if you are increasing the capacity over time.
     ;;capacity_(count_with.): hm_[null_]
