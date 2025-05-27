@@ -5452,42 +5452,41 @@ Defining a singleton class is quite easy, simply by instantiating a class
 by using `variable_case` when defining it.
 
 ```
-Awesome_service: all_of
-[   parent_class1, parent_class2, #(etc.)#,
-    m: [Url_base: "http://my/website/address.bazinga"]
+awesome_service: all_of_
+[   parent_class1_, parent_class2_, #(etc.)#,
+    m_: [url_base: "http://my/website/address.bazinga"]
 ]
-{   ::get(Id: string): awesome_data 
-        Json: Http get("${Url_base}/awesome/${Id}") 
-        return awesome_data(Json)
+{   ::get_(id: string_): awesome_data_
+        json: http get_("${m url_base}/awesome/${id}")
+        awesome_data_(json)
 }
 ```
 
 Using `@singleton type_case_` on the LHS defines an abstract singleton.
 These are useful when you want to be able to grab an instance of the concrete
-child-class but only through the parent class reference.
+child-class but only through the parent class reference.  Errors will be
+thrown if multiple children implement the parent and instantiate.
 
 ```
 ### screen.oh ###
 @singleton
-screen: []
-{   ;;draw(Image, Vector2): null
-    ;;clear(Color: color Black)
+screen_: []
+{   ;;draw_(image;, vector2.): null_
+    ;;clear_(color. color_ black)
 }
 ### implementation/sdl-screen.oh ###
-# TODO: we probably can convert `\/../screen screen` -> `\/../screen`
-#       where we're requesting the class name of a file that's named correctly.
-Sdl_screen: \/../screen screen
-{   ;;draw(Image, Vector2): null
+sdl_screen_: \/../screen screen_
+{   ;;draw_(image;, vector2.): null_
         # actual implementation code:
-        M Sdl_surface draw(Image, Vector2)
+        m sdl_surface draw_(image, vector2)
 
-    ;;clear(Color: color Black)
-        M Sdl_surface clear(Color)
+    ;;clear_(color. color_ black)
+        m sdl_surface clear_(color)
 }
 ### some-other-file.oh ###
 # this is an error if we haven't imported the sdl-screen file somewhere:
-Screen; screen
-Screen clear color(R: 50, G: 0, B: 100)
+screen; screen_
+screen clear_(color_(r. 50, g. 0, b. 100))
 ```
 
 You get a run-time error if multiple child-class singletons are imported/instantiated
