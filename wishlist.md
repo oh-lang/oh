@@ -5494,56 +5494,52 @@ at the same time.
 
 ## sequence building
 
-Sequence building is using the syntax `A@ [B, c()]` to create an object like `[B: A B, C: A c()]`,
-similarly with `()` to create a reference object, or `{}` to evaluate a few methods on the same
-object.  If you need the LHS of a sequence builder to come in at a different spot, use `@` inside
-the parentheses, e.g., `A@ [B + @ x(), if @ y() { C } else { @ Z }, W]`, which corresponds to
-`[B: B + A x(), Y: if A y() { C } else { A Z }, W: A W]`.  Note that if you use `@` anywhere in
-a parenthetical statement, you need to use it everywhere you want the LHS to appear.
-(A parenthetical statement is considered just one of statements here: `[Statement1, Statement2, ...]`.)
+Sequence building is using syntax like `a@ [b, c_()]` to create `[b: a b, c: a c_()]`,
+and similarly for `()` which creates a reference object, and `{}` which doesn't create
+an object but just sequentially evaluates methods/fields.  If you need the LHS of a
+sequence builder to come in at a different spot, use `@` inside the parentheses, e.g.,
+`a@ [b + @ x_(), if @ y_() { c } else { @ z }, w]`, which corresponds to
+`[b: b + a x_(), y: if a y_() { c } else { a z }, w: a w]`.  Note that if you use `@`
+anywhere in a parenthetical statement, you need to use it everywhere you want the LHS
+to appear.  (A parenthetical statement is considered just one of statements here:
+`[statement1, statement2, ...]`.)
 
 Why would you need sequence building?
-One reason is that it makes declaring a bunch of private (or protected) variables convenient,
-e.g., `simple_class: @private@ [My_var: int, My_var2: str]` instead of
-`simple_class: [@private My_var: int, @private My_var2: str]`.  It's not as useful
-for class inheritance where you can just use
-`my_class: all_of[other_classes..., @private m: [My_var: int, My_var2: str]]`.
-
-Another reason for sequence building:
-some languages use a builder pattern, e.g., Java, where you add fields to an object
-using setters.  For example, `/* Java */ MyBuilder.setX(123).setY(456).setZ("great").build()`.
-In oh-lang, this is mostly obviated by named arguments: `my_class(X: 123, Y: 456, Z: "great")`
-could do the same thing.  However, there are still situations where it's useful to chain 
-methods on the same class instance, and oh-lang does not recommend returning a reference
-to the class via the return type `(m)`.  More idiomatically, we use sequence building
-with all the method calls inside a block.  For example, if we were to implement a builder pattern
-with setters, we could combine a bunch of mutations like this:
+Some languages use a builder pattern, e.g., Java, where you add fields to an object
+using setters.  E.g., `/* Java */ myBuilder.setX(123).setY(456).setZ("great").build()`.
+In oh-lang, this is mostly obviated by named arguments:
+`my_class_(x. 123, y. 456, z. "great")` could do the same thing.  However, there are
+still situations where it's useful to chain methods on the same class instance, and
+oh-lang does not recommend returning a reference to the class via the return type `(m;)`.
+More idiomatically, we use sequence building with all the method calls inside a block.
+For example, if we were to implement a builder pattern with setters, we could combine
+a bunch of mutations like this:
 
 ```
 # class definition:
-my_builder: [...]
-{   ;;set(String, Int): null    # no need to return `(m)`
+my_builder_: [...]
+{   ;;set_(string., int.): null_    # no need to return `(m;)`
 }
 
-# Note, inside the `{}` we allow mutating methods because `my_builder()` is a temporary.
+# Note, inside the `{}` we allow mutating methods because `my_builder_()` is a temporary.
 # The resulting variable will be readonly after this definition + mutation chain,
-# due to `My_builder` being defined with `:`.
-My_builder: my_builder()@
-{   set("Abc", 123)
-    set("Lmn", 456)
-    set("Xyz", 789)
+# due to `my_builder` being defined with `:`.
+my_builder: my_builder_()@
+{   set_("abc", 123)
+    set_("lmn", 456)
+    set_("xyz", 789)
     # etc.
 }
 
 # You can also do inline, but you should use commas here.
 # Note that this variable can be mutated after this line due to being defined with `;`.
-My_builder2; my_builder()@ {set("Def", 987), set("Uvw", 321)}
+my_builder2; my_builder_()@ {set_("def", 987), set_("uvw", 321)}
 ```
 
 By default, if the left-hand side of the sequence builder is writable (readonly),
 the methods being called on the right will be the writable (readonly) versions
 when using implicit member access (e.g., not explicitly using `::` or `;;`).
-E.g., if `my_builder()` is the left-hand side for the sequence builder, it is a
+E.g., if `my_builder_()` is the left-hand side for the sequence builder, it is a
 temporary which defaults to writable.  You can explicitly ask for the readonly
 (or writable) version of a method using `::` (or `;;`), although it will be a
 compile-error if you are trying to write a readonly variable.
@@ -5551,7 +5547,7 @@ compile-error if you are trying to write a readonly variable.
 The return value of the sequence builder also depends on the LHS.
 If the LHS is a temporary, the return value will be the temporary after it has been called
 with all the methods in the RHS of the sequence builder.  E.g., from the above example,
-a `my_builder` instance with all the `set` methods called.  Otherwise, if the LHS
+a `my_builder_` instance with all the `set_` methods called.  Otherwise, if the LHS
 is a reference (either readonly or writable), the return value of the sequence
 builder will depend on the type of parentheses used:
 `{}` returns the value of the last statement in `{}`,
@@ -5560,29 +5556,30 @@ builder will depend on the type of parentheses used:
 Some examples of the LHS being a reference follow:
 
 ```
-Readonly_array: [0, 100, 20, 30000, 4000]
-Results: Readonly_array@
+readonly_array: [0, 100, 20, 30000, 4000]
+results: readonly_array@
 [   [2]            # returns 20
-    ::sort()       # returns a sorted copy of the array; `::` is unnecessary
-    ::print()      # prints unsorted array; `::` is unnecessary
+    ::sort_()      # returns a sorted copy of the array; `::` is unnecessary
+    ::print_()     # prints unsorted array; `::` is unnecessary
     # this will throw a compile-error, but we'll discuss results
     # as if this wasn't here.
-    ++@;;[3]        # compile error, `Readonly_array` is readonly
+    ++@;;[3]       # compile error, `readonly_array` is readonly
 ]
 # should print [0, 100, 20, 30000, 4000] without the last statement
-# Results = [Int: 20, Sort: [0, 20, 100, 4000, 30000]]
+# results == [int: 20, sort: [0, 20, 100, 4000, 30000]]
 
-Writeable_array; [-1, 100, 20, 30000, 4000]
-Result: Writeable_array@
-{   [2]            # returns 20
-    sort()        # in-place sort, i.e., `;;sort()`
+writeable_array; [-1, 100, 20, 30000, 4000]
+result: writeable_array@
+[   [2]             # returns 20
+    sort_()         # in-place sort, i.e., `;;sort_()`
     ++@;;[3]        # OK, a bit verbose since `;;` is unnecessary
     # prints the array after all the above modifications:
-    ::print()      # OK, we probably don't have a `;;print()` but you never know
-    min()
-}
+    ::print_()      # OK, we probably don't have a `;;print_()` but you never know
+    min_()
+]
 # should print [-1, 20, 100, 4001, 30000]
-# Result = [20, 4001, -1]
+# note that `sort_()` returns null and is collapses.
+# result == [FIRST_int: 20, SEDOND_int: 4001, min: -1]
 ```
 
 ### field renaming in sequence builders
