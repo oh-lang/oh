@@ -1,7 +1,7 @@
 # comments
 # ========
 
-1234 ^ 3 # end of line comment
+1234 ^ 3 # end of line comment, ^ is exponentiation
 
 #{#
 multiline comment with {}

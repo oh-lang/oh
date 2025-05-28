@@ -1,104 +1,119 @@
 @final
-vector2[of]: [X; of, Y; of]
-{   ::dot(O): of
-        X * O X + Y * O Y
-    ::cross(O): of
-        X * O Y - Y * O X
-    ::cross(O): m3
+vector2_[of_]: [x; of_, y; of_]
+{   m_(FIRST_of., SECOND_of.): m_
+        [x. FIRST_of, y. SECOND_of]
+
+    ::dot_(o): of_
+        m x * o x + m y * o y
+    ::cross_(o): of_
+        m x * o y - m y * o x
+    ::cross_(O): m3_
         [X: 0, Y: 0, Z: cross(O)]
+
+    fields_(): ["x", "y"]
 
     @swizzleable
 }
 @expand_types(vector2)
 
 @final
-vector3[of]: [X; of, Y; of, Z; of]
-{   ::dot(O): of
-        X * O X + Y * O Y + Z * O Z
-    ::cross(O): m
-    (   X: Y * O Z - Z * O Y
-        Y: Z * O X - X * O Z
-        Z: X * O Y - Y * O X
+vector3_[of_]: [x; of_, y; of_, z; of_]
+{   m_(FIRST_of., SECOND_of., THIRD_of.): m_
+        [x. FIRST_of, y. SECOND_of, z. THIRD_of]
+
+    ::dot_(o): of_
+        m x * o x + m y * o y + m z * o z
+    ::cross_(o): m_
+    (   X: m y * o z - m z * o y
+        Y: m z * o x - m x * o z
+        Z: m x * o y - m y * o x
     )
+
+    fields_(): ["x", "y", "z"]
 
     @swizzleable
 }
 @expand_types(vector3)
 
 @final
-vector4[of]: [X; of, Y; of, Z; of, W; of]
-{   ::dot(O): of
-        X * O X + Y * O Y + Z * O Z + W * O W
+vector4_[of_]: [x; of_, y; of_, z; of_, w; of_]
+{   m_(FIRST_of., SECOND_of., THIRD_of., FOURTH_of.): m_
+        [x. FIRST_of, y. SECOND_of, z. THIRD_of, w. FOURTH_of]
+
+    ::dot_(o): of_
+        m x * o x + m y * o y + m z * o z + m w * o w
+
+    fields_(): ["x", "y", "z", "w"]
 
     @swizzleable
 }
 @expand_types(vector4)
 
 @expand_types(v):
-{   @concat(v, "i"): v[i32]
-    @concat(v, "l"): v[i64]
-    @concat(v, "f"): v[f32]
-    @concat(v, "d"): v[f64]
+{   @concat(v, "i_"): @concat(v, "_")[i32]
+    @concat(v, "l_"): @concat(v, "_")[i64]
+    @concat(v, "f_"): @concat(v, "_")[f32]
+    @concat(v, "d_"): @concat(v, "_")[f64]
 }
 
 # swizzle operators
 @swizzleable:
-{   m2: vector2[of]
-    m3: vector3[of]
-    m4: vector4[of]
+{   m2_: vector2_[of_]
+    m3_: vector3_[of_]
+    m4_: vector4_[of_]
 
     # NOTE: this code adds in all permutations like this:
-    #   ::xx[Require: @in_scope(X)](): m2
-    #       [X, Y: X]
-    # TODO: this probably doesn't work nicely unless we have
-    # a macro for identifiers, e.g., `@identifier @[X, Y, Z, W]`
-    # or `@Maybe_in_scope @[X, Y, Z, W]`.  unless we treat `@each`
-    # a bit differently.
-    [X, Y, Z, W] @each Component0:
-        [X, Y, Z, W] @each Component1:
-            ::@concat(component0, component1)
-            [   Require: @in_scope(Component0, Component1)
-            ](): m2
-                [X: Component0, Y: Component1]
+    #   ::xx_(): m2_
+    #       [x, y: x]
+    fields_() @each component0:
+        fields_() @each component1:
+            ::@concat(component0, component1, "_")(): m2_
+            (   x: @concat(component0)
+                y: @concat(component1)
+            )
 
     # NOTE: this code adds in all permutations like this:
-    #   ::xxx[Require: @in_scope(X)](): m3
-    #       [X, Y: X, Z: X]
-    [X, Y, Z, W] @each Component0:
-        [X, Y, Z, W] @each Component1:
-            [X, Y, Z, W] @each Component2:
-                ::@concat(component0, component1, component2)
-                [   Require: @in_scope(Component0, Component1, Component2)
-                ](): m3
-                    [X: Component0, Y: Component1, Z: Component2]
+    #   ::xxx_(): m3_
+    #       [x, y: x, z: x]
+    fields_() @each component0:
+        fields_() @each component1:
+            fields_() @each component2:
+                ::@concat(component0, component1, component2, "_")(): m3_
+                (   x: @concat(component0)
+                    y: @concat(component1)
+                    z: @concat(component2)
+                )
 
     # NOTE: this code adds in all permutations like this:
-    #   ::xxxx[Require: @in_scope(X)](): m4
-    #       [X, Y: X, Z: X, W: X]
-    [X, Y, Z, W] @each Component0:
-        [X, Y, Z, W] @each Component1:
-            [X, Y, Z, W] @each Component2:
-                [X, Y, Z, W] @each Component3:
-                    ::@concat(component0, component1, component2, component3)
-                    [   Require: @in_scope(Component0, Component1, Component2, Component3)
-                    ](): m4
-                        [X: Component0, Y: Component1, Z: Component2, W: Component3]
+    #   ::xxxx_(): m4_
+    #       [x, y: x, z: x, w: x]
+    fields_() @each component0:
+        fields_() @each component1:
+            fields_() @each component2:
+                fields_() @each component3:
+                    ::@concat(component0, component1, component2, component3, "_")(): m4_
+                    (   x: @concat(component0)
+                        y: @concat(component1)
+                        z: @concat(component2)
+                        w: @concat(component3)
+                    )
 }
 
 @test "swizzle"
     @test "xx"
-        Test[vector2i(1, 2) xx()] == vector2i(1, 1)
-        Test[vector3d(0.0, 5.0, 9.0) xx()] == vector2d(0.0, 0.0)
-        Test[vector4l(-1, 7, 3, 4) xx()] == vector2l(-1, -1)
+        test_(vector2i_(1, 2) xx_()) == vector2i_(1, 1)
+        test_(vector3d_(0.0, 5.0, 9.0) xx_()) == vector2d_(0.0, 0.0)
+        test_(vector4l_(-1, 7, 3, 4) xx_()) == vector2l_(-1, -1)
     @test "xy"
-        Test[vector2i(1, 2) xy()] == vector2i(1, 2)
-        Test[vector3f(0.0, 5.0, 9.0) xy()] == vector2f(0.0, 5.0)
-        Test[vector4l(-1, 7, 3, 4) xy()] == vector2l(-1, 7)
+        test_(vector2i_(1, 2) xy_()) == vector2i_(1, 2)
+        test_(vector3f_(0.0, 5.0, 9.0) xy_()) == vector2f_(0.0, 5.0)
+        test_(vector4l_(-1, 7, 3, 4) xy_()) == vector2l_(-1, 7)
     @test "yx"
-        Test[vector2i(1, 2) yx()] == vector2i(2, 1)
-        Test[vector3d(0.0, 5.0, 9.0) yx()] == vector2d(5.0, 0.0)
-        Test[vector4l(-1, 7, 3, 4) yx()] == vector2l(7, -1)
+        test_(vector2i_(1, 2) yx_()) == vector2i_(2, 1)
+        test_(vector3d_(0.0, 5.0, 9.0) yx_()) == vector2d_(5.0, 0.0)
+        test_(vector4l_(-1, 7, 3, 4) yx_()) == vector2l_(7, -1)
     @test "yy"
-        Test[vector2i(1, 2) yy()] == vector2i(2, 2)
-        Test[vector3f(0.0, 5.0, 9.0) yy()] == vector2f(5.0, 5.0)
-        Test[vector4l(-1, 7, 3, 4) yy()] == vector2l(7, 7)
+        test_(vector2i_(1, 2) yy_()) == vector2i_(2, 2)
+        test_(vector3f_(0.0, 5.0, 9.0) yy_()) == vector2f_(5.0, 5.0)
+        test_(vector4l_(-1, 7, 3, 4) yy_()) == vector2l_(7, 7)
+    # TODO: xxx, xyz, xzy, etc.  probably not exhaustively, sounds tiring.
