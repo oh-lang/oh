@@ -2,7 +2,7 @@
 in_memory_file_: all_of_
 [   m_: [regular_file_path;, lines; array_[str_]]
 ]
-{   open_(regular_file_path.): hm_[m]
+{   open_(regular_file_path.): hm_[m_]
         result; m_ = [regular_file_path!, lines: []]
         if result read_() is er: where er != file_not_found
             # file_not_found is ok, but other errors are not.
