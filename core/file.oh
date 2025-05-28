@@ -10,5 +10,7 @@ hm_[of_]: hm_[ok_: of_, er_]
 [file_path_]: \/file/path
 [mode_]: \/file/regular
 
+# TODO: we probably can have `\/file/in_memory_file _` to represent
+# `\/file/in_memory_file in_memory_file_`
 @test_only
 mocked_files: lot_[at_: file_path_, \/file/in_memory_file in_memory_file_]

@@ -57,3 +57,7 @@ result_(u64): hm_[ok_: u64_, er_: u64_]
     else
         er: u64
         er
+
+[import_type_]: \/this/is/a/path
+[another_import_(arg1:, arg2;): ret3_, other_type_]: \/../another/path
+renamed_: \\library/path whatever_type_
