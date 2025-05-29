@@ -93,26 +93,28 @@ test_[of_]: [of;, oh_info:, transformation; str_]
 {   g_(~t., oh_info. oh_info_ caller_(), transformation. ""): g_[t_]
         [t, oh_info, transformation]
 
-    ;;descope_[require: of_ is bool_](): null_
-        if !m of
-            error_("${m oh_info}: expected ${m transformation}")
-            panic_("expected ${m transformation}")
-
-    ;;descope_[require: of_ is hm_](): null_
-        if of is er:
-            error_("${m oh_info}: expected ${m transformation}, got ${er}")
-            panic_("expected ${m transformation} to be OK, got ${er}")
-
-    # TODO: is there a nice way to do `require: not-defined-otherwise`?
-    ;;descope_[require: !(of_ is hm_ or of_ is bool_)](): null_
-        if !m transformation
-            error_("${m oh_info}: expected an expression like `test_(x) == 7`")
+    # TODO: does this descope at the right time?  i think so as long
+    # as we ensure that we don't hold a reference to it, like
+    # `my_test: test_(5) == 6`
+    # but that might be desired anyway, in case you want to check a bunch of results.
+    ;;descope_(): null_
+        @if of_ is bool_
+            if !m of
+                error_("${m oh_info}: expected ${m transformation}")
+                panic_("expected ${m transformation}")
+        @elif of_ is hm_
+            if of is er:
+                error_("${m oh_info}: expected ${m transformation}, got ${er}")
+                panic_("expected ${m transformation} to be OK, got ${er}")
+        @else
+            if !m transformation
+                error_("${m oh_info}: expected an expression like `test_(x) == 7`")
 
     @methods(of_) @each method:
         # `method arguments` will include `m:`, `m;`, or `m.`, so we don't
         # need to add `::`, `;;`, or `..` to the start here.
         @concat(method name)(...method arguments): test_[method returning_]
-            transformation. str_ = "${m transformation} ${m format_method_(method)}"
+            transformation. str_ = "${m transformation} ${of_ string_(method)}"
             returning. @concat(method name)(...method arguments)
             # TODO: i think we need to plan for `m` to be descoped here.
             # TODO: maybe this method should be converted to `..` regardless of `m`.
@@ -124,7 +126,7 @@ test_[of_]: [of;, oh_info:, transformation; str_]
         test_(5) == 5
         test_(10) == 10
 
-    @test_panics "expected (5 == 6) Bool":
+    @test_panics "expected (5 == 6) bool":
         test_(5) == 6
 
 @test "!=":
@@ -132,7 +134,7 @@ test_[of_]: [of;, oh_info:, transformation; str_]
         test_(5) != 50
         test_(10) != 12
 
-    @test_panics "expected (3 != 3) Bool":
+    @test_panics "expected (3 != 3) bool":
         test_(3) != 3
 
 @test ">=":
@@ -141,7 +143,7 @@ test_[of_]: [of;, oh_info:, transformation; str_]
         test_(4) >= 4
         test_(10) >= 10
 
-    @test_panics "expected (5 >= 6) Bool":
+    @test_panics "expected (5 >= 6) bool":
         test_(5) >= 6
 
 @test "<=":
@@ -150,7 +152,7 @@ test_[of_]: [of;, oh_info:, transformation; str_]
         test_(7) <= 7
         test_(12) <= 12
 
-    @test_panics "expected (7 <= 6) Bool":
+    @test_panics "expected (7 <= 6) bool":
         test_(7) <= 6
 
 @test "<":
@@ -158,10 +160,10 @@ test_[of_]: [of;, oh_info:, transformation; str_]
         test_(5) < 6
         test_(10) < 11
 
-    @test_panics "expected (7 < -1) Bool":
+    @test_panics "expected (7 < -1) bool":
         test_(7) < -1
 
-    @test_panics "expected (-1 < -1) Bool":
+    @test_panics "expected (-1 < -1) bool":
         test_(-1) < -1
 
 @test ">":
@@ -169,8 +171,8 @@ test_[of_]: [of;, oh_info:, transformation; str_]
         test_(5) > 3
         test_(20) > 19
 
-    @test_panics "expected (-1 > 1) Bool":
+    @test_panics "expected (-1 > 1) bool":
         test_(-1) > 1
 
-    @test_panics "expected (1 > 1) Bool":
+    @test_panics "expected (1 > 1) bool":
         test_(1) > 1

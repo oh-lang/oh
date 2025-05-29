@@ -5412,7 +5412,8 @@ TODO: should we actually use `[int: int_]`?  we should be able to accept input l
 `gi_: generic_[int_], gi: [5]`.  if we have two (or more arguments) that conflict,
 e.g., `element_[at_, of_]: [at;, of;]` and use `element_[at_: str_, of_: str_]`,
 then we can use namespaces like this: `[AT_str;, OF_str;]`.  i'm not sure i like this,
-however.
+however, and we probably want something like `generic_[x_, y_]: [x;, y;]` to look
+like `[x: dbl_, y: str_]`, etc.
 
 There's a slight bit of inconsistency here, but it makes defining generic classes
 much simpler, especially core classes like `hm_[ok_, er_]: one_of_[ok_, er_] {...}`,
@@ -5429,7 +5430,9 @@ some cannot be overridden, and some must have certain function signatures.
 * `(m;)!: m_` creates a temporary with the current instance's values, while
     resetting the current instance to a default instance -- i.e., calling `;;renew_()`.
     Internally, this swaps pointers, but not actual data, so this method
-    should be faster than copy for dynamically-allocated types.
+    should be faster than copy for dynamically-allocated types.  This method
+    cannot be overridden.  Similarly for `(m.)!: m_`, although this may
+    elide the `renew_` call on the temporary.
 * `..map_(an_(m.): ~t_): t_` to easily convert types or otherwise transform
     the data held in `m`.  This method consumes `m`.  You can also overload
     `map_` to define other useful transformations on your class, but not override.
@@ -5447,7 +5450,9 @@ some cannot be overridden, and some must have certain function signatures.
 * you can define `::o_(): m_` (copy constructor) or `::o_(): hm_[ok_: m_, er_]`
     (copy-or-error constructor), or both.
 * besides `::o_(): m_` and `::o_(): hm_[ok_: m_, er_]`, you are not allowed to define
-    any other methods named `o_`.  Defining both is ok.
+    any other methods named `o_`.  Defining both is ok; whichever one comes first
+    is the default copy method, so we recommend the copy-or-error constructor coming
+    first.
 
 ## singletons
 
@@ -5582,7 +5587,7 @@ result: writeable_array@
 ]
 # should print [-1, 20, 100, 4001, 30000]
 # note that `sort_()` returns null and is collapses.
-# result == [FIRST_int: 20, SEDOND_int: 4001, min: -1]
+# result == [FIRST_int: 20, SECOND_int: 4001, min: -1]
 ```
 
 ### field renaming in sequence builders
@@ -5593,29 +5598,29 @@ as sequence builder's value, or if you are using the variable for something else
 the sequence builder.
 
 ```
-My_class: [...]
-Results: My_class@
-[   Field1: @ my_method()
-    Field2: @ next_method()
+my_class: [...]
+results: my_class@
+[   field1: @ my_method_()
+    field2: @ next_method_()
 ]
 # The above is equivalent to the following:
-Results:
-[   Field1: My_class my_method()
-    Field2: My_class next_method()
+results:
+[   field1: my_class my_method_()
+    field2: my_class next_method_()
 ]
 
-# This is a compile error because the LHS of the sequence builder `My_class get_value()`
+# This is a compile error because the LHS of the sequence builder `my_class get_value_()`
 # is a temporary, so the fields are not used in the return value.
-# this also would be a compile error for `()` and `{}` sequence builders.
-Results: My_class get_value()@
-[   Field1: @ do_something()
-    Field2: @ do_something_else()
-]   # COMPILE ERROR: Field1 is not used anywhere
+# this also would be a compile error for `()` sequence builders.
+results: my_class get_value_()@
+[   field1: @ do_something_()
+    field2: @ do_something_else_()
+]   # COMPILE ERROR: `field1` is an unused variable
 
 # this would be ok:
-Results: My_class get_value()@
-{   Field1: @ do_something()
-    print(@ do_something_else() * Field1)
+results: my_class get_value_()@
+{   field1: @ do_something_()
+    print_(@ do_something_else_() * field1)
 }
 ```
 
