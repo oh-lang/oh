@@ -6,6 +6,8 @@ _(x: int): null_
 
 $lambda_var $lambda_fn_
 
+"string ${interpolation works_() {} [] too?} $[1.23, a, b_(), [], {}] $(name: value_(), [], {})"
+
 used{asdf} used[asdf] used(asdf)
 used_{asdf} used_[asdf] used_(asdf)
 _unused{asdf} _unused[asdf] _unused(asdf)

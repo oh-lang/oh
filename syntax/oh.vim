@@ -37,12 +37,6 @@ syn keyword ohOk		ok ok_
 syn keyword ohResult		hm hm_
 syn keyword ohAsync		decide_ um um_
 syn keyword ohTodo		FIXME NOTE NOTES TODO XXX contained
-syn match	ohBrackets	"\["
-syn match	ohBrackets	"\]"
-syn match	ohBraces	"{"
-syn match	ohBraces	"}"
-syn match	ohParens	"("
-syn match	ohParens	")"
 syn match	ohReadonly	":"
 syn match	ohWritable	";"
 syn match	ohTemporary	"\."
@@ -67,6 +61,16 @@ syn match	ohNamespace	"\zs\<\u\+\ze[^A-Z_ ]"
 syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
 syn match	ohFunction	"\<_\>"
 syn match	ohFunction	"[^_ ()\[\]^`{|}!-@\\][^ ()\[\]^`{|}!-/:-@\\]*_\>" contains=ohNamespace
+
+syn region ohBraced matchgroup=ohBraces
+      \ start=+{+ end="}"
+      \ contains=ALLBUT,ohBraced
+syn region ohBracketed matchgroup=ohBrackets
+      \ start=+\[+ end="]"
+      \ contains=ALLBUT,ohBracketed
+syn region ohParened matchgroup=ohParens
+      \ start=+(+ end=")"
+      \ contains=ALLBUT,ohParened
 
 syn match   ohEndOfLineComment	"# .*$"
       \ contains=ohEscape,ohTodo,ohTick,@Spell
@@ -94,7 +98,7 @@ syn region  ohMultilineComment matchgroup=ohMultilineComment
 
 syn region  ohString oneline matchgroup=ohQuotes
       \ start=+\z(['"]\)+ end="\z1" skip="\\\\\|\\\z1"
-      \ contains=ohEscape,@Spell
+      \ contains=ohEscape,@Spell,ohStringInterpolation
 
 syn match   ohEscape	+\\[abfnrtv'"\\]+ contained
 syn match   ohEscape	"\\\o\{1,3}" contained
@@ -120,7 +124,16 @@ syn match   ohSpaceError	display "\t\+ "
 
 syn region	ohTick matchgroup=ohTick
       \ start=+`+ end=+`+
-      \ contains=ohBuiltinVariable,ohBuiltinFunction,ohStatement,ohJump,ohConditional,ohRepeat,ohOperator,ohError,ohOk,ohResult,ohAsync,ohTodo,ohBrackets,ohBraces,ohParens,ohReadonly,ohWritable,ohTemporary,ohLambdaStarter,ohNullSymbol,ohSyntaxError,ohInclude,ohUnusedVariable,ohUnusedFunction,ohMacro,ohNamespace,ohEndOfLineComment,ohMidlineComment,ohMultilineComment,ohFunction,ohString,ohEscape,ohNumber,ohSpaceError
+      \ contains=ALLBUT,ohTick
+syn region ohStringInterpolation matchgroup=ohBraceInterpolation
+      \ start=+${+ end=+}+ extend
+      \ contains=ALLBUT,ohStringInterpolation
+syn region ohStringInterpolation matchgroup=ohBracketInterpolation
+      \ start=+$\[+ end=+]+ extend
+      \ contains=ALLBUT,ohStringInterpolation
+syn region ohStringInterpolation matchgroup=ohParenInterpolation
+      \ start=+$(+ end=+)+ extend
+      \ contains=ALLBUT,ohStringInterpolation
 
 " The default highlight links.
 " WildMenu is interesting.  see options with `:highlight`
@@ -155,6 +168,9 @@ hi def link ohNullSymbol		Identifier
 hi def link ohBrackets		Type
 hi def link ohBraces		NonText
 hi def link ohParens		Operator
+hi def link ohBraceInterpolation		ohBraces
+hi def link ohBracketInterpolation		ohBrackets
+hi def link ohParenInterpolation		ohParens
 hi def link ohReadonly		Constant
 hi def link ohWritable		Comment
 hi def link ohTemporary		NonText
