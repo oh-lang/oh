@@ -1,7 +1,9 @@
 # TODO: define the `@test_panics` macro
 # TODO: define the `@compile_panics` macro
 
-@test(@inject ast;): hm_[er_: str_]
+@test: hm_[er_: str_]
+    # TODO: do we need to get `ast` as a singleton or just use it?
+    # maybe by default it is available to `@macros`.
     BAD_DECLARATION_er: 'expected `@test "test name":` with `{...}` or indented block'
     node; ast parse_next_() assert_(BAD_DECLARATION_er)
 
@@ -87,84 +89,88 @@ test_context_: [@protected printed; array_[str_], @protected name; str_]
             m name pop_()
 }
 
-# TODO
-test[of]: [Of, Oh_info, Conversion; str]
-{   g(~T., @inject oh_info, Conversion. ""): g[t]
-        [T, oh_info, Conversion]
+test_[of_]: [of;, oh_info:, transformation; str_]
+{   g_(~t., oh_info. oh_info_ caller_(), transformation. ""): g_[t_]
+        [t, oh_info, transformation]
 
-    ;;descope[Require: of is bool](): null
-        if !Of
-            error("${M Oh_info}: expected ${Conversion}")
-            panic("expected ${Conversion}")
-    
-    ;;descope[Require: of is hm](): null
-        if Of is Er:
-            error("${M Oh_info}: expected ${Conversion}, got ${Er}")
-            panic("expected ${Conversion} to be OK, got ${Er}")
+    ;;descope_[require: of_ is bool_](): null_
+        if !m of
+            error_("${m oh_info}: expected ${m transformation}")
+            panic_("expected ${m transformation}")
 
-    ;;descope(): null
-        if !Conversion
-            error("${M Oh_info}: expected an expression like test(X) == 7")
+    ;;descope_[require: of_ is hm_](): null_
+        if of is er:
+            error_("${m oh_info}: expected ${m transformation}, got ${er}")
+            panic_("expected ${m transformation} to be OK, got ${er}")
 
-    @methods(of) @each Method:
-        @concat(Method Name)(...Method Arguments): test[Method returning]
-            Conversion += "${M format_method(Method)}"
-            Returning: @concat(Method Name)(...Method Arguments)
-            g(Returning, Oh_info, Conversion clone())
+    # TODO: is there a nice way to do `require: not-defined-otherwise`?
+    ;;descope_[require: !(of_ is hm_ or of_ is bool_)](): null_
+        if !m transformation
+            error_("${m oh_info}: expected an expression like `test_(x) == 7`")
+
+    @methods(of_) @each method:
+        # `method arguments` will include `m:`, `m;`, or `m.`, so we don't
+        # need to add `::`, `;;`, or `..` to the start here.
+        @concat(method name)(...method arguments): test_[method returning_]
+            transformation. str_ = "${m transformation} ${m format_method_(method)}"
+            returning. @concat(method name)(...method arguments)
+            # TODO: i think we need to plan for `m` to be descoped here.
+            # TODO: maybe this method should be converted to `..` regardless of `m`.
+            g_(returning, oh_info_ caller_(), transformation)
 }
 
 @test "==":
     @test "works for ints":
-        test(5) == 5
-        test(10) == 10
+        test_(5) == 5
+        test_(10) == 10
 
     @test_panics "expected (5 == 6) Bool":
-        test(5) == 6
+        test_(5) == 6
 
 @test "!=":
     @test "works for ints":
-        test(5) != 50
-        test(10) != 12
+        test_(5) != 50
+        test_(10) != 12
 
     @test_panics "expected (3 != 3) Bool":
-        test(3) != 3
+        test_(3) != 3
 
 @test ">=":
     @test "works for ints":
-        test(5) >= 3
-        test(4) >= 4
-        test(10) >= 10
+        test_(5) >= 3
+        test_(4) >= 4
+        test_(10) >= 10
 
     @test_panics "expected (5 >= 6) Bool":
-        test(5) >= 6
+        test_(5) >= 6
 
 @test "<=":
     @test "works for ints":
-        test(5) <= 6
-        test(7) <= 7
-        test(12) <= 12
+        test_(5) <= 6
+        test_(7) <= 7
+        test_(12) <= 12
 
     @test_panics "expected (7 <= 6) Bool":
-        test(7) <= 6
+        test_(7) <= 6
 
 @test "<":
     @test "works for ints":
-        test(5) < 6
-        test(10) < 11
+        test_(5) < 6
+        test_(10) < 11
 
     @test_panics "expected (7 < -1) Bool":
-        test(7) < -1
+        test_(7) < -1
 
     @test_panics "expected (-1 < -1) Bool":
-        test(-1) < -1
+        test_(-1) < -1
 
 @test ">":
     @test "works for ints":
-        test(5) > 3
-        test(20) > 19
+        test_(5) > 3
+        test_(20) > 19
 
     @test_panics "expected (-1 > 1) Bool":
-        test(-1) > 1
+        test_(-1) > 1
 
     @test_panics "expected (1 > 1) Bool":
-        test(1) > 1
+        test_(1) > 1

@@ -47,6 +47,9 @@ in `(x: int_, y; str_, z. dbl_)`, we declare `x` as a readonly reference, `y` a 
 and `z` a temporary, whereas outside of function arguments, `[x: int_, y; str_, z. dbl_]` indicates
 that `x` is readonly (though it can be written in constructors or first assignment),
 that `y` is writable, and `z` is volatile (and writable).
+TODO: i think it makes sense to make `z. dbl_` mean a "temporary" that should be passed
+in as a temporary to the next function that would grab it as a temporary argument,
+via the hidden `@hide z!`-like logic, but effectively Rust-like.
 
 In some languages, e.g., JavaScript, objects are passed by reference and primitives
 are passed by value when calling a function with these arguments.  In oh-lang,
