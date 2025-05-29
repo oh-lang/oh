@@ -151,7 +151,7 @@ this parallels `my_class::the_method` in C++, but in oh-lang we can analogously 
 `a_mutating_method_(m;, x: int_): str_` becomes `;;a_mutating_method_(x: int_): str_`,
 or `..one_temporary_method_()` for a method on a temporary `m`, i.e.,
 `one_temporary_method_(m.)`.  Inside an instance method definition, you can use `m`
-to refer to the class instance, regardless of how it was defined.  You also use
+to refer to the class instance, regardless of how it was defined.  You must use
 `m the_variable_name` to refer to a field `the_variable_name` defined on the class
 inside any methods.
 
@@ -163,7 +163,7 @@ vector3_: [x: dbl_, y: dbl_, z: dbl_]
 ```
 
 We support nested types without needing a `m_` prefix, and they are available anywhere
-in the class body they are defined.  This is a minor inconsistency with instance methods
+in the class body they are defined.  This is a minor inconsistency with instance fields
 (which always require `m`) but it makes overloads much easier to reason about.  However,
 to prevent confusion, these nested types cannot shadow any global types.
 Here is an example with a generic type, where it would be convenient
@@ -5657,40 +5657,40 @@ substitute the preferred name/logic for any aliases found.
 Aliases can be used for simple naming conventions, e.g.:
 
 ```
-options: choose
-[   one_of[Align_inherit_x: 0, Align_center_x, Align_left, Align_right]
+options_: one_of
+[   align_inherit_x: 0
+    align_center_x
+    align_left
+    align_right
 ]
-{   @alias Inherit_align_x: Align_inherit_x
+{   @alias inherit_align_x: align_inherit_x
 }
 
-Options: options Inherit_align_x    # converts to `options Align_inherit_x` on next format.
+Options: options inherit_align_x    # converts to `options align_inherit_x` on next format.
 ```
 
 Aliases can also be used for more complicated logic and even deprecating code.
 
 ```
-my_class: [X; int]
-{   # explicit constructor:
-    m(X; int): [X]
-
-    # implicit constructor:
-    ;;renew(M X; int): null
+my_class_: [x; int_]
+{   # implicit constructor:
+    ;;renew_(m x. int_): {}
 
     # This was here before...
-    # ;;my_deprecated_method(Delta_x: int): null
-    #     X += Delta_x
+    # ;;my_deprecated_method_(delta_x: int_): null_
+    #     m x += delta_x
 
     # But we're preferring direct access now:
-    @alias ;;my_deprecated_method(Delta_x: int): null
-        X += Delta_x
+    @alias ;;my_deprecated_method_(delta_x: int_): null_
+        m x += delta_x
 }
 
-My_class; my_class(X: 4)
-My_class my_deprecated_method(Delta_x: 3)   # converts to `My_class X += 3` on next format.
+my_class; my_class_(x: 4)
+my_class my_deprecated_method_(delta_x: 3)  # converts to `my_class x += 3` on next format.
 ```
 
 While it is possible, it is not recommended to use aliases to inline code.
-This is because the aliased code will be "inlined" in the source directly,
+This is because the aliased code will be immediately and permanently inlined,
 so it won't benefit from any future updates to the aliased code.
 
 # modules
@@ -7870,9 +7870,9 @@ Masks are generalized from enumerations to allow multiple values held simultaneo
 Each value can also be thought of as a flag or option, which are bitwise OR'd together
 (i.e., `|`) for the variable instance.  Under the hood, these are unsigned integer types.
 Trying to assign a negative value will throw a compiler error.
-Unlike enums which hold only `one_of` the fields at a time, masks hold `any_or_none_of`
-which is a bit too verbose; we use `choose[A, B, C]` to declare a mask which can
-be `A`, `B`, `C`, some combination of all three, or no values at all.
+Unlike enums which hold only `one_of_` the fields at a time, masks hold `any_or_none_of_`
+which is a bit too verbose; we use `choose_[a, b, c]` to declare a mask which can
+be `a`, `b`, `c`, some combination of all three, or no values at all.
 
 Like with enums, you can specify the integer type that backs the mask, but in this case
 it must be an unsigned type, e.g., `choose u32[...]`.  Note that by default, the `mask_type`
