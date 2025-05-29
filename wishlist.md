@@ -908,7 +908,8 @@ which should be used for their side effects.  For example, `FIRST_` and `SECOND_
 should be used for binary operations like `&&` and `*`.  See [namespaces](#namespaces)
 for more details.
 
-There are some reserved variable names, like `m`, which can only
+There are some reserved variable names: `m` and `o`, along with their `type_case_`
+variants, and `_` which is reserved for [class imports](#modules).  `m` can only
 be used as a reference to the current class instance, and `o` which
 can only be used as a reference to an *o*ther instance of the same type;
 `o` must be explicitly added as an argument, though, in contrast to `m` which can be implicit.
@@ -2662,7 +2663,7 @@ f_(int: 7)              # ok but overly verbose
 ```
 
 If passing functions as an argument where the function name doesn't matter,
-there are actually a few options: `_`, `a_`, `an_`, `fn_`, and `do_`.
+there are actually a few options: `a_`, `an_`, `fn_`, and `do_`.
 We recommend `a_` and `an_` for `map`-like operations with a single argument,
 choosing `an_` if the argument name starts with a vowel sound (and `a_` otherwise),
 and `do_` for multi-argument functions.  We keep `fn_` around
@@ -2693,7 +2694,7 @@ q_
 # equivalent to `q_(fn_(): random_() > 0.5)` or `q_({random_() > 0.5})`
 
 # defining a lambda usually requires a name, feel free to use a default:
-q_(_(): true)
+q_(do_(): true)
 # or you can use this notation, without the name:
 q_({true})
 
@@ -2814,7 +2815,7 @@ so the compiler must be able to infer it (e.g., via using the lambda function as
 or by using a default name like `$int` to define an integer).  Some examples:
 
 ```
-run_asdf_(do_(j: int_, k: str_, l: dbl_): null)_: null_
+run_asdf_(do_(j: int_, k: str_, l: dbl_): null_): null_
     print_(do_(j: 5, k: "hay", l: 3.14))
 
 # Note that `$k`, `$j`, and `$l` attach to the same lambda based on looking
@@ -4023,7 +4024,7 @@ function and swapping `:` for `;` to create a reassignable function.
 When calling a nullable function, unless the function is explicitly
 checked for non-null, the return type will be nullable.  E.g.,
 `x?: optional_function_(...args)` will have a type of
-`one_of_[return_type_, null]_`.  Nullable functions are checked by
+`one_of_[return_type_, null_]`.  Nullable functions are checked by
 the executable, so the programmer doesn't necessarily have to do it.
 
 A nullable function has `?` before the argument list; a `?` *after* the argument list
@@ -5707,7 +5708,7 @@ and `..` is allowed between forward slashes to go to the parent directory relati
 to the current directory, e.g., `\/../subdirectory_in_parent_directory/other/file`.
 Note that we don't include the `.oh` extension on the final file, but the formatter
 will remove this for you so you don't need to do this by hand when copying in file
-paths.  You can also use `oh("./relative/path/to/file.oh")`, which does require
+paths.  You can also use `oh_("./relative/path/to/file.oh")`, which does require
 the final `.oh` extension.
 
 For example, suppose we have two files, `vector2.oh` and `main.oh` in the same
@@ -5716,34 +5717,44 @@ to invoke logic from these external files.
 
 ```
 # vector2.oh
-vector2: [X: dbl, Y: dbl]
-{   ;;renew(M X: dbl, M Y: dbl): {}
+vector2_: [x: dbl_, y: dbl_]
+{   ;;renew_(m x. dbl_, m y. dbl_): {}
 
-    @order_independent
-    ::dot(Vector2: vector2): dbl
-        X * Vector2 X + Y * Vector2 Y
+    ::dot_(o): dbl_
+        m x * o x + m y * o y
 }
 
 # main.oh
-Vector2_oh: \/vector2   # .oh extension can be used but will be formatted off.
-# alternatively: `Vector2_oh: oh("./vector2.oh")`
-Vector2: Vector2_oh vector2(X: 3, Y: 4)
-print(Vector2)
+vector2_oh: \/vector2   # .oh extension can be used but will be formatted off.
+# alternatively: `vector2_oh: oh_("./vector2.oh")`
+# alternatively: `[vector2_]: \/vector2` or `[vector2_]: oh_("./vector2.oh")`
+vector2: vector2_oh vector2_(x. 3, y. 4)
+print_(vector2)
 # you can also destructure imports like this:
-[vector2]: \/vector2    # equivalent to `[vector2]: oh("./vector2.oh")`
 ```
 
-Note that we cannot import a function like this: `[my_function]: \/other_file`;
+For concision, we can use `\/other_file/some_class _` to reference the class
+`some_class_` within `./other_file/some_class.oh`.  So the above example
+would be more idiomatically written like this:
+
+```
+# main.oh
+vector2: \/vector2 _(x. 3, y. 4)
+print_(vector2)
+```
+
+Note that we cannot import a function like this: `[my_function_]: \/other_file`;
 to oh-lang this looks like a type.  You either need to specify the overload
-that you're pulling in, e.g., `[my_function(Int): str]: \/other_file`,
-or request all overloads via `[my_function(Call;): null]: \/other_file`.
+that you're pulling in, e.g., `[my_function_(int): str_]: \/other_file`,
+or request all overloads via `[my_function_(call;): null_]: \/other_file`.
 Or you can just import the file and use the function as needed:
-`Other_file: \/other_file, Other_file my_function(123)`.
-TODO: i think we can relax this requirement; if you request `[my_function]` it can just
+`other_file: \/other_file, other_file my_function_(123)`.
+TODO: i think we can relax this requirement; if you request `[my_function_]` it can just
 be the function with all overloads; otherwise we should technically require specifying
-type "overloads" for generic types like `hm[of]: hm[ok: of, er]` that come from other files.
+type "overloads" for generic types like `hm_[of_]: hm_[ok_: of_, er_]` that come from other files.
 there's not a huge difference between types and functions, they both can
 take arguments to return something else.
+TODO: i think we can use `[*]: \/other_file` to import everything.
 
 You can use this `\/` notation inline as well, which is recommended
 for avoiding unnecessary imports.  It will be a language feature to
@@ -5753,10 +5764,10 @@ has compile-time errors they will be known at compile time, not run time.
 
 ```
 # importing a function from a file in a relative path:
-print(\/path/to/relative/file function_from_file("hello, world!"))
+print_(\/path/to/relative/file function_from_file_("hello, world!"))
 
 # importing a function from the math library:
-Angle: \\math atan2(X: 5, Y: -3)
+angle: \\math atan2_(x: 5, y: -3)
 ```
 
 Following the principle of laying out your code with the most important, higher-level
@@ -5775,10 +5786,10 @@ use a backslash to escape the space, e.g., `\\library/path/with\ spaces` or
 (using backslashes) will probably be supported.
 
 Note that we take the entire import as
-if it were an `variable_case` identifier.  E.g., `\\math` acts like one identifier, `Math`,
-so `\\math atan(X, Y)` resolves like `Math atan(X, Y)`, i.e., member access or drilling down
-from `Math: \\math`.  Similarly for any relative import; `\/relative/import/file some_function(Q)`
-correctly becomes like `File some_function(Q)` for `File: \/relative/import/file`.
+if it were an `variable_case` identifier.  E.g., `\\math` acts like one identifier, `math`,
+so `\\math atan_(x, y)` resolves like `math atan_(x, y)`, i.e., member access or drilling down
+from `math: \\math`.  Similarly for any relative import; `\/relative/import/file some_function_(q)`
+correctly becomes like `file some_function_(q)` for `file: \/relative/import/file`.
 
 ## scripts
 
@@ -6346,7 +6357,7 @@ er_: one_of_
 [   out_of_memory
     # etc...
 ]
-hm_[of]_: hm_[ok_: of_, er_]
+hm_[of_]: hm_[ok_: of_, er_]
 
 # TODO: is there a way we can make container dynamics better here for `unnest_`?
 # e.g., can we make it a `container_[at_: of_, of_: of_]` as well?
