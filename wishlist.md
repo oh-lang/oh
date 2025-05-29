@@ -5631,21 +5631,21 @@ inside nested sequence builders.  We don't expect this to be a common practice.
 
 ```
 # Example method sequence builder:
-My_class@
-[   my_method()@ [next_method(), next_method2(), Nested_field]
-    other_method()
-    Some_field
+my_class@
+[   my_method_()@ [next_method_(), next_method2_(), nested_field]
+    other_method_()
+    some_field
 ]
 
 # Is equivalent to this sequence:
-Result: My_class my_method()
-Next_method: Result next_method()
-Next_method2: Result next_method2()
-Nested_field: Result Nested_field
-Other_method: My_class other_method()
-Some_field: My_class Some_field
+HIDDEN_result; my_class my_method_()
+next_method: HIDDEN_result next_method_()
+next_method2: HIDDEN_result next_method2_()
+nested_field: HIDDEN_result nested_field
+other_method: my_class other_method_()
+some_field: my_class some_field
 # This is constructed (since it's defined with `[]`):
-[My_method: [Next_method, Next_method2, Nested_field], Other_method, Some_field]
+[my_method: [next_method, next_method2, nested_field], other_method, some_field]
 ```
 
 # aliases
