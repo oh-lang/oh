@@ -339,11 +339,11 @@ like `count` and `index` to panic?
 
 # general syntax
 
-* `print_(...)` to echo some values (in ...) to stdout, `error_(...)` to echo to stderr
+* `print_(...)` to echo some values (in ...) to stdout, `print_(error: ...)` to echo to stderr
     * use string interpolation for printing dynamic values: `print_("hello, ${variable_1}")`
     * use `print_(no_newline: "keep going ")` to print without a newline
     * default overload is to print to null, but you can request the string that was printed
-        if you use the `print_(str.): str_` or `error_(str.): str_` overloads.
+        if you use the `print_(str.): str_` or `print_(error. str_): str_` overloads.
         e.g., `another_fn_(value: int): print_("Value is ${value}")` will return `null`,
         whereas `another_fn_(value: int): str {print_("Value is ${value}")}` will
         return "Value is 12" (and print that) if you call `another_fn_(value: 12)`.
@@ -903,10 +903,12 @@ There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
 which are function-like but may consume the rest of the statement.
 E.g., `return X + 5` will return the value `(X + 5)` from the enclosing function.
 There are some reserved namespaces with side effects like `FIRST_`, `SECOND_`,
-`THIRD_`, `NAMED_`, `AS_`,
+`THIRD_`, `FOURTH_`, `NAMED_`, `AS_`,
 which should be used for their side effects.  For example, `FIRST_` and `SECOND_`
-should be used for binary operations like `&&` and `*`.  See [namespaces](#namespaces)
+should be used for binary operations like `+` and `*`.  See [namespaces](#namespaces)
 for more details.
+TODO: i think we can use `_0`, `_1`, etc., instead of `FIRST_`, `SECOND_`.
+let's see if we can make the vim syntax work for that, though.
 
 There are some reserved variable names: `m` and `o`, along with their `type_case_`
 variants, and `_` which is reserved for [class imports](#modules).  `m` can only
@@ -3864,7 +3866,7 @@ call_:
     output; lot_[at_: str_, any_]
     # things printed to stdout via `print_`:
     prints; array_[str_]
-    # things printed to stderr via `error_`:
+    # things printed to stderr via `print_(error)`:
     errors; array_[str_]
 ]
 {   # adds a named argument to the function call.
@@ -5807,7 +5809,7 @@ Note that one downside of scripting is that what could be compile-time errors be
 
 With that, you can do imports using the `oh` type, and note we need the assertion when dealing
 with `.ohs` files, since they can fail at run-time:
-`Script: oh("../my_script/doom.ohs") assert(Er: "should compile")`.
+`script: oh_("../my_script/doom.ohs") assert_(er: "should compile")`.
 
 TODO: how are we actually going to do this, e.g., need to expose public/protected functions to
 the calling code, pulling in other import dependencies should not reload code if we've already loaded
@@ -5824,33 +5826,33 @@ we are declaring a test.
 
 ```
 @private
-private_function(X: int, Y: int): [Z: str]
-    Z: "${X}:${Y}"
+private_function_(x: int_, y: int_): [z: str_]
+    z: "${x}:${y}"
 
 @protected
-protected_function(X: int, Y: int): [Z: str]
-    [Z;] = private_function(X, Y)
-    Z += "!"
-    [Z]
+protected_function_(x: int_, y: int_): [z: str_]
+    [z;] = private_function_(x, y)
+    z += "!"
+    [z]
 
-public_function(X1: int, Y1: int, X2: int, Y2: int): null
-    print(protected_function(X: X1, Y: Y1) Z, private_function(X: X2, Y: Y2))
+public_function_(x1: int_, y1: int_, x2: int_, y2: int_): null_
+    print_(protected_function_(x: x1, y: y1) z, private_function_(x: x2, y: y2))
 
 @test "foundation works fine":
-    test(private_function(X: 5, Y: 3)) == [Z: "5:3"]
-    test(private_function(X: -2, Y: -7)) == [Z: "-2:-7"]
+    test_(private_function_(x: 5, y: 3)) == [z: "5:3"]
+    test_(private_function_(x: -2, y: -7)) == [z: "-2:-7"]
 
 @test "building blocks work fine":
-    test(protected_function(X: 5, Y: -3)) == [Z: "5:-3!"]
-    test(protected_function(X: -2, Y: 7)) == [Z: "-2:7!"]
+    test_(protected_function_(x: 5, y: -3)) == [z: "5:-3!"]
+    test_(protected_function_(x: -2, y: 7)) == [z: "-2:7!"]
 
 @test "public function works correctly":
-    public_function(X1: -5, Y1: 3, X2: 2, Y2: 7)
-    test(Test print()) == ["-5:3!2:7"]
+    public_function_(x1: -5, y1: 3, x2: 2, y2: 7)
+    test_(context printed_()) == ["-5:3!2:7"]
 
     @test "nested tests also work":
-        public_function(X1: 2, Y1: -7, X2: -5, Y2: -3)
-        test(Test print()) == ["2:-7!-5:-3"]
+        public_function_(x1: 2, y1: -7, x2: -5, y2: -3)
+        test_(context printed_()) == ["2:-7!-5:-3"]
 ```
 
 See [the test definition](https://github.com/oh-lang/oh/blob/main/core/test.oh) for
@@ -5860,35 +5862,35 @@ Nested tests will freshly execute any parent logic before executing themselves.
 This ensures a clean state.  If you want multiple tests to start with the same
 logic, just move that common logic to a parent test.
 
-Inside of a `test` block, you have access to a `Test` variable which includes
-things like what has been printed (`Test print()`).  In this example, `Test print()`
+Inside of a `@test` block, you have access to a `context` variable which includes
+things like what has been printed (`context printed_()`).  `context printed_()`
 will pull everything that would have been printed in the test, putting it into
 a string array (one string per newline), for comparisons and matching.
-It then clears its internal state so that new calls
-to `Test print()` will only see new things since the last time `Test print()` was called.
+It then clears its internal state so that new calls to `context printed_()`
+will only see new things since the last time `context printed_()` was called.
 
 Parametric tests are also possible; just make sure to use `@each` (or another control flow macro)
 in order to expand the loops at compile time.
 
 ```
 @test_only
-test_case: [Argument: str, Return: int]
+test_case_: [argument: str_, result: int_]
 
 @test_only
-Test_cases: lot[at: str, test_case]
-[   "hello": [Argument: "hello world", Return: 11]
-    "wow": [Argument: "wowee", Return: 5]
+test_cases: lot_[at_: str_, test_case_]
+[   "hello": [argument: "hello world", result: 11]
+    "wow": [argument: "wowee", result: 5]
 ]
 
 @test "do_something":
     # this common setup executes before each parametric test;
     # each nested test starts with the common setup from fresh
     # and doesn't continue to use the environment for the next nested test.
-    get_environment_set_up()
+    get_environment_set_up_()
 
-    Test_cases @each(Name: at, Test_case:)
-        @test "testing ${Name}":
-            test(do_something(Test_case Argument)) == Test_case Return
+    test_cases @each (name: at_, test_case:)
+        @test "testing ${name}":
+            test_(do_something_(test_case argument)) == test_case result
 ```
 
 Integration tests can be written in files that end with `.test.oh` or `.test.ohs` (i.e., as a script).
@@ -5896,8 +5898,9 @@ These can pull in any dependencies via standard file/module imports, including o
 E.g., if you create some test helper functions in `helper.test.oh`, you can import these
 into other test files (but not non-test files) for usage.
 
-Unit and integration tests are run via `oh test` in the directory you want, or `oh test subdirectory/`;
+Unit and integration tests are run via `oh test .` in the directory you want, or `oh test subdirectory/`;
 only tests in that directory (and recursive subdirectories) will be run.
+`oh test` will run all tests by default.
 
 ## file access / file system
 

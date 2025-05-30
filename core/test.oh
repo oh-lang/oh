@@ -77,6 +77,11 @@ test_context_: [@protected printed; array_[str_], @protected name; str_]
         m pop_(:str)
         hm
 
+    ;;printed_(): array_[str_]
+        result; array_[str_]
+        m printed <-> result
+        result
+
     @private
     ;;push_(str:):
         m name &= str
@@ -100,15 +105,15 @@ test_[of_]: [of;, oh_info:, transformation; str_]
     ;;descope_(): null_
         @if of_ is bool_
             if !m of
-                error_("${m oh_info}: expected ${m transformation}")
+                print_(error: "${m oh_info}: expected ${m transformation}")
                 panic_("expected ${m transformation}")
         @elif of_ is hm_
             if of is er:
-                error_("${m oh_info}: expected ${m transformation}, got ${er}")
+                print_(error: "${m oh_info}: expected ${m transformation}, got ${er}")
                 panic_("expected ${m transformation} to be OK, got ${er}")
         @else
             if !m transformation
-                error_("${m oh_info}: expected an expression like `test_(x) == 7`")
+                print_(error: "${m oh_info}: expected an expression like `test_(x) == 7`")
 
     @methods(of_) @each method:
         # `method arguments` will include `m:`, `m;`, or `m.`, so we don't
