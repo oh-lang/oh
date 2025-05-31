@@ -1,5 +1,5 @@
 assert_[of_]: [of;, oh_info:, transformation; str_]
-{   g_(~t., oh_info. oh_info_ caller_(), transformation. ""): g_[t_]
+{   g_(~t., oh_info. _ caller_(), transformation. ""): g_[t_]
         [t, oh_info, transformation]
 
     # TODO: does this descope at the right time?  i think so as long

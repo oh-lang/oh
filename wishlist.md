@@ -2869,6 +2869,10 @@ There is currently no good way to define the name of a lambda function; we may u
 `@named(whatever_name_) {$x + $y}`, but it's probably more readable to just define
 the function inline as `whatever_name_(x, y): x + y`.
 
+TODO: i think we can use `run_asdf_{$k * $j + str($l)}`, i.e., `{}` instead of `({})`.
+but i don't know if this works for indents/conditionals; `if run_asdf_ {$k + $j}`
+would be valid conditional logic if `run_asdf_` was nullable.
+
 ### types as arguments
 
 Generally speaking you can use generic/template programming for this case,
@@ -6018,82 +6022,84 @@ what you want, annotate the function with `@can_panic`, otherwise it's a compile
 
 ## automatically converting errors to null
 
-If a function returns a `hm` type, e.g., `my_function(...): hm[ok, er]`,
-then we can automatically convert its return value into a `one_of[ok, null]`, i.e.,
-a nullable version of the `ok` type.  This is helpful for things like type casting;
-instead of `My_int: what int(My_dbl) {Ok. {Ok}, Er: {-1}}` you can do
-`My_int: int(My_dbl) ?? -1`.  Although, there is another option that
-doesn't use nulls:  `int(My_dbl) map(fn(Er_): -1)`, or via
-[lambda functions](#lambda-functions): `int(My_dbl) map({$Er_, -1})`.
+If a function returns a `hm_` type, e.g., `my_function_(...): hm_[ok_, er_]`,
+then we can automatically convert its return value into a `one_of_[ok_, null_]`, i.e.,
+a nullable version of the `ok_` type.  This is helpful for things like type casting;
+instead of `my_int: what int_(my_dbl) {ok. {ok}, er: {-1}}` you can do
+`my_int: int_(my_dbl) ?? -1`.  Although, there is another option that
+doesn't use nulls:  `int_(my_dbl) map_(fn_(_er): -1)`, or via
+[lambda functions](#lambda-functions): `int_(my_dbl) map_({$er_, -1})`.
 
 TODO: should this be valid if `ok` is already a nullable type?  e.g.,
-`my_function(): hm[ok: one_of[int, null], er: str]`.
-we probably should compile-error-out on casting to `Int?: my_function()` since
-it's not clear whether `Int` is null due to an error or due to the return value.
+`my_function_(): hm_[ok_: one_of_[int_, null_], er_: str_]`.
+we probably should compile-error-out on casting to `int?: my_function_()` since
+it's not clear whether `int` is null due to an error or due to the return value.
 maybe we allow flattening here anyway.
 
 # standard container classes (and helpers)
 
-Brackets are used to create containers, e.g., `Y: "Y-Naught", Z: 10, [X: 3, (Y): 4, Z]`
-to create a lot with keys "X", the value of `Y` ("Y-Naught"), and "Z", with
-corresponding values 3, 4, and the value of `Z` (10).  Thus any bracketed values,
-as long as they are named, e.g., `A: 1, B: 2, C: 3, [A, B, C]`, can be converted
-into a lot.  Because containers are by default insertion-ordered, they can implicitly
-be converted into an array depending on the type of the receiving variable.
-This "conversion" happens only conceptually; constructing an array does construct
-a `lot` first and then convert.
+Brackets are used to create containers, e.g., `y: "Y-Naught", z: 10, [x: 3, {y}: 4, z]`
+to create a lot with keys "x", the value of `y` ("Y-Naught"), and "z", with
+corresponding values 3, 4, and the value of `z` (10).  Thus any bracketed values, as
+long as they are named, e.g., `a: 1, b: 2, c: 3, [a, b, c]`, can be cast into a lot.
+Because containers are by default insertion-ordered, they can be implicitly cast to an
+array depending on the type of the receiving variable.  This cast happens only
+conceptually; constructing an array doesn't construct a `lot` first to convert.
 
 ```
-er: one_of
-[   Out_of_memory
+er_: one_of_
+[   out_of_memory
     # etc.
 ]
 
-hm[of]: hm[ok: of, er]
+hm_[of_]: hm_[ok_: of_, er_]
 
-container[at, of: non_null, count_with: select_count]: []
-{   # Returns `null` if `At` is not in this container,
-    # otherwise the `of` instance at that `At`.
-    # This is wrapped in a reference object to enable passing by reference.
-    # TODO: do we like this?  it looks a bit like SFO logic that we killed off.
-    # USAGE:
-    #   # Get the value at `At: 5` and make a copy of it:
-    #   Of?: Container[At: 5]
-    #   # Get the value at `At: 7` and keep a mutable reference to it:
-    #   (Of?;) = Container[At: 5]
-    :;[At]: (Of?:;)
+container_[at_, of_: non_null_, count_with_: select_count_ = count_arch_]: []
+{   #[#
+    returns `null` if `at` is not in this container,
+    otherwise the `of` instance at that `at`.
+    this is wrapped in a reference object to enable passing by reference.
+    USAGE:
+    ```
+        # suppose `container` has `at_: int_`.
+        # get the value at `5` and make a copy of it:
+        of?: container[5]
+        # get the value at `7` and keep a mutable reference to it:
+        (of?;) = container[7]
+    ```
+    #]#
+    :;[at]: (of?:;)
 
-    # Returns the value at `At`, if present, while mooting
-    # it in the container.  This may remove the `id` from
-    # the container or may set its linked value to the default.
-    # (Which depends on the child container implementation.)
-    # Returns null if not present.
-    ;;[At]!?: of
+    #[#
+    safe API for creating a reference at `at`.
+    can return an error if the container runs out of memory
+    or for other container-specific reasons.
+    #]#
+    ;;[at]: hm_[(of;)]
 
-    # safe setter.
-    # returns an error if we ran out of memory trying to add the new value.
-    ;;put(At, Of.): hm[null]
-
-    # safe swapper.  replaces the value at `At` with the `Of` passed in,
-    # and puts the previous value into `Of`.  the new or old value can
-    # be null which means to delete what was there or that nothing was present.
-    # returns an error if we ran out of memory trying to add the new value.
-    ;;swap(At, Of?;): hm[null]
+    #[#
+    returns the value at `at`, if present, while mooting it
+    in the container.  depending on the container implementation,
+    this may remove the element from the container (e.g., in a `lot`)
+    or may set its linked value to the default (e.g., in an `array`).
+    returns null if not present.
+    #]#
+    ;;[at]!?: of
     
-    @alias ::has(At): M[At] != null
-    @alias ::contains(At): M[At] != null
+    @alias ::has_(at): m[at] != null
+    @alias ::contains_(at): m[at] != null
 
     # Returns the number of elements in this container.
-    ::count(): count_with
+    ::count_(): count_with_
 
     # can implicitly convert to an iterator (with writeable/readonly references).
-    ;:iterator(): iterator[(At:, Of;:)]
+    ;:iterator_(): iterator_[(at:, of;:)]
+
+    # iterate over keys/`at`s.
+    ::iterator_(): iterator[(at:)]
 
     # iterate over values.
-    ;:ofs(): iterator[(Of;:)]
-
-    # iterate over IDs.
-    ::ats(): iterator[(At:)]
+    ;:iterator_(): iterator[(of;:)]
 }
 ```
 
