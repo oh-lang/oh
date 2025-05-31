@@ -5940,43 +5940,42 @@ if `ok` is not already nullable, otherwise it is a compile error.
 See [the `hm_` definition](https://github.com/oh-lang/oh/blob/main/core/hm.oh)
 for methods built on top of the `one_of_[ok_, er_]` type.
 
-TODO:
 ```
-Result: if X { ok(3) } else { er("oh no") }
-if Result is_ok()
-    print("ok")
+result: if x { ok_(3) } else { er_("oh no") }
+if result is_ok_()
+    print_("ok")
 
-# but it'd be nice to transform `Result` into the `Ok` (or `Er`) value along the way.
-Result is(an(Ok): print("Ok: ${Ok}"))
-Result is(an(Er): print("Er: ${Er}"))
+# but it'd be nice to transform `result` into the `ok` (or `er`) value along the way.
+result is_(an_(ok): print_("ok: ${ok}"))
+result is_(an_(er): print_("er: ${er}"))
 
 # or if you're sure it's not an error, or want the program to terminate if not:
-Ok: Result ?? panic("expected `Result` to be non-null!!")
+ok: result ?? panic_("expected `result` to be ok!!")
 ```
 
 A few keywords, such as `is`, are actually [operators](#is-operator), so we can
 overload them and use them in this slightly more idiomatic way.  Notice that
-we declare an `Ok` variable here so we need to use a colon (e.g., `Ok:`).
+we declare an `ok` variable here so we need to use a colon (e.g., `ok:`).
 
 ```
-if Result is Ok:
-    print("Ok: ", Ok)
-elif Result is Er:
-    print("Er: ", Er)
+if result is ok:
+    print_("ok: ", ok)
+elif result is er:
+    print_("er: ", er)
 ```
 
 Or use `what` if you want to ensure via the compiler that you get all cases:
 
 ```
-what Result
-    Ok:
-        print("Ok: ", Ok)
-    Er:
-        print("Er: ", Er)
+what result
+    ok:
+        print_("ok: ", ok)
+    er:
+        print_("er: ", er)
 ```
 
-TODO: we probably want to enable things like `if Result is Ok: and Ok != 0 {...} else {...}`
-and similarly for `Er`.
+If you want to be more strict in matching after defining a variable,
+use the [`where` operator](#where-operator).
 
 ## assert
 
@@ -6947,6 +6946,14 @@ else
 `where` is similar to the [`Require`](#require) field, but
 `Require` needs to be computable at compile-time, and `where`
 can be computed at run-time.
+
+TODO: do we really need `where`?  what's wrong with `and`?
+`if cows is many: and many > 5`.  is the order of operations bad?
+or do we want to make sure people don't do weird things like
+`if cows is many: or other_condition_()`?  but i suppose
+we could do something like `if other_condition_() or cows is many:`;
+we probably can fix by using `or cows is many?:` to indicate `many`
+might not be defined.
 
 ### what operator
 
