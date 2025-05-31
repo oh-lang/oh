@@ -1,108 +1,76 @@
-hm[ok, er]: one_of[ok, er]
-{   # The API is `Ok: Hm assert()`, which will bubble up this `er`
-    # if the result was an error.  Note that we use the `block` API
-    # which normally is implicit but can be used explicitly if needed.
-    #   ```
-    #   do_something(Dbl): hm[ok: dbl, er: str]
-    #       if Dbl < 0
-    #           er("Invalid Dbl: $(Dbl)")
-    #       else
-    #           ok(Dbl sqrt())
-    #
-    #   # example with implicit `block` (like a guard/control flow):
-    #   implicit_block(): hm[ok: null, er: str]
-    #       # will return early if an invalid type.
-    #       Result: do_something(1.234) assert()
-    #       print(Result)
-    #
-    #   # example with explicit `block` that does the same thing as implicit:
-    #   explicit_block(): hm[ok: null, er: str]
-    #       indent
-    #       (   fn(Block[hm[ok: null, er: str]]):
-    #               Result: do_something(1.234) assert(Block)
-    #               print(Result)
-    #               Block exit(null)
-    #       )
-    #   ```
-    ..assert[block_return: contains[er]](Block[~block_return]): ok
-        what M!
-            Ok. {Ok}
-            Er.
-                debug error(Er)
-                Block exit(Er)
+hm_[ok_, er_]: one_of_[ok_, er_]
+{   #[#
+    The API is `ok: hm assert_()`, which will bubble up this `er`
+    if the result was an error.  Note that we use the `block_` API
+    which normally is implicit but can be used explicitly if needed.
+    ```
+        do_something_(dbl): hm_[ok_: dbl_, er_: str_]
+            if dbl < 0
+                er_("invalid dbl: ${dbl}")
+            else
+                ok_(dbl sqrt_())
 
-    # The API is `Ok: Hm assert(Er: "custom error if not `ok`")`.
-    # This will moot `M` and shortcircuit a failure (i.e., if `Hm`
-    # is `er`) to the calling block.  For example,
-    #   ```
-    #   do_something(Dbl): hm[ok: dbl, er: str]
-    #       if Dbl < 0
-    #           er("Invalid Dbl: $(Dbl)")
-    #       else
-    #           ok(Dbl sqrt())
-    #
-    #   # example with implicit `block` (like a guard/control flow):
-    #   implicit_block(): hm[ok: null, er: one_of[Invalid_do_something, Other_error]]
-    #       # will return early if an invalid type.
-    #       Result: do_something(1.234) assert(Er: Invalid_do_something)
-    #       print(Result)
-    #
-    #   # example with explicit `block` that does the same thing as implicit:
-    #   explicit_block(): hm[ok: null, er: one_of[Invalid_do_something, Other_error]]
-    #       indent
-    #       (   fn(Block[hm[ok: null, er: str]]):
-    #               Result: do_something(1.234) assert(Block, Er: Invalid_do_something)
-    #               print(Result)
-    #               Block exit(null)
-    #       )
-    #   ```
-    ..assert[block_return: contains[new_er]](@New Er: ~new_er, Block[~block_return]): ok
-        what M!
-            Ok. {Ok}
-            Er.
-                debug error(Er)
-                Block exit(@New Er)
+        # example with implicit `block_` (like a guard/control flow):
+        implicit_block_(): hm_[ok_: null_, er_: str_]
+            # will return early if an invalid type.
+            result: do_something_(1.234) assert_()
+            print_(result)
 
-    # maps an `Ok` result to a different type of `ok`, consuming `M`.
-    # since this is a `@Named` namespace, we need to use `My_hm map((Ok.): Ok + 3)`
-    # instead of whatever type `ok` is, e.g., `My_hm map((Int.): Int + 3)` would not work
+        # example with explicit `block` that does the same thing as implicit:
+        explicit_block_(): hm_[ok_: null_, er_: str_]
+            indent_
+            (   fn_(block[hm_[ok_: null_, er_: str_]]):
+                    result: do_something_(1.234) assert_(block)
+                    print_(result)
+                    block exit_(null)
+            )
+    ```
+    #]#
+    ..assert_[block_return_: contains_[er_]](block[~block_return_]): ok_
+        what m!
+            ok. {ok}
+            er. {block exit_(er)}
+
+    # maps an `ok` result to a different type `new_ok_`, consuming `m`.
+    # since this is a `NAMED_` namespace, we need to use `my_hm map_({$ok + 3})`
+    # instead of whatever type `ok_` is, e.g., `my_hm map_({$int + 3})` would not work
     # even if `ok` is type `int`.
-    ..map(fn(@Named Ok.): ~new_ok): hm[ok: new_ok, er]
+    ..map_(fn_(NAMED_ok.): ~new_ok_): hm_[ok_: new_ok_, er_]
 
-    # passes through any `Ok` result, but maps an `Er` to the desired `ok` result
+    # passes through any `ok` result, but maps an `er` to the desired `ok_` result
     # via the passed-in function.  while this looks like it could be indistinguishable
-    # from the next method if types `ok` and `er` are the same, the return type here
-    # is just `ok`, so we can distinguish based on return type overloading.
-    ..map(fn(@Named Er.): ok): ok
+    # from the next method if types `ok_` and `er_` are the same type, the return type
+    # here is just `ok_`, so we can distinguish based on return type overloading.
+    # TODO: do we need `[NAMED_ok;]` as the return type?  maybe we figure out how
+    # to use `NAMED_` logic everywhere and `DEFAULT_NAMED_` or something for unnamed.
+    ..map_(fn_(NAMED_er.): ok_): ok_
 
-    # maps an `Er` result to a different type of `er`.
-    ..map(fn(@Named Er.): ~new_er): hm[ok, er: new_er]
+    # maps an `er` result to a `new_er_` type.
+    ..map_(fn_(NAMED_er.): ~new_er_): hm_[ok_, er_: new_er_]
 
     # TODO: do we really want a function like this when we can have people
-    # do `what M! { Ok. {...ok logic...}, Er. {...er logic...}}`?
-    # TODO: do we even want any `map` methods since we have `what`?
-    # maps `ok` and `er` separately.
-    ..map(fn(@Named Ok.): ~t, fn(@Named Er.): t): t
+    # do `what m! { ok. {...ok logic...}, er. {...er logic...}}`?
+    # TODO: do we even want any `map_` methods since we have `what`?
+    # maps `ok_` and `er_` separately.
+    ..map_(fn_(NAMED_ok.): ~t_, fn_(NAMED_er.): t_): t_
 
     # runs a callback if OK but returns self
-    ..check(fn(@Named Ok): null): m
+    ..check_(fn_(NAMED_ok:): null_): m_
 
     # runs a callback if not OK but returns self
-    ..check(fn(@Named Er): null): m
+    ..check_(fn_(NAMED_er:): null_): m_
 
     # runs different callbacks based on OK/not-OK but returns self
-    ..check(fn(@Named Ok): null, fn(@Named Er): null): m
+    ..check_(fn_(NAMED_ok:): null_, fn_(NAMED_er:): null_): m_
 
-    # TODO: should we use `to` here or is there a better way to indicate casting?
-    # it's technically something like `one_of[ok, null](Result: hm[ok, er]): one_of[ok, null]`
-    # which is pretty verbose.  could use `(M.): one_of[ok, null]` for implicit conversion
-    ..to(): one_of[ok, null]
+    # cast to `ok_?`.
+    ..to_()?: ok_
 }
 
-hm[ok: hm[ok: ~other_ok, er: ~other_er], er]: disallowed
-[   "Do not nest a `hm` class inside another `hm`'s `ok`."
+hm_[ok_: hm_[ok_: ~other_ok_, er_: ~other_er_], er_]: disallowed_
+[   "do not nest a `hm_` class inside another `hm_`'s `ok_`."
 ]
 
-hm[ok, er: hm[ok: ~other_ok, er: ~other_er]]: disallowed
-[   "Do not nest a `hm` class inside another `hm`'s `er`."
+hm_[ok_, er_: hm_[ok_: ~other_ok_, er_: ~other_er_]]: disallowed_
+[   "do not nest a `hm_` class inside another `hm_`'s `er_`."
 ]

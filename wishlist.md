@@ -239,7 +239,8 @@ If the `ok_` and `er_` types are distinct, you don't need to wrap a return value
 See [the `hm` section](#hm) for more details.  It is a compile error to not handle
 errors when they are returned (e.g., something like a `no-unused-result`), although
 often there are overloads (without an `hm_` result being returned) which just panic
-at runtime in case of an error.
+at runtime in case of an error.  oh-lang does make it easy to chain results using
+[`assert_`](#assert), and we'll probably reserve an operator like `?!` to do this.
 
 ## coolness
 
@@ -4470,7 +4471,8 @@ a few methods, but don't use `:` since we're no longer declaring the class.
 ```
 # static function that constructs a type or errors out
 example_class_(z: dbl_): hm_[ok_: example_class_, er_: str_]
-    x: z round_() int_() assert_(er: "Need `round_(z)` representable as an `int`.")
+    # TODO: can we use `map_{$er, ...}` instead of `map_({$er, ...})`???
+    x: z round_() int_() map_(er: "Need `round_(z)` representable as an `int`.") assert_()
     example_class_(x)
 
 # static function that is not a constructor.
@@ -5809,7 +5811,7 @@ Note that one downside of scripting is that what could be compile-time errors be
 
 With that, you can do imports using the `oh` type, and note we need the assertion when dealing
 with `.ohs` files, since they can fail at run-time:
-`script: oh_("../my_script/doom.ohs") assert_(er: "should compile")`.
+`script: oh_("../my_script/doom.ohs") map_({$_er, "should compile"})`.
 
 TODO: how are we actually going to do this, e.g., need to expose public/protected functions to
 the calling code, pulling in other import dependencies should not reload code if we've already loaded
@@ -5898,14 +5900,14 @@ These can pull in any dependencies via standard file/module imports, including o
 E.g., if you create some test helper functions in `helper.test.oh`, you can import these
 into other test files (but not non-test files) for usage.
 
-Unit and integration tests are run via `oh test .` in the directory you want, or `oh test subdirectory/`;
-only tests in that directory (and recursive subdirectories) will be run.
-`oh test` will run all tests by default.
+Unit and integration tests are run via `oh test .` in the directory you want,
+or `oh test subdirectory/`; only tests in that directory (and recursive subdirectories)
+will be run.  `oh test` will run all tests by default.
 
 ## file access / file system
 
-Files can be opened via the `file` class, which is a handle to a system file.
-See [the `file` definition](https://github.com/oh-lang/oh/blob/main/core/file.oh).
+Files can be opened via the `file_` class, which is a handle to a system file.
+See [the `file_` definition](https://github.com/oh-lang/oh/blob/main/core/file.oh).
 
 TODO: make it possible to mock out file system access in unit tests.
 
@@ -5914,30 +5916,31 @@ TODO: make it possible to mock out file system access in unit tests.
 ## hm
 
 oh-lang borrows from Rust the idea that errors shouldn't be thrown, they should be
-returned and handled explicitly.  We use the notation `hm[ok, er]` to indicate
-a generic return type that might be `ok` or it might be an error (`er`).
+returned and handled explicitly.  We use the notation `hm_[ok_, er_]` to indicate
+a generic return type that might be `ok_` or it might be an error (`er_`).
 In practice, you'll often specify the generic arguments like this:
-`hm[ok: int, er: string]` for a result that might be ok (as an integer) or it might
+`hm_[ok_: int_, er_: string_]` for a result that might be ok (as an integer) or it might
 be an error string.  If your function never fails, but the interface requires using
-`hm`, you can use `hm[ok, er: null]` to indicate the result will never be an error.
+`hm_`, you can use `hm_[ok_, er_: never_]` to indicate the result will never be an error.
 
 To make it easy to handle errors being returned from other functions, oh-lang uses
-the `assert` method on a result class.  E.g., `Ok: My_hm assert()` which will convert
-the `My_hm` result into the `ok` value or it will return the `er` error in `My_hm` from
-the current function block, e.g., `Ok: what My_hm { Ok: {Ok}, Er: {return Er} }`.
-It is something of a macro like `?` in Rust.  Note that `assert` doesn't panic,
+the `assert_` method on a result class.  E.g., `ok: my_hm assert_()` which will convert
+the `my_hm` result into the `ok` value or it will return the `er_` error in `my_hm` from
+the current function block, e.g., `ok: what my_hm { ok: {ok}, er: {return er} }`.
+It is something of a macro like `?` in Rust.  Note that `assert_` doesn't panic,
 and it *always runs*, not just in debug mode.  See [its section](#assert) for more details.
 
 Note that we can automatically convert a result type into a nullable version
-of the `ok` type, e.g., `hm[ok: string, er: error_code]` can be converted into
-`string?` without issue, although as usual nulls must be made explicit with `?`.
-E.g., `my_function(String_argument?: My_hm)` to pass in `My_hm` if it's ok or null if not,
-and `String?: My_hm` to grab it as a local variable.  This of course only works
+of the `ok_` type, e.g., `hm_[ok_: string_, er_: error_code_]` can be converted into
+`string_?` without issue, although as usual nulls must be made explicit with `?`.
+E.g., `my_function_(string_argument?: my_hm)` to pass in `my_hm` if it's ok or null if not,
+and `string?: my_hm` to grab it as a local variable.  This of course only works
 if `ok` is not already nullable, otherwise it is a compile error.
 
-See [the hm definition](https://github.com/oh-lang/oh/blob/main/core/hm.oh)
-for methods built on top of the `one_of[ok, er]` type.
+See [the `hm_` definition](https://github.com/oh-lang/oh/blob/main/core/hm.oh)
+for methods built on top of the `one_of_[ok_, er_]` type.
 
+TODO:
 ```
 Result: if X { ok(3) } else { er("oh no") }
 if Result is_ok()

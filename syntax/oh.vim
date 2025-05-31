@@ -25,6 +25,7 @@ syn keyword ohBuiltinFunction	is_ m_ o_ renew_
 syn keyword ohBuiltinFunction	count_ each_ test_
 syn keyword ohBuiltinFunction	abs_ ceil_ floor_ max_ min_
 syn keyword ohBuiltinFunction	error_ print_
+syn keyword ohBuiltinType	never_ disallowed_
 syn keyword ohStatement		break continue fall_through
 syn keyword ohStatement		pass return
 syn keyword ohJump	assert_ exit_
@@ -149,6 +150,7 @@ hi def link ohInclude		Include
 hi def link ohAsync		Statement
 hi def link ohBuiltinVariable		Title
 hi def link ohBuiltinFunction		Question
+hi def link ohBuiltinType		Question
 hi def link ohFunction		Function
 hi def link ohUnusedVariable	Comment
 hi def link ohUnusedFunction	Include
