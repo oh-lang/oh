@@ -1,15 +1,11 @@
-array_[of_, count_with_: select_count_]: all_of_
+array_[of_, count_with_: select_count_ = count_arch_]: all_of_
 [   hashable_
     indexable_sequence_[of_]
 ]
-{   maybe_local_[local_bytes_]:
-            maybe_local_array_[of_, local_bytes_, locality_: count_with_]
-    non_local_: non_local_array_[of_, count_with_]
+{   index_: signed_[count_with_]
 
-    @alias heap_: non_local_
-    @alias heap_or_local_: maybe_local_
-
-    ::capacity_(): count_with_
+    !!(m:): bool_
+        count_(:m) > 0
 
     # sets this array's capacity to exactly `count_with`, or the minimum
     # capacity for this array if it is larger than `count_with`.
@@ -17,25 +13,16 @@ array_[of_, count_with_: select_count_]: all_of_
     # in an amortized way if you are increasing the capacity over time.
     ;;capacity_(count_with.): hm_[null_]
 
-    ::count_(): count_with_
-
     :;[in_bounds.]: (of:;)
-
-    # called as `array append_(3, assuming. capacity)`
-    ;;append_(of., assuming. one_of_[capacity]): null_
-
-    ;;pop_()?: of_
-
-    ;;capacity_(at_least. count_with_): hm_[null_]
-        current_capacity: m capacity_()
-        if at_least <= current_capacity
-            return ok_()
-        doubled_capacity: current_capacity double_or_max_()
-        m capacity_(max_(at_least, doubled_capacity))
 
     ;;append_(of.): hm_[null_]
         m capacity_(at_least: _count() + 1) assert_()
         m append_(.of, assuming. capacity)
+
+    # called as `array append_(3, assuming. capacity)`
+    ;;append_(of., assuming. one_of_[capacity]): null_
+
+    ::count_(): count_with_
 
     ;;count_[require: of_ is defaultable_](NEW_count_with.): hm_[null_]
         OLD_count: m count_()
@@ -49,6 +36,15 @@ array_[of_, count_with_: select_count_]: all_of_
             assert_(NEW_count >= 0, er invalid_count)
             while m count_() > NEW_count
                 UNUSED_of: m pop_()
+
+    ::capacity_(): count_with_
+
+    ;;capacity_(at_least. count_with_): hm_[null_]
+        current_capacity: m capacity_()
+        if at_least <= current_capacity
+            return ok_()
+        doubled_capacity: current_capacity double_or_max_()
+        m capacity_(max_(at_least, doubled_capacity))
 
     # call as `array clear_(keeping. no_capacity)` to deallocate
     # or `array clear_(keeping. same_capacity)` to keep the allocation.
@@ -66,6 +62,8 @@ array_[of_, count_with_: select_count_]: all_of_
 
     ;;[index.]: hm_[(of;)]
         # TODO: use m[in_bounds]
+
+    ;;pop_()?: of_
 
     # returns a value of the array element at the specified index,
     # or the end of the array if not specified.  returns null if the element
@@ -98,9 +96,6 @@ array_[of_, count_with_: select_count_]: all_of_
             m[DESTINATION_in_bounds] = M[in_bounds: DESTINATION_in_bounds + 1]!
         m pop_()
         1
-
-    !!(m): bool_
-        count_(m) > 0
 
     # returns a copy of this array, but sorted.
     ::sort_[require: of_ is orderable_](): o_
@@ -135,6 +130,13 @@ array_[of_, count_with_: select_count_]: all_of_
     ::hash_(~builder;): null_
         m each of:
             builder hash_(of)
+
+    maybe_local_[local_bytes_]:
+            maybe_local_array_[of_, local_bytes_, locality_: count_with_]
+    non_local_: non_local_array_[of_, count_with_]
+
+    @alias heap_: non_local_
+    @alias heap_or_local_: maybe_local_
 }
 
 # for simplicity, rounds to multiples of 8 bytes.

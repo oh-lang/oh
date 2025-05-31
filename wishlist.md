@@ -6111,100 +6111,42 @@ indexes an element, we can stop iteration.
 
 ## arrays
 
-An array contains a list of elements in contiguous memory.  You can
-define an array explicitly using the notation `Array_name: array[element_type]` for the
-type `element_type`.
-The default-named version of an array does not depend on the element type;
-it is always `Array`.  Declared as a function argument, a default-named array of strings
-would thus be, e.g., `my_function(Array[string];:.): null`.
-To define an array quickly (i.e., without a type annotation), use the notation
-`["hi", "hello", "hey"]`.
+An array contains a list of elements in contiguous memory.  You can define
+an array explicitly using the notation `array_name: array_[element_type_]`
+for the type `element_type`.  The default-name of an array does not depend
+on the element type; it is always `array`, e.g., `array[element_type_]:`
+to define `array: array_[element_type_]`.  For example, to declare an
+argument which is a default-named array of strings, you'd use a function
+signature like `my_function_(array[string_];:.): null_`.  To define an array
+quickly (i.e., without a type annotation), use the notation `["hi", "hey"]`.
 Example usage and declarations:
 
 ```
 # this is a readonly array:
-My_array: array[dbl]([1.2, 3, 4.5])  # converts all to dbl
-My_array append(5)  # COMPILE ERROR: My_array is readonly
-My_array[1] += 5    # COMPILE ERROR: My_array is readonly
+my_array: array_[dbl_]([1.2, 3, 4.5])   # converts all to `dbl_`
+my_array append_(5) # COMPILE ERROR: `my_array` is readonly
+my_array[1] += 5    # COMPILE ERROR: `my_array` is readonly
 
 # writable integer array:
-Array[int];         # declaring a writable, default-named integer array
-Array append(5)     # now Array == [5]
-Array[3] += 30      # now Array == [5, 0, 0, 30]
-Array[4] = 300      # now Array == [5, 0, 0, 30, 300]
-Array[2] -= 5       # now Array == [5, 0, -5, 30, 300]
+array[int_];        # declaring a writable, default-named integer array
+array append(5)     # now `array == [5]`
+array[3] += 30      # now `array == [5, 0, 0, 30]`
+array[4] = 300      # now `array == [5, 0, 0, 30, 300]`
+array[2] -= 5       # now `array == [5, 0, -5, 30, 300]`
 
 # writable string array:
-String_array; array[string](["hi", "there"])
-print(String_array pop())    # prints "there".  now String_array == ["hi"]
+string_array; array_[string_](["hi", "there"])
+print_(string_array pop_())     # prints "there".  now `string_array == ["hi"]`
 ```
 
-The default implementation of `array` might be internally a contiguous deque,
-so that we can pop or insert into the beginning at O(1).  We might reserve
-`stack` for a contiguous list that grows in one direction only.
-
-```
-Array er: one_of
-[   Out_of_memory
-    # etc...
-]
-hm[of]: hm[ok: of, Array er]
-
-# some relevant pieces of the class definition
-# note that `of` cannot be nullable because containers must have non-null values to count,
-# and we don't want to keep track of all the null values in the array to subtract from
-# the highest array index to get the non-null count.
-# TODO: we could support a nullable array but we'd need extra book keeping.
-array[of]: container[id: index, value: of]
-{   # TODO: a lot of these methods need to return `hm[of]`.
-    # cast to bool, `::!!(): bool` also works, notice the `!!` before the parentheses.
-    !!(M): bool
-        count() > 0
-
-    # Returns the value in the array if `Index < count()`, otherwise null.
-    # If `Index < 0`, take from the end of the array, e.g., `Array[-1]` is the last element
-    # and `Array[-2]` is the second-to-last element.  If `Index < -Array count()` then
-    # we will also return null.
-    ::[Index]?: of
-
-    # Gets the existing value at `Index` if the array count is larger than `Index`,
-    # otherwise increases the size of the array with default values and returns the
-    # one at `Index`.  This has a possibility of panicking because it requires an increase
-    # in memory; if that's important to check, ask for a result (see next method).
-    ;:[Index]: (Of;:)
-
-    # Gets the existing value at `Index` or creates a default if needed.
-    # Can return an error if we run out of memory because this method can
-    # expand the array if `Index >= ::count()`.
-    ;;[Index]: hm[(Of;)]
-
-    # Returns the value at Array[Index] while resetting it to the default value.
-    # We don't bring down subsequent values, e.g., `Index+1` to `Index`, (1) for
-    # performance, and (2) we need to preserve the invariant that `Array[Index]!`
-    # followed by `!Array::[Index]` should be true, which would be impossible
-    # to guarantee if we shifted all subsequent elements down.
-    ;;[Index]!: of
-
-    # note we have to import-rename the `count` type to something else.
-    ::count(): count_with
-
-    ;;append(Of): null
-
-    # returns a null if no element at that index (e.g., array isn't big enough).
-    ;;pop(Index: index = -1)?: of
-
-    # returns a copy of this array, but sorted.
-    # uses `o` instead of `m` to indicate that `M` doesn't change.
-    ::sort(): o
-
-    # sorts this array in place:
-    ;;sort(): null
-    ...
-}
-```
+The default implementation of `array_` might be internally a contiguous deque,
+so that we can pop or insert into the beginning at O(1).  We'll reserve
+`stack_` for a contiguous list that grows in one direction only.
+See [the definition](https://github.com/oh-lang/oh/blob/main/core/array.oh) for
+more details.
 
 TODO: for transpiling to javascript, do we want to use the standard javascript `Array`
-as an internal field or do we want to `@hide` it as the base class for the oh-lang `array`?
+as an internal field or do we want to `@hide` it as the base class for the oh-lang `array_`?
 i.e., we create oh-lang methods that are aliases for operations on the JS `Array` class?
 it depends on if we want other JS libraries to take advantage of oh-lang features or if
 we want to make it look as native as possible -- for less indirection.

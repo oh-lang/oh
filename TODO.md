@@ -75,6 +75,8 @@ have `.my_file_name.generated.c`/`.h` and `.my_file_name.generated.o` if need be
 in the same directory, or in a `.generated` directory (without the `.generated` infix
 on the files).  i'm a fan of the local `.my_file.generated.c` approach so that
 generated code can be inspected easily.
+maybe `.my_file.release.c` and `.my_file.debug.c` if we want to make sure that
+`assert_` doesn't build up complicated structures in release mode.
 
 ## function signatures
 
