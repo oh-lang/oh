@@ -242,6 +242,13 @@ often there are overloads (without an `hm_` result being returned) which just pa
 at runtime in case of an error.  oh-lang does make it easy to chain results using
 [`assert_`](#assert), and we'll probably reserve an operator like `?!` to do this.
 
+TODO: add a section about `_`.
+Another way we are concise about things is using `_` to help refer to things like
+imported types in [modules](#modules), e.g., `vector2_: \/my/implementation/vector2 _`.
+We also can use it when defining default-named variables to refer to the variable's
+type, e.g., for static/class functions like `oh_info: _ caller_()` which is equivalent
+to `oh_info: oh_info_ caller_()`.
+
 ## coolness
 
 **Coolness** is a fairly subjective measure, but we do use it to break ties.
@@ -5979,35 +5986,34 @@ use the [`where` operator](#where-operator).
 
 ## assert
 
-The built-in `assert` statement will shortcircuit the block if the rest of the statement
+The built-in `assert_` statement will shortcircuit the block if the rest of the statement
 does not evolve to truthy.  As a bonus, when returning, all values will be logged to stderr
-as well for debugging purposes for debug-compiled code.
+as well for debugging purposes for debug-compiled code.  For more technical details, see
+[the definition](https://github.com/oh-lang/core/blob/main/core/assert.oh).
 
 ```
-assert(Some_variable == Expected_value)   # throws if `Some_variable != Expected_value`,
-                                        # printing to stderr the values of both `Some_variable`
-                                        # and `Expected_value` if so.
+assert_(some_variable) == expected_value    # "throws" if `some_variable != expected_value`,
+                                            # printing to stderr the values of both `some_variable`
+                                            # and `expected_value` if so.
 
-assert(Some_class method(100))       # throws if `Some_class method(100)` is not truthy,
-                                    # printing value of `Some_class` and `Some_class method(100)`.
+# both of the next statements throw if `some_class method_(100)` is not truthy,
+# but the first also logs `some_class`, the text `some_class method_(100)`, and its value.
+assert_(some_class) method_(100)
+assert_(some_class method_(100))
 
-assert(Some_class other_method("hi") > 10)    # throws if `Some_class other_method("hi") <= 10`,
-                                            # printing value of `Some_class` as well as
-                                            # `Some_class other_method("hi")`.
+assert_(some_class) other_method_("hi") > 10    # throws if `some_class other_method_("hi") <= 10`,
+                                                # printing value of `some_class` as well as
+                                                # `some_class other_method_("hi")`.
 ```
 
-If you want to customize the return error for an assert, pass it an explicit
-`Er` argument, e.g., `assert(My_value, Er: "Was expecting that to be true")`;
-and note that asserts can be called like `My_value assert()` or `Positive assert(Er: "oops")`.
-
-Note that `assert` logic is always run, even in non-debug code.  To only check statements in the
-debug binary, use `assert(Debug_only, ...)`, which otherwise has the same signature as `assert(...)`.
+Note that `assert_` logic is always run, even in non-debug code.  To only check statements in the
+debug binary, use `assert_(debug_only, ...)`, which otherwise has the same signature as `assert_(...)`.
 Using debug asserts is not recommended, except to enforce the caller contract of private/protected
-methods.  For public methods, `assert` should always be used to check arguments.
+methods.  For public methods, `assert_` should always be used to check arguments.
 
-Note that for functions that return results, i.e., `hm[ok, er]`, `assert` will automatically
-return early with an `er` based on the error the `assert` encountered.  If a function does
-*not* return a result, then using `assert` will be a run-time panic; to make sure that's
+Note that for functions that return results, i.e., `hm_[ok_, er_]`, `assert_` will automatically
+return early with an `er_` based on the error the `assert_` encountered.  If a function does
+*not* return a result, then using `assert_` will be a run-time panic; to make sure that's
 what you want, annotate the function with `@can_panic`, otherwise it's a compile error.
 
 ## automatically converting errors to null

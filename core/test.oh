@@ -94,90 +94,58 @@ test_context_: [@protected printed; array_[str_], @protected name; str_]
             m name pop_()
 }
 
-test_[of_]: [of;, oh_info:, transformation; str_]
-{   g_(~t., oh_info. oh_info_ caller_(), transformation. ""): g_[t_]
-        [t, oh_info, transformation]
-
-    # TODO: does this descope at the right time?  i think so as long
-    # as we ensure that we don't hold a reference to it, like
-    # `my_test: test_(5) == 6`
-    # but that might be desired anyway, in case you want to check a bunch of results.
-    ;;descope_(): null_
-        @if of_ is bool_
-            if !m of
-                print_(error: "${m oh_info}: expected ${m transformation}")
-                panic_("expected ${m transformation}")
-        @elif of_ is hm_
-            if of is er:
-                print_(error: "${m oh_info}: expected ${m transformation}, got ${er}")
-                panic_("expected ${m transformation} to be OK, got ${er}")
-        @else
-            if !m transformation
-                print_(error: "${m oh_info}: expected an expression like `test_(x) == 7`")
-
-    @methods(of_) @each method:
-        # `method arguments` will include `m:`, `m;`, or `m.`, so we don't
-        # need to add `::`, `;;`, or `..` to the start here.
-        @concat(method name)(...method arguments): test_[method returning_]
-            transformation. str_ = "${m transformation} ${of_ string_(method)}"
-            returning. @concat(method name)(...method arguments)
-            # TODO: i think we need to plan for `m` to be descoped here.
-            # TODO: maybe this method should be converted to `..` regardless of `m`.
-            g_(returning, oh_info_ caller_(), transformation)
-}
-
 @test "==":
     @test "works for ints":
-        test_(5) == 5
-        test_(10) == 10
+        assert_(5) == 5
+        assert_(10) == 10
 
     @test_panics "expected (5 == 6) bool":
-        test_(5) == 6
+        assert_(5) == 6
 
 @test "!=":
     @test "works for ints":
-        test_(5) != 50
-        test_(10) != 12
+        assert_(5) != 50
+        assert_(10) != 12
 
     @test_panics "expected (3 != 3) bool":
-        test_(3) != 3
+        assert_(3) != 3
 
 @test ">=":
     @test "works for ints":
-        test_(5) >= 3
-        test_(4) >= 4
-        test_(10) >= 10
+        assert_(5) >= 3
+        assert_(4) >= 4
+        assert_(10) >= 10
 
     @test_panics "expected (5 >= 6) bool":
-        test_(5) >= 6
+        assert_(5) >= 6
 
 @test "<=":
     @test "works for ints":
-        test_(5) <= 6
-        test_(7) <= 7
-        test_(12) <= 12
+        assert_(5) <= 6
+        assert_(7) <= 7
+        assert_(12) <= 12
 
     @test_panics "expected (7 <= 6) bool":
-        test_(7) <= 6
+        assert_(7) <= 6
 
 @test "<":
     @test "works for ints":
-        test_(5) < 6
-        test_(10) < 11
+        assert_(5) < 6
+        assert_(10) < 11
 
     @test_panics "expected (7 < -1) bool":
-        test_(7) < -1
+        assert_(7) < -1
 
     @test_panics "expected (-1 < -1) bool":
-        test_(-1) < -1
+        assert_(-1) < -1
 
 @test ">":
     @test "works for ints":
-        test_(5) > 3
-        test_(20) > 19
+        assert_(5) > 3
+        assert_(20) > 19
 
     @test_panics "expected (-1 > 1) bool":
-        test_(-1) > 1
+        assert_(-1) > 1
 
     @test_panics "expected (1 > 1) bool":
-        test_(1) > 1
+        assert_(1) > 1

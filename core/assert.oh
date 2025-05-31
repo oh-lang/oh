@@ -1,0 +1,32 @@
+assert_[of_]: [of;, oh_info:, transformation; str_]
+{   g_(~t., oh_info. oh_info_ caller_(), transformation. ""): g_[t_]
+        [t, oh_info, transformation]
+
+    # TODO: does this descope at the right time?  i think so as long
+    # as we ensure that we don't hold a reference to it, like
+    # `assert: assert_(5) == 6`
+    # but that might be desired anyway, in case you want to check a bunch of results.
+    # TODO: we need a `block` in descope to exit from in case of error.
+    ;;descope_(): null_
+        @if of_ is bool_
+            if !m of
+                print_(error: "${m oh_info}: expected ${m transformation}")
+                panic_("expected ${m transformation}")
+        @elif of_ is hm_
+            if of is er:
+                print_(error: "${m oh_info}: expected ${m transformation}, got ${er}")
+                panic_("expected ${m transformation} to be OK, got ${er}")
+        @else
+            if !m transformation
+                print_(error: "${m oh_info}: expected an expression like `assert_(x) == 7`")
+
+    @methods(of_) @each method:
+        # `method arguments` will include `m:`, `m;`, or `m.`, so we don't
+        # need to add `::`, `;;`, or `..` to the start here.
+        @concat(method name)(...method arguments): g_[method returning_]
+            transformation. str_ = "${m transformation} ${of_ string_(method)}"
+            returning. @concat(method name)(...method arguments)
+            # TODO: i think we need to plan for `m` to be descoped here.
+            # TODO: maybe this method should be converted to `..` regardless of `m`.
+            g_(returning, oh_info_ caller_(), transformation)
+}
