@@ -65,13 +65,13 @@ syn match	ohFunction	"[^_ ()\[\]^`{|}!-@\\][^ ()\[\]^`{|}!-/:-@\\]*_\>" contains
 
 syn region ohBraced matchgroup=ohBraces
       \ start=+{+ end="}"
-      \ contains=ALLBUT,ohBraced
+      \ contains=ALL
 syn region ohBracketed matchgroup=ohBrackets
       \ start=+\[+ end="]"
-      \ contains=ALLBUT,ohBracketed
+      \ contains=ALL
 syn region ohParened matchgroup=ohParens
       \ start=+(+ end=")"
-      \ contains=ALLBUT,ohParened
+      \ contains=ALL
 
 syn match   ohEndOfLineComment	"# .*$"
       \ contains=ohEscape,ohTodo,ohTick,@Spell

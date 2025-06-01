@@ -2,6 +2,8 @@ container_[of_: not_[null_], at_, count_with_: count_arch_]: []
 {   ::count_(): count_with_
 
     # get a nullable reference to an element using a referenced `at`.
+    # prefer the `[at.]` version unless you want the value to update
+    # whenever the referenced `at` does, or if `at` is expensive to copy.
     :;[at:]: (of?:;)
 
     # get a nullable reference to an element.

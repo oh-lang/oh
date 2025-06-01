@@ -16,7 +16,7 @@ array_[of_, count_with_: select_count_ = count_arch_]: all_of_
     :;[in_bounds.]: (of:;)
 
     ;;append_(of.): hm_[null_]
-        m capacity_(at_least: _count() + 1) assert_()
+        m capacity_(at_least: m count_() + 1) assert_()
         m append_(.of, assuming. capacity)
 
     # called as `array append_(3, assuming. capacity)`
@@ -26,9 +26,9 @@ array_[of_, count_with_: select_count_ = count_arch_]: all_of_
 
     ;;count_[require: of_ is defaultable_](NEW_count_with.): hm_[null_]
         OLD_count: m count_()
-        if NEW_count == OLD_count
-            return ok_(OLD_count)
-        if NEW_count > OLD_count
+        if NEW_count_with == OLD_count
+            return ok_()
+        elif NEW_count_with > OLD_count
             capacity_(at_least_: NEW_count) assert_()
             while m count_() < NEW_count
                 append_(of_(), assuming. capacity)
