@@ -88,10 +88,10 @@ we'll also alphabetize input (and output) arguments.
 
 ```
 # in oh-lang, in file `my_file.oh`:
-my_function(Y: dbl, X; int): str
+my_function_(y: dbl_, x; int_): str_
 
-# in C:
-OH_str MY_FILE_OH__my_function__X__rw_int__Y__ro_dbl__return__Str(OH_int *X, const double *Y);
+# in C, RWP = read-write pointer, ROP = read-only pointer
+OH_str_ OH_MY_FILE__my_function__RWP_int_AS_x__ROP_dbl_AS_y__RETURN_str_(OH_int_ *x, const OH_dbl_ *y);
 ```
 
 we also need to supply a few different function signatures for when
@@ -120,15 +120,15 @@ after specialization (a sort of duck-typing).  we can support this by generating
 code for generics only after someone tries to use it in real code.
 
 ```
-multiply(A: ~t, B: t): t
-    A * B
+multiply_(a: ~t_, b: t_): t_
+    a * b
 
-multiply(A: -5, B: 20)      # should return -100
-multiply(A: "a", B: "B")    # should fail at compilation
+multiply_(a: -5, b: 20)     # should return -100
+multiply_(a: "A", b: "B")   # should fail at compilation
 
-# in C, specialized after we infer `int`
-OH_int FILE_OH__multiply__A__ro_int__B__ro_int__return__Int(const OH_int *A, const OH_int *B)
-{   return OH__multiply__Int__ro__Int__ro__return__Int(A, B);
+# in C, specialized after we infer `int_` for `t_`:
+OH_int_ OH_FILE__multiply__ROP_int_AS_a__ROP_int_AS_b__RETURN_int_(const OH_int_ *a, const OH_int_ *b)
+{   return OH__multiply__ROP_int__ROP_int__RETURN_int_(a, b);
 }
 ```
 

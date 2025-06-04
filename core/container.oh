@@ -1,18 +1,48 @@
-container_[of_: not_[null_], at_, count_with_: count_arch_]: []
+container_[of_: not_[null_], at_, count_with_: select_count_ = count_arch_]: []
 {   ::count_(): count_with_
 
-    # get a nullable reference to an element using a referenced `at`.
-    # prefer the `[at.]` version unless you want the value to update
-    # whenever the referenced `at` does, or if `at` is expensive to copy.
+    #[#
+    gets a nullable reference to an element using a referenced `at`,
+    returning `null` if `at` is not in this container,
+    otherwise the `of` instance at that `at`.
+    this is wrapped in a reference object to enable passing by reference.
+    USAGE:
+    ```
+        # suppose `container` has `at_: int_`.
+        # get the value at `5` and make a copy of it:
+        of?: container[5]
+        # get the value at `7` and keep a mutable reference to it:
+        (of?;) = container[7]
+    ```
+    prefer the `[at.]` version unless you want the value to update
+    whenever the referenced `at` does, or if `at` is expensive to copy.
+    #]#
     :;[at:]: (of?:;)
 
     # get a nullable reference to an element.
     :;[at.]: (of?:;)
 
+    #[#
+    safe API for creating a reference at `at`.
+    can return an error if the container runs out of memory
+    or for other container-specific reasons.
+    #]#
+    ;;[at]: hm_[(of;)]
+
     # get a non-null reference to an element.
     # this will add a default `of` if `at` is
     # not already in the container.
     ;;[at.]: (of;)
+
+    #[#
+    returns the value at `at`, if present, while mooting it
+    in the container.  depending on the container implementation,
+    this may remove the element from the container (e.g., in a `lot`)
+    or may set its linked value to the default (e.g., in an `array`).
+    returns null if not present.
+    TODO: let's make this consistent.  maybe just moot, no remove.
+    #]#
+    ;;[at]!?: of
 
     # returns the element at `at` or null if not present,
     # removing it from the container while doing so.
@@ -33,4 +63,24 @@ container_[of_: not_[null_], at_, count_with_: count_arch_]: []
     :;each_(block[defining_:; of_, ~t_]:)?: t_
 
     :;each_(block[defining_: (at::, of:;), ~t_]:)?: t_
+
+    # can implicitly convert to an iterator (with writeable/readonly references).
+    ;:iterator_(): iterator_[(at:, of;:)]
+
+    # iterate over keys/`at`s.
+    ::iterator_(): iterator[(at:)]
+
+    # iterate over values.
+    ;:iterator_(): iterator[(of;:)]
+
+    @alias ::has_(at): m[at] != null
+    @alias ::contains_(at): m[at] != null
 }
+
+er_: one_of_
+[   out_of_memory
+    # etc.
+]
+
+hm_[of_]: hm_[ok_: of_, er_]
+

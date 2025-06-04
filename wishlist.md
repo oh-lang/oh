@@ -6045,63 +6045,8 @@ long as they are named, e.g., `a: 1, b: 2, c: 3, [a, b, c]`, can be cast into a 
 Because containers are by default insertion-ordered, they can be implicitly cast to an
 array depending on the type of the receiving variable.  This cast happens only
 conceptually; constructing an array doesn't construct a `lot` first to convert.
-
-```
-er_: one_of_
-[   out_of_memory
-    # etc.
-]
-
-hm_[of_]: hm_[ok_: of_, er_]
-
-container_[at_, of_: non_null_, count_with_: select_count_ = count_arch_]: []
-{   #[#
-    returns `null` if `at` is not in this container,
-    otherwise the `of` instance at that `at`.
-    this is wrapped in a reference object to enable passing by reference.
-    USAGE:
-    ```
-        # suppose `container` has `at_: int_`.
-        # get the value at `5` and make a copy of it:
-        of?: container[5]
-        # get the value at `7` and keep a mutable reference to it:
-        (of?;) = container[7]
-    ```
-    #]#
-    :;[at]: (of?:;)
-
-    #[#
-    safe API for creating a reference at `at`.
-    can return an error if the container runs out of memory
-    or for other container-specific reasons.
-    #]#
-    ;;[at]: hm_[(of;)]
-
-    #[#
-    returns the value at `at`, if present, while mooting it
-    in the container.  depending on the container implementation,
-    this may remove the element from the container (e.g., in a `lot`)
-    or may set its linked value to the default (e.g., in an `array`).
-    returns null if not present.
-    #]#
-    ;;[at]!?: of
-    
-    @alias ::has_(at): m[at] != null
-    @alias ::contains_(at): m[at] != null
-
-    # Returns the number of elements in this container.
-    ::count_(): count_with_
-
-    # can implicitly convert to an iterator (with writeable/readonly references).
-    ;:iterator_(): iterator_[(at:, of;:)]
-
-    # iterate over keys/`at`s.
-    ::iterator_(): iterator[(at:)]
-
-    # iterate over values.
-    ;:iterator_(): iterator[(of;:)]
-}
-```
+See [the container definition](https://github.com/oh-lang/oh/blob/main/core/container.oh)
+for more details.
 
 TODO: discuss the expected behavior of what happens if you delete an element
 out of a container when iterating over it (not using the iterator itself, if
