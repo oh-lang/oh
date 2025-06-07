@@ -1,5 +1,5 @@
 @final
-vector2_[of_]: [x; of_, y; of_]
+vector2_[of_]: all_of_[swizzleable_[of_], m_: [x; of_, y; of_]]
 {   m_(FIRST_of., SECOND_of.): m_
         [x. FIRST_of, y. SECOND_of]
 
@@ -7,36 +7,32 @@ vector2_[of_]: [x; of_, y; of_]
         m x * o x + m y * o y
     ::cross_(o): of_
         m x * o y - m y * o x
-    ::cross_(O): m3_
-        [X: 0, Y: 0, Z: cross(O)]
+    ::cross_(o): m3_
+        [x: 0, y: 0, z: cross_(o)]
 
     fields_(): ["x", "y"]
-
-    @swizzleable
 }
 @expand_types(vector2)
 
 @final
-vector3_[of_]: [x; of_, y; of_, z; of_]
+vector3_[of_]: all_of_[swizzleable_[of_], m_: [x; of_, y; of_, z; of_]]
 {   m_(FIRST_of., SECOND_of., THIRD_of.): m_
         [x. FIRST_of, y. SECOND_of, z. THIRD_of]
 
     ::dot_(o): of_
         m x * o x + m y * o y + m z * o z
     ::cross_(o): m_
-    (   X: m y * o z - m z * o y
-        Y: m z * o x - m x * o z
-        Z: m x * o y - m y * o x
+    (   m y * o z - m z * o y
+        m z * o x - m x * o z
+        m x * o y - m y * o x
     )
 
     fields_(): ["x", "y", "z"]
-
-    @swizzleable
 }
 @expand_types(vector3)
 
 @final
-vector4_[of_]: [x; of_, y; of_, z; of_, w; of_]
+vector4_[of_]: all_of_[swizzleable_[of_], m_: [x; of_, y; of_, z; of_, w; of_]]
 {   m_(FIRST_of., SECOND_of., THIRD_of., FOURTH_of.): m_
         [x. FIRST_of, y. SECOND_of, z. THIRD_of, w. FOURTH_of]
 
@@ -44,8 +40,6 @@ vector4_[of_]: [x; of_, y; of_, z; of_, w; of_]
         m x * o x + m y * o y + m z * o z + m w * o w
 
     fields_(): ["x", "y", "z", "w"]
-
-    @swizzleable
 }
 @expand_types(vector4)
 
@@ -57,10 +51,12 @@ vector4_[of_]: [x; of_, y; of_, z; of_, w; of_]
 }
 
 # swizzle operators
-@swizzleable:
+swizzleable_[of_]: []
 {   m2_: vector2_[of_]
     m3_: vector3_[of_]
     m4_: vector4_[of_]
+
+    fields_(): array_[str_]
 
     # NOTE: this code adds in all permutations like this:
     #   ::xx_(): m2_
@@ -101,19 +97,19 @@ vector4_[of_]: [x; of_, y; of_, z; of_, w; of_]
 
 @test "swizzle"
     @test "xx"
-        test_(vector2i_(1, 2) xx_()) == vector2i_(1, 1)
-        test_(vector3d_(0.0, 5.0, 9.0) xx_()) == vector2d_(0.0, 0.0)
-        test_(vector4l_(-1, 7, 3, 4) xx_()) == vector2l_(-1, -1)
+        assert_(vector2i_(1, 2) xx_()) == vector2i_(1, 1)
+        assert_(vector3d_(0.0, 5.0, 9.0) xx_()) == vector2d_(0.0, 0.0)
+        assert_(vector4l_(-1, 7, 3, 4) xx_()) == vector2l_(-1, -1)
     @test "xy"
-        test_(vector2i_(1, 2) xy_()) == vector2i_(1, 2)
-        test_(vector3f_(0.0, 5.0, 9.0) xy_()) == vector2f_(0.0, 5.0)
-        test_(vector4l_(-1, 7, 3, 4) xy_()) == vector2l_(-1, 7)
+        assert_(vector2i_(1, 2) xy_()) == vector2i_(1, 2)
+        assert_(vector3f_(0.0, 5.0, 9.0) xy_()) == vector2f_(0.0, 5.0)
+        assert_(vector4l_(-1, 7, 3, 4) xy_()) == vector2l_(-1, 7)
     @test "yx"
-        test_(vector2i_(1, 2) yx_()) == vector2i_(2, 1)
-        test_(vector3d_(0.0, 5.0, 9.0) yx_()) == vector2d_(5.0, 0.0)
-        test_(vector4l_(-1, 7, 3, 4) yx_()) == vector2l_(7, -1)
+        assert_(vector2i_(1, 2) yx_()) == vector2i_(2, 1)
+        assert_(vector3d_(0.0, 5.0, 9.0) yx_()) == vector2d_(5.0, 0.0)
+        assert_(vector4l_(-1, 7, 3, 4) yx_()) == vector2l_(7, -1)
     @test "yy"
-        test_(vector2i_(1, 2) yy_()) == vector2i_(2, 2)
-        test_(vector3f_(0.0, 5.0, 9.0) yy_()) == vector2f_(5.0, 5.0)
-        test_(vector4l_(-1, 7, 3, 4) yy_()) == vector2l_(7, 7)
+        assert_(vector2i_(1, 2) yy_()) == vector2i_(2, 2)
+        assert_(vector3f_(0.0, 5.0, 9.0) yy_()) == vector2f_(5.0, 5.0)
+        assert_(vector4l_(-1, 7, 3, 4) yy_()) == vector2l_(7, 7)
     # TODO: xxx, xyz, xzy, etc.  probably not exhaustively, sounds tiring.

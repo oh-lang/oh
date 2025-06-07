@@ -16,6 +16,9 @@ container_[of_: not_[null_], at_, count_with_: select_count_ = count_arch_]: []
     ```
     prefer the `[at.]` version unless you want the value to update
     whenever the referenced `at` does, or if `at` is expensive to copy.
+    TODO: i think we need to update to `;:[(at:)]: (of?:;)`;
+    `[]` has different semantics than `()`; `[at.]` and `[at;]` are roughly equivalent,
+    whereas `(at.)` and `(at;)` are temporary and writable-reference versions.
     #]#
     :;[at:]: (of?:;)
 

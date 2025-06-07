@@ -10,259 +10,279 @@ WISHLIST
 #)#
 
 
-er: one_of
-[   Invalid_argument
+er_: one_of_
+[   invalid_argument
     # TODO...
 ]
-hm[of]: hm[ok: of, er]
+hm_[of_]: hm_[ok_: of_, er_]
 
-window: []
-{   terminal(): terminal_window
-    graphics(): graphics_window
+window_: []
+{   terminal_(): terminal_window_
+    graphics_(): graphics_window_
 
-    # Returns the actual window size, i.e., the real-estate available for drawing.
-    ::size(): size2
-    # Sets the window size or returns an error.
-    ;;size(Size2.): hm[null]
-    # Sets the minimum window size, i.e., for a resizable window.
-    ;;size(Min. size2): hm[null]
-    # Sets the maximum window size, i.e., for a resizable window.
-    ;;size(Max. size2): hm[null]
+    # returns the actual window size, i.e., the real-estate available for drawing.
+    ::size_(): size2i_
+    # sets the window size or returns an error.
+    ;;size_(size2i.): hm_[null_]
+    # sets the minimum window size, i.e., for a resizable window.
+    ;;size_(min. size2i_): hm_[null_]
+    # sets the maximum window size, i.e., for a resizable window.
+    ;;size_(max. size2i_): hm_[null_]
 
-    # Returns the current data in the clipboard,
+    # returns the current data in the clipboard,
     # i.e., for the "pasting" part of copy-paste.
-    ::clipboard(): string
-    # Sets the current data in the clipboard,
+    ::clipboard_(): string_
+    # sets the current data in the clipboard,
     # i.e., for the "copying" part of copy-paste.
-    ;;clipboard(String.): null
+    ;;clipboard_(string.): null_
 
-    # Awaits the next window event, returning it.
-    ;;poll(): event
-    # Awaits the next window event, with a timeout in case no events occur.
-    ;;poll(Timeout. duration): event
+    # awaits the next window event, returning it.
+    ;;poll_(): event_
+    # awaits the next window event, with a timeout in case no events occur.
+    ;;poll_(timeout. duration_): event_
 
-    # Accumulates window events over a frame, for a requested duration.
-    ;;frame(Duration.): [Events]
+    # accumulates window events over a frame, for a requested duration.
+    ;;frame_(duration.): [events:]
 
-    event: window_event
-    events: array[event]
+    event_: window_event_
+    events_: array_[event_]
 }
 
-terminal_window: all_of[window, l2]
-{   
+terminal_window_: all_of_[window_, l2_]
+{
 }
 
-graphics_window: all_of[window, l3]
-{   # Returns true iff the window is fullscreen.
-    ::fullscreen(): bool
-    # Sets fullscreen/windowed value.
-    ;;fullscreen(Bool.): hm[null]
+graphics_window_: all_of_[window_, l3_]
+{   # returns true iff the window is fullscreen.
+    ::fullscreen_(): bool_
+    # sets fullscreen/windowed value.
+    ;;fullscreen_(bool.): hm_[null_]
 
-    @alias ::windowed(): !fullscreen()
-    @alias ;;windowed(Bool.): fullscreen(!Bool)
+    @alias ::windowed_(): !m fullscreen_()
+    @alias ;;windowed_(bool.): m fullscreen_(!bool)
 
-    ::resolution(): L3 Pixels size()
-    ;;resolution(Size2.): L3 Pixels size(.Size2)
+    ::resolution_(): l3 pixels size_()
+    ;;resolution_(size2i.): l3 pixels size_(size2i)
 }
 
 # low-level drawing to a set of pixels for 2D operations.
-l2: pixels
+l2_: pixels_
 {   # Writes some text to the l2.
-    ;;draw(Caret;, String): null
+    ;;draw_(caret;, string): null_
 }
 
 # low-level drawing to a set of pixels, with 3D operations.
-# 2D operations from `l2` are included.
-l3: l2
-{   
+# 2D operations from `l2_` are included.
+l3_: l2_
+{
 }
 
-window_event: one_of
-[   # A resize event, with the new interior size.
-    resize: size2
-    # A sequence of runes (e.g., layout and locale included).
-    text: string
-    # A physical, named key.
-    key: [Key, Modifiers, State: one_of[Pressed, Released, Repeated]]
-    # Mouse button, e.g., left mouse button or right mouse button.
-    mouse_button: [Position: vector2i, Button: u8, Modifiers, State: one_of[Pressed, Released]]
-    # The mouse moving.  The position is relative to the top-left of the shown pixels
-    # (i.e., in case of letterboxing, coordinates can be < 0 or >= the Window Resolution).
-    mouse_move: [Delta: vector2i, Position: vector2i, Modifiers]
-    # The mouse is scrolling.
-    mouse_wheel: [Delta: i32, Modifiers]
+window_event_: one_of_
+[   # a resize event, with the new interior size.
+    resize: size2i_
+    # a sequence of runes (e.g., layout and locale included).
+    text: string_
+    # a physical, named key.
+    key: key_event_
+    # mouse button clicked/released, e.g., left mouse button or right mouse button.
+    mouse_button: mouse_button_event_
+    # the mouse moved.
+    mouse_move: mouse_move_event_
+    # the mouse scrolled.
+    mouse_wheel: mouse_wheel_event_
     # Polling for events timed out.
-    Timeout
+    timeout: null_
 ]
 
-modifiers[of]:
-[   Control: of
-    Shift: of
-    Meta: of
-    Alt: of
+key_event_: [key;, modifiers;, state; one_of_[pressed, released, repeated]]
+
+mouse_button_event_:
+[   # the position relative to the top-left of the shown pixels
+    # (i.e., in case of letterboxing, coordinates can be `< 0`
+    # or `>= window resolution_()`).
+    position; vector2i_
+    button; u8_
+    modifiers;
+    state; one_of_[pressed, released]
 ]
-modifiers: modifiers[bool]
 
-@referenceable_as(cpu_pixels, gpu_pixels)
-pixels: []
-{   @hide_from(cpu_pixels, gpu_pixels)
-    ;;renew(File_path): I load(File_path)
+mouse_move_event_:
+[   # the relative motion of the mouse since last frame.
+    delta; vector2i_
+    # the absolute position relative to the top-left of the shown pixels
+    # (i.e., in case of letterboxing, coordinates can be `< 0`
+    # or `>= window resolution_()`).
+    position: vector2i_
+    modifiers;
+]
 
-    # Saves the image.
-    ::save(File_path): null
+mouse_wheel_event_: [delta; i32_, modifiers;]
 
-    # Loads an image from a file.
-    @hide_from(cpu_pixels, gpu_pixels)
-    ;;load(File_path): null
+modifiers_[of_]:
+[   control; of_
+    shift; of_
+    meta; of_
+    alt; of_
+]
+modifiers_: modifiers_[bool_]
 
-    # Current size of the image.
-    ::size(): size2
+@referenceable_as(cpu_pixels_, gpu_pixels_)
+pixels_: all_of_
+[   @private m_:
+    [   state; state_[pixels_id_] cpu_only
 
-    # Tries to resize the image.  Can fail if the new size is too large (OOM)
+        # the current image size.
+        size; size2i_
+
+        # row-major order, with rows being rows of pixels across the screen left->right,
+        # with `pixels[0]` being the top row and `pixels[height - 1]` the bottom row.
+        # invariant: if `state != gpu_only`,
+        # `pixels[y] size_() == m size_() width` for all `y` in bounds
+        # and `pixels size_() == m size_() height`.
+        pixels; array_[array_[color_]]
+    ]
+]
+{   @hide_from(cpu_pixels_, gpu_pixels_)
+    ;;renew_(file_path:): m load_(file_path)
+
+    # saves the image.
+    ::save_(file_path:): null_
+
+    # loads an image from a file.
+    @hide_from(cpu_pixels_, gpu_pixels_)
+    ;;load_(file_path:): null_
+
+    # current size of the image.
+    ::size_(): size2i_
+
+    # tries to resize the image.  can fail if the new size is too large (OOM)
     # or if the size is invalid (e.g., negative values).
-    @hide_from(cpu_pixels, gpu_pixels)
-    ;;size(Size2.): hm[null]
+    @hide_from(gpu_pixels_)
+    ;;size_(size2i.): hm_[null_]
 
-    # Color getter via coordinates.
-    # Can fail if the coordinates are out of bounds (OOB).
-    # Can be expensive if the pixels aren't up-to-date on the CPU.
-    @hide_from(gpu_pixels)
-    ::[Coordinates2i]: hm[color]
+    # color reference via coordinates.
+    # can fail if the coordinates are out of bounds (OOB).
+    # can be expensive if the pixels aren't up-to-date on the CPU.
+    @hide_from(gpu_pixels_)
+    ;;[coordinates2i.]: hm[(color;)]
 
-    # Color check+setter via coordinates.
-    # Can fail if the coordinates are OOB.
-    # Can be expensive if the pixels aren't up-to-date on the CPU.
-    @hide_from(gpu_pixels)
-    ;;[Coordinates2i]: hm[(Color;)]
+    # color setter (doesn't check the color first).
+    ;;draw_(coordinates2i., color.): hm_[null_]
 
-    # Color setter (doesn't check the color first).
-    ;;draw(Coordinates2i, Color): hm[null]
+    # draws some text to these pixels.
+    ;;draw_(string:, caret;, font;, font_options. font_options_()): null_
 
-    # Draws some text to these pixels.
-    ;;draw(String, Caret;, Font;, Font_options: font_options()): null
+    # TODO: `;;draw_(..., mask)` for scissor operations
 
-    # TODO: `;;draw(..., Mask)` for scissor operations
+    # draws a rectangle of a solid color.
+    # if the rectangle is outside of the pixels coordinates, does nothing;
+    # only the overlap of the pixels' rectangle with `rectangle2` will matter.
+    ;;draw_(rectangle2., color.): null_
 
-    # Draws a rectangle of a solid color.
-    # If the rectangle is outside of the pixels coordinates, does nothing;
-    # only the overlap of the pixels' rectangle with `Rectangle2` will matter.
-    ;;draw(Rectangle2, Color): null
-
-    # Draws a rectangle of a solid color.
-    # If any of the rectangle's area is outside the `Wrap` rectangle,
+    # draws a rectangle of a solid color.
+    # if any of the rectangle's area is outside the `wrap` rectangle,
     # the rectangle will be split into pieces and wrapped before drawing.
-    ;;draw(Rectangle2, Color, Wrap: rectangle2): null
+    ;;draw_(rectangle2., color., wrap. rectangle2_): null_
 
-    # Draws some fragments (triangles) to these pixels, setting the GPU version
+    # draws some fragments (triangles) to these pixels, setting the GPU version
     # of these pixels ahead of the CPU version (if present).
-    # WARNING: Will also send `Vertices` to the GPU if not already there.
-    @hide_from(cpu_pixels)
-    ;;draw(Shading[vertex_data, fragment_data];, Vertex Array[vertex_data];, Fragment Array[fragment]): null
+    # WARNING: will also send `VERTEX_array` to the GPU if not already there.
+    @hide_from(cpu_pixels_)
+    ;;draw_
+    (   VERTEX_array[~vertex_data_];
+        FRAGMENT_array[~fragment_data_];
+        shading[vertex_data_, fragment_data_];
+    ): null_
 
-    # TODO: line-drawing API.  e.g., `;;draw(Line, Color): null`
+    # TODO: line-drawing API.  e.g., `;;draw_(line., color.): null_`
     #       probably want a pixel-perfect one, plus a thickness based one.
 
-    # Moves the data to the GPU, if it's not already there and up-to-date.
-    # This can be expensive as we upload the entire image from CPU to GPU, if it has changed.
-    @hide_from(cpu_pixels, gpu_pixels)
-    ;;push(): null
+    # moves the data to the GPU, if it's not already there and up-to-date.
+    # this can be expensive as we copy the entire image from CPU to GPU, if it has changed.
+    @hide_from(cpu_pixels_, gpu_pixels_)
+    ;;send_to_gpu_(): null
 
-    # Moves the data from the GPU to the CPU, if the CPU is behind the GPU.
-    # This can be expensive as we download the entire image from GPU to CPU, if it has changed.
-    @hide_from(cpu_pixels, gpu_pixels)
-    ;;pull(): null
-
-    @private @
-    {   State; state[pixels_id] Cpu_only
-
-        # The current image size.
-        Size; size2
-
-        # Row-major order, with rows being rows of pixels across the screen left->right,
-        # with `Pixels[0]` being the top row and `Pixels[Height - 1]` the bottom row.
-        # Invariant: if `State != Gpu_only`,
-        # `Pixels[Y] size() == My Size Width` for all `Y` in bounds
-        # and `Pixels size() == My Size Height`.
-        Pixels; array[array[color]]
-    }
+    # moves the data from the GPU to the CPU, if the CPU is behind the GPU.
+    # this can be expensive as we copy the entire image from GPU to CPU, if it has changed.
+    @hide_from(cpu_pixels_, gpu_pixels_)
+    ;;send_to_cpu_(): null
 }
 
-# Copies from one set of pixels to another.
-# Note that the source pixels `From` must be modifiable in case they
-# need to be moved from/to the GPU, based on `To` being CPU/GPU pixels.
-# Because of the nested `From`/`To` fields, you can call this like
-# `draw(From Pixels; Source_pixels, From Rectangle: rectangle(...), ...)`
-draw(From: (Pixels;, Rectangle), To: (Pixels;, Rectangle)): null
+# copies from one set of pixels to another.
+# note that the source pixels `from` must be modifiable in case they
+# need to be moved from/to the GPU, based on `to` being CPU/GPU pixels.
+# because of the nested `from`/`to` fields, you can call this like
+# `draw_(from pixels; source_pixels_, from rectangle. rectangle_(...), ...)`
+draw_(from: (pixels;, rectangle.), to: (pixels;, rectangle.)): null_
 
-# Copies from one set of pixels to another, with wrapping.
-# E.g., if `From Rectangle` is outside `From Wrap_within`,
+# copies from one set of pixels to another, with wrapping.
+# e.g., if `from rectangle` is outside `from wrap_within`,
 # then the remainder will get wrapped around,
-# so that we copy from the other side of `From Pixels`.
-# similarly for `To` pixels.
-# Using `R` for Rectangle and `W` for `Wrap_within`:
+# so that we copy from the other side of `from pixels`.
+# similarly for `to` pixels.
+# using `r` for rectangle and `w` for `wrap_within`:
 #   *---------------*   *---------------*                   *---------------*
 #   |               |   |               |                   |               |
-#   | R-----R       |   | DDDCCC        |                   |               |
-#   | |  W--+---W   | = | BBBAAA        |       W------W    |    AAA*BBB    |
-#   | R--+--R   |   |   |               | into  |      | =  |    *******    |
+#   | r-----r       |   | DDDCCC        |                   |               |
+#   | |  w--+---w   | = | BBBAAA        |       w------w    |    AAA*BBB    |
+#   | r--+--r   |   |   |               | into  |      | =  |    *******    |
 #   |    |      |   |   |               |       |      |    |    CCC*DDD    |
-#   |    W------W   |   |               |       W------W    |               |
+#   |    w------w   |   |               |       w------w    |               |
 #   *---------------*   *---------------*                   *---------------*
-draw
-(   From: (Pixels; Rectangle, Wrap_within: rectangle)
-    To: (Pixels; Rectangle, Wrap_within: rectangle)
-):  null
+draw_
+(   from: (pixels;, rectangle., wrap_within. rectangle_)
+    to: (pixels;, rectangle., wrap_within. rectangle_)
+):  null_
 
-vertices[of]:
-[   @private @
-    {   State; state[vertices_id] Cpu_only
-
-        Array[vertex];
-    }
+vertices_[of_]: all_of_
+[   @private m_:
+    [   state; state_[vertices_id_] cpu_only
+        array[vertex_];
+    ]
 ]
-{   vertex: all_of[[Position: vector3f], of]
+{   vertex_: all_of_[[position: vector3f_], of_]
 
-    ;;renew(File_path): I load(File_path)
+    ;;renew_(file_path:): m load_(file_path)
 
-    # Saves the vertices to a file.
-    ::save(File_path): null
+    # saves the vertices to a file.
+    ::save_(file_path:): null_
 
-    # Loads vertices from a file.
-    ;;load(File_path): null
+    # loads vertices from a file.
+    ;;load_(file_path:): null_
 
-    ;;[fn(Array[vertex];): ~t]: t
-        debug assert(!My State gpu_ahead_of_cpu())
+    ;;update_(fn_(array[vertex_];): ~t_): t_
+        debug assert_(!my state gpu_ahead_of_cpu_())
 
-        Result: fn(My Array;)
+        result: fn_(;m array)
 
-        if My State is Synced.
-            My State = needs_gpu_update(Previous_id: Synced Id)
+        if m state is synced.
+            m state = needs_gpu_update_(previous_id. synced id)
 
-        Result
+        result
 
-    # Moves the data to the GPU, if it's not already there and up-to-date.
-    # This can be expensive as we upload all the vertices from CPU to GPU, if they have changed.
-    ;;push(): null
+    # moves the data to the GPU, if it's not already there and up-to-date.
+    # this can be expensive as we upload all the vertices from CPU to GPU, if they have changed.
+    ;;send_to_gpu_(): null
 
-    # NOTE: there is no `;;pull()` method like with `pixels`; we don't modify
+    # NOTE: there is no `;;send_to_cpu_()` method like with `pixels`; we don't modify
     # vertices on the GPU like we do with textures.
-
-    # TODO: `..transfer(): of` to become `Gpu_only`
 }
 
+# TODO
+
 @private state[of]: one_of
-[   # This object is not represented on the GPU at all.
+[   # this object is not represented on the GPU at all.
     Cpu_only
-    # This object is not represented on the CPU at all.
+    # this object is not represented on the CPU at all.
     Gpu_only: [Id: of]
-    # The CPU version of this object is ahead of the GPU version.
-    # The CPU version should send an update to the GPU (may be expensive)
+    # the CPU version of this object is ahead of the GPU version.
+    # the CPU version should send an update to the GPU (may be expensive)
     # if you want to draw it efficiently.
     Needs_gpu_update: [Previous_id: of]
-    # The GPU version of this object is ahead of the CPU version.
-    # If needed on the CPU, data must be requested from the GPU (may be expensive).
+    # the GPU version of this object is ahead of the CPU version.
+    # if needed on the CPU, data must be requested from the GPU (may be expensive).
     Needs_cpu_update: [Id: of]
-    # The GPU version of this object is in sync with the CPU version.
+    # the GPU version of this object is in sync with the CPU version.
     Synced: [Id: of]
 ]
 {   ::gpu_ahead_of_cpu(): bool
@@ -278,39 +298,42 @@ fragment:
 [   Vertex_indices[3]; u32
 ]
 
-# Warning!  Ensure that any fields to `vertex_data` or `fragment_data`
+# WARNING!  ensure that any fields to `vertex_data` or `fragment_data`
 # don't use a `builtin` like `Vertex_index`, unless you actually want to use that built-in.
 shader
 [   global_data: gpu_data = []
     vertex_data: gpu_data = []
     fragment_data: gpu_data = []
 ]:
-[   # Vertex shader, which returns the position of the vertex
+[   # vertex shader, which returns the position of the vertex
     # plus any fragment data (for the fragment shader).
     # TODO: needs to be a pure function.
     # TODO: needs to have super-reflection so that we can parse this into shader language.
     vertex(Global_data, Vertex_input_data): vertex_output_data
 
-    # Fragment shader, which returns the color to use for this pixel,
-    # based on Global_data and Fragment_data from the fragment's vertices.
-    # If returning null, the result is equivalent to a `discard`,
+    # fragment shader, which returns the color to use for this pixel,
+    # based on `global_data` and `fragment_data` from the fragment's vertices.
+    # if returning null, the result is equivalent to a `discard`,
     # and can be used for 100% transparency.
     fragment(Global_data, Vertex_output_data)?: color4f
 ]
 {   vertex_input_data: all_of[[Position: vector3f], vertex_data]
     vertex_output_data: all_of[[Position: vector4f], fragment_data]
 
-    # Actually use this shader to draw to some GPU pixels.
-    # E.g.,
-    #   Shader shade
-    #   (   Global_data:
-    #       [   My: 12.3
-    #           Global: vector2f(X: 5.0)
-    #           Data: matrix4f(Translation: vector3f(X: 4.0, Y: 1.0, Z: 7.5))
-    #       ]
-    #       draw(Shading;):
-    #           Pixels draw(Shading;, My_vertices, My_triangles)
-    #   )
+    #[#
+    actually use this shader to draw to some GPU pixels.
+    ```
+       Shader shade
+       (   Global_data:
+           [   My: 12.3
+               Global: vector2f(X: 5.0)
+               Data: matrix4f(Translation: vector3f(X: 4.0, Y: 1.0, Z: 7.5))
+           ]
+           draw(Shading;):
+               Pixels draw(Shading;, My_vertices, My_triangles)
+       )
+    ```
+    #]#
     ::shade(Global_data, draw(Shading;): null): null
 }
 
@@ -329,12 +352,12 @@ gpu_data: fields_of
 font:
 [   @private @
     {   Vertices[[Opacity: f32]];
-        Glyph_size: size2
+        Glyph_size: size2i
         Glyphs: lot[of: array[fragment], at: rune]
     }
 ]
 
-# Where the next bit of text will be added.
+# where the next bit of text will be added.
 caret:
 [   Top; vector2i
     Height; i32
@@ -360,6 +383,6 @@ font_style: choose
     Chaos # add pseudorandom jitter to drawn runes
 ]
 
-size2: [Width; i32, Height; i32]
-index2: [Column; i32, Row; i32]
+size2i_: [Width; i32, Height; i32]
+index2i_: [Column; i32, Row; i32]
 [vector2i, vector2f]: \/vector
