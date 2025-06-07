@@ -268,121 +268,119 @@ vertices_[of_]: all_of_
     # vertices on the GPU like we do with textures.
 }
 
-# TODO
-
-@private state[of]: one_of
+@private state_[of_]: one_of_
 [   # this object is not represented on the GPU at all.
-    Cpu_only
+    cpu_only: true_
     # this object is not represented on the CPU at all.
-    Gpu_only: [Id: of]
+    gpu_only: [id: of_]
     # the CPU version of this object is ahead of the GPU version.
     # the CPU version should send an update to the GPU (may be expensive)
     # if you want to draw it efficiently.
-    Needs_gpu_update: [Previous_id: of]
+    needs_gpu_update: [previous_id: of_]
     # the GPU version of this object is ahead of the CPU version.
     # if needed on the CPU, data must be requested from the GPU (may be expensive).
-    Needs_cpu_update: [Id: of]
+    needs_cpu_update: [id: of_]
     # the GPU version of this object is in sync with the CPU version.
-    Synced: [Id: of]
+    synced: [id: of_]
 ]
-{   ::gpu_ahead_of_cpu(): bool
-        what Me
-            Cpu_only: {False}
-            Gpu_only: {True}
-            Needs_gpu_update: {False}
-            Needs_cpu_update: {True}
-            Synced: {False}
+{   ::gpu_ahead_of_cpu_(): bool_
+        what m
+            _cpu_only: {false}
+            _gpu_only: {true}
+            _needs_gpu_update: {false}
+            _needs_cpu_update: {true}
+            _synced: {false}
 }
 
-fragment:
-[   Vertex_indices[3]; u32
+fragment_:
+[   vertex_indices[3]; u32_
 ]
 
-# WARNING!  ensure that any fields to `vertex_data` or `fragment_data`
-# don't use a `builtin` like `Vertex_index`, unless you actually want to use that built-in.
-shader
-[   global_data: gpu_data = []
-    vertex_data: gpu_data = []
-    fragment_data: gpu_data = []
+# WARNING!  ensure that any fields to `vertex_data_` or `fragment_data_`
+# don't use a `builtin` like `vertex_index`, unless you actually want to use that built-in.
+shader_
+[   global_data: gpu_data_ = []
+    vertex_data: gpu_data_ = []
+    fragment_data: gpu_data _= []
 ]:
 [   # vertex shader, which returns the position of the vertex
     # plus any fragment data (for the fragment shader).
     # TODO: needs to be a pure function.
     # TODO: needs to have super-reflection so that we can parse this into shader language.
-    vertex(Global_data, Vertex_input_data): vertex_output_data
+    vertex_(global_data:, vertex_input_data:): vertex_output_data_
 
     # fragment shader, which returns the color to use for this pixel,
     # based on `global_data` and `fragment_data` from the fragment's vertices.
     # if returning null, the result is equivalent to a `discard`,
     # and can be used for 100% transparency.
-    fragment(Global_data, Vertex_output_data)?: color4f
+    fragment_(global_data, vertex_output_data)?: color4f_
 ]
-{   vertex_input_data: all_of[[Position: vector3f], vertex_data]
-    vertex_output_data: all_of[[Position: vector4f], fragment_data]
+{   vertex_input_data_: all_of_[[position: vector3f_], vertex_data_]
+    vertex_output_data_: all_of_[[position: vector4f_], fragment_data_]
 
     #[#
     actually use this shader to draw to some GPU pixels.
     ```
-       Shader shade
-       (   Global_data:
-           [   My: 12.3
-               Global: vector2f(X: 5.0)
-               Data: matrix4f(Translation: vector3f(X: 4.0, Y: 1.0, Z: 7.5))
+       shader shade_
+       (   global_data:
+           [   my: 12.3
+               global: vector2f_(X: 5.0)
+               data: matrix4f_(translation. vector3f_(4.0, 1.0, 7.5))
            ]
-           draw(Shading;):
-               Pixels draw(Shading;, My_vertices, My_triangles)
+           draw_(shading;):
+               pixels draw_(shading, my_vertices, my_triangles)
        )
     ```
     #]#
-    ::shade(Global_data, draw(Shading;): null): null
+    ::shade_(global_data:, draw_(shading;): null_): null_
 }
 
 # GPU data is any struct of fields that include these types.
-gpu_data: fields_of
-[   u32
-    f32
-    vector2f
-    vector3f
-    vector4f
-    matrix3f
-    matrix4f
-    pixels
+gpu_data_: fields_of_
+[   u32_
+    f32_
+    vector2f_
+    vector3f_
+    vector4f_
+    matrix3f_
+    matrix4f_
+    pixels_
 ]
 
-font:
-[   @private @
-    {   Vertices[[Opacity: f32]];
-        Glyph_size: size2i
-        Glyphs: lot[of: array[fragment], at: rune]
-    }
+font_:
+[   @private m_:
+    [   vertices[[opacity: f32_]];
+        glyph_size: size2i_
+        glyphs: lot_[at_: rune_, array_[fragment_]]
+    ]
 ]
 
 # where the next bit of text will be added.
-caret:
-[   Top; vector2i
-    Height; i32
+caret_:
+[   top; vector2i_
+    height; i32_
 ]
-{   ;;move_up(): null
-    ;;move_down(): null
+{   ;;move_up_(): null_
+    ;;move_down_(): null_
 }
 
-font_options:
-[   Foreground; color
-    Background; color
-    Style; font_style
+font_options_:
+[   foreground; color_
+    background; color_
+    style; font_style_
 ]
-{   @alias Foreground_color: Foreground
-    @alias Background_color: Background
+{   @alias foreground_color: foreground
+    @alias background_color: background
 }
 
-font_style: choose
-[   Bold
-    Italic
-    Underlined
-    Inverted # foreground/background color is inverted
-    Chaos # add pseudorandom jitter to drawn runes
+font_style_: choose_
+[   bold
+    italic
+    underlined
+    inverted # foreground/background color is inverted
+    chaos # add pseudorandom jitter to drawn runes
 ]
 
-size2i_: [Width; i32, Height; i32]
-index2i_: [Column; i32, Row; i32]
-[vector2i, vector2f]: \/vector
+size2i_: [width; i32_, height; i32_]
+index2i_: [column; i32_, row; i32_]
+[vector2i_, vector2f_]: \/vector
