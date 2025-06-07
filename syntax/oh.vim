@@ -19,7 +19,7 @@ set cpo&vim
 
 " Keep keywords in alphabetical order inside groups.
 "
-syn keyword ohBuiltinVariable	false true null
+syn keyword ohBuiltinVariable	false true null unspecified
 syn keyword ohBuiltinVariable	ctx debug m o
 syn keyword ohBuiltinFunction	is_ m_ o_ renew_
 syn keyword ohBuiltinFunction	count_ each_ test_

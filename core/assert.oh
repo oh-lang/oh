@@ -1,20 +1,38 @@
-# TODO: add `er_` to generic
-assert_[of_]: [of;, oh_info:, transformation; str_]
-{   g_(~t., oh_info. _ caller_(), transformation. ""): g_[t_]
-        [t, oh_info, transformation]
+assert_[of_, RETURNED_er_: runtime_er_, held_er_: RETURNED_er_]: [of;, oh_info:, transformation; str_, held_er;]
+{   g_(~t., ~GIVEN_RETURNED_er., oh_info. _ caller_(), transformation. ""): g_[t_, RETURNED_er_: GIVEN_RETURNED_er_]
+        [t, held_er. RETURNED_er, oh_info, transformation]
 
+    # TODO: something like this for nullable.
+    g_(hm[~ok_, ~er_]., oh_info. _ caller_(), transformation. ""): g_[hm_[ok_, er_], RETURNED_er_: er_, held_er_: null_]
+        [hm, held_er. null, oh_info, transformation]
+
+    g_(~t., oh_info. _ caller_(), transformation. ""): g_[t_]
+        [t, held_er. runtime_er_ unspecified, oh_info, transformation]
+
+    ;;descope_[t_: contains_[RETURNED_er_]](block[t_];): null_
+        @if of_ is bool_
+            if !m of
+                block exit_(m held_er)
+        @elif of_ is hm_
+            if m of is er:
+                block exit_(er)
+        @else
+            # TODO
+
+    # TODO: think about how we want to do things like `ok: assert_(hm)` or `non_null: assert_(nullable?)`
     # TODO: does this descope at the right time?  i think so as long
     # as we ensure that we don't hold a reference to it, like
     # `assert: assert_(5) == 6`
     # but that might be desired anyway, in case you want to check a bunch of results.
-    # TODO: we need a `block` in descope to exit from in case of error.
+    # however, i think the results would only get checked one-at-a-time at the end anyway.
     ;;descope_(): null_
+        # TODO: throw a compile error if the current block is not annotated as `@can_panic`
         @if of_ is bool_
             if !m of
                 print_(error: "${m oh_info}: expected ${m transformation}")
                 panic_("expected ${m transformation}")
         @elif of_ is hm_
-            if of is er:
+            if m of is er:
                 print_(error: "${m oh_info}: expected ${m transformation}, got ${er}")
                 panic_("expected ${m transformation} to be OK, got ${er}")
         @else
@@ -25,9 +43,19 @@ assert_[of_]: [of;, oh_info:, transformation; str_]
         # `method arguments` will include `m:`, `m;`, or `m.`, so we don't
         # need to add `::`, `;;`, or `..` to the start here.
         @concat(method name)(...method arguments): g_[method returning_]
+            # TODO: in release mode, we need to make `transformation` not a string
+            # and do something else.
             transformation. str_ = "${m transformation} ${of_ string_(method)}"
             returning. @concat(method name)(...method arguments)
             # TODO: i think we need to plan for `m` to be descoped here.
             # TODO: maybe this method should be converted to `..` regardless of `m`.
             g_(returning, oh_info_ caller_(), transformation)
+}
+
+runtime_er_: one_of_
+[   unspecified
+    invalid_argument
+    broken_invariant
+]
+{   @alias invalid_arguments: invalid_argument
 }
