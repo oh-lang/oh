@@ -5172,7 +5172,7 @@ other_instance: generic_class_[id_: dbl_, value_: string_](id. 3, value. "4")
 If you have a generic class like `my_generic_[type1_, type2_]`, you can use them as a
 default-named function argument like `my_generic[type1_, type2_]:`, which is short for
 `my_generic: my_generic_[type1_, type2_]`.  This works even for generics over values,
-e.g., if `fixed_array_[Count]` is a fixed-size array of size `Count`, then `fixed_array[3]:`
+e.g., if `fixed_array_[count]` is a fixed-size array of size `count`, then `fixed_array[3]:`
 can be a declaration for a fixed array of size 3.  We can distinguish between 
 `fixed_array[3]` being (1) this declaration or (2) a request to access the fourth
 element in an array based on whether `fixed_array` is in scope, but adding a trailing `:`
@@ -6130,50 +6130,47 @@ can be converted to readonly slice references without being copied.
 
 ## lots 
 
-A `lot` is oh-lang's version of a map (or `dict` in python).  Instead of mapping from a `key`
-to a `value` type, lots link an `at` to an `of`.  This change from convention is mostly
-to avoid overloading the term `map` which is used when transforming values such as `hm`, but also
-because `map`, `key`, and `value` have little to do with each other; we don't "unlock" anything
-with a C++ `map`'s key, we locate an instance.  Thus we use `at` for a locator
-and `of` for the default-named type in `lot`.
-The class definition is [here](https://github.com/oh-lang/oh/blob/main/core/lot.oh).
+A `lot_` is oh-lang's version of a map (or `dict` in python).  Instead of
+"mapping" from a `key_` to a `value_` type, lots locate an `of_` at an `at_`.
+This change from convention is mostly to avoid overloading the term `map`
+which is used when transforming values such as `hm_`, but also because
+`map_`, `key_`, and `value_` have little to do with each other; we don't "unlock"
+anything with a C++ `map`'s key, we locate where an instance is at.  Thus
+we use `at` for a locator and `of` because it's the default-named type for
+a generic.  The class definition for a `lot_` is
+[here](https://github.com/oh-lang/oh/blob/main/core/lot.oh).
 
 A lot can look up, insert, and delete elements by key quickly (ideally amortized
 at `O(1)` or at worst `O(lg(N)`).  You can use this way to define a lot, e.g.,
-`Variable_name: lot[at: id_type, value_type]`.  A default-named lot can
-be defined via `Lot[at: id_type, value_type]`, e.g., `Lot[dbl, at: int]`.
-Note that while an array can be thought of as a lot with the `at` type as `index`,
-the array type `array[element_type]` would be useful for densely
-packed data (i.e., instances of `element_type` for most indices), while the lot 
-type `lot[element_type, at: index]` would be useful for sparse data.
+`variable_name: lot_[at_: id_type_, of_: value_type_]`, e.g.,
+`my_var: lot_[at_: str_, int_]` which declares a lot of integers located at strings.
+A default-named lot can be defined via `lot[at_: id_type_, value_type_]`, e.g.,
+`lot[dbl, at: int]`.  Note that while an array can be thought of as a lot with the
+`at_` type as `index_`, the array type `array_[element_type_]` is most useful for
+densely packed data (i.e., instances of `element_type_` for most indices), while
+the lot  type `lot_[element_type_, at_: index_]` would be useful for sparse data.
 
 To define a lot (and its contents) inline, use this notation:
 
 ```
-Jim1: "Jim C"
-Jim2: "Jim D"
-Jim: 456
+jim1: "Jim C"
+jim2: "Jim D"
+jim: 456
 # lot linking string to ints:
-Employee_ids: lot[at: int, str]
-(   # option 1.A: `X: Y` syntax
+employee_ids_: lot_[at_: int_, str_]
+(   # option 1.A: `x: y` syntax
     "Jane": 123
-    # option 1.B: `[At: X, Of: Y]` syntax
-    [At: "Jane", Of: 123]
-    # option 1.C: `[X, Y]` syntax, ok if ID and value types are different
-    ["Jane", 123]
-    # option 1.D:
-    Jane: 123
-    # if you have some variables to define your id, you need to take care (see WARNING below).
-    # option 2.A, wrap in parentheses to indicate it's a variable not an ID
-    (Jim1): 203
+    # option 1.B: `[at: x, of: y]` syntax
+    [at: "Jane", of: 123]
+    # option 1.C: `[x, y]` syntax
+    ["jane", 123]
+    # if you have some variables to define your `at`, you need to take care.
+    # option 2.A, wrap in braces to indicate it's a variable not an ID
+    {jim1}: 203
     # option 2.B
-    [At: Jim1, Of: 203]
+    [at: jim1, of: 203]
     # option 2.C
-    [Jim1, 203]
-    # WARNING! not a good option for 2; no equivalent of option 1.D here.
-    # Jim1: Jim1_id # WARNING, looks like option 1.C, which would define "Jim1" instead of "Jim C"
-    # option 3: `X` syntax where `X` is a known variable, essentially equal to `@X:_x`
-    Jim
+    [jim1, 203]
 )
 # note that commas are optional if elements are separated by newlines,
 # but required if elements are placed on the same line.
@@ -6182,51 +6179,26 @@ Employee_ids: lot[at: int, str]
 To define a lot quickly (i.e., without a type annotation), use the notation
 `["Jane": 123, "Jim": 456]`.
 
-Lots require an ID type whose instances can hash to an integer or string-like value.
-E.g., `dbl` and `flt` cannot be used, nor can types which include those (e.g., `array dbl`).
+Lots require an `at_` type whose instances can hash to an integer or string-like value.
+E.g., `dbl_` and `flt_` cannot be used, nor can container types which include those
+(e.g., `array_[dbl_]`).  However, standard container types with hashable elements are
+likewise hashable and can thus be used as `at_` types.
 
-```
-Dbl_database; dbl[int]      # OK, int is an OK ID type
-Dbl_dbl_database; dbl[dbl]  # COMPILE ERROR, dbl is an invalid ID type.
-```
-
-However, we allow casting from these prohibited types to allowed ID types.  For example:
-
-```
-Name_database; string[int]
-Name_database[123] = "John"
-Name_database[124] = "Jane"
-print(Name_database[123.4]) # RUNTIME ERROR, 123.4 is not representable as an `int`.
-print(Name_database[123.4 round(Stochastically)])   # prints "John" with 60% probability, "Jane" with 40%.
-
-# note that the definition of the ID is a readonly array:
-Stack_database; lot[at: array[int], string]
-Stack_database[[1,2,3]] = "stack123"
-Stack_database[[1,2,4]] = "stack124"
-# prints "stack123" with 90% probability, "stack124" with 10%:
-print(Stack_database[map([1.0, 2.0, 3.1], {$Dbl round(Stochastically)})])
-# things get more complicated, of course, if all array elements are non-integer.
-# the array is cast to the ID type (integer array) first.
-Stack_database[[2.2, 3.5, 4.8] map({$Dbl round(Stochastically)})]
-# result could be stored in [2, 3, 4], [2, 3, 5], [2, 4, 4], [2, 4, 5],
-#                           [3, 3, 4], [3, 3, 5], [3, 4, 4], [3, 4, 5]
-# but the ID is decided first, then the lot is added to.
-```
-
-Note: when used as a lot ID, objects with nested fields become deeply constant,
+Note: when used as a lot `at_`, types with nested fields become deeply constant,
 regardless of whether the internal fields were defined with `;` or `:`.
-I.e., the object is defined as if with a `:`.  This is because we need ID
-stability inside a container; we're not allowed to change the ID or it could
-change places inside the lot and/or collide with an existing ID.
+I.e., the object is defined as if with a `:`.  This is because we need `at`
+stability inside a container; we're not allowed to change the `at` or it could
+change places inside the lot and/or collide with an existing `at`.  Such
+manipulations are possible but should be done explicitly and only intentionally.
 
-The default lot type is `insertion_ordered_lot`, which means that the order of elements
-is preserved based on insertion; i.e., new IDs come after old IDs when iterating.
+The default lot type is `insertion_ordered_lot_`, which means that the order of elements
+is preserved based on insertion; i.e., new elements come after old elements when iterating.
 (Equality checking doesn't care about insertion order, however.)
-Other notable lots include `at_ordered_lot`, which will iterate over elements in order
-of their sorted IDs, and `unordered_lot`, which has an unpredictable iteration order.
-Note that `at_ordered_lot` has `O(lg(N))` complexity for look up, insert, and delete,
-while `insertion_ordered_lot` has some extra overhead but is `O(1)` for these operations,
-like `unordered_lot`.
+Other notable lots include `at_ordered_lot_`, which will iterate over elements in order
+of their sorted locations, and `unordered_lot_`, which has an unpredictable iteration order.
+Note that `at_ordered_lot_` has `O(lg(N))` complexity for look up, insert, and delete,
+while `insertion_ordered_lot_` has some extra overhead but is `O(1)` for these operations,
+like `unordered_lot_`.
 
 ## sets
 
