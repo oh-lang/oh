@@ -909,7 +909,9 @@ Any capitalized letters belong to a [namespace](#namespaces).
 There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
 `what`, `in`, `each`, `for`, `while`, `pass`, `where`,
 which are function-like but may consume the rest of the statement.
-E.g., `return X + 5` will return the value `(X + 5)` from the enclosing function.
+E.g., `return X + 5` will return the value `X + 5` from the enclosing function.
+The `type_case_` versions of these keywords are also all reserved;
+for example, `return_` can be used for the return type of the current function.
 There are some reserved namespaces with side effects like `FIRST_`, `SECOND_`,
 `THIRD_`, `FOURTH_`, `NAMED_`, `AS_`,
 which should be used for their side effects.  For example, `FIRST_` and `SECOND_`
@@ -6096,58 +6098,35 @@ i.e., we create oh-lang methods that are aliases for operations on the JS `Array
 it depends on if we want other JS libraries to take advantage of oh-lang features or if
 we want to make it look as native as possible -- for less indirection.
 
-### fixed-count arrays
+### vectors
 
-We declare an array with a fixed number of elements using the notation
-`array[element_type, Count]`, where `Count` is a constant integer expression (e.g., 5)
-or a variable that can be converted to the `count` type.  Fixed-count array elements
-will be initialized to the default value of the element type, e.g., 0 for number types.
+oh-lang has the concept of a fixed-length array (or fixed-size array),
+but we call it a vector because it has different semantics than a resizable array.
+Vectors have all their elements initialized to the default value (e.g., 0 for
+number types) and will always have the same size/count.
 
-Fixed-count arrays can be passed in without a copy to functions taking
-an array as a readonly argument, but will be of course copied into a 
-resizable array if the argument is writable.  Some examples:
+A vector has this declaration:
+`vector_[of_: element_type_, count:, count_: select_count_ = count_arch_]`,
+and so can be instantiated like this: `vector_[5, int_]`.  Example usage:
 
-```
-# readonly array of count 4
-Int4: array[int, 4] = [-1, 5, 200, 3450]
-# writable array of fixed-count 3:
-Vector3; array[3, dbl] = [1.5, 2.4, 3.1]
-print("Vector3 is [${Vector3[0]}, ${Vector3[1]}, ${Vector3[2]}]")
-
-# a function with a writable argument:
-do_something(Array[dbl];): array[2, dbl]
-    # you wouldn't actually use a writable array argument, unless you did
-    # some computations using the array as a workspace.
-    # PRETENDING TO DO SOMETHING USEFUL WITH Array:
-    return [Array pop(), Array pop()]
-
-# a function with a readonly argument:
-do_something(Array[dbl]): array[dbl, 2]
-    return [Const_array[-1], Const_array[-2]]
-
-# COMPILER ERROR: `Vector3` can't be passed as mutable reference
-# to a variable-sized array:
-print(do_something(Array; Vector3))    # prints [3.1, 2.4]
-
-# OK: can bring in Vector3 by constant reference (i.e., no copy) here:
-print(do_something(Array: Vector3))     # prints [3.1, 2.4]
-```
-
-There may be optimizations if the fixed-array count is known at compile-time,
-i.e., being defined on the stack rather than the heap.  But when the fixed
-count is unknown at compile time, the fixed-count array will be defined on the heap:
+TODO: i don't think we support runtime parameters in `[]`.  this is probably
+a bad example unless we can also do something like `vector_[..., @runtime count:]`
+and define it on the heap in case of runtime values for count.
 
 ```
 # note you can use an input argument to define the return type's
 # fixed-array count, which is something like a generic:
-count_up(Count): array[int, Count]
-    Result; array[int, Count]
-    Count each I: index
-        Result[I] = I
-    return Result
+count_up_(count_arch.): vector_[int_, count_arch]
+    result; return_
+    count_arch each index: count_arch_
+        result[index] = index
+    result
 
-print(count_up(10))    # prints [0,1,2,3,4,5,6,7,8,9]
+print_(count_up_(10))    # prints [0,1,2,3,4,5,6,7,8,9]
 ```
+
+TODO: we probably need the concept of a slice like in Rust; vectors and arrays
+can be converted to readonly slice references without being copied.  
 
 ## lots 
 
