@@ -588,9 +588,9 @@ votes_lot; lot_[at_: str_, int_]("Cake": 5, "Donuts": 10, "Cupcakes": 3)
 votes_lot["Cake"]           # 5
 ++votes_lot["Donuts"]       # 11
 ++votes_lot["Ice Cream"]    # inserts "Ice Cream" with default value, then increments
-votes_lot["Cupcakes"]!      # deletes from the lot (but returns `3`)
+votes_lot["Cupcakes"]!      # resets Cupcakes to 0 and returns 3
 votes_lot::["Cupcakes"]     # null
-# now votes_lot == ["Cake": 5, "Donuts": 11, "Ice Cream": 1]
+# now votes_lot == ["Cake": 5, "Donuts": 11, "Cupcakes": 0, "Ice Cream": 1]
 ```
 
 ## defining sets
@@ -6203,90 +6203,27 @@ like `unordered_lot_`.
 ## sets
 
 A set contains some elements, and makes checking for the existence of an element within
-fast, i.e., O(1).  Like with container IDs, the set's element type must satisfy certain properties
-(e.g., integer/string-like).  The syntax to define a set is `Variable_name: set[element_type]`.
-You can elide `set` for default named arguments like this: `Set[element_type];` (or `:` or `.`).
+fast, i.e., O(1).  Like with container `at`s, the set's element type must satisfy certain
+properties (i.e., hashable, e.g., integer/string-like).  The syntax to define a set is
+`variable_name: set_[element_type_]`.  You can elide `set_` for default named arguments
+like this: `set[element_type_];` (or `:` or `.`).  See
+[the set definition here](https://github.com/oh-lang/oh/blob/main/core/set.oh).
 
-```
-er_: one_of_
-[   out_of_memory
-    # etc...
-]
-hm_[of_]: hm_[ok_: of_, er_]
-
-# TODO: is there a way we can make container dynamics better here for `unnest_`?
-# e.g., can we make it a `container_[at_: of_, of_: of_]` as well?
-set_[of_: hashable_]: container_[at_: of_, of_: true_]
-{   # Returns `True` iff `Of` is in the set, otherwise null.
-    # NOTE: the `true` type is only satisfied by the instance `True`;
-    # this is not a boolean return value but can easily be converted to boolean.
-    ::[Of]?: true
-
-    # TODO: use `[]` for the unsafe API, `all()` or `put()` for the safe API (returning a `hm`)
-
-    # Adds `Of` to the set and returns `True` if
-    # `Of` was already in the set, otherwise `null`.
-    # this can be an error in case of running out of memory.
-    ;;[Of]: hm[true?]
-
-    # Ejects `Of` if it was present in the set, returning `True` if true
-    # and `null` if not.
-    # A subsequent, immediate call to `::[Of]?` returns null.
-    ;;[Of]!?: true 
-
-    # Modifier for whether `Of` is in the set or not.
-    # The current value is passed into the callback and can be modified;
-    # if the value was `null` and is converted to `True` inside the function,
-    # then the set will get `Of` added to itself.  Example:
-    #   `Set[X] = if Condition {True} else {null}` becomes
-    #   `Set[X, fn(Maybe True?;): {Maybe True = if Condition {True} else {null}}]`
-    # TODO: if we used `True?` as the identifier everywhere we wouldn't need to do `Maybe True`, e.g.,
-    #   `Set[X, fn(True?;): {True? = if Condition {True} else {null}}]`
-    # TODO: remove these methods and add `refer` methods
-    ;;[Of, fn(MAYBE_true?; true): ~t]: t
-
-    # Fancy getter for whether `Of` is in the set or not.
-    ::[Of, fn(MAYBE_true?): ~t]: t
-
-    ::count(): count_with
-
-    # Unions this set with values from an iterator, returning True if
-    # all the values from the iterator were already in this set, otherwise False.
-    # can error if running out of memory.
-    ;;all(Iterator[of].): hm[bool]
-
-    # can convert to an iterator.
-    ::iterator(): iterator[(Of:)]
-
-    @hide ;:ofs(): iterator[(True;:)]
-    @hide ;:ats(): iterator[(Of)]
-
-    # Removes the last element added to the set if this set is
-    # insertion ordered, otherwise any convenient element.
-    # Returns an error if there is no element available.
-    ;;pop(): hm[of]
-    ;;pop(Of)?: M[Of]!
-
-    @alias ;;remove(Of)?: M[Of]!
-    ...
-}
-```
-
-Like the IDs in lots, items added to a set become deeply constant,
-even if the set variable is writable.
-
-TODO: discussion on `insertion_ordered_set` and `unordered_set`, if we want them.
+Like the `at`s in lots, items added to a set become deeply constant, even if the set
+variable is writable.  The default type of a set is an `insertion_ordered_set_`,
+because oh-lang makes insertion-ordered containers the default.  For equality checking,
+insertion order doesn't matter, but for iteration it does.
 
 TODO: make it easy to pass in a set as an argument and return a lot with e.g. those IDs.
   maybe this isn't as important as it would be if we had a dedicated object type.
 
 ```
-fn(Pick_from: ~o, Ids: ~k from ids(o)): pick(o, k)
-    return pick(Pick_from, Ids)
+fn_(pick_from: ~o_, ats: ~k_ from ats_(o_)): pick_(o_, k_)
+    pick_(pick_from, ats)
 ```
 
-TODO: discuss how `in` sounds like just one key from the set of IDs (e.g., `k in ids(o)`)
-and `from` selects multiple (or no) IDs from the set (`k from ids(o)`).
+TODO: discuss how `in` sounds like just one key from the set of IDs (e.g., `k_ in ats_(o_)`)
+and `from` selects multiple (or no) IDs from the set (`k_ from ats_(o_)`).
 
 ## iterator
 

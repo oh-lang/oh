@@ -1,0 +1,41 @@
+# TODO: is there a way we can make container dynamics better here for `unnest_`?
+# e.g., can we make it a `container_[at_: of_, of_: (of:)]` as well?
+# TODO: probably want to stop inheriting from container. `:;[at:]: (of?:;)`
+# doesn't make sense as a function signature anymore.
+set_[of_: hashable_]: container_[at_: of_, of_: true_]
+{   # returns `true` iff `of` is in the set, otherwise null.
+    # NOTE: the `true_` type is only satisfied by the instance `true`;
+    # this is not a boolean return value but can easily be converted to boolean.
+    ::[of]?: true_
+
+    # adds `of` to the set and returns `true` if
+    # `of` was already in the set, otherwise `null`.
+    # this can be an error in case of running out of memory.
+    ;;[of]: hm_[true_?]
+
+    ::count_(): count_with_
+
+    # unions this set with values from an iterator, returning true if
+    # all the values from the iterator were already in this set, otherwise false.
+    # can error if running out of memory.
+    ;;all_(iterator[of_].): hm_[bool_]
+
+    # can convert to an iterator.
+    ::iterator_(): iterator_[(of:)]
+
+    # Removes the last element added to the set if this set is
+    # insertion ordered, otherwise any convenient element.
+    # Returns an error if there is no element available.
+    ;;pop_(): hm_[of_]
+    ;;pop_(of)?: m[of]!
+
+    @alias ;;remove_(of)?: m[of]!
+    ...
+}
+
+er_: one_of_
+[   out_of_memory
+    # etc...
+]
+hm_[of_]: hm_[ok_: of_, er_]
+

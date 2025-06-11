@@ -7,18 +7,23 @@ container_[of_: not_[null_], at_, count_with_: select_count_ = count_arch_]: []
     otherwise the `of` instance at that `at`.
     this is wrapped in a reference object to enable passing by reference.
     USAGE:
-    ```
+        ```
         # suppose `container` has `at_: int_`.
         # get the value at `5` and make a copy of it:
         of?: container[5]
         # get the value at `7` and keep a mutable reference to it:
         (of?;) = container[7]
-    ```
+        ```
     prefer the `[at.]` version unless you want the value to update
     whenever the referenced `at` does, or if `at` is expensive to copy.
     TODO: i think we need to update to `;:[(at:)]: (of?:;)`;
     `[]` has different semantics than `()`; `[at.]` and `[at;]` are roughly equivalent,
     whereas `(at.)` and `(at;)` are temporary and writable-reference versions.
+    
+    notice that for a mutable reference, mooting a non-null element will remove the
+    element from the container (because mooting will set it to null, which means to
+    delete it), possibly triggering `O(k)` operations to move/swap elements around,
+    e.g., in an array.
     #]#
     :;[at:]: (of?:;)
 
@@ -35,17 +40,9 @@ container_[of_: not_[null_], at_, count_with_: select_count_ = count_arch_]: []
     # get a non-null reference to an element.
     # this will add a default `of` if `at` is
     # not already in the container.
+    # mooting this element will not remove the element from the array, because
+    # mooting a non-nullable element
     ;;[at.]: (of;)
-
-    #[#
-    returns the value at `at`, if present, while mooting it
-    in the container.  depending on the container implementation,
-    this may remove the element from the container (e.g., in a `lot`)
-    or may set its linked value to the default (e.g., in an `array`).
-    returns null if not present.
-    TODO: let's make this consistent.  maybe just moot, no remove.
-    #]#
-    ;;[at]!?: of
 
     # returns the element at `at` or null if not present,
     # removing it from the container while doing so.
@@ -71,10 +68,10 @@ container_[of_: not_[null_], at_, count_with_: select_count_ = count_arch_]: []
     ;:iterator_(): iterator_[(at:, of;:)]
 
     # iterate over keys/`at`s.
-    ::iterator_(): iterator[(at:)]
+    ::iterator_(): iterator_[(at:)]
 
     # iterate over values.
-    ;:iterator_(): iterator[(of;:)]
+    ;:iterator_(): iterator_[(of;:)]
 
     @alias ::has_(at): m[at] != null
     @alias ::contains_(at): m[at] != null
