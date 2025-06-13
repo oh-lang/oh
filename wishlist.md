@@ -588,9 +588,9 @@ votes_lot; lot_[at_: str_, int_]("Cake": 5, "Donuts": 10, "Cupcakes": 3)
 votes_lot["Cake"]           # 5
 ++votes_lot["Donuts"]       # 11
 ++votes_lot["Ice Cream"]    # inserts "Ice Cream" with default value, then increments
-votes_lot["Cupcakes"]!      # resets Cupcakes to 0 and returns 3
+votes_lot["Cupcakes"]!      # resets "Cupcakes" to 0 and returns 3
 votes_lot::["Cupcakes"]     # null
-# now votes_lot == ["Cake": 5, "Donuts": 11, "Cupcakes": 0, "Ice Cream": 1]
+# now `votes_lot == ["Cake": 5, "Donuts": 11, "Cupcakes": 0, "Ice Cream": 1]`
 ```
 
 ## defining sets
@@ -5877,6 +5877,7 @@ Nested tests will freshly execute any parent logic before executing themselves.
 This ensures a clean state.  If you want multiple tests to start with the same
 logic, just move that common logic to a parent test.
 
+TODO: rename `context` to `test` and `test_` to `assert_` above.
 Inside of a `@test` block, you have access to a `context` variable which includes
 things like what has been printed (`context printed_()`).  `context printed_()`
 will pull everything that would have been printed in the test, putting it into
@@ -6227,119 +6228,85 @@ and `from` selects multiple (or no) IDs from the set (`k_ from ats_(o_)`).
 
 ## iterator
 
+For reference, see [the definition here](https://github.com/oh-lang/oh/blob/main/core/iterator.oh).
 For example, here is a way to create an iterator over some incrementing values:
 
 ```
-my_range[of: number]: all_of
-[   @private m:
-    [   Less_than: of
-        Next_value: of = 0
+my_range_[of_: number_]: all_of_
+[   @private m_:
+    [   next_value; of_ = 0
+        less_than: of_
     ]
-    iterator[of]
+    iterator_[of_]
 ]
-{   ;;renew(Start_at: of = 0, M Less_than: of = 0): null
-        Next_value = Start_at
+{   ;;renew_(start_at. of_ = 0, m less_than. of_ = 0): null_
+        m next_value = start_at
 
-    ;;next()?: of
-        if Next_value < Less_than
-            return Next_value++
-        return null
+    ;;next_()?: of_
+        if m next_value < m less_than
+            m next_value++
+        else
+            null
 
-    ::peak()?: if Next_value < Less_than
-        Next_value 
-    else
-        null
+    ::peak_()?: of_
+        if m next_value < m less_than
+            m next_value 
+        else
+            null
 }
 
-my_range(Less_than: index(10)) each Index:
-    print(Index)
+my_range_(less_than: index_(10)) each index:
+    print_(index)
 # prints "0" to "9"
 ```
 
-We want to avoid pointers, so iterators should just be indices into
-the container that work with the container to advance, peak, etc.
-Thus, we need to call `Iterator next` with the container to retrieve
+We want to avoid pointers where possible, so iterators should just be indices
+into the container that work with the container to advance, peak, etc.
+Thus, we need to call `iterator next_` with the container to retrieve
 the element and advance the iterator, e.g.:
 
 ```
-Array: [1,2,3]
-Iterator; iterator[int]
-assert(Iterator next(Array) == 1)
-assert(next(Array, Iterator;) == 2)  # you can use global `next`
-assert(Iterator::peak(Array) == 3)
-assert(peak(Iterator, Array) == 3)   # or you can use global `peak`
-assert(Iterator next(Array) == 3)
-assert(Iterator next(Array) == null)
-assert(Iterator peak(Array) == null)
+array: [1, 2, 3]
+iterator; iterator_[int_]
+assert(iterator next_(array)) == 1
+assert_(next_(array, iterator)) == 2    # you can use global `next_`
+assert_(iterator::peak_(array)) == 3
+assert_(peak(iterator, array)) == 3     # you can use global `peak_`
+assert_(iterator next_(array)) == 3
+assert_(iterator next_(array)) == null
+assert_(iterator peak_(array)) == null
 # etc.
 ```
 
 The way we achieve that is through using an array iterator:
 
 ```
-# by requesting the `next()` value of an array with this generic iterator,
+# by requesting the `next_()` value of an array with this generic iterator,
 # the iterator will become an array iterator.  this allows us to check for
-# `@only` annotations (e.g., if `Iterator` was not allowed to change) and
+# `@only` annotations (e.g., if `iterator` was not allowed to change) and
 # throw a compile error.
-next(Iterator; iterator[t] @becomes array_iterator[t], Array: array[~t])?: t
-    Iterator = array_iterator[t]()
-    Iterator;;next(Array)
-
-# TODO: probably can do `(Of;:.)`
-array_iterator[of]: all_of
-[   @private m: [Next; index]
-    iterator[of]
-]
-{   ;;renew(Start: index = 0):
-        Next = Start
-
-    ;;next(Array[of])?: if Next < Array count()
-        Array[Next++]
-    else
-        null
-
-    ::peak(Array[of])?: if Next < Array count()
-        Array[Next]
-    else
-        null
-    
-    # note that this function doesn't technically need to modify this
-    # `array_iterator`, but we keep it as `;;` since other container
-    # iterators will generally need to update their index/ID.
-    ;;remove(Array[of];)?: if Next < Array count()
-        Array remove(Next)
-    else
-        null
-}
+next_[t_](iterator[t_]; @becomes array_iterator_[t_], array[~t_]:)?: t_
+    iterator = array_iterator_[t_]()
+    iterator;;next_(array)
 ```
+
+Where [the array iterator is defined here](https://github.com/oh-lang/oh/blob/main/core/array/iterator.oh).
 
 We can also directly define iterators on the container itself.
-We don't need to define both the `iterator` version and the `each` version;
-the compiler can infer one from the other.  We write the `each` option
-as a method called `each`.
+We don't need to define both the `iterator_` version and the `each_` version;
+the compiler can infer one from the other.  We write the `each_` option
+as a method called `each_`.
+TODO: is this true, can we really infer?
 
 ```
-array[of]: []
-{   # TODO: technically this should be a `Block`, right?
+array_[of_]: []
+{   # TODO: technically this should be a `block`, right?
     # look at `If_block` example below.
-    ::each(fn(Of): loop): null
-        # The `count` type has an `each` iterator method:
-        count() each Index:
-            if fn(M[Index]) == Break
-                break
-
-    # no-copy iteration, but can mutate the array elements.
-    ;;each(fn(Of;): loop): null
-        count() each Index:
-            if fn(M[Index];) == Break
-                break
-
-    # mutability template for both of the above:
-    ;:each(fn(Of;:): loop): bool
-        count() each Index:
-            if fn(M[Index];:) == Break
-                return True
-        return False
+    ;:each_(fn_(of;:): loop_): bool_
+        m count_() each index:
+            if fn_(m[index];:) is_break_()
+                return true
+        return false
 }
 ```
 

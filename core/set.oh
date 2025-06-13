@@ -30,7 +30,6 @@ set_[of_: hashable_]: container_[at_: of_, of_: true_]
     ;;pop_(of)?: m[of]!
 
     @alias ;;remove_(of)?: m[of]!
-    ...
 }
 
 er_: one_of_

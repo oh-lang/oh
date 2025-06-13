@@ -1,0 +1,38 @@
+# TODO: use `select_index_` instead of `index_`, or even something `in_bounds_`
+# TODO: probably can do `(of;:.)` instead of `of_`
+array_iterator_[of_]: all_of_
+[   @private m: [next; index_]
+    iterator_[of_, can: peek | delete | insert]
+]
+{   ;;renew_(start: index_ = 0): null_
+        m next = start
+
+    ;;next_(array[of_]:)?: of_
+        if m next < array count_()
+            array[m next++]
+        else
+            null
+
+    ::peek_(array[of_]:)?: of_
+        if m next < array count_()
+            array[m next]
+        else
+            null
+
+    # note that this function doesn't technically need to modify this
+    # `array_iterator_`, but we keep it as `;;` since other container
+    # iterators will generally need to update their index/`at`.
+    ;;remove_next_(array[of_];)?: of_
+        if m next < array count_()
+            array remove_(m next)
+        else
+            null
+
+    ;;before_next_(array[of_];, insert: of_)?: hm_[array_ er_, ok_: null_]
+        if m next < array count_()
+            array insert_(insert, m next)
+        else
+            array append_(insert)
+        ++m next
+}
+

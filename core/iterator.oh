@@ -1,0 +1,22 @@
+iterator_[of_, from_: null_, can: none]: []
+{   ;;next_(from:)?: of_
+
+    # TODO: should we double-down on overloads?
+    # `::next_` instead of `::peek_`?
+    ::peek_[require: can has_peek_()](from:)?: of_
+
+    ;;delete_next_[require: can has_delete_()](from;): null_
+
+    ;;remove_next_[require: can has_delete_()](from;)?: of_
+
+    # inserts the value `insert` *before* the `next_()` value.
+    # however, we will *NOT* iterate over this new value; i.e.,
+    # the iterator will advance past this new value.
+    ;;before_next_[require: can has_insert_()](from;, insert. of_): hm_[ok_: null_, from_ er_]
+}
+
+can_: choose_
+[   peek:
+    delete:
+    insert:
+]

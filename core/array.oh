@@ -137,9 +137,11 @@ array_[of_, count_with_: select_count_ = count_arch_]: all_of_
 
     @alias heap_: non_local_
     @alias heap_or_local_: maybe_local_
+
+    er_: CONTAINER_er_
 }
 
 # for simplicity, rounds to multiples of 8 bytes.
 local_bytes_: select_[16, 24, 32, 40, 48, 56, 64]
 
-[hm_, er_]: \/container
+[hm_, CONTAINER_er_]: \/container
