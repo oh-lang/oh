@@ -6301,7 +6301,7 @@ TODO: is this true, can we really infer?
 ```
 array_[of_]: []
 {   # TODO: technically this should be a `block`, right?
-    # look at `If_block` example below.
+    # look at `if_block` example below.
     ;:each_(fn_(of;:): loop_): bool_
         m count_() each index:
             if fn_(m[index];:) is_break_()
@@ -6319,9 +6319,9 @@ TODO -- description, plus `if/else/elif` section
 
 Conditional statements including `if`, `elif`, `else`, as well as `what`,
 can act as expressions and return values to the wider scope.  This obviates the need
-for ternary operators (like `X = do_something() if Condition else Default_value` in python
-which inverts the control flow, or `int X = Condition ? do_something() : Default_value;`
-in C/C++ which takes up two symbols `?` and `:`).  In oh-lang, we borrow from Kotlin the idea that
+for ternary operators (like `x = do_something_() if condition else default_value` in python
+which inverts the control flow, or `int x = condition ? do_something() : default_value;`
+in C/C++ which takes up two symbols `?` and `:`).  In oh-lang, we borrow from Kotlin that
 [`if` is an expression](https://kotlinlang.org/docs/control-flow.html#if-expression),
 and similarly for `what` statements (similar to
 [`when` in kotlin](https://kotlinlang.org/docs/control-flow.html#when-expressions-and-statements)).
@@ -6329,50 +6329,51 @@ and similarly for `what` statements (similar to
 ## then statements
 
 We can rewrite conditionals to accept an additional `then` "argument".  For `if`/`elif`
-statements, the syntax is `if Expression -> Then:` to have the compiler infer the `then`'s
-return type, or `elif Expression -> Whatever_name: then[whatever_type]` to explicitly provide it
-and also rename `Then` to `Whatever_name`.  Similarly for `what` statements, e.g.,
-`what Expression -> Whatever_name: then[whatever]` or `what Expression -> Then:`.  `else`
-statements also use the `->` expression, e.g., `else -> Then:` or `else -> Whatever: then[else_type]`.
-Note that we use a `:` here because we're declaring an instance of `then`; if we don't use
-`then` logic we don't use `:` for conditionals.  Also note that `then` is a thin wrapper
-around the [`block`](#blocks) class (i.e., a reference that removes the `::loop()` method that
-doesn't make sense for a `then`).  If you want to just give the type without renaming,
-you can do `if Whatever -> Then[my_if_block_type]:`.
+statements, the syntax is `if expression -> then:` to have the compiler infer the `then`'s
+return type, or `elif expression -> whatever_name: then_[whatever_type_]` to explicitly
+provide it and also use `whatever_name` for the `then_`'s name.  Similarly for `what
+statements, e.g., `what expression -> whatever_name: then_[whatever_]` or
+`what expression -> then:`.  `else` statements also use the `->` expression, e.g.,
+`else -> then:` or `else -> whatever: then_[else_type_]`.  Note that we use a `:` here
+because we're declaring an instance of `then_`; if we don't use `then` logic we don't use
+`:` for conditionals.  Also note that `then_` is a thin wrapper around the
+[`block_` class](#blocks) (i.e., a reference that removes the `::loop_()` method that
+doesn't make sense for a `then_`).  If you want to just give the type without renaming,
+you can do `if whatever -> then[my_if_block_type_]:`.
 
 ```
-if Some_condition -> Then:
+if some_condition -> then:
     # do stuff
-    if Some_other_condition -> SOME_NAMESPACE_then:
-        if Something_else1
-            Then exit()
-        if Something_else2
-            SOME_NAMESPACE_then exit()
+    if some_other_condition -> SOME_NAMESPACE_then:
+        if something_else1
+            then exit_()
+        if something_else2
+            SOME_NAMESPACE_then exit_()
     # do other stuff
 
-Result: what Some_value -> Then[str]:
+result: what some_value -> then[str_]:
     5
         ...
-        if Other_condition
-            Then exit("Early return for `what`")
+        if other_condition
+            then exit_("Early return for `what`")
         ...
     ...
 
 # if you are running out of space, try using parentheses.
 if
-(       Some Long Condition
-    &&  Some Other_fact
-    &&  Need_this Too
-) -> Then:
-    print("good")
+(       some long condition
+    &&  some other_fact
+    &&  need_this too_()
+) -> then:
+    print_("good")
     ...
 
 # of you can just use double indents:
-if Some Long Condition
-    &&  Some Other_fact
-    &&  Need_this Too
-->      Then:
-    print("good")
+if some long condition
+    &&  some other_fact
+    &&  need_this too_()
+->      then:
+    print_("good")
     ...
 ```
 
@@ -7265,6 +7266,9 @@ use `um(Immediate: ...)` to make it clear that you want it that way.
 # enums and masks
 
 ## enumerations
+
+TODO: should we use `all_of_[parent_class, m: [...]]`??
+we maybe should do the same for `one_of_[u32, f32, ...]`?
 
 We can create a new type that exhaustively declares all possible values it can take.
 The syntax is `type_case_: one_of` followed by a list of named values

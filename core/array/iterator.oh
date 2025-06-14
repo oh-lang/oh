@@ -1,7 +1,7 @@
 # TODO: use `select_index_` instead of `index_`, or even something `in_bounds_`
 # TODO: probably can do `(of;:.)` instead of `of_`
 array_iterator_[of_]: all_of_
-[   @private m: [next; index_]
+[   @private m_: [next; index_]
     iterator_[of_, can: peek | delete | insert]
 ]
 {   ;;renew_(start: index_ = 0): null_
