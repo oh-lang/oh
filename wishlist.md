@@ -6490,44 +6490,44 @@ example_class_: [value: int_]
 `what` statements are comparable to `switch-case` statements in C/C++,
 but in oh-lang the `case` keyword is not required.  You can use the keyword
 `else` for a case that is not matched by any others, i.e., the default case.
-You can also use `Any:;.` to match any other case, if you want access to the
-remaining values.  (`else` is therefore like an `Any_:` case.)
+You can also use `any:;.` to match any other case, if you want access to the
+remaining values.  (`else` is therefore like an `_any:` case.)
 We switch from the standard terminology for two reasons: (1) even though
-`switch X` does describe that the later logic will branch between the different
-cases of what `X` could be, `what X` is more descriptive as to checking what `X` is,
-which is the important thing that `what` is doing at the start of the statement.
-(2) `switch` is something that a class instance might potentially want to do,
-e.g., `My_instance switch(Background1)`, and having `switch` as a keyword negates
+`switch x` does describe that the later logic will branch between the different
+cases of what `x` could be, `what x` is more descriptive as to checking what `x` is,
+and (2) `switch` is something that a class instance might potentially want to do,
+e.g., `my_instance switch_(background1)`, and having `switch` as a keyword negates
 that possibility.
 
 TODO: explain how `case` values are cast to the same type as the value being `what`-ed.
 
 You can use RHS expressions for the last line of each block to return a value
-to the original scope.  In this example, `X` can become 5, 7, 8, or 100, with various
-side effects (i.e., printing).
+to the original scope.  In this example, `x` can become 5, 7, 8, or 100, with various
+side effects (i.e., printing).  Note that we don't use `:` or `;` to define the cases
+here because we are not declaring any new variables.
 
 ```
-X: what String
-    "hello"
-        print("hello to you, too!")
-        5
-    # you can do multiple matches over multiple lines:
-    "world"
-    "earth"
-        # String == "world" or "earth" here.
-        print("it's a big place")
-        7
-    #or you can do multiple matches in a single line with commas:
-    "hi", "hey", "howdy"
-        # String == "hi", "hey", or "howdy" here.
-        print("err, hi.")
-        8
-    else
-        100
+x: what string
+     "hello"
+          print_("hello to you, too!")
+          5
+     # you can do multiple matches over multiple lines:
+     "world"
+     "earth"
+          # `string == "world"` or "earth" here.
+          print_("it's a big place")
+          7
+     # or you can do multiple matches in a single line with commas:
+     "hi", "hey", "howdy"
+          # `string == "hi"`, "hey", or "howdy" here.
+          print_("err, hi.")
+          8
+     else
+          100
 
 # Note again that you can use braces to make these inline.
 # Try to keep usage to code that can fit legibly on one line:
-Y: what String { "hello" {5} "world" {7} else {100} }
+y: what string { "hello" {5}, "world" {7}, else {100} }
 ```
 
 You don't need to explicitly "break" a `case` statement like in C/C++.
@@ -6536,98 +6536,111 @@ any enclosing `for` or `while` loop.  This makes `what` statements more
 like `if` statements in oh-lang.
 
 ```
-Air_quality_forecast: ["good", "bad", "really bad", "bad", "ok"]
-Meh_days; 0
-Air_quality_forecast each Quality:
-    what Quality
-        "really bad"
-            print("it's going to be really bad!")
-            break   # stops `for` loop
-        "good"
-            print("good, that's good!")
-        "bad"
-            print("oh no")
-        "ok"
-            ++Meh_days
+air_quality_forecast: ["good", "bad", "really bad", "bad", "ok"]
+meh_days; 0
+air_quality_forecast each quality: str_
+     what quality
+          "really bad"
+               print_("it's going to be really bad!")
+               break    # stops `for` loop, might not be what you want!
+          "good"
+               print_("good, that's good!")
+          "bad"
+               print_("oh no")
+          "ok"
+               ++meh_days
 ```
 
-The `what` operation is also useful for narrowing in on `one_of` variable types.
+The `what` operation is also useful for narrowing in on `one_of_` variable types.
 E.g., suppose we have the following:
 
 ```
-status: one_of[Unknown, Alive, Dead]
-vector3: [X; dbl, Y; dbl, Z; dbl]
-{   ::length(): sqrt(X^2 + Y^2 + Z^2)
+status_: one_of_[unknown:, alive:, dead:]
+vector3_: [x; dbl_, y; dbl_, z; dbl_]
+{    ::length_(): sqrt_(x^2 + y^2 + z^2)
 }
 
-update: one_of
-[   status
-    position: vector3
-    velocity: vector3
+update_: one_of_
+[    status:
+     position: vector3_
+     velocity: vector3_
 ]
 # example usage of creating various `update`s:
-Update0: update status Alive
-Update1: update position(X: 5.0, Y: 7.0, Z: 3.0)
-Update2: update velocity(X: -3.0, Y: 4.0, Z: -1.0)
+update0: update_ status_ alive
+update1: update_ position_(x: 5.0, y: 7.0, z: 3.0)
+update2: update_ velocity_(x: -3.0, y: 4.0, z: -1.0)
 ```
 
 We can determine what the instance is internally by using `what` with
-variable declarations that match the `one_of` type and field name.
-We can do this alongside standard `switch`-like values, like so,
+variable declarations that match the `one_of_` type and field name.
+We can do this alongside standard constant values, like so,
 with earlier `what` cases taking precedence.  
 
 ```
 ...
-# checking what `Update` is:
-what Update
-    # no trailing `:` because we're not declaring anything here:
-    status Unknown
-        print("unknown update")
-    Status:
-        # match all other statuses:
-        print("got update: $(Status)")
-    Position: vector3
-        print("got update: $(Position)")
-    Velocity: vector3
-        print("got update: $(Velocity)")
+# checking what `update` is:
+what update
+     # no trailing `:` because we're not declaring anything here:
+     status_ unknown
+          print("unknown update")
+     status:
+          # match all other statuses:
+          print_("got update: $(status)")
+     position: vector3_
+          print_("got update: $(position)")
+     velocity: vector3_
+          print_("got update: $(velocity)")
 ```
 
-We don't recommend function style here, e.g.,
-`what Update { (Position: vector3): print("got position update: $(Position)") }`,
-mostly because we want to allow `return` inside a `what` case to return
-from the function that encloses `what`, and not `return` just inside the `what` case.
-However, that's something we do support, in case your `what` case is complicated.
+You can use a `then` on the `what` itself or on a specific case that's complicated,
+or `where` to further restrict the scope of a matching case.
 
 ```
-speed: one_of[
-    None
-    Slow
-    Going_up
-    Going_down
-    Going_sideways
-    Dead
+speed_: one_of_
+[    none
+     slow
+     going_up
+     going_down
+     going_sideways
+     dead
 ]
-check_speed(Update): speed
-    what Update
-        # you can mix and match non-function and function notation:
-        status Dead
-            Dead
-        # here we use function notation:
-        (Velocity: vector3):
-            if Velocity length() < 5.0
-                # this returns early from the `what` case
-                return Slow
-            print("going slow, checking up/down")
-            if Velocity Y abs() < 0.2
-                Going_sideways
-            elif Velocity Y > 0.0
-                Going_up
-            else
-                Going_down
-        Position: where Position length() is_nan()
-            Dead
-        else
-            None
+# here's an example with a `then` that works for all cases.
+# note we are declaring a `then` so we need a `:`
+speed1: speed_ = what update -> then[speed_]:
+     velocity: vector3_
+          if Velocity length() < 5.0
+               then exit_(slow)
+          print_("going slow, checking up/down")
+          then exit_
+          (    if velocity y abs_() < 0.2
+                    going_sideways
+               elif velocity y > 0.0
+                    going_up
+               else
+                    going_down
+          )
+     else
+          then exit_(none)
+
+# here's an example with a `then` that applies to only one case.
+speed2: speed_ = what update
+     status dead
+          dead
+     velocity: vector3_ -> then[speed_]:
+          if Velocity length() < 5.0
+               then exit_(slow)
+          print_("going slow, checking up/down")
+          # TODO: i think we can assume that this exits the `then` here:
+          if velocity y abs_() < 0.2
+               going_sideways
+          elif velocity y > 0.0
+               going_up
+          else
+               going_down
+     position: where position length_() is_nan_()
+          dead
+     else
+          none
 ```
 
 Note that variable declarations can be argument style, i.e., including
@@ -6635,25 +6648,25 @@ temporary declarations (`.`), readonly references (`:`), and writable
 references (`;`), since we can avoid copies if we wish.  This is only
 really useful for allocated values like `str`, `int`, etc.  However, note
 that temporary declarations via `.` can only be used if the argument to
-`what` is a temporary, e.g., `what My_value!` or `what Some_class value()`.
-There is no need to pass a value as a mutable reference, e.g., `what My_value;`;
+`what` is a temporary, e.g., `what my_value!` or `what some_class value_()`.
+There is no need to pass a value as a mutable reference, e.g., `what my_value;`;
 since we can infer this if any internal matching block uses `;`.
 
 ```
-whatever: one_of
-[   str
-    card: [Name: str, Id: u64]
+whatever_: one_of_
+[    str:
+     card: [name: str_, id: u64_]
 ]
 
-Whatever; whatever str("this could be a very long string, don't copy if you don't need to")
+whatever; whatever_ str_("this could be a very long string, don't copy if you don't need to")
 
-what Whatever!      # ensure passing as a temporary by mooting here.
-    Str.
-        print("can do something with temporary here: ${Str}")
-        do_something(Str!)
-    Card.
-        print("can do something with temporary here: ${Card}")
-        do_something_else(Card!)
+what whatever!      # ensure passing as a temporary by mooting here.
+     str.
+          print_("can do something with temporary here: ${str}")
+          do_something_(str!)
+     card.
+          print_("can do something with temporary here: ${card}")
+          do_something_else_(card!)
 ```
 
 ### where operator
