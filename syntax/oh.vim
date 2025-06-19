@@ -2,7 +2,7 @@
 " Add to `vimXX/filetype.vim`: `au BufNewFile,BufRead *.oh	setf oh`
 " Add this file to the `vimXX/syntax/` directory.
 " Language:	oh
-" Last Change:	2025 Apr 14
+" Last Change:	2025 Jun 19
 " Credits:	Zvezdan Petkovic <zpetkovic@acm.org>
 "		Neil Schemenauer <nas@python.ca>
 "		Dmitry Vasiliev
@@ -12,6 +12,10 @@ if exists("b:current_syntax")
   finish
 endif
 
+set tabstop=5
+set softtabstop=5
+set shiftwidth=0
+
 " We need nocompatible mode in order to continue lines with backslashes.
 " Original setting will be restored.
 let s:cpo_save = &cpo
@@ -19,7 +23,7 @@ set cpo&vim
 
 " Keep keywords in alphabetical order inside groups.
 "
-syn keyword ohBuiltinVariable	false true null unspecified
+syn keyword ohBuiltinVariable	false true none null unspecified
 syn keyword ohBuiltinVariable	ctx debug m o
 syn keyword ohBuiltinFunction	is_ m_ o_ renew_
 syn keyword ohBuiltinFunction	count_ each_ test_
