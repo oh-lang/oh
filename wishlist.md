@@ -6369,34 +6369,36 @@ if
     ...
 
 # of you can just use double indents:
+# TODO: i think 5-space tabs look fine, and they help with 3-character operators
+# like `||=` or `and` being distinguishable for a tab-after from just a single after-space.
 if some long condition
-    &&  some other_fact
-    &&  need_this too_()
-->      then:
-    print_("good")
-    ...
+     &&   some other_fact
+     &&   need_this too_()
+->        then:
+     print_("good")
+     ...
 ```
 
 ## if statements
 
 ```
-X: if Condition
-    do_something()
-elif Other_condition
-    do_something_else()
+x: if condition
+     do_something_()
+elif other_condition
+     do_something_else_()
 else
-    calculate_side_effects(...) # ignored for setting X
-    Default_value
+     calculate_side_effects_(...)    # ignored for setting x
+     default_value
 
-# now X is either the result of `do_something()`, `do_something_else()`,
-# or `Default_value`.  note, we can also do this with braces to indicate
-# blocks, and can fit in one line if we have fewer conditions, e.g.,
+# now `x` is either the result of `do_something_()`, `do_something_else_()`,
+# or `default_value`.  note, we can also do this with braces to indicate
+# blocks, and can fit comfortably in one line if we have fewer conditions, e.g.,
 
-Y: if Condition {do_something()} else {calculate_side_effects(...), Default_value}
+y: if condition {do_something_()} else {calculate_side_effects_(...), default_value}
 ```
 
 Note that ternary logic short-circuits operations, so that calling the function
-`do_something()` only occurs if `Condition` is true.  Also, only the last line
+`do_something_()` only occurs if `condition` is true.  Also, only the last line
 of a block can become the RHS value for a statement like this.
 
 TODO: more discussion about how `return` works vs. putting a RHS statement on a line.
@@ -6404,24 +6406,24 @@ TODO: more discussion about how `return` works vs. putting a RHS statement on a 
 Of course you can get two values out of a conditional expression, e.g., via destructuring:
 
 ```
-[X, Y]: if Condition
-    [X: 3, Y: do_something()]
+[x, y]: if condition
+     [x: 3, y: do_something_()]
 else
-    [X: 1, Y: Default_value]
+     [x: 1, y: default_value]
 ```
 
 Note that indent matters quite a bit here.  Conditional blocks are supposed to indent
 at +1 from the initial condition (e.g., `if` or `else`), but the +1 is measured from
-the line which starts the conditional (e.g., `[X, Y]` in the previous example).  Indenting
+the line which starts the conditional (e.g., `[x, y]` in the previous example).  Indenting
 more than this would trigger line continuation logic.  I.e., at +2 or more indent,
 the next line is considered part of the original statement and not a block.  For example:
 
 ```
 # WARNING, PROBABLY NOT WHAT YOU WANT:
-Q?: if Condition
-        What + Indent_twice
+q?: if condition
+          what + indent_twice
 # actually looks to the compiler like:
-Q?: if Condition What + Indent_twice
+q?: if condition what + indent_twice
 ```
 
 Which will give a compiler error since there is no internal block for the `if` statement.
@@ -6432,10 +6434,10 @@ You can use the result of an `if` expression without an `else`, but the resultin
 variable becomes nullable, and therefore must be defined with `?:` (or `?;`).
 
 ```
-greet(): str
-    "hello, world!"
+greet_(): str_
+     "hello, world!"
 
-Result?: if Condition { greet() }
+result?: if condition { greet_() }
 ```
 
 This also happens with `elif`, as long as there is no final `else` statement.
@@ -6443,51 +6445,43 @@ This also happens with `elif`, as long as there is no final `else` statement.
 
 ### is operator
 
-You can use the `is` operator to convert statements like `X is(fn(Another_type: ...): ...)`
-into more idiomatic things like `if X is Another_type: ...`.
+You can use the `is` operator to convert statements like `x is_(an_(another_type: ...): ...)`
+into more idiomatic things like `if x is another_type: ...`.
 
 ```
 # not idiomatic:
-my_decider(X: one_of[type1, type2]):
-    X is
-    (   fn(Type1):
-            print("X was type1: ", Type1)
-    )
-    # or using lambda functions:
-    X is
-    (   print("X was type2: ", $Type2)
-    )
+my_decider_(x: one_of_[type1_, type2_]):
+     x is_
+     (    a_(type1:):
+               print_("x was type1: ", type1)
+     )
+     # or using lambda functions:
+     x is_({print_("x was type2: ", $type2)})
 
 # idiomatic:
-my_decider(X: one_of[type1, type2]):
-    if X is Type1:
-        print("X was type1: ", Type1)
-    elif X is Type2:
-        print("X was type2: ", Type2)
+my_decider_(x: one_of_[type1_, type2_]):
+     if x is type1:
+          print("x was type1: ", type1)
+     elif x is type2:
+          print("x was type2: ", type2)
 ```
 
 This is how you might declare similar functionality for your own class,
 by overloading the `is` operator.
 
 ```
-example_class: [Value: int]
-{   # the standard way to use this method uses syntax sugar:
-    #   if Example_class is Large:
-    #       print("was large: ${Large}")
-    :;.is(If_block[declaring: (Large:;. int), ~t]): never
-        if Value > 999
-            If_block then(Declaring: (Large` Value))
-        else
-            If_block else()
-
-    # another way to do this
-    :;.is(then(Large:;. int): ~t, else(): ~u): flatten[t, u]
-        if M Value > 999
-            then(Large` M Value)
-        else
-            # TODO: can we distinguish `else` from `else()` because we always
-            #       require parentheses around functions now??
-            else()
+example_class_: [value: int_]
+{    #[# the standard way to use this method uses syntax sugar:
+          ```
+          if example_class is large:
+               print_("was large: ${large}")
+          ```
+     #]#
+     :;.is_(if_block[declaring: (large:;. int_), ~t_]): never_
+          if value > 999
+               if_block then_(declaring: (large` value))
+          else
+               if_block else_()
 }
 ```
 
