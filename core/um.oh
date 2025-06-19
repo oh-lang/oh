@@ -1,5 +1,3 @@
-um[of, er]: um[hm[of, er]]
-
 # a "future"; something that will produce an `of` when `decide` is called.
 # the best way to use futures is in combination with other futures, deciding
 # them all at the same time, to avoid running them sequentially.  example:
@@ -12,29 +10,32 @@ um[of, er]: um[hm[of, er]]
 #   What; run({print("world")}, After: Seconds: 1) Um
 #   Greeting; run({print("hello")}, After: Seconds: 2) Um
 #   decide(What, Greeting)
-um[of]: []
-{   # TODO: by default, should we include `of` as a field on this type,
-    # so that we can do `My_future; whatever_fn() Um, Result; my_future of = My_future decide()`?
-    # we could do this by default for all generics, or only if we do this:
-    of: of
+um_[of_]: []
+{    # TODO: by default, should we include `of` as a field on this type,
+     # so that we can do `my_future; whatever_fn_() um, result; my_future_ of_ = my_future decide_()`?
+     # we could do this by default for all generics, or only if we do this:
+     of_: of_
 
-    g(~T.): disallowed
-    [   "use `um(Immediate. Abc)` if you want to create a future with `Abc`"
-    &   "or `some_long_running_fn() Um` to get the future from `some_long_running_fn()`"
-    ]
+     g_(~t.): disallowed_
+     [    "use `um_(immediate. abc)` if you want to create a future with `abc`"
+     &    "or `some_long_running_fn_() um` to get the future from `some_long_running_fn_()`"
+     ]
 
-    g(Immediate. ~t): g[t]
+     g_(immediate. ~t_): g_[t_]
 
-    ;;decide(): of
+     ;;decide_(): of_
 }
 
-@test "um(X) gives a compile error"
-    Lines; ["um(123)"]
-    Hm; compile(;Lines)
-    test(Lines) ==
-        [   "X: um(123)"
-            "#@!^ use `um(Immediate. Abc)` if you want to create a future"
-                &   "with `Abc` or `some_running_fn() Um` to get the future"
-                &   "from `some_long_running_fn()`"
-        ]
-    Hm is_er() assert("expected an error")
+um_[of_, er_]: um_[hm_[of_, er_]]
+
+@test "um_(x) gives a compile error"
+     lines; ["um_(123)"]
+     hm; compile_(;lines)
+     assert_(lines) ==
+          [    "x: um_(123)"
+               "#@!^ use `um_(immediate. abc)` if you want to create a future"
+                    &   "with `abc` or `some_running_fn_() um` to get the future"
+                    &   "from `some_long_running_fn_()`"
+          ]
+     assert_(hm) is_er_()
+

@@ -2,150 +2,151 @@
 # TODO: define the `@compile_panics` macro
 
 @test: hm_[er_: str_]
-    # TODO: do we need to get `ast` as a singleton or just use it?
-    # maybe by default it is available to `@macros`.
-    BAD_DECLARATION_er: 'expected `@test "test name":` with `{...}` or indented block'
-    node; ast parse_next_() assert_(BAD_DECLARATION_er)
+{    # TODO: do we need to get `ast` as a singleton or just use it?
+     # maybe by default it is available to `@macros`.
+     BAD_DECLARATION_er: 'expected `@test "test name":` with `{...}` or indented block'
+     node; ast parse_next_() assert_(BAD_DECLARATION_er)
 
-    binary; node! binary_operation_() assert_(BAD_DECLARATION_er)
-    assert_(binary operator == op_declare_readonly, BAD_DECLARATION_er)
+     binary; node! binary_operation_() assert_(BAD_DECLARATION_er)
+     assert_(binary operator == op_declare_readonly, BAD_DECLARATION_er)
 
-    # `test_name` includes quotes, e.g., `"whatever \"test name\" you want"`:
-    test_name: binary left! string_() assert_(BAD_DECLARATION_er)
-    test_block; binary right! block_() assert_(BAD_DECLARATION_er)
+     # `test_name` includes quotes, e.g., `"whatever \"test name\" you want"`:
+     test_name: binary left! string_() assert_(BAD_DECLARATION_er)
+     test_block; binary right! block_() assert_(BAD_DECLARATION_er)
 
-    if !ast includes_(tests)
-        return
+     if !ast includes_(tests)
+          return
 
-    # Create a unique name for the test block so we can use it in code.
-    test_block_name: ast unique_variable_()
-    ast add_
-    (   ast_ statement_
-        (   ast_ binary_operation_
-            (   left: identifier_(test_block_name)
-                op_declare_readonly
-                right: test_block
-            )
-        )
-    )
+     # Create a unique name for the test block so we can use it in code.
+     test_block_name: ast unique_variable_()
+     ast add_
+     (    ast_ statement_
+          (    ast_ binary_operation_
+               (    left: identifier_(test_block_name)
+                    op_declare_readonly
+                    right: test_block
+               )
+          )
+     )
 
-    # TODO: it might be cleaner to just define this statement:
-    # block; block_
-    # (   ast_ statement_
-    #     (   ast_ binary_operation_
-    #         (   left: ast_ binary_operation_
-    #             (   left: identifier_("context")
-    #                 op_access
-    #                 right: identifier_("run")
-    #             )
-    #             op_access
-    #             right: parentheses_
-    #             (   ...
-    #                 test_block
-    #             )
-    #         )
-    #     )
-    # )
-    block; block_
-    (   ast_ statement_("context run_(${test_name}, ${test_block_name}) assert_()"))
-    )
+     # TODO: it might be cleaner to just define this statement:
+     # block; block_
+     # (    ast_ statement_
+     #      (    ast_ binary_operation_
+     #           (    left: ast_ binary_operation_
+     #                (    left: identifier_("context")
+     #                     op_access
+     #                     right: identifier_("run")
+     #                )
+     #                op_access
+     #                right: parentheses_
+     #                (    ...
+     #                     test_block
+     #                )
+     #           )
+     #      )
+     # )
+     block; block_
+     (    ast_ statement_("context run_(${test_name}, ${test_block_name}) assert_()"))
+     )
 
-    if ast in_scope_("context")
-        # TODO: for running tests in parallel with the same parent state,
-        # we probably could fork here.  but that's a bit hacky on Windows.
-        ast add_(ast_ statement_(.block))
-        return
+     if ast in_scope_("context")
+          # TODO: for running tests in parallel with the same parent state,
+          # we probably could fork here.  but that's a bit hacky on Windows.
+          ast add_(ast_ statement_(.block))
+          return
 
-    # statement, via string, builds something like this:
-    # ast_ statement_
-    # (   ast_ binary_operation_
-    #     (   left: identifier_("context")
-    #         op_declare_writable
-    #         right: identifier_("test_context_")
-    #     )
-    # )
-    block prepend_(ast_ statement_("context; test_context_"))
+     # statement, via string, builds something like this:
+     # ast_ statement_
+     # (    ast_ binary_operation_
+     #      (    left: identifier_("context")
+     #           op_declare_writable
+     #           right: identifier_("test_context_")
+     #      )
+     # )
+     block prepend_(ast_ statement_("context; test_context_"))
 
-    ast add_(test. block)
+     ast add_(test. block)
+}
 
 @protected
 test_context_: [@protected printed; array_[str_], @protected name; str_]
-{   ;;run_(str., block[hm_[ok_: null_, ~er_]]): hm_[ok_: null_, er_]
-        str strip_()
-        m push_(:str)
-        hm: block run_()
-        m pop_(:str)
-        hm
+{    ;;run_(str., block[hm_[ok_: null_, ~er_]]): hm_[ok_: null_, er_]
+          str strip_()
+          m push_(:str)
+          hm: block run_()
+          m pop_(:str)
+          hm
 
-    ;;printed_(): array_[str_]
-        result; array_[str_]
-        m printed <-> result
-        result
+     ;;printed_(): array_[str_]
+          result; array_[str_]
+          m printed <-> result
+          result
 
-    @private
-    ;;push_(str:):
-        m name &= str
+     @private
+     ;;push_(str:):
+          m name &= str
 
-    @private
-    ;;pop_(str:):
-        assert_(m name ends_with_(str)) ?? panic_("test_context needs to match push/pop")
-        m name count_bytes_(m name count_bytes_() - str count_bytes_())
-        if m name ends_with_(' ')
-            m name pop_()
+     @private
+     ;;pop_(str:):
+          assert_(m name ends_with_(str)) ?? panic_("test_context needs to match push/pop")
+          m name count_bytes_(m name count_bytes_() - str count_bytes_())
+          if m name ends_with_(' ')
+               m name pop_()
 }
 
 @test "==":
-    @test "works for ints":
-        assert_(5) == 5
-        assert_(10) == 10
+     @test "works for ints":
+          assert_(5) == 5
+          assert_(10) == 10
 
-    @test_panics "expected (5 == 6) bool":
-        assert_(5) == 6
+     @test_panics "expected (5 == 6) bool":
+          assert_(5) == 6
 
 @test "!=":
-    @test "works for ints":
-        assert_(5) != 50
-        assert_(10) != 12
+     @test "works for ints":
+          assert_(5) != 50
+          assert_(10) != 12
 
-    @test_panics "expected (3 != 3) bool":
-        assert_(3) != 3
+     @test_panics "expected (3 != 3) bool":
+          assert_(3) != 3
 
 @test ">=":
-    @test "works for ints":
-        assert_(5) >= 3
-        assert_(4) >= 4
-        assert_(10) >= 10
+     @test "works for ints":
+          assert_(5) >= 3
+          assert_(4) >= 4
+          assert_(10) >= 10
 
-    @test_panics "expected (5 >= 6) bool":
-        assert_(5) >= 6
+     @test_panics "expected (5 >= 6) bool":
+          assert_(5) >= 6
 
 @test "<=":
-    @test "works for ints":
-        assert_(5) <= 6
-        assert_(7) <= 7
-        assert_(12) <= 12
+     @test "works for ints":
+          assert_(5) <= 6
+          assert_(7) <= 7
+          assert_(12) <= 12
 
-    @test_panics "expected (7 <= 6) bool":
-        assert_(7) <= 6
+     @test_panics "expected (7 <= 6) bool":
+          assert_(7) <= 6
 
 @test "<":
-    @test "works for ints":
-        assert_(5) < 6
-        assert_(10) < 11
+     @test "works for ints":
+          assert_(5) < 6
+          assert_(10) < 11
 
-    @test_panics "expected (7 < -1) bool":
-        assert_(7) < -1
+     @test_panics "expected (7 < -1) bool":
+          assert_(7) < -1
 
-    @test_panics "expected (-1 < -1) bool":
-        assert_(-1) < -1
+     @test_panics "expected (-1 < -1) bool":
+          assert_(-1) < -1
 
 @test ">":
-    @test "works for ints":
-        assert_(5) > 3
-        assert_(20) > 19
+     @test "works for ints":
+          assert_(5) > 3
+          assert_(20) > 19
 
-    @test_panics "expected (-1 > 1) bool":
-        assert_(-1) > 1
+     @test_panics "expected (-1 > 1) bool":
+          assert_(-1) > 1
 
-    @test_panics "expected (1 > 1) bool":
-        assert_(1) > 1
+     @test_panics "expected (1 > 1) bool":
+          assert_(1) > 1

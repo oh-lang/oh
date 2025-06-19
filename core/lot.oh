@@ -1,31 +1,33 @@
-er: one_of
-[   Out_of_memory
-    # etc...
-]
-hm[of]: hm[ok: of, er]
+lot_[of_, at_: hashable_]: container_[of_, at_]
+{    # returns null if `at` is not in the lot.
+     ::[at]: (of?:)
 
-lot[of, at: hashable]: container[of, at]
-{   # Returns Null if `At` is not in the lot.
-    ::[At]: (Of?:)
+     # gets the existing value at `at` if present,
+     # otherwise inserts a default `of` into the lot and returns it.
+     ;;[at]: hm_[(of;)]
 
-    # Gets the existing value at `At` if present,
-    # otherwise inserts a default `of` into the lot and returns it.
-    ;;[At]: hm[(Of;)]
+     @can_panic
+     ;;[at]: (of;)
+          m[at] hm assert_()
 
-    @can_panic
-    ;;[At]: (Of;)
-        M[At] Hm assert()
+     ::count_(): count_with_
 
-    # Ejects the (possibly null) value at `At` and returns it.
-    # A subsequent, immediate call to `::[At]` returns Null.
-    ;;[At]!?: of
+     # ejects the (possibly null) value at `at` and returns it.
+     # a subsequent, immediate call to `::[at]` returns null.
+     ;;pop_(at)?: of_
 
-    ::count(): count
+     # Returns the last element added to the lot if the lot is
+     # insertion ordered, otherwise returns any convenient element.
+     # The element is removed from the lot.
+     ;;pop_(): hm_[of_]
 
-    # Returns the last element added to the lot if the lot is
-    # insertion ordered, otherwise returns any convenient element.
-    # The element is removed from the lot.
-    ;;pop(): hm[of]
-
-    @alias ;;pop(At)?: {M[At]!}
+     # TODO: some good way to do this; it should be ok to shadow if it's the same type.
+     # maybe `@export(er_)`?
+     er_: er_
 }
+
+er: one_of_
+[    out_of_memory
+     # etc...
+]
+hm_[of_]: hm_[ok_: of_, er_]

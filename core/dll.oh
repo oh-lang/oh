@@ -1,71 +1,71 @@
 dll_[of_, count_with_: count_arch_]: all_of_
-[   @private m_:
-    [   stack; @only stack_[element_, count_with_]
-        count; count_with_
-        used_root; [next; offset_ max_(), previous; offset_ max_()]
-        # Free nodes are indexed as a SLL, i.e., only in the forward direction.
-        next_free_offset; offset_ max_()
-    ]
+[    @private m_:
+     [    stack; @only stack_[element_, count_with_]
+          count; count_with_
+          used_root; [next; offset_ max_(), previous; offset_ max_()]
+          # Free nodes are indexed as a SLL, i.e., only in the forward direction.
+          next_free_offset; offset_ max_()
+     ]
 ]
 {   offset_: count_with_ unsigned_
 
-    ::count_(): count_with_
-        m count
+     ::count_(): count_with_
+          m count
 
-    # returns the offset you can use to refer to this element.
-    # like a pointer, but indexed from this `dll_`.  if you erase
-    # this element in the future, you'll invalidate its offset 
-    # but no one else's.  (i.e., nothing will be at the offset
-    # initially, but a new element might reuse the offset later.)
-    # other operations (like `defrag_`) will invalidate this offset.
-    ;;append_(of.): hm_[offset_]
-        if m count_free_() == 0
-            m expand_() assert_()
-        offset: m next_free_offset
-        m count += 1
-        m next_free_offset = m stack[in_bounds: offset] next
-        m stack[in_bounds: offset] of = of!
-        m fix_links_
-        (   previous: m used_root previous
-            offset
-            next: -1
-        )
-        offset
+     # returns the offset you can use to refer to this element.
+     # like a pointer, but indexed from this `dll_`.  if you erase
+     # this element in the future, you'll invalidate its offset 
+     # but no one else's.  (i.e., nothing will be at the offset
+     # initially, but a new element might reuse the offset later.)
+     # other operations (like `defrag_`) will invalidate this offset.
+     ;;append_(of.): hm_[offset_]
+          if m count_free_() == 0
+               m expand_() assert_()
+          offset: m next_free_offset
+          m count += 1
+          m next_free_offset = m stack[in_bounds: offset] next
+          m stack[in_bounds: offset] of = of!
+          m fix_links_
+          (    previous: m used_root previous
+               offset
+               next: -1
+          )
+          offset
 
-    # TODO: `prepend_`
+     # TODO: `prepend_`
 
-    # TODO: `defrag_` which reorders offsets in iteration order.
-    # probably can have a parameter like "keep_capacity" or "optimize_capacity"
+     # TODO: `defrag_` which reorders offsets in iteration order.
+     # probably can have a parameter like "keep_capacity" or "optimize_capacity"
 
-    # TODO: pop_
+     # TODO: pop_
 
-    @private
-    ;;fix_links_(previous: offset_, offset, next: offset_): null_
-        if previous == offset_ max_()
-            m used_root next = offset
-        else
-            m stack[in_bounds: previous] next = offset
+     @private
+     ;;fix_links_(previous: offset_, offset, next: offset_): null_
+          if previous == offset_ max_()
+               m used_root next = offset
+          else
+               m stack[in_bounds: previous] next = offset
 
-        m stack[in_bounds: offset] previous = previous
-        m stack[in_bounds: offset] next = next
+          m stack[in_bounds: offset] previous = previous
+          m stack[in_bounds: offset] next = next
 
-        if next == offset_ max_()
-            m used_root previous = offset
-        else
-            m stack[in_bounds: next] previous = offset
+          if next == offset_ max_()
+               m used_root previous = offset
+          else
+               m stack[in_bounds: next] previous = offset
 
-    @private
-    ;;count_free_(): count_with_
-        m stack count_() - m count
+     @private
+     ;;count_free_(): count_with_
+          m stack count_() - m count
 
-    @private
-    ;;expand_(): hm_[null_]
-        # TODO 
+     @private
+     ;;expand_(): hm_[null_]
+          # TODO 
 
-    @private
-    element:
-    [   of;
-        next; offset_
-        previous; offset_
-    ]
+     @private
+     element:
+     [    of;
+          next; offset_
+          previous; offset_
+     ]
 }

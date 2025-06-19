@@ -1,5 +1,5 @@
 ordering_: one_of_
-[   equal,
-    left_before_right
-    right_before_left
+[    equal:
+     left_before_right:
+     right_before_left:
 ]

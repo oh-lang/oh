@@ -1,27 +1,27 @@
-ordinal: ordinal64
-ordinal64: ordinal[wrapping: h64]
-ordinal32: ordinal[wrapping: h32]
-ordinal16: ordinal[wrapping: h16]
-ordinal8: ordinal[wrapping: h8]
+ordinal_: ordinal64_
+ordinal64_: ordinal_[wrapping_: h64_]
+ordinal32_: ordinal_[wrapping_: h32_]
+ordinal16_: ordinal_[wrapping_: h16_]
+ordinal8_: ordinal_[wrapping_: h8_]
 
 @final
-ordinal[wrapping: hoisted_primitive]: all_of
-[   m: [@private Value; wrapping]
-    integer
+ordinal_[wrapping_: hoisted_primitive_]: all_of_
+[    m: [@private value; wrapping_]
+     integer
 ]
-{   m(Wrapping. wrapping): hm[m, number er]
-        if Wrapping > 0
-            [Value: Wrapping]
-        else
-            Unrepresentable
+{    m_(wrapping.): hm_[m_, number_ er_]
+          if wrapping > 0
+               [value. wrapping]
+          else
+               er_ unrepresentable
 
-    m(Index[signed[wrapping]].): hm[m, number er]
-        if Index >= 0
-            Value: Index hoisted()
-                ??  panic("Hoisting should be able to represent all positive indices")
-            [Value + 1]
-        else
-            Unrepresentable
+     m_(index[signed_[wrapping_]].): hm_[m_, number_ er_]
+          if index >= 0
+               value: index hoisted_()
+                    ??  panic_("Hoisting should be able to represent all positive indices")
+               [value + 1]
+          else
+               unrepresentable
 
-    @integer(Value)
+     @integer(value)
 }

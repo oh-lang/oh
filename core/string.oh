@@ -22,7 +22,7 @@ str256_: str_[special_count_: u64_, local_bytes: 32]
 
 @align(8)
 str_[special_count_: unsigned_primitive_, local_bytes]: all_of_
-[   m_: str_array_[special_count_, local_bytes]
+[    m_: str_array_[special_count_, local_bytes]
 ]
 
 str_array_[special_count_, local_bytes]: heap_or_local_array_[u8_, special_count_, local_bytes]

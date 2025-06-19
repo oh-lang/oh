@@ -1,46 +1,47 @@
-[in_bounds]: oh("./allocation.oh")
+indexable_sequence_[of_: not_[null_]]: container_[of_, at_: index_]
+{    ;;count_[require: of_ is defaultable_](count_with.): null_
 
-indexable_sequence[of: not[null]]: container[of, at: index]
-{   ;;count(@Resize_to Count): null 
+     # nullable getter; returns null if `index` is outside the bounds of the array.
+     ::[index.]: (of?:)
+          refer_
+          (    m
+               at. @hide index
+               fn_(o, index.): (of?:)
+                    in_bounds: o in_bounds_(index) ?? return (of?: null)
+                    (of: o[in_bounds])
+          )
 
-    # nullable getter; returns null if `Index` is outside the bounds of the array.
-    ::[Index.]: (Of?:)
-        refer
-        (   M
-            At. @hide Index
-            fn(O, Index.): (Of?:)
-                In_bounds: O in_bounds(Index) ?? return (Of?: Null)
-                (Of: O[In_bounds])
-        )
+     # non-nullable getter/setter; resizes the array if necessary.
+     ;;[index.]: @hm_or_panic[(of;)]
+          refer_
+          (    m
+               at. @hide index
+               fn_(o;, index.): @hm_or_panic[(of;)]
+                    in_bounds: o in_bounds_(index) assert_()
+                    (of; o[in_bounds])
+          )
 
-    # non-nullable getter/setter; resizes the array if necessary.
-    ;;[Index.]: @hm_or_panic[(Of;)]
-        refer
-        (   M
-            At. @hide Index
-            fn(O;, Index.): @hm_or_panic[(Of;)]
-                In_bounds: O in_bounds(Index) assert()
-                (Of; O[In_bounds])
-        )
+     # requires `in_bounds >= 0` and `in_bounds < m count_()`.
+     # throws in debug, prefer `index` access which will bounds check.
+     :;[in_bounds.]: (of:;)
 
-    # requires `In_bounds >= 0` and `In_bounds < M count()`.
-    # throws in debug, prefer `Index` access which will bounds check.
-    :;[In_bounds.]: (Of:;)
+     @protected
+     ::in_bounds_(index.): hm_[in_bounds_]
+          m ensure_non_negative_(;index) assert_()
+          assert_(index < m count_(), er: invalid_index)
+          ok_(in_bounds_(index))
 
-    @protected
-    ::in_bounds(Index.): hm[in_bounds]
-        M ensure_non_negative(Index;) assert()
-        assert(Index < count(), Er: Invalid_index)
-        ok(in_bounds(Index))
+     # resizes the array to make `index` in bounds, as long as it's positive.
+     # can error out if `index` is too negative or array expansion failed.
+     @protected
+     ;;in_bounds_[requires: of_ is defaultable_](index.): hm_[in_bounds_]
+          m ensure_non_negative_(;index) assert_()
+          if index >= m count_()
+               m count_(index + 1) assert_()
+          ok_(in_bounds_(index))
 
-    # Resizes the array to make `Index` in bounds, as long as it's positive.
-    # Can error out if `Index` is too negative or array expansion failed.
-    @protected
-    ;;in_bounds(Index.): hm[in_bounds]
-        M ensure_non_negative(Index;) assert()
-        if Index >= count()
-            count(Index + 1) assert()
-        ok(in_bounds(Index))
-
-    # TODO: `ensure_non_negative`
+     # TODO: `ensure_non_negative_`
 }
+
+[in_bounds_]: \/allocation
+

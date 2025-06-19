@@ -1,144 +1,141 @@
 array_[of_, count_with_: select_count_ = count_arch_]: all_of_
-[   hashable_
-    indexable_sequence_[of_]
+[    hashable_
+     indexable_sequence_[of_]
 ]
-{   index_: signed_[count_with_]
+{    index_: signed_[count_with_]
 
-    !!(m:): bool_
-        count_(:m) > 0
+     # sets this array's capacity to exactly `count_with`, or the minimum
+     # capacity for this array if it is larger than `count_with`.
+     # prefer `array capacity_(at_least. count_with)` because it will grow the array
+     # in an amortized way if you are increasing the capacity over time.
+     ;;capacity_(count_with.): hm_[null_]
 
-    # sets this array's capacity to exactly `count_with`, or the minimum
-    # capacity for this array if it is larger than `count_with`.
-    # prefer `array capacity_(at_least. count_with)` because it will grow the array
-    # in an amortized way if you are increasing the capacity over time.
-    ;;capacity_(count_with.): hm_[null_]
+     :;[in_bounds.]: (of:;)
 
-    :;[in_bounds.]: (of:;)
+     ;;append_(of.): hm_[null_]
+          m capacity_(at_least: m count_() + 1) assert_()
+          m append_(.of, assuming. capacity)
 
-    ;;append_(of.): hm_[null_]
-        m capacity_(at_least: m count_() + 1) assert_()
-        m append_(.of, assuming. capacity)
+     # called as `array append_(3, assuming. capacity)`
+     ;;append_(of., assuming. one_of_[capacity]): null_
 
-    # called as `array append_(3, assuming. capacity)`
-    ;;append_(of., assuming. one_of_[capacity]): null_
+     ::count_(): count_with_
 
-    ::count_(): count_with_
+     ;;count_[require: of_ is defaultable_](NEW_count_with.): hm_[null_]
+          OLD_count: m count_()
+          if NEW_count_with == OLD_count
+               return ok_()
+          elif NEW_count_with > OLD_count
+               capacity_(at_least_: NEW_count) assert_()
+               while m count_() < NEW_count
+                    append_(of_(), assuming. capacity)
+          else
+               assert_(NEW_count >= 0, er invalid_count)
+               while m count_() > NEW_count
+                    UNUSED_of: m pop_()
 
-    ;;count_[require: of_ is defaultable_](NEW_count_with.): hm_[null_]
-        OLD_count: m count_()
-        if NEW_count_with == OLD_count
-            return ok_()
-        elif NEW_count_with > OLD_count
-            capacity_(at_least_: NEW_count) assert_()
-            while m count_() < NEW_count
-                append_(of_(), assuming. capacity)
-        else
-            assert_(NEW_count >= 0, er invalid_count)
-            while m count_() > NEW_count
-                UNUSED_of: m pop_()
+     ::capacity_(): count_with_
 
-    ::capacity_(): count_with_
+     ;;capacity_(at_least. count_with_): hm_[null_]
+          current_capacity: m capacity_()
+          if at_least <= current_capacity
+               return ok_()
+          doubled_capacity: current_capacity double_or_max_()
+          m capacity_(max_(at_least, doubled_capacity))
 
-    ;;capacity_(at_least. count_with_): hm_[null_]
-        current_capacity: m capacity_()
-        if at_least <= current_capacity
-            return ok_()
-        doubled_capacity: current_capacity double_or_max_()
-        m capacity_(max_(at_least, doubled_capacity))
+     # call as `array clear_(keeping. no_capacity)` to deallocate
+     # or `array clear_(keeping. same_capacity)` to keep the allocation.
+     ;;clear_(keeping. one_of_[no_capacity, same_capacity]): null_
+          while m count > 0
+               UNUSED_of: m pop()
+          what keeping
+               same_capacity
+                    pass
+               no_capacity
+                    m capacity_(0)
 
-    # call as `array clear_(keeping. no_capacity)` to deallocate
-    # or `array clear_(keeping. same_capacity)` to keep the allocation.
-    ;;clear_(keeping. one_of_[no_capacity, same_capacity]): null_
-        while m count > 0
-            UNUSED_of: m pop()
-        what keeping
-            same_capacity
-                pass
-            no_capacity
-                m capacity_(0)
+     ::[index.]?: (of:)
+          # TODO: use m[in_bounds]
 
-    ::[index.]?: (of:)
-        # TODO: use m[in_bounds]
+     ;;[index.]: hm_[(of;)]
+          # TODO: use m[in_bounds]
 
-    ;;[index.]: hm_[(of;)]
-        # TODO: use m[in_bounds]
+     ;;pop_()?: of_
 
-    ;;pop_()?: of_
+     # returns a value of the array element at the specified index,
+     # or the end of the array if not specified.  returns null if the element
+     # would be out of bounds (e.g., `index >= m count_()`).
+     ;;pop_(index.)?: of_
+          # don't resize the array in case `index >= m count`.
+          what m in_bounds_(index)
+               ok.
+                    m pop_(ok)
+               IGNORE_er.
+                    null
+          # alternatively: `m in_bounds_(index) map_({m pop_($ok)}, {$_er, null})`
 
-    # returns a value of the array element at the specified index,
-    # or the end of the array if not specified.  returns null if the element
-    # would be out of bounds (e.g., `index >= m count_()`).
-    ;;pop_(index.)?: of_
-        # don't resize the array in case `index >= m count`.
-        what m in_bounds_(index)
-            ok.
-                m pop_(ok)
-            IGNORE_er.
-                null
-        # alternatively: `m in_bounds_(index) map_({m pop_($ok)}, {$_er, null})`
+     ;;pop_(in_bounds.): of_
+          debug assert_(in_bounds < m count_())
+          result: m[in_bounds]!
+          m erase_(in_bounds)
+          result
 
-    ;;pop_(in_bounds.): of_
-        debug assert_(in_bounds < m count_())
-        result: m[in_bounds]!
-        m erase_(in_bounds)
-        result
+     # returns the number of elements erased
+     ;;erase_(index.): count_with_
+          if m in_bounds_(index) is ok.
+               m erase_(ok)
+          else
+               0
 
-    # returns the number of elements erased
-    ;;erase_(index.): count_with_
-        if m in_bounds_(index) is ok.
-            m erase_(ok)
-        else
-            0
+     ;;erase_(in_bounds.): count_with_(1)
+          debug assert_(in_bounds < m count_())
+          range_(in_bounds, m count_() - 1) each DESTINATION_in_bounds:
+               m[DESTINATION_in_bounds] = M[in_bounds: DESTINATION_in_bounds + 1]!
+          m pop_()
+          1
 
-    ;;erase_(in_bounds.): count_with_(1)
-        debug assert_(in_bounds < m count_())
-        range_(in_bounds, m count_() - 1) each DESTINATION_in_bounds:
-            m[DESTINATION_in_bounds] = M[in_bounds: DESTINATION_in_bounds + 1]!
-        m pop_()
-        1
+     # returns a copy of this array, but sorted.
+     ::sort_[require: of_ is orderable_](): o_
 
-    # returns a copy of this array, but sorted.
-    ::sort_[require: of_ is orderable_](): o_
+     # sorts this array in place.
+     ;;sort_[require: of_ is orderable_](): null_
 
-    # sorts this array in place.
-    ;;sort_[require: of_ is orderable_](): null_
+     #[#
+     sorts with a custom comparator that acts on a single element at a time.
+     `fn_(by: of_): ~t_` should be easy to calculate on the fly, otherwise
+     you should run `tabulated`.  the result type `t_` should be easily
+     comparable via `<`, `<=`, etc.  examples:
+          ```
+          array: ["abc", "de", "f", "ghij"]
+          print_(array sort_((by): by count_()))  # prints ["f", "de", "abc", "ghij"]
+          print_(array::sort_($by count_()))       # same, but via lambda arguments
+          ```
+     #]#
+     :;sort_[require: t_ is orderable_](fn_(by: of_): ~t_): respectively_[o_, null_]
 
-    #[#
-    sorts with a custom comparator that acts on a single element at a time.
-    `fn_(by: of_): ~t_` should be easy to calculate on the fly, otherwise
-    you should run `tabulated`.  the result type `t_` should be easily
-    comparable via `<`, `<=`, etc.  examples:
-        ```
-        array: ["abc", "de", "f", "ghij"]
-        print_(array sort_((by): by count_()))  # prints ["f", "de", "abc", "ghij"]
-        print_(array::sort_($by count_()))      # same, but via lambda arguments
-        ```
-    #]#
-    :;sort_[require: t_ is orderable_](fn_(by: of_): ~t_): respectively_[o_, null_]
+     # sorts using a tabulated work array (with an additional cost of
+     # `O(m count_() * bytes_(t_))`).  should be used in case `fn_(by)`
+     # is expensive to compute.
+     :;sort_[require: t_ is orderable_]
+     (   fn_(by: of_): ~t_, tabulated. one_of_[tabulated]
+     ):  respectively_[o_, null_]
 
-    # sorts using a tabulated work array (with an additional cost of
-    # `O(m count_() * bytes_(t_))`).  should be used in case `fn_(by)`
-    # is expensive to compute.
-    :;sort_[require: t_ is orderable_]
-    (   fn_(by: of_): ~t_, tabulated. one_of_[tabulated]
-    ):  respectively_[o_, null_]
+     # sorts with a custom comparator that acts on two elements at a time.
+     # without certain transitive properties, the result's order may not make sense.
+     :;sort_(fn_(left: of_, right: of_): ordering_): respectively_[o_, null_]
 
-    # sorts with a custom comparator that acts on two elements at a time.
-    # without certain transitive properties, the result's order may not make sense.
-    :;sort_(fn_(left: of_, right: of_): ordering_): respectively_[o_, null_]
+     ::hash_(~builder;): null_
+          m each of:
+               builder hash_(of)
 
-    ::hash_(~builder;): null_
-        m each of:
-            builder hash_(of)
+     maybe_local_[local_bytes_]:
+               maybe_local_array_[of_, local_bytes_, locality_: count_with_]
+     non_local_: non_local_array_[of_, count_with_]
 
-    maybe_local_[local_bytes_]:
-            maybe_local_array_[of_, local_bytes_, locality_: count_with_]
-    non_local_: non_local_array_[of_, count_with_]
+     @alias heap_: non_local_
+     @alias heap_or_local_: maybe_local_
 
-    @alias heap_: non_local_
-    @alias heap_or_local_: maybe_local_
-
-    er_: CONTAINER_er_
+     er_: CONTAINER_er_
 }
 
 # for simplicity, rounds to multiples of 8 bytes.

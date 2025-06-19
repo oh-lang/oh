@@ -1,16 +1,16 @@
 # abstract syntax tree for a file.
 ast_: [tree;]
-{   ;;parse_next_()?: node_
-        # TODO
+{    ;;parse_next_()?: node_
+          # TODO
 
-    ;;add_(statement.):
-        # TODO
+     ;;add_(statement.):
+          # TODO
 
-    ;;add_(test. block_):
-        # TODO: create a unique function name
-        # TODO: register the test to be run in test mode
+     ;;add_(test. block_):
+          # TODO: create a unique function name
+          # TODO: register the test to be run in test mode
 
-    tree_: ast_tree_
+     tree_: ast_tree_
 }
 
 ast_tree_: []

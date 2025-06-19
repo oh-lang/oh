@@ -1,85 +1,88 @@
 container_[of_: not_[null_], at_, count_with_: select_count_ = count_arch_]: []
-{   ::count_(): count_with_
+{    ::count_(): count_with_
 
-    #[#
-    gets a nullable reference to an element using a referenced `at`,
-    returning `null` if `at` is not in this container,
-    otherwise the `of` instance at that `at`.
-    this is wrapped in a reference object to enable passing by reference.
-    USAGE:
-        ```
-        # suppose `container` has `at_: int_`.
-        # get the value at `5` and make a copy of it:
-        of?: container[5]
-        # get the value at `7` and keep a mutable reference to it:
-        (of?;) = container[7]
-        ```
-    prefer the `[at.]` version unless you want the value to update
-    whenever the referenced `at` does, or if `at` is expensive to copy.
-    TODO: i think we need to update to `;:[(at:)]: (of?:;)`;
-    `[]` has different semantics than `()`; `[at.]` and `[at;]` are roughly equivalent,
-    whereas `(at.)` and `(at;)` are temporary and writable-reference versions.
-    
-    notice that for a mutable reference, mooting a non-null element will remove the
-    element from the container (because mooting will set it to null, which means to
-    delete it), possibly triggering `O(k)` operations to move/swap elements around,
-    e.g., in an array.
-    #]#
-    :;[at:]: (of?:;)
+     !!(m:): bool_
+          count_(m) > 0
 
-    # get a nullable reference to an element.
-    :;[at.]: (of?:;)
+     #[#
+     gets a nullable reference to an element using a referenced `at`,
+     returning `null` if `at` is not in this container,
+     otherwise the `of` instance at that `at`.
+     this is wrapped in a reference object to enable passing by reference.
+     USAGE:
+          ```
+          # suppose `container` has `at_: int_`.
+          # get the value at `5` and make a copy of it:
+          of?: container[5]
+          # get the value at `7` and keep a mutable reference to it:
+          (of?;) = container[7]
+          ```
+     prefer the `[at.]` version unless you want the value to update
+     whenever the referenced `at` does, or if `at` is expensive to copy.
+     TODO: i think we need to update to `;:[(at:)]: (of?:;)`;
+     `[]` has different semantics than `()`; `[at.]` and `[at;]` are roughly equivalent,
+     whereas `(at.)` and `(at;)` are temporary and writable-reference versions.
 
-    #[#
-    safe API for creating a reference at `at`.
-    can return an error if the container runs out of memory
-    or for other container-specific reasons.
-    #]#
-    ;;[at]: hm_[(of;)]
+     notice that for a mutable reference, mooting a non-null element will remove the
+     element from the container (because mooting will set it to null, which means to
+     delete it), possibly triggering `O(k)` operations to move/swap elements around,
+     e.g., in an array.
+     #]#
+     :;[at:]: (of?:;)
 
-    # get a non-null reference to an element.
-    # this will add a default `of` if `at` is
-    # not already in the container.
-    # mooting this element will not remove the element from the array, because
-    # mooting a non-nullable element
-    ;;[at.]: (of;)
+     # get a nullable reference to an element.
+     :;[at.]: (of?:;)
 
-    # returns the element at `at` or null if not present,
-    # removing it from the container while doing so.
-    # TODO: good way to do "define one of ;;pop, ;;swap, etc."
-    #       and to indicate that in the code so we can rely on it
-    #       in the other "undefined" methods.
-    #       maybe `if @specialized ;;pop_ { ... }`
-    #       and `@require: @specialized ;;pop_ || @specialized ;;swap_`...
-    #       this `@require` is only needed for a non-abstract class.
-    ;;pop_(at)?: of_
+     #[#
+     safe API for creating a reference at `at`.
+     can return an error if the container runs out of memory
+     or for other container-specific reasons.
+     #]#
+     ;;[at]: hm_[(of;)]
 
-    # TODO: `::min_()`, `::max_()`, and `::order_(count_with.)` methods.
-    #       these should just pass through to the iterator, but `[require: of_ is orderable_]`
+     # get a non-null reference to an element.
+     # this will add a default `of` if `at` is
+     # not already in the container.
+     # mooting this element will not remove the element from the array, because
+     # mooting a non-nullable element
+     ;;[at.]: (of;)
 
-    # TODO: is this the correct way to define the iterator?
-    #       we probably need a "preblock" since we'll run the block
-    #       using something like `preblock_(defining_: ...)`
-    :;each_(block[defining_:; of_, ~t_]:)?: t_
+     # returns the element at `at` or null if not present,
+     # removing it from the container while doing so.
+     # TODO: good way to do "define one of ;;pop, ;;swap, etc."
+     #        and to indicate that in the code so we can rely on it
+     #        in the other "undefined" methods.
+     #        maybe `if @specialized ;;pop_ { ... }`
+     #        and `@require: @specialized ;;pop_ || @specialized ;;swap_`...
+     #        this `@require` is only needed for a non-abstract class.
+     ;;pop_(at)?: of_
 
-    :;each_(block[defining_: (at::, of:;), ~t_]:)?: t_
+     # TODO: `::min_()`, `::max_()`, and `::order_(count_with.)` methods.
+     #        these should just pass through to the iterator, but `[require: of_ is orderable_]`
 
-    # can implicitly convert to an iterator (with writeable/readonly references).
-    ;:iterator_(): iterator_[(at:, of;:)]
+     # TODO: is this the correct way to define the iterator?
+     #        we probably need a "preblock" since we'll run the block
+     #        using something like `preblock_(defining_: ...)`
+     :;each_(block[defining_:; of_, ~t_]:)?: t_
 
-    # iterate over keys/`at`s.
-    ::iterator_(): iterator_[(at:)]
+     :;each_(block[defining_: (at::, of:;), ~t_]:)?: t_
 
-    # iterate over values.
-    ;:iterator_(): iterator_[(of;:)]
+     # can implicitly convert to an iterator (with writeable/readonly references).
+     ;:iterator_(): iterator_[(at:, of;:)]
 
-    @alias ::has_(at): m[at] != null
-    @alias ::contains_(at): m[at] != null
+     # iterate over keys/`at`s.
+     ::iterator_(): iterator_[(at:)]
+
+     # iterate over values.
+     ;:iterator_(): iterator_[(of;:)]
+
+     @alias ::has_(at): m[at] != null
+     @alias ::contains_(at): m[at] != null
 }
 
 er_: one_of_
-[   out_of_memory
-    # etc.
+[    out_of_memory
+     # etc.
 ]
 
 hm_[of_]: hm_[ok_: of_, er_]

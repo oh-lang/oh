@@ -9,53 +9,53 @@ count8_: count_[u8_]
 
 @final
 count_[of_: unsigned_primitive_]: all_of_
-[   m_: [@private value; of_]
-    integer_
+[    m_: [@private value; of_]
+     integer_
 ]
 {   m_(of.): hm_[m_]
-        if of <= max_() value
-            [value. of]
-        else
-            unrepresentable
+          if of <= max_() value
+               [value. of]
+          else
+               unrepresentable
 
-    ?:
-    {   ::is(null_): bool_
-            m value > max_() value
+     ?:
+     {   ::is(null_): bool_
+               m value > max_() value
 
-        null: [value: max_() value]
+          null: [value: max_() value]
 
-        :;null_boxing_(): (of:;)
-            m value
-    }
+          :;null_boxing_(): (of:;)
+               m value
+     }
 
-    @integer(m value)
+     @integer(m value)
 
-    min_(): m_
-        [value: 0]
+     min_(): m_
+          [value: 0]
 
-    max_(): m_
-        [value: signed_[of_] max_() + 1]
+     max_(): m_
+          [value: signed_[of_] max_() + 1]
 
-    m_(signed. signed_[of_]): hm_[m_]
-        [value: of_(signed) assert_()]
+     m_(signed. signed_[of_]): hm_[m_]
+          [value: of_(signed) assert_()]
 
-    ::double_or_max_(): m_
-        if m value < max_() value // 2
-            [value: m value * 2]
-        else
-            max_()
+     ::double_or_max_(): m_
+          if m value < max_() value // 2
+               [value: m value * 2]
+          else
+               max_()
 }
 
 hm_[of_]: hm_[ok_: of_, number_ er_]
 
 @test "double_or_max_"
-    @test "count8_"
-        c_: count8_
-        test_(c_(0) double_or_max_()) == 0
-        test_(c_(3) double_or_max_()) == 6
-        test_(c_(63) double_or_max_()) == 126
-        test_(c_(64) double_or_max_()) == 128
-        test_(c_(65) double_or_max_()) == 128
-        test_(c_(65) double_or_max_()) == 128
-        test_(c_(127) double_or_max_()) == 128
-        test_(c_(128) double_or_max_()) == 128
+     @test "count8_"
+          c_: count8_
+          test_(c_(0) double_or_max_()) == 0
+          test_(c_(3) double_or_max_()) == 6
+          test_(c_(63) double_or_max_()) == 126
+          test_(c_(64) double_or_max_()) == 128
+          test_(c_(65) double_or_max_()) == 128
+          test_(c_(65) double_or_max_()) == 128
+          test_(c_(127) double_or_max_()) == 128
+          test_(c_(128) double_or_max_()) == 128
