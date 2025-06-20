@@ -1,57 +1,56 @@
-non_local_array[of, capacity: count_primitive = count_arch]: all_of
-[   @private m:
-    [   Allocation[of, capacity];
-        Count; count
-    ]
-    array[of]
+non_local_array_[of_, count_: select_count_ = arch_ count_]: all_of_
+[    @private m:
+     [    allocation[of_, count_];
+          count;
+     ]
+     array[of_]
 ]
-{   # constructs an array `[1, 2, 3]` via syntax `non_local_array(1, 2, 3)`,
-    # inferring e.g., `t: int`.
-    g(Arguments[~t].): hm[g[t]]
-        Allocation; allocation[of]
-        Allocation capacity(Arguments count()) assert()
-        Count: Arguments count()
-        Count each Index:
-            Allocation move_construct(In_bounds: Index, Arguments[Index]!)
-        [Allocation, Count]
+{    # constructs an array `[1, 2, 3]` via syntax `non_local_array_(1, 2, 3)`,
+     # inferring e.g., `t: int`.
+     g_(arguments[~t_].): hm_[g_[t_]]
+          allocation[of_];
+          count: arguments count_()
+          allocation capacity_(count) assert_()
+          count each index:
+               allocation move_construct_(in_bounds: index, arguments[index]!)
+          [allocation, count]
 
-    ;;descope(): null
-        M clear(Drop_capacity)
+     ;;descope_(): null_
+          m clear_(drop_capacity)
 
-    ::capacity(): m count
-        M Allocation capacity()
+     ::capacity_(): capacity_
+          m allocation capacity_()
 
-    ;;capacity(Capacity.): hm[capacity]
-        while M Count > Capacity
-            Of_: M pop()
-        M Allocation capacity(Capacity)
+     ;;capacity_(NEW_capacity.): hm_[null_]
+          while m count > NEW_capacity
+               _of: m remove_() ?? panic_("broken invariant")
+          m allocation capacity_(NEW_capacity)
 
-    ::count(): m count
-        M Count
+     ::count_(): count_
+          m count
 
-    ;;append(Of.): hm[null]
-        assert(M Count < m count::Max, Er: Out_of_memory)
-        Required_capacity: M Count + 1
-        if Required_capacity > M capacity()
-            M grow(Required_capacity) assert()
-        Allocation move_construct(In_bounds: Required_capacity highest_index(), Of!)
-        M Count = Required_capacity
+     ;;append_(of.): hm_[null_]
+          REQUIRED_capacity: (m count + 1) assert_(er: out_of_memory)
+          if REQUIRED_capacity > m capacity_()
+               m capacity_(at_least: REQUIRED_capacity) assert_()
+          m allocation move_construct_(in_bounds: REQUIRED_capacity highest_index_(), of!)
+          m count = REQUIRED_capacity
 
-    # in-bounds reference, which is unsafe to call unless `In_bounds` is 
-    # within the range `[0, M count())`.
-    :;[In_bounds.]: (Of:;)
-        # TODO: `In_bounds` can probably be a u64 so we don't have to check < 0.
-        debug assert(In_bounds >= 0 and In_bounds < M Count)
-        Allocation[In_bounds_and_constructed. In_bounds]
+     # in-bounds reference, which is unsafe to call unless `in_bounds` is 
+     # within the range `[0, m count_())`.
+     :;[in_bounds.]: (of:;)
+          # TODO: `in_bounds` can probably be a u64 so we don't have to check < 0.
+          debug assert_(in_bounds >= 0 and in_bounds < m count)
+          allocation[in_bounds_and_constructed. in_bounds]
 
-    ;;pop()?: of
-        if M Count == 0
-            Null
-        else
-            M Allocation read_out(In_bounds: M Count highest_index())
-            --M Count
+     ;;remove_()?: of
+          if m count == 0
+               null
+          else
+               m allocation read_out_(in_bounds: m count highest_index_())
+               --m count
 
-    count: capacity
+     capacity_: count_
 }
 
 [er, hm]: \/../container
