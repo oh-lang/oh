@@ -907,7 +907,7 @@ Variable names like `x` and `max_array_count` do not include a trailing undersco
 Any capitalized letters belong to a [namespace](#namespaces).
 
 There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
-`what`, `in`, `each`, `for`, `while`, `pass`, `where`,
+`what`, `in`, `each`, `for`, `while`, `pass`, `where`, `when`,
 which are function-like but may consume the rest of the statement.
 E.g., `return X + 5` will return the value `X + 5` from the enclosing function.
 The `type_case_` versions of these keywords are also all reserved;
@@ -6380,6 +6380,17 @@ if some long condition
 ```
 
 ## if statements
+
+TODO: we can get some nice alignment with 5-tab spaces using `when` instead of `if`,
+and maybe we even just keep using `when` instead of an `elif`.  e.g.,
+```
+when condition
+     do_something_()
+when other_condition
+     do_other_thing_()
+else
+     do_something_else_()
+```
 
 ```
 x: if condition

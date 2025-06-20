@@ -1,3 +1,5 @@
+# TODO: i think we can switch back to `count_with_` -> `count_`.  we can distinguish
+# between the method and the type `count_` because we require `m count_()` for the method.
 array_[of_, count_with_: select_count_ = count_arch_]: all_of_
 [    hashable_
      indexable_sequence_[of_]

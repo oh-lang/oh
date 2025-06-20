@@ -16,7 +16,7 @@ primitive_: flatten_
 ]
 
 # TODO: support 128, 256, 512, etc.
-bit_count_: one_of_[8, 16, 32, 64]
+bit_count_: select_[8, 16, 32, 64]
 
 # unsigned_ primitives represent numbers from `0` to `2^p - 1`, inclusive,
 # where `p` is the number of bits used; i.e., `u8_` has `p: 8` and `u64_` has `p: 64`.
