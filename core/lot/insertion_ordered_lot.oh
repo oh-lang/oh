@@ -1,95 +1,71 @@
-insertion_ordered_lot[at, of]: all_of
-[   lot[at, of]
-    @private m:
-    [   At_indices; @only unordered_lot[at, index]
-        Indexed_dll; @only dll[m element]()
-    ]
+insertion_ordered_lot_[at_, of_]: all_of_
+[    lot[at_, of_]
+     @private m:
+     [    at_indices; @only unordered_lot_[at_, index_]
+          indexed_dll; @only dll_[element_]()
+     ]
 ]
-{   # creates a default value if not present at `At` to pass in to the modifier:
-    ;;[At`]: @hm_or_panic[(Of;)]
-        refer
-        (   M
-            @hide `At
-            fn(O;, At`): @hm_or_panic[(Of;)]
-                Index: O At_indices::[At] ?? O add_default(`At) assert()
-                # i don't think we need to `refer` this because this
-                # getter is considered an `instant` use.
-                (;O Indexed_dll[Index] Of)
-        )
+{    # creates a default value if not present at `at` to pass in to the modifier:
+     ;;[at`]: @hm_or_panic[(of;)]
+          refer_
+          (    m
+               `@hide at
+               ref_(o;, at`): @hm_or_panic[(of;)]
+                    index: o at_indices::[at] ?? o add_default_(at) assert_()
+                    # we don't need to `refer` this because this
+                    # getter is considered an instant use.
+                    (o indexed_dll[index] of)
+          )
 
-    ::[At]: (Of?:)
-        refer
-        (   M
-            @hide At`
-            fn(O:, At:): (Of?:)
-                if O At_indices[At] is Index:
-                    (:O Indexed_dll[Index] Of)
-                else
-                    (Null)
-        )
+     ::[at]: (of?:)
+          refer_
+          (    m
+               `@hide at
+               ref_(o:, at:): (of?:)
+                    if o at_indices[at] is index:
+                         (o indexed_dll[index] of)
+                    else
+                         (null)
+          )
 
-    ;:each(fn(At:, Of;:): loop): bool
-        Index; M Used_root Next
-        while Index >= 0
-            (Of;:, At:, Next:) = M Indexed_dll[Index] ?? panic("broken invariant!")
-            if fn(At, Of;:) == Break
-                return True
-            Index = Next
-        return False
+     ;:each_(do_(at:, of;:): loop_): bool_
+          index; m used_root next
+          while index >= 0
+               (of;:, at:, next:) = m indexed_dll[index] ?? panic_("broken invariant!")
+               if do_(at, of;:) == break
+                    return true
+               index = next
+          return false
 
-    @private
-    ;;add_default(At`): hm[index]
-        if M count_free() == 0
-            M expand() assert()
-        Index: M Next_free_index
-        (M At_indices[At] = Index) Hm assert()
-        M Count += 1
-        debug assert(Index >= 0)
-        M Next_free_index = M Indexed_dll[Index] Next
-        M Indexed_dll[Index] At = @moot_or_copy(At)
-        ;;fix_links
-        (   Previous: M Used_root Previous
-            Index
-            Next: -1
-        )
+     @private
+     ;;add_default_(at`): hm_[index_]
+          if m count_free_() == 0
+               m expand_() assert_()
+          index: m next_free_index
+          m at_indices insert_(at, index) assert_()
+          m count += 1
+          debug assert_(index >= 0)
+          m next_free_index = m indexed_dll[index] next
+          m indexed_dll[index] at = @moot_or_copy(at)
+          ;;fix_links_
+          (    previous. m used_root previous
+               index
+               next. -1
+          )
 
-    @private
-    ;;fix_links(Previous: index, Index, Next: index): null
-        if Previous == -1
-            M Used_root Next = Index
-        else
-            M Indexed_dll[Previous] Next = Index
+     @private
+     ;;count_free_(): count_
+          m indexed_dll count_() - m count
 
-        M Indexed_dll[Index] Previous = Previous
-        M Indexed_dll[Index] Next = Next
+     @private
+     ;;expand_(): hm_[null_]
+          # TODO 
 
-        if Next == -1
-            M Used_root Previous = Index
-        else
-            M Indexed_dll[Next] Previous = Index
-
-    @private
-    ;;count_free(): count
-        M Indexed_dll count() - M Count
-
-    @private
-    ;;expand(): hm[null]
-        # TODO 
-
-    @private
-    element: lot_element[at, of]
+     element_: [at:, of;]
 }
 
-er: one_of
-[   out_of_memory
+er_: one_of_
+[    out_of_memory:
 ]
 
-hm[of]: hm[ok: of, er]
-
-@private
-lot_element[at, of]:
-[   # `At` needs to be constant.
-    At: at
-    Of; of() 
-]
-
+hm_[of_]: hm_[ok_: of_, er_]
