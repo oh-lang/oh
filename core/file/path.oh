@@ -1,46 +1,46 @@
 file_path_:
-[   @private m_: [array[u8_];]
+[    @private m_: [array[u8_];]
 ]
-{   # some operating systems have different ways of representing file paths,
-    # so convert from WTF8 to the OS representation here.
-    # NOTE: this is purely a mechanical operation that does not rely on the file system.
-    # if you need to make sure the path is valid, use `..resolve_()`.
-    # NOTE: if you want to create a directory path, use a trailing separator, e.g., `a/b/`.
-    # NOTE: if you're not sure if `a/b` is a directory or a regular file, pass it in
-    # and call `..resolve_()`.
-    m_(str.): m_
+{    # some operating systems have different ways of representing file paths,
+     # so convert from WTF8 to the OS representation here.
+     # NOTE: this is purely a mechanical operation that does not rely on the file system.
+     # if you need to make sure the path is valid, use `..resolve_()`.
+     # NOTE: if you want to create a directory path, use a trailing separator, e.g., `a/b/`.
+     # NOTE: if you're not sure if `a/b` is a directory or a regular file, pass it in
+     # and call `..resolve_()`.
+     m_(str.): m_
 
-    # verifies the path is valid on the current OS, returning a regular file or directory path.
-    # this does not care if the path exists (e.g., see `::already_exists_()`), but it does care
-    # if the path would try to change an existing regular file into a directory (or vice versa).
-    # e.g., suppose this path is `/a/b/c.txt` but `/a/b` is an existing file and
-    # not a directory; in this case, then this method will return an error.
-    # alternatively, if `/a/` exists but not `/a/b/`, we will return no error because
-    # we can still make the path `/a/b/c.txt` in a valid way (e.g., via `::make_()`).
-    # NOTE: if the path doesn't exist after a point, `/a/b/c` will be considered
-    # a regular file and `/a/b/c/` will be considered a directory.
-    ..resolve_(): hm_[one_of_[regular_file_path_, directory_path_]]
+     # verifies the path is valid on the current OS, returning a regular file or directory path.
+     # this does not care if the path exists (e.g., see `::already_exists_()`), but it does care
+     # if the path would try to change an existing regular file into a directory (or vice versa).
+     # e.g., suppose this path is `/a/b/c.txt` but `/a/b` is an existing file and
+     # not a directory; in this case, then this method will return an error.
+     # alternatively, if `/a/` exists but not `/a/b/`, we will return no error because
+     # we can still make the path `/a/b/c.txt` in a valid way (e.g., via `::make_()`).
+     # NOTE: if the path doesn't exist after a point, `/a/b/c` will be considered
+     # a regular file and `/a/b/c/` will be considered a directory.
+     ..resolve_(): hm_[one_of_[regular_file_path_, directory_path_]]
 
-    # if a regular file, returns the directory it's contained in (e.g., `x/file.txt` -> `x/`).
-    # if a directory, returns the parent directory (e.g., `x/y/` -> `x/`)
-    # if already root (i.e., `/`) or empty (i.e., ``), then returns self.
-    # NOTE: this is purely a mechanical operation that does not rely on the file system.
-    # if you need to make sure the path is valid, use `..resolve_()` before calling this.
-    ::parent_(): directory_path_
+     # if a regular file, returns the directory it's contained in (e.g., `x/file.txt` -> `x/`).
+     # if a directory, returns the parent directory (e.g., `x/y/` -> `x/`)
+     # if already root (i.e., `/`) or empty (i.e., ``), then returns self.
+     # NOTE: this is purely a mechanical operation that does not rely on the file system.
+     # if you need to make sure the path is valid, use `..resolve_()` before calling this.
+     ::parent_(): directory_path_
 }
 
 directory_path_: file_path_
-{   # attempts to create a directory (non-destructively), nesting into new directories if necessary.
-    # e.g., if this == `/a/b/c/`, and only `/a/` exists, then this method will make `/a/b/`
-    # and then `/a/b/c/` without touching/deleting any existing files.  it is an error
-    # if some subpath along the way is already a regular file; errors can also come
-    # from the file system being full, etc.
-    ::make_(): hm_[null_]
+{    # attempts to create a directory (non-destructively), nesting into new directories if necessary.
+     # e.g., if this == `/a/b/c/`, and only `/a/` exists, then this method will make `/a/b/`
+     # and then `/a/b/c/` without touching/deleting any existing files.  it is an error
+     # if some subpath along the way is already a regular file; errors can also come
+     # from the file system being full, etc.
+     ::make_(): hm_[null_]
 }
 
 regular_file_path_: file_path_
-{   # attempts to create a regular file with the specified `mode`.
-    ::mode_(mode): hm_[regular_file_[mode]]
+{    # attempts to create a regular file with the specified `mode`.
+     ::mode_(mode): hm_[regular_file_[mode]]
 }
 
 [regular_file_, er_, hm_, mode_]: \/file
