@@ -157,8 +157,8 @@ inside any methods.
 
 ```
 vector3_: [x: dbl_, y: dbl_, z: dbl_]
-{   ::length_(): dbl_
-        sqrt_(m x * m x + m y * m y + m z * m z)
+{    ::length_(): dbl_
+          sqrt_(m x * m x + m y * m y + m z * m z)
 }
 ```
 
@@ -171,8 +171,8 @@ to refer to another generic subtype if we already have the class.
 
 ```
 my_generic_[at_, of_]: [lot;]
-{   lot_: @only insertion_ordered_lot_[at_, of_]
-    ...
+{    lot_: @only insertion_ordered_lot_[at_, of_]
+     ...
 }
 
 # TODO: we probably don't want anyone to use `lot_`, since we'll make that globally available.
@@ -191,8 +191,8 @@ Note this is actually ok, because we can distinguish overloads based on argument
 
 ```
 vector2_: [x: dbl_, y: dbl_]
-{   ::atan_(): dbl
-        atan_(m x, m y)      # also ok: `\\math atan_(m x, m y)` could avoid the import below.
+{    ::atan_(): dbl
+          atan_(m x, m y)      # also ok: `\\math atan_(m x, m y)` could avoid the import below.
 }
 [atan_(x: dbl_, y: dbl_): dbl_]: \\math
 ```
@@ -203,13 +203,13 @@ and `g_` can be used for the current generic class (without the specification) w
 
 ```
 vector3_[of_: number_]: [x; of_, y; of_, z; of_]
-{   # `g_` is used for this generic class without the current specification,
-    # in this case, `vector3_`.
-    g_(FIRST_value: ~value, SECOND_value, THIRD_value): g_[value]
-        [x: FIRST_value, y: SECOND_value, z: THIRD_value]
+{    # `g_` is used for this generic class without the current specification,
+     # in this case, `vector3_`.
+     g_(FIRST_value: ~value, SECOND_value, THIRD_value): g_[value]
+          [x: FIRST_value, y: SECOND_value, z: THIRD_value]
 
-    ::dot_(o): of_
-        m x * o x + m y * o y + m z * o z
+     ::dot_(o): of_
+          m x * o x + m y * o y + m z * o z
 }
 
 dot_(vector3_(1, 2, 3), vector3_(-6, 5, 4)) == 1 * -6 + 2 * 5 + 3 * 4
@@ -285,9 +285,9 @@ of duck typing without needing to specify your type constraints fully.
 
 ```
 my_generic_[of_](a: ~of_, b: of_): of_
-    # this clearly requires `of_` to implement `*`
-    # but we didn't need to specify `[of_: number_]` or similar in the generic template.
-    a * b
+     # this clearly requires `of_` to implement `*`
+     # but we didn't need to specify `[of_: number_]` or similar in the generic template.
+     a * b
 
 print_(my_generic_(a: 3, b: 4))                 # OK
 print_(my_generic_(a: [1, 2, 3], b: [4, 5]))    # COMPILE ERROR: no definition for `array_[int_] * array_[int_]`
@@ -312,24 +312,24 @@ program panic/terminate rather than continue.  Example code:
 
 ```
 custom_container_[of_]: [vector[10, of_];]
-{   # make an overload for `m[ordinal]` where `ordinal_` is a 1-based indexing type.
-    :;[ordinal]: hm_[ok_: (of:;), er_: str_]
-        if ordinal > 10
-            er_("index too high")
-        else
-            ok_((of:; vector[ordinal]))
+{    # make an overload for `m[ordinal]` where `ordinal_` is a 1-based indexing type.
+     :;[ordinal]: hm_[ok_: (of:;), er_: str_]
+          if ordinal > 10
+               er_("index too high")
+          else
+               ok_((of:; vector[ordinal]))
 
-    @can_panic
-    :;[ordinal]: (of:;)
-        m[ordinal] hm assert_()
+     @can_panic
+     :;[ordinal]: (of:;)
+          m[ordinal] hm assert_()
 
-    # for short, you can use this `@hm_or_panic` macro, which will essentially
-    # inline the logic into both methods but panic on errors.
-    :;[ordinal]: @hm_or_panic_[ok_: (of:;), er_: str_]
-        if ordinal > 10
-            er_("index too high")
-        else
-            ok_((of:; vector[ordinal]))
+     # for short, you can use this `@hm_or_panic` macro, which will essentially
+     # inline the logic into both methods but panic on errors.
+     :;[ordinal]: @hm_or_panic_[ok_: (of:;), er_: str_]
+          if ordinal > 10
+               er_("index too high")
+          else
+               ok_((of:; vector[ordinal]))
 }
 ```
 
@@ -348,114 +348,114 @@ like `count` and `index` to panic?
 # general syntax
 
 * `print_(...)` to echo some values (in ...) to stdout, `print_(error: ...)` to echo to stderr
-    * use string interpolation for printing dynamic values: `print_("hello, ${variable_1}")`
-    * use `print_(no_newline: "keep going ")` to print without a newline
-    * default overload is to print to null, but you can request the string that was printed
-        if you use the `print_(str.): str_` or `print_(error. str_): str_` overloads.
-        e.g., `another_fn_(value: int): print_("Value is ${value}")` will return `null`,
-        whereas `another_fn_(value: int): str {print_("Value is ${value}")}` will
-        return "Value is 12" (and print that) if you call `another_fn_(value: 12)`.
+     * use string interpolation for printing dynamic values: `print_("hello, ${variable_1}")`
+     * use `print_(no_newline: "keep going ")` to print without a newline
+     * default overload is to print to null, but you can request the string that was printed
+          if you use the `print_(str.): str_` or `print_(error. str_): str_` overloads.
+          e.g., `another_fn_(value: int): print_("Value is ${value}")` will return `null`,
+          whereas `another_fn_(value: int): str {print_("Value is ${value}")}` will
+          return "Value is 12" (and print that) if you call `another_fn_(value: 12)`.
 * `type_case_`/`function_case_` identifiers like `x_` are function/type-like, see [identifiers](#identifiers)
 * `variable_case` identifiers like `x` are instance-like, see [identifiers](#identifiers)
 * use `#` for [comments](#comments)
 * outside of arguments, use `:` for readonly declarations and `;` for writable declarations
 * for an argument, `:` is a readonly reference, `;` is a writable reference, and `.` is a temporary
-    (i.e., passed by value), see [pass-by-reference or pass-by-value](#pass-by-reference-or-pass-by-value)
+     (i.e., passed by value), see [pass-by-reference or pass-by-value](#pass-by-reference-or-pass-by-value)
 * use `:` to declare readonly things, `;` to declare writable things.
-    * use `a: x_` to declare `a` as an instance of type `x_`, see [variables](#variables),
-        with `a` any `variable_case` identifier.
-    * use `fn_(): x_` to declare `fn_` as a function returning an instance of type `x_`, see [functions](#functions),
-        with any arguments inside `()`.  `fn_` can be renamed to anything
-        `function_case_`, but `fn_` is the default.
-    * use `a_: y_` to declare `a_` as a constructor that builds instances of type `y_`
-        with `a_` any `type_case_` identifier.
-    * use `new_[]: y_` to declare `new_` as a function returning a type `y_`, with any arguments inside `[]`.
-        `new_` can be renamed to anything `type_case_`, but `new_` is the default.
-    * while declaring *and defining* something, you can avoid the type if you want the compiler to infer it,
-        e.g., `a: some_expression_()`
-    * thus `:=` is usually equivalent to `:` (and similarly for `;=`), except in the case of defining
-        a function via another function, i.e., function aliasing.  E.g.,
-        `fn_(x: int_): str_ = other_fn_` will alias `other_fn_(x: int_): str_` to `fn_`, while
-        `fn_(x: int_): return_type_` just declares a function that returns an instance of `return_type_`.
+     * use `a: x_` to declare `a` as an instance of type `x_`, see [variables](#variables),
+          with `a` any `variable_case` identifier.
+     * use `fn_(): x_` to declare `fn_` as a function returning an instance of type `x_`, see [functions](#functions),
+          with any arguments inside `()`.  `fn_` can be renamed to anything
+          `function_case_`, but `fn_` is the default.
+     * use `a_: y_` to declare `a_` as a constructor that builds instances of type `y_`
+          with `a_` any `type_case_` identifier.
+     * use `new_[]: y_` to declare `new_` as a function returning a type `y_`, with any arguments inside `[]`.
+          `new_` can be renamed to anything `type_case_`, but `new_` is the default.
+     * while declaring *and defining* something, you can avoid the type if you want the compiler to infer it,
+          e.g., `a: some_expression_()`
+     * thus `:=` is usually equivalent to `:` (and similarly for `;=`), except in the case of defining
+          a function via another function, i.e., function aliasing.  E.g.,
+          `fn_(x: int_): str_ = other_fn_` will alias `other_fn_(x: int_): str_` to `fn_`, while
+          `fn_(x: int_): return_type_` just declares a function that returns an instance of `return_type_`.
 * when not declaring things, `:` is not used; e.g., `if` statements do not require a trailing `:` like python
 * commas `,` are equivalent to a line break at the current tab and vice versa
-    * `do_something_(), do_something_else_()` executes both functions sequentially 
-    * see [line continuations](#line-continuations) for how commas can be elided across newlines for e.g., array elements
+     * `do_something_(), do_something_else_()` executes both functions sequentially 
+     * see [line continuations](#line-continuations) for how commas can be elided across newlines for e.g., array elements
 * `()` for reference objects, organization, and function calls/declarations
-    * `(w: str_ = "hello", x: dbl_, y; dbl_, z. dbl_)` to declare a reference object type, `w` is an optional field
-        passed by readonly reference, `x` is a readonly reference, `y` is a writable reference,
-        and `z` is passed by value.  See [reference objects](#reference-objects) for more details.
-    * `my_str: "hi", (x: str_) = my_str` to create a [reference](#references) to `my_str` in the variable `x`.
-    * `(some_instance x_(), some_instance Y;, w: "hi", z. 1.23)` to instantiate a reference object instance
-        with `x` and `w` as readonly references, `y` as mutable reference, and `z` as a temporary.
-    * `"My String Interpolation is $(x, y: z)"` to add `(x: *value-of-x*, y: *value-of-z*)` to the string.
-    * `f_(a: 3, b: "hi")` to call a function, and `f_(a: int_, b: str_): null_` to declare a function.
-    * `a@ (x_(), y)` to call `a x_()` then `a y` with [sequence building](#sequence-building)
-        and return them in a reference object with fields `x` and `y`, i.e., `(x: a x_(), y: a y)`.
-        This allows `x` and `y` to be references.  This can be useful e.g., when `a` is an expression
-        that you don't want to add a local variable for, e.g., `my_long_computation_()@ (x_(), Y)`.
+     * `(w: str_ = "hello", x: dbl_, y; dbl_, z. dbl_)` to declare a reference object type, `w` is an optional field
+          passed by readonly reference, `x` is a readonly reference, `y` is a writable reference,
+          and `z` is passed by value.  See [reference objects](#reference-objects) for more details.
+     * `my_str: "hi", (x: str_) = my_str` to create a [reference](#references) to `my_str` in the variable `x`.
+     * `(some_instance x_(), some_instance Y;, w: "hi", z. 1.23)` to instantiate a reference object instance
+          with `x` and `w` as readonly references, `y` as mutable reference, and `z` as a temporary.
+     * `"My String Interpolation is $(x, y: z)"` to add `(x: *value-of-x*, y: *value-of-z*)` to the string.
+     * `f_(a: 3, b: "hi")` to call a function, and `f_(a: int_, b: str_): null_` to declare a function.
+     * `a@ (x_(), y)` to call `a x_()` then `a y` with [sequence building](#sequence-building)
+          and return them in a reference object with fields `x` and `y`, i.e., `(x: a x_(), y: a y)`.
+          This allows `x` and `y` to be references.  This can be useful e.g., when `a` is an expression
+          that you don't want to add a local variable for, e.g., `my_long_computation_()@ (x_(), Y)`.
 * `[]` are for types, containers (including objects, arrays, and lots), and generics
-    * `[x: dbl_, y: dbl_]` to declare a plain-old-data class with two double-precision fields, `x` and `y`
-    * `[x: 1.2, y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `x` and `y`
-    * `"My String interpolation is $[x, y]"` to add `[*value-of-x*, *value-of-y*]` to the string.
-    * `some_class_[n: number_, of_]: some_other_class_[count: n, at_: int_, of_]` to define a class type
-        `some_class` being related to `some_other_class`, e.g., `some_class_[n: 3, str_]` would be
-        `some_other_class_[count: 3, at_: int, of_: str_]`.
-    * For generic/template classes, e.g., classes like `array_[count, of_]` for a fixed array of size
-        `count` with elements of type `of_`, or `lot_[int_, at_: str_]` to create a map/dictionary
-        of strings mapped to integers.  See [generic/template classes](#generictemplate-classes).
-    * For generic/template functions with type constraints, e.g., `my_function_[of_: non_null_](x: of_, y: int_): of_`
-        where `of_` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
-    * `[greeting: str_, times: int_] = destructure_me_()` to do destructuring of a return value
-        see [destructuring](#destructuring).
-    * `a@ [x_(), y]` to call `a x_()` then `a y` with [sequence building](#sequence-building)
-        and return them in an object with fields `x` and `y`, i.e., `[x: a x_(), y: a y]`.
-        You can also consider them as ordered, e.g.,
-        `results: a@ [x_(), y], print_("${results[0]}, ${results[1]})`.
+     * `[x: dbl_, y: dbl_]` to declare a plain-old-data class with two double-precision fields, `x` and `y`
+     * `[x: 1.2, y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `x` and `y`
+     * `"My String interpolation is $[x, y]"` to add `[*value-of-x*, *value-of-y*]` to the string.
+     * `some_class_[n: number_, of_]: some_other_class_[count: n, at_: int_, of_]` to define a class type
+          `some_class` being related to `some_other_class`, e.g., `some_class_[n: 3, str_]` would be
+          `some_other_class_[count: 3, at_: int, of_: str_]`.
+     * For generic/template classes, e.g., classes like `array_[count, of_]` for a fixed array of size
+          `count` with elements of type `of_`, or `lot_[int_, at_: str_]` to create a map/dictionary
+          of strings mapped to integers.  See [generic/template classes](#generictemplate-classes).
+     * For generic/template functions with type constraints, e.g., `my_function_[of_: non_null_](x: of_, y: int_): of_`
+          where `of_` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
+     * `[greeting: str_, times: int_] = destructure_me_()` to do destructuring of a return value
+          see [destructuring](#destructuring).
+     * `a@ [x_(), y]` to call `a x_()` then `a y` with [sequence building](#sequence-building)
+          and return them in an object with fields `x` and `y`, i.e., `[x: a x_(), y: a y]`.
+          You can also consider them as ordered, e.g.,
+          `results: a@ [x_(), y], print_("${results[0]}, ${results[1]})`.
 * `{}` for blocks and sequence building
-    * `{...}` to effectively indent `...`, e.g., `if condition {do_thing_()} else {do_other_thing_(), 5}`
-        * Used for defining a multi-statement function inline, e.g., `fn_(): {do_this_(), do_that_()}`.
-            (Note that you can avoid `{}` if the block is one statement, like `fn_(): do_this_()`.)
-        * Note that braces `{}` are optional if you actually go to the next line and indent,
-            but they are recommended for long blocks.
-    * `a@ {x_(), y}` with [sequence building](#sequence-building), 
-        calling `a x_()` and `a y`, returning `a` if it's a temporary otherwise `a y`
-    * `"My String Interpolation is ${missing_(), x}"` to add `x` to the string.
-        Note that only the last element in the `${}` is added, but `missing_()` will still be evaluated.
+     * `{...}` to effectively indent `...`, e.g., `if condition {do_thing_()} else {do_other_thing_(), 5}`
+          * Used for defining a multi-statement function inline, e.g., `fn_(): {do_this_(), do_that_()}`.
+               (Note that you can avoid `{}` if the block is one statement, like `fn_(): do_this_()`.)
+          * Note that braces `{}` are optional if you actually go to the next line and indent,
+               but they are recommended for long blocks.
+     * `a@ {x_(), y}` with [sequence building](#sequence-building), 
+          calling `a x_()` and `a y`, returning `a` if it's a temporary otherwise `a y`
+     * `"My String Interpolation is ${missing_(), x}"` to add `x` to the string.
+          Note that only the last element in the `${}` is added, but `missing_()` will still be evaluated.
 * `~` to infer or generalize a type
-    * `my_generic_function_(value: ~u_): u_` to declare a function that takes a generic type `u_`
-        and returns it.  For more details, see [generic/template functions](#generictemplate-functions).
-    * `my_result; array_[~] = do_stuff_()` is essentially equivalent to `my_result; do_stuff_() array`, i.e.,
-        asking for the first array return-type overload.  This infers an inner type via `[~]` but doesn't name it.
-    * `named_inner; array_[~infer_this_] = do_stuff_()` asks for the first array return-type overload,
-        and defines the inner type so it can be used later in the same block, e.g.,
-        `first_value; infer_this_ = named_inner[0]`.
-        Any `type_case_` identifier can be used for `infer_this_`.
+     * `my_generic_function_(value: ~u_): u_` to declare a function that takes a generic type `u_`
+          and returns it.  For more details, see [generic/template functions](#generictemplate-functions).
+     * `my_result; array_[~] = do_stuff_()` is essentially equivalent to `my_result; do_stuff_() array`, i.e.,
+          asking for the first array return-type overload.  This infers an inner type via `[~]` but doesn't name it.
+     * `named_inner; array_[~infer_this_] = do_stuff_()` asks for the first array return-type overload,
+          and defines the inner type so it can be used later in the same block, e.g.,
+          `first_value; infer_this_ = named_inner[0]`.
+          Any `type_case_` identifier can be used for `infer_this_`.
 * `$` for inline block and lambda arguments
-    * [inline blocks](#block-parentheses-and-commas) include:
-        * `$[...]` as shorthand for a new block defining `[...]`, e.g., for a return value:
-            `array: if some_condition $[1, 2, 3] else $[4, 5]`
-        * `$(...)` as shorthand for a new block defining `(...)`, e.g., a reference object:
-            `result: if x > y $(max: x, min: y) else $(min: x, max: y)`
-        * `${...}` is almost always equivalent to `{...}`, except inside of string interpolation,
-            so we'll likely alias `${...}` to `{...}` outside of strings.
-    * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
-        * `my_array map_({$int * 2 + 1})` will iterate over e.g., `my_array: [1, 2, 3, 4]`
-            as `[3, 5, 7, 9]`.  The `$` variables attach to the nearest brace/indent as
-            function arguments, variables with `$$` would attach to the second nearest brace/indent, etc.
+     * [inline blocks](#block-parentheses-and-commas) include:
+          * `$[...]` as shorthand for a new block defining `[...]`, e.g., for a return value:
+               `array: if some_condition $[1, 2, 3] else $[4, 5]`
+          * `$(...)` as shorthand for a new block defining `(...)`, e.g., a reference object:
+               `result: if x > y $(max: x, min: y) else $(min: x, max: y)`
+          * `${...}` is almost always equivalent to `{...}`, except inside of string interpolation,
+               so we'll likely alias `${...}` to `{...}` outside of strings.
+     * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
+          * `my_array map_({$int * 2 + 1})` will iterate over e.g., `my_array: [1, 2, 3, 4]`
+               as `[3, 5, 7, 9]`.  The `$` variables attach to the nearest brace/indent as
+               function arguments, variables with `$$` would attach to the second nearest brace/indent, etc.
 * all arguments are specified by name so order doesn't matter, although you can have default-named arguments
   for the given type which will grab an argument with that type (e.g., `int` for an `int_` type).
-    * `(x: dbl_, int)` can be called with `(1234, x: 5.67)` or even `(y, x: 5.67)` if `y` is an `int_`
+     * `(x: dbl_, int)` can be called with `(1234, x: 5.67)` or even `(y, x: 5.67)` if `y` is an `int_`
 * variables that are already named after the correct argument can be used without `:`
-    * `(x: dbl_, y: int_)` can be called with `(x, y)` if `x` and `y` are already defined in the scope,
-        i.e., eliding duplicate entries like `(x: x, y: y)`.
+     * `(x: dbl_, y: int_)` can be called with `(x, y)` if `x` and `y` are already defined in the scope,
+          i.e., eliding duplicate entries like `(x: x, y: y)`.
 * [Horstmann indentation](https://en.wikipedia.org/wiki/Indentation_style#Horstmann) to guide
-    the eye when navigating multiline braces/brackets/parentheses
+     the eye when navigating multiline braces/brackets/parentheses
 * operators that diverge from some common languages:
-    * `**` and `^` for exponentiation
-    * `&|` at the start of each text slice to create a multiline string.
-    * `<>` for bit flips on integer types (instead of `~`)
-    * `><` for bitwise xor on integer types (instead of `^`)
+     * `**` and `^` for exponentiation
+     * `&|` at the start of each text slice to create a multiline string.
+     * `<>` for bit flips on integer types (instead of `~`)
+     * `><` for bitwise xor on integer types (instead of `^`)
 * see [operator overloading](#operator-overloading) for how to overload operators.
 
 ## defining variables
@@ -478,13 +478,13 @@ readonly_var: int_(123)
 # here we will infer the type; it's implicit in whatever
 # `some_helper_value + 4` is.
 my_var:
-    # this helper variable will be descoped after calculating `my_var`.
-    some_helper_value: some_computation_(3)
-    some_helper_value + 4
+     # this helper variable will be descoped after calculating `my_var`.
+     some_helper_value: some_computation_(3)
+     some_helper_value + 4
 
 # you can also give it an explicit type:
 other_var; explicit_type_
-    "asdf" + "jkl;"
+     "asdf" + "jkl;"
 ```
 
 ## defining strings
@@ -498,9 +498,9 @@ greeting: "hello, ${name}!"
 
 # declaring a multiline string
 important_items:
-        &|Fridge
-        &|Pancakes and syrup
-        &|Cheese
+          &|Fridge
+          &|Pancakes and syrup
+          &|Cheese
 # this is the same as `important_items: "Fridge\nPancakes and syrup\nCheese\n"`
 
 # a single-line multiline string still includes a newline at the end.
@@ -509,18 +509,18 @@ just_one_line: &|This is a 'line' "you know"
 
 # declaring a multiline string with interpolation
 multiline_interpolation:
-        &|Special delivery for ${name}:
-        &|You will receive ${important_items} and more.
+          &|Special delivery for ${name}:
+          &|You will receive ${important_items} and more.
 # becomes "Special delivery for Barnabus\nYou will receive Fridge\nPancakes and syrup\nCheese\n and more."
 
 # interpolation over multiple file lines.
 # WARNING: this does not comply with Horstmann indenting,
 # and it's hard to know what the indent should be on the second line.
 evil_long_line: "this is going to be a long discussion, ${
-        name}, can you confirm your availability?"
+          name}, can you confirm your availability?"
 # INSTEAD, use string concatenation, which automatically adds a space if necessary:
 good_long_line: "this is going to be a long discussion,"
-    &   "${name}, can you confirm your availability?"
+     &   "${name}, can you confirm your availability?"
 
 # you can also nest interpolation logic, although this isn't recommended:
 nested_interpolation: "hello, ${if condition {name} else {'World${"!" * 5}'}}!"
@@ -552,20 +552,20 @@ array_var[5] = 5    # array_var == [1, 2, 3, 4, 0, 5]
 ++array_var[6]      # array_var == [1, 2, 3, 4, 0, 5, 1]
 array_var[0] += 100 # array_var == [101, 2, 3, 4, 0, 5, 1]
 array_var[1]!       # returns 2, zeroes out array_var[1]:
-                    # array_var == [101, 0, 3, 4, 0, 5, 1]
+                         # array_var == [101, 0, 3, 4, 0, 5, 1]
 
 # declaring a long array (note the Horstmann indent):
 long_implicitly_typed:
-[   4   # commas aren't needed here.
-    5
-    6
+[    4   # commas aren't needed here.
+     5
+     6
 ]
 
 # declaring a long array with an explicit type:
 long_explicitly_typed: array_[i32_]
-(   5   # commas aren't needed here.
-    6
-    7
+(    5   # commas aren't needed here.
+     6
+     7
 )
 ```
 
@@ -608,9 +608,9 @@ some_set; set_[str_]("friends", "family", "fatigue")
 some_set::["friends"]   # `true`, without changing the set.
 some_set::["enemies"]   # null (falsey), without changing the set.
 some_set["fatigue"]!    # removes "fatigue", returns `true` since it was present.
-                        # `some_set == set_("friends", "family")`
+                              # `some_set == set_("friends", "family")`
 some_set["spools"]      # adds "spools", returns null (wasn't in the set), but now is.
-                        # `some_set == set_("friends", "family", "spools")`
+                              # `some_set == set_("friends", "family", "spools")`
 ```
 
 ## defining functions
@@ -625,11 +625,11 @@ do_something_(with: int_, x; int_, y; int_): null_
 # braces {} are optional (as long as you go to the next line and indent)
 # but recommended for long functions.
 do_something_(with: int_, x; int_, y; int_): null
-    # because `x` and `y` are defined with `;`, they are writable
-    # in this scope and their changes will persist back into the
-    # caller's scope.
-    x = with + 4
-    y = with - 4
+     # because `x` and `y` are defined with `;`, they are writable
+     # in this scope and their changes will persist back into the
+     # caller's scope.
+     x = with + 4
+     y = with - 4
 
 # calling a function with temporaries is allowed, even with references:
 do_something_(with: 5, x; 12, y; 340)
@@ -659,12 +659,12 @@ do_something_(x: int_, y: int_): [w: int_, z: int_]
 # defining a function that returns other values.
 # braces are optional as long as you go to the next line and indent.
 do_something_(x: int_, y: int_): [w: int_, z: dbl_]
-{   # NOTE! return fields `w` and `z` are in scope and can be assigned
-    # directly in option A:
-    z = \\math atan_(x, y)
-    w = 123
-    # option B: can just return `w` and `z` in an object:
-    [z: \\math atan_(x, y), w: 123]
+{    # NOTE! return fields `w` and `z` are in scope and can be assigned
+     # directly in option A:
+     z = \\math atan_(x, y)
+     w = 123
+     # option B: can just return `w` and `z` in an object:
+     [z: \\math atan_(x, y), w: 123]
 }
 ```
 
@@ -679,7 +679,7 @@ and uses inference to get the return type (for the default `do_this_(args)` func
 ```
 # case (A): defining a function that returns a lambda function
 make_counter_(counter; int_): do_(): int_
-    do_(): ++counter
+     do_(): ++counter
 # TODO: equivalent? `make_counter_(counter; int_): do_(): ++counter`
 counter; 123
 counter_(): int = make_counter_(;counter)
@@ -693,14 +693,14 @@ to specify the *whole* function [when passing it in as an argument](#functions-a
 ```
 # case (B): defining a function with some lambda functions as arguments
 do_something_(you_(): str_, greet_(name: str_): str_): str_
-    greet_(name: you_())
+     greet_(name: you_())
 
 # calling a function with some functions as arguments:
 my_name_(): "World"
 do_something_
-(   you_(): str_ = my_name_
-    greet_(name: str_): str_
-        "Hello, ${name}"
+(    you_(): str_ = my_name_
+     greet_(name: str_): str_
+          "Hello, ${name}"
 )
 
 # case (C): defining a few functions inline without `{}`
@@ -777,34 +777,34 @@ vector3_: [x: dbl_, y: dbl_, z: dbl_]
 # declaring a "complicated" class.  the braces `{}` are optional
 # but recommended due to the length of the class body.
 my_class_: [x; int_]
-{   # here's a class function that's a constructor
-    m_(x. int_): m_
-        ++count
-        [x]
+{    # here's a class function that's a constructor
+     m_(x. int_): m_
+          ++count
+          [x]
 
-    ;;descope_(): null_
-        --count
+     ;;descope_(): null_
+          --count
 
-    # here's a class variable (not defined per instance)
-    @private
-    count; count_arch_ = 0
+     # here's a class variable (not defined per instance)
+     @private
+     count; count_arch_ = 0
 
-    # here's a class function (not defined per instance)
-    # which can be called via `my_class_ count_()` outside this class
-    # or `count_()` inside it.
-    count_(): count_arch_
-        count
-    # for short, `count_(): count`
+     # here's a class function (not defined per instance)
+     # which can be called via `my_class_ count_()` outside this class
+     # or `count_()` inside it.
+     count_(): count_arch_
+          count
+     # for short, `count_(): count`
 
-    # methods which keep the class readonly use a `::` prefix
-    ::do_something_(y: int): int_
-        x * y
+     # methods which keep the class readonly use a `::` prefix
+     ::do_something_(y: int): int_
+          x * y
 
-    # methods which mutate the class use a `;;` prefix
-    ;;update_(y: int_): null_
-        # because there's an implicit `m;` here, it'll look for
-        # ;;do_something_(y) first, but resolve to `::do_something_(y)`:
-        x = do_something_(y)
+     # methods which mutate the class use a `;;` prefix
+     ;;update_(y: int_): null_
+          # because there's an implicit `m;` here, it'll look for
+          # ;;do_something_(y) first, but resolve to `::do_something_(y)`:
+          x = do_something_(y)
 }
 ```
 
@@ -831,29 +831,29 @@ except for `new_[...]` which might make sense to update now.
 
 ```
 parent1_: [p1: str]
-{   ::do_p1_(): null_
-        print_("doing p1 ${p1}")
+{    ::do_p1_(): null_
+          print_("doing p1 ${p1}")
 }
 
 parent2_: [p2: str]
-{   ::do_p2_(): null_
-        print_("doing p2 ${p2}")
+{    ::do_p2_(): null_
+          print_("doing p2 ${p2}")
 }
 
 child3_: all_of_[parent1_, parent2_, m_: [c3: int_]]
-{   # this passes p1 to parent1 and c3 to child3 implicitly,
-    # and p2 to parent2 explicitly.
-    ;;renew_(parent1 p1. str_, p2. str_, m c3. int_): null_
-        # same as `parent2_ renew_(m;, p2)` or `parent2_;;renew_(p2)`:
-        parent2 renew_(p2)
+{    # this passes p1 to parent1 and c3 to child3 implicitly,
+     # and p2 to parent2 explicitly.
+     ;;renew_(parent1 p1. str_, p2. str_, m c3. int_): null_
+          # same as `parent2_ renew_(m;, p2)` or `parent2_;;renew_(p2)`:
+          parent2 renew_(p2)
 
-    ::do_p1_(): null_
-        # this logic repeats `parent1 do_p1_())` `m c3` times.
-        m c3 each _int:
-            # same as `parent1_ do_p1_(m)` or `parent1_::do_p1_()`.
-            parent1 do_p1_()
+     ::do_p1_(): null_
+          # this logic repeats `parent1 do_p1_())` `m c3` times.
+          m c3 each _int:
+               # same as `parent1_ do_p1_(m)` or `parent1_::do_p1_()`.
+               parent1 do_p1_()
     
-    # do_p2_ will be used from parent2_ since it is not overridden here.
+     # do_p2_ will be used from parent2_ since it is not overridden here.
 }
 ```
 
@@ -871,12 +871,12 @@ Any conditions on the types can be specified via `[the_type: the_condition, ...]
 ```
 # default-named generic
 generic_[of_]: [@private of]
-{   # you can use inference in functions, so you can use `generic_(12)`
-    # to create an instance of `generic_` with `of_: int_` inferred.
-    # You don't need this definition if `[of]` is public.
-    # NOTE: `g_` is like `m_` for generic classes but without the specification.
-    g_(~t.): g_[t_]
-        [of. t] 
+{    # you can use inference in functions, so you can use `generic_(12)`
+     # to create an instance of `generic_` with `of_: int_` inferred.
+     # You don't need this definition if `[of]` is public.
+     # NOTE: `g_` is like `m_` for generic classes but without the specification.
+     g_(~t.): g_[t_]
+          [of. t] 
 }
 
 generic[int_](1)            # shorthand for `generic: generic_[int_](1)`.
@@ -885,8 +885,8 @@ WOW_generic("hi")           # shorthand for `WOW_generic: generic_("hi")`, infer
 
 # not default named:
 entry_[at_: hashable_, of_: number_]: [at, value; of_]
-{   ::add_(of): null_
-        value += of
+{    ::add_(of): null_
+          value += of
 }
 
 entry[at_: str_, int_](at: "cookies", value: 123)   # shorthand for `entry: entry_[at_: str_, of_: int_](...)`
@@ -941,7 +941,7 @@ non-trailing-underscored name.
 ```
 # when defining, we use a leading underscore to indicate the variable is unused.
 my_function_(_argument_which_we_will_need_later: int_): null_
-    print_("TODO")
+     print_("TODO")
 
 # when calling:
 my_function_(argument_which_we_will_need_later: 3)
@@ -951,9 +951,21 @@ my_function_(argument_which_we_will_need_later: 3)
 
 ### tabs vs. spaces
 
-Blocks of code are made out of lines at the same indent level; an indent is four spaces.
-No more than 7 levels of indent are allowed, e.g., lines at 0, 4, 8, 12, 16, 20, 24 spaces.
-If you need more indents, refactor your code.
+Blocks of code are made out of lines at the same indent level; an indent is 5 spaces.
+No more than 7 levels of indent are allowed, e.g., lines at 0, 5, 10, 15, 20, 25, 30 spaces.
+If you need more indents, use a helper method and refactor.
+
+Note that five spaces are used so that we can determine line continuation intent with operators
+that are three characters long, e.g., `&&=`; we'll assume something like this is a line continuation:
+
+```
+my_long_named_condition_we_will_need_a_continuation
+     &&=  some_other_condition
+```
+
+See the next section for more information on line continuation logic.
+While a single tab would cover any number of spaces and help determine continuation intent,
+we don't use them because they don't copy-paste well from the internet.
 
 ### line continuations
 
@@ -974,26 +986,26 @@ we'll assume we should add a comma.
 
 # this is the block-definition style for a variable
 my_array:
-    [5, 6, 7]
+     [5, 6, 7]
 
 # this is similar to the block definition.
 my_array:   # OK, but...
-    [   5
-        6
-        7
-    ]
+     [    5
+          6
+          7
+     ]
 
 # note it's unnecessary because we also allow opening brackets
 # to get attached to the previous line if the internals are indented.
 my_array:   # better!
-[   5
-    6
-    7
+[    5
+     6
+     7
 ]
 
 # if you want to one-line it on a second line it's also possible with a +2 indent.
 my_array:
-        [5, 6, 7]
+          [5, 6, 7]
 
 # the parentheses trick only works if the inside is indented.
 not_defined_correctly:
@@ -1008,25 +1020,25 @@ If you *don't* want to pair a block with the previous line, use `pass` or `retur
 # example of returning `[x, y]` values from a function.
 # there's no issue here because we're not indenting in `[x, y]`:
 my_function_(int): [x: int_, y: int_]
-    do_something_(int)
-    [x: 5 - int, y: 5 + int]
+     do_something_(int)
+     [x: 5 - int, y: 5 + int]
 
 # this indents `[x, y]` (i.e., to split into a multi-line array),
 # but note that we need `return` to avoid parsing as `do_something_(int)[x: ...]`.
 my_function_(int): [x: int_, y: int_]
-    do_something_(int)
-    return
-    [   x: 5 - int
-        y: 5 + int
-    ]
+     do_something_(int)
+     return
+     [    x: 5 - int
+          y: 5 + int
+     ]
 
 # alternatively, you could add a comma between the two statements
 # to ensure it doesn't parse as `do_something_(int)[x: ...]`:
 my_function_(int): [x: int, y: int]
-    do_something_(int),
-    [   x: 5 - int
-        y: 5 + int
-    ]
+     do_something_(int),
+     [    x: 5 - int
+          y: 5 + int
+     ]
 ```
 
 Because parentheses indicate [reference objects](#reference-objects),
@@ -1037,23 +1049,23 @@ which will be converted into Horstmann style.
 
 ```
 some_variable: some_very_long_function_name_because_it_is_good_to_be_specific_(10)
-    +   3               # indent at +2 ensures that 3 is added into Some_variable.
-    -   other_variable  # don't keep adding more indents, keep at +2 from original.
+     +   3               # indent at +2 ensures that 3 is added into Some_variable.
+     -   other_variable  # don't keep adding more indents, keep at +2 from original.
 
 array_variable:
-[   1   # we insert commas
-    2   # between each newline
-    3   # as long as the indent is the same.
-    other_array # here we don't insert a comma after `Other_array`
-    [   3       # because the indent changes
-    ]           # so we parse this as `other_array[3],`
-    5           # and this gets a comma before it.
+[    1    # we insert commas
+     2    # between each newline
+     3    # as long as the indent is the same.
+     other_array    # here we don't insert a comma after `Other_array`
+     [    3         # because the indent changes
+     ]              # so we parse this as `other_array[3],`
+     5    # and this gets a comma before it.
 ]
 
 # this is inferred to be a `lot` with a string ID and a `one_of_[int_, str_]` value.
 lot_variable;
-[   "Some_value": 100
-    "Other_value": "hi"
+[    "Some_value": 100
+     "Other_value": "hi"
 ]
 lot_variable["Some_other_value"] = if condition {543} else {"hello"}
 
@@ -1061,8 +1073,8 @@ lot_variable["Some_other_value"] = if condition {543} else {"hello"}
 # of a `[some_value: int, other_value: str]` plain-old-data type,
 # which cannot have new fields added, even if it was mutable.
 object_variable:
-[   some_value: 100
-    other_value: "hi"
+[    some_value: 100
+     other_value: "hi"
 ]
 ```
 
@@ -1072,26 +1084,26 @@ line as an open parenthesis.
 
 ```
 some_value:
-(       (20 + 45)
-    *   continuing + the + line + at_plus_2_indent -
-        (       nested * parentheses / are + ok
-            -   too
-        )
+(         (20 + 45)
+     *    continuing + the + line + at_plus_2_indent -
+          (         nested * parentheses / are + ok
+               -    too
+          )
 )
 
 another_line_continuation_variable: can_optionally_start_up_here
-    +   ok_to_not_have_a_previous_line_starting_at_plus_two_indent * 
-        (       keep_going_if_you_like
-            -   however_long
-        ) + (70 - 30) * 3
+     +    ok_to_not_have_a_previous_line_starting_at_plus_two_indent * 
+          (         keep_going_if_you_like
+               -    however_long
+          ) + (70 - 30) * 3
 
 # note that the formatter will take care of converting indents like this:
 non_horstmann_indent: (
-    20 + some_function_(45)
+     20 + some_function_(45)
 )
 # into this:
 non_horstmann_indent:   # FIXME: update name :)
-(   20 + some_function_(45)
+(    20 + some_function_(45)
 )
 ```
 
@@ -1103,9 +1115,9 @@ should be the same.
 example_plus_three_indent; some_type_
 ...
 example_plus_three_indent
-    =       hello
-        +   world
-        -   continuing
+     =         hello
+          +    world
+          -    continuing
 ```
 
 Arguments supplied to functions are similar to arrays/lots and only require +1 indent
@@ -1113,79 +1125,79 @@ if they are multiline.
 
 ```
 if some_function_call_
-(   x
-    y: 3 + sin_(x)   # default given for y, can be given in terms of other arguments.
-    available_digits:
-    [   1
-        3
-        5
-        7
-        9
-    ]
+(    x
+     y: 3 + sin_(x)      # default given for y, can be given in terms of other arguments.
+     available_digits:
+     [    1
+          3
+          5
+          7
+          9
+     ]
 )
-    do_something_()
+     do_something_()
 
 defining_a_function_with_multiline_arguments_
-(   times: int_
-    greeting: string_
-    name: string_("World")  # argument with a default
+(    times: int_
+     greeting: string_
+     name: string_("World")  # argument with a default
 ):      string_             # indent here is optional/aesthetic
-    # "return" is optional for the last line of the block,
-    # unless you're returning a multiline array/object.
-    "${greeting}, ${name}! " * times
+     # "return" is optional for the last line of the block,
+     # unless you're returning a multiline array/object.
+     "${greeting}, ${name}! " * times
 
 defining_a_function_with_multiline_return_values_
-(   argument0: int_
+(    argument0: int_
 ):
-[   value0: int_    # you may need to add comments because
-    value1: str_    # the formatter may 1-line these otherwise
+[    value0: int_   # you may need to add comments because
+     value1: str_   # the formatter may 1-line these otherwise
 ]
-    do_something_(argument0)
-    # here we can avoid the `return` since the internal
-    # part of this object is not indented.
-    [value0: argument0 + 3, value1: str_(argument0)]
+     do_something_(argument0)
+     # here we can avoid the `return` since the internal
+     # part of this object is not indented.
+     [value0: argument0 + 3, value1: str_(argument0)]
 
 # ALTERNATIVE: multiline return statement
 defining_a_function_with_multiline_return_values_
-(   argument0: int_
-    argument1: str_
+(    argument0: int_
+     argument1: str_
 ):  [value0: int_, value1: str_]
-    do_something_(argument0)
-    # this needs to `return` or `pass` since it looks like an indented block
-    # otherwise, which would attach to the previous line like
-    # `do_something_(argument0)[value0: ...]`
-    return
-    [   value0: argument0 + 3
-        value1: argument1 + str_(argument0)
-    ]
-    # if you are in a situation where you can't return -- e.g., inside
-    # an if-block where you want to pass a value back without returning --
-    # use `pass`.
+     do_something_(argument0)
+     # this needs to `return` or `pass` since it looks like an indented block
+     # otherwise, which would attach to the previous line like
+     # `do_something_(argument0)[value0: ...]`
+     return
+     [    value0: argument0 + 3
+          value1: argument1 + str_(argument0)
+     ]
+     # if you are in a situation where you can't return -- e.g., inside
+     # an if-block where you want to pass a value back without returning --
+     # use `pass`.
 
 defining_another_function_that_returns_a_generic_
-(   argument0: str_
-    argument1: int_
+(    argument0: str_
+     argument1: int_
 ):  some_generic_type_
-[   type0_: int_
-    type1_: str_
+[    type0_: int_
+     type1_: str_
 ]
-    do_something_(argument0)
-    print_("got arguments ${argument0}, ${argument1}")
-    return ...
+     do_something_(argument0)
+     print_("got arguments ${argument0}, ${argument1}")
+     return ...
 ```
 
 Putting it all together in one big example:
 
 ```
 some_line_continuation_example_variable:
-        optional_expression_explicitly_at_plus_two_indent
-    +   5 - some_function_
-        (       another_optional_expression
-            +   next_variable
-            -   can_keep_going
-            /   indefinitely
+          optional_expression_explicitly_at_plus_two_indent
+     +   5 - some_function_
+          (       another_optional_expression
+               +   next_variable
+               -   can_keep_going
+               /   indefinitely
                 r: 123.4
-        )
+          )
 ```
 
 ### block parentheses and commas
@@ -1203,14 +1215,14 @@ in any block, by using commas.  E.g.,
 ```
 # standard version:
 if some_condition
-    print_("toggling shutoff")
-    shutdown_()
+     print_("toggling shutoff")
+     shutdown_()
 
 # comma version:
 if some_condition
-    # WARNING: NOT RECOMMENDED, since it's easy to accidentally skip reading
-    # the statements that aren't first:
-    print_("toggling shutoff"), shutdown_()
+     # WARNING: NOT RECOMMENDED, since it's easy to accidentally skip reading
+     # the statements that aren't first:
+     print_("toggling shutoff"), shutdown_()
 
 # block parentheses version
 if some_condition { print_("toggling shutoff"), shutdown_() }
@@ -1224,10 +1236,10 @@ begin and end, which helps some editors navigate more quickly to the beginning/e
 ```
 # multiline block parentheses via an optional `{`
 if some_condition
-{   print_("toggling shutdown")
-    print_("waiting one more tick")
-    print_("almost..."), print_("it's a bit weird to use comma statements")
-    shutdown_()
+{    print_("toggling shutdown")
+     print_("waiting one more tick")
+     print_("almost..."), print_("it's a bit weird to use comma statements")
+     shutdown_()
 }
 ```
 
@@ -1260,8 +1272,8 @@ Standard types whose instances can take up an arbitrary amount of memory:
 * `int_`: signed big-integer
 * `rtnl_`: rational number (e.g. an `int_` divided by a positive, non-zero `int_`)
 * `str_`: array/sequence of utf8 bytes, but note that `string` is preferred for
-    function arguments since it includes other containers which deterministically
-    provide utf8 bytes.
+     function arguments since it includes other containers which deterministically
+     provide utf8 bytes.
 
 Other types which have a fixed amount of memory:
 
@@ -1275,11 +1287,11 @@ Other types which have a fixed amount of memory:
 * `u32_` : unsigned integer which can hold values from 0 to `2^32 - 1`, inclusive
 * `u64_` : unsigned integer which can hold values from 0 to `2^64 - 1`, inclusive
 * `uXYZ_` : unsigned integer which can hold values from 0 to `2^XYZ - 1`, inclusive,
-    where `XYZ` is 128 to 512 in steps of 64, and generically we can use
-    `unsigned_[Bits: count]: what Bits {8 {u8}, 16 {u16}, 32 {u32}, ..., else {disallowed}}`
+     where `XYZ` is 128 to 512 in steps of 64, and generically we can use
+     `unsigned_[Bits: count]: what Bits {8 {u8}, 16 {u16}, 32 {u32}, ..., else {disallowed}}`
 * `count_` : `u64_` under the hood, intended to be <= `i64_ max_() + 1` to indicate the amount of something.
 * `index_` : signed integer, `i64_` under the hood.  for indexing arrays starting at 0, can be negative
-    to indicate we're counting from the back of the array.
+     to indicate we're counting from the back of the array.
 * `ordinal_` : `u64_` under the hood.  for indexing arrays starting at 1.
 
 and similarly for `i8_` to `i512_`, using two's complement.  For example,
@@ -1326,7 +1338,7 @@ q: x int_() assert_()               # panics since `x` is not representable as a
 y: x round_(down) int_() assert_()  # y = 5.  equivalent to `x floor_()`
 z: x round_(up) int_() assert_()    # z = 6.  equivalent to `x ceil_()`.
 r: x round_() int_() assert_()      # r = 5.  rounds to closest integer, breaking ties at half
-                                    #         to the integer larger in magnitude.
+                                             #         to the integer larger in magnitude.
 
 # Note, representable issues arise for conversions even between different integer types.
 a: u32_(1234)
@@ -1346,53 +1358,53 @@ or a class method, like this:
 
 ```
 scaled8_:
-[   # the actual value held by a `scaled8` is `Scaled_value / Scale`.
-    @private
-    scaled_value: u8
+[    # the actual value held by a `scaled8` is `Scaled_value / Scale`.
+     @private
+     scaled_value: u8
 ]
-{   # static/class-level variable:
-    @private
-    scale: 32_u8
+{    # static/class-level variable:
+     @private
+     scale: 32_u8
 
-    m_(flt): hm_[ok_: m_, er_: one_of_[negative, too_big]]
-        scaled_value: round_(flt * scale)
-        if scaled_value < 0
-            er_(negative)
-        elif scaled_value > u8 max_()
-            er_(too_big)
-        else
-            scaled8_(scaled_value u8_() ?? panic_())
-        # probably a preferred way to implement this is with less logic,
-        # and just return the `number_ er_` instead:
-        # `what u8_(scaled_value) { ok. {scaled8_(ok)}, er. {er} }`
+     m_(flt): hm_[ok_: m_, er_: one_of_[negative, too_big]]
+          scaled_value: round_(flt * scale)
+          if scaled_value < 0
+               er_(negative)
+          elif scaled_value > u8 max_()
+               er_(too_big)
+          else
+               scaled8_(scaled_value u8_() ?? panic_())
+          # probably a preferred way to implement this is with less logic,
+          # and just return the `number_ er_` instead:
+          # `what u8_(scaled_value) { ok. {scaled8_(ok)}, er. {er} }`
 
-    # if there are no representability issues, you can create
-    # a direct method to convert to `flt`;
-    # this can be called like `flt_(scaled8)` or `scaled8 flt_()`.
-    ::to_(): flt_
-        # `u8_` types have a non-failing `flt_` method.
-        scaled_value flt_() / scale flt_()
+     # if there are no representability issues, you can create
+     # a direct method to convert to `flt`;
+     # this can be called like `flt_(scaled8)` or `scaled8 flt_()`.
+     ::to_(): flt_
+          # `u8_` types have a non-failing `flt_` method.
+          scaled_value flt_() / scale flt_()
 
-    # if you have representability issues, you can return a result instead.
-    ::to_(): hm[ok_: int_, number_ er_]
-        if scaled_value % scale != 0
-            er_(not_an_integer)
-        else
-            scaled_value // scale
+     # if you have representability issues, you can return a result instead.
+     ::to_(): hm[ok_: int_, number_ er_]
+          if scaled_value % scale != 0
+               er_(not_an_integer)
+          else
+               scaled_value // scale
 }
 
 # global function; can also be called like `scaled8 dbl_()`.
 dbl_(scaled8): dbl_
-    # note that we can access private variables of the class *in this file*
-    # but if we weren't in the same file we wouldn't have this access.
-    scaled8 scaled_value dbl_() / scaled8 scale dbl_()
+     # note that we can access private variables of the class *in this file*
+     # but if we weren't in the same file we wouldn't have this access.
+     scaled8 scaled_value dbl_() / scaled8 scale dbl_()
 
 # global function which returns a result, can be called like `scaled8 u16_()`
 u16_(scaled8): hm_[ok_: u16_, number_ er_]
-    if scaled8 scaled_value % scaled8 scale != 0
-        er_(not_an_integer)
-    else
-        scaled8 scaled_value // scaled8 scale
+     if scaled8 scaled_value % scaled8 scale != 0
+          er_(not_an_integer)
+     else
+          scaled8 scaled_value // scaled8 scale
 ```
 
 ## types of types
@@ -1468,8 +1480,8 @@ nest_[c_: container_, m_: ~c_[of_: ~nested_, ~at_], new_[of_]: ~n_]: c_[of_: new
 # or you can do `nest_[{hm_[ok_: $of_, er_: some_er_]}, m_: [x: int_, y: str_]]` for the same effect.
 # to make `[x: hm_[ok_: int_, er_: some_er_], y: hm_[ok_: str_, er_: some_er_]]`,
 nest_[m_: object_, new_[of_]: ~n_]: merge_
-[   m_ fields_()
-    {[$field name: new_[$field value_]]}
+[    m_ fields_()
+     {[$field name: new_[$field value_]]}
 ]
 ```
 
@@ -1607,7 +1619,7 @@ but you can explicitly curry like this:
 
 ```
 some_function_(x: int_, y; dbl_, z. str_):
-    print_("something cool with ${x}, ${y}, and ${z}")
+     print_("something cool with ${x}, ${y}, and ${z}")
 
 curried_function_(z. str_): some_function_(x: 5, y; 2.4, .z)
 
@@ -1638,17 +1650,17 @@ like this would break:
 
 ```
 my_function_(x: int_): int_
-    # define a nested function:
-    # COMPILE ERROR
-    do_stuff_(x: int_): null_
-        # is this the `x` that's passed in from `my_function_`? or from `do_stuff_`?
-        # most languages will shadow so that `x` is now `do_stuff_`'s argument,
-        # but oh-lang does not allow shadowing.
-        print_(x)
-    do_stuff(x)
-    do_stuff(x: x // 2)
-    do_stuff(x: x // 4)
-    x // 8
+     # define a nested function:
+     # COMPILE ERROR
+     do_stuff_(x: int_): null_
+          # is this the `x` that's passed in from `my_function_`? or from `do_stuff_`?
+          # most languages will shadow so that `x` is now `do_stuff_`'s argument,
+          # but oh-lang does not allow shadowing.
+          print_(x)
+     do_stuff(x)
+     do_stuff(x: x // 2)
+     do_stuff(x: x // 4)
+     x // 8
 ```
 
 There are two ways to get around this; one is [hiding variables](#hiding-variables).
@@ -1666,15 +1678,15 @@ the "outer" variable so you don't accidentally use it in the inner scope.
 
 ```
 my_function_(OUTER_x: int_): int_
-    # nested function is OK due to namespace:
-    do_stuff_(x: int_): null
-        # inner scope, any usage of `OUTER_x` would be clearly intentional.
-        print(x)
-    # NOTE: we don't need to rename `x: OUTER_x` because `OUTER_x` already resolves to `x`.
-    do_stuff_(OUTER_x)
-    do_stuff_(x: OUTER_x // 2)
-    do_stuff_(x: OUTER_x // 4)
-    OUTER_x // 8
+     # nested function is OK due to namespace:
+     do_stuff_(x: int_): null
+          # inner scope, any usage of `OUTER_x` would be clearly intentional.
+          print(x)
+     # NOTE: we don't need to rename `x: OUTER_x` because `OUTER_x` already resolves to `x`.
+     do_stuff_(OUTER_x)
+     do_stuff_(x: OUTER_x // 2)
+     do_stuff_(x: OUTER_x // 4)
+     OUTER_x // 8
 ```
 
 If it's difficult to namespace the outer variable (e.g., because you don't
@@ -1683,18 +1695,18 @@ other value accidentally.
 
 ```
 my_function_(x: int_): int_
-    # nested function is OK due to namespace:
-    do_stuff_(OTHER_x: int_): null_
-        # inner scope, usage of `x` might be accidental, so let's hide:
-        @hide x
-        ...
-        print(OTHER_x)  # OK
-        print(x)        # COMPILE ERROR, `x` was hidden from this scope.
-        ...
-    do_stuff_(x)
-    do_stuff_(x: x // 2)
-    do_stuff_(x: x // 4)
-    x // 8
+     # nested function is OK due to namespace:
+     do_stuff_(OTHER_x: int_): null_
+          # inner scope, usage of `x` might be accidental, so let's hide:
+          @hide x
+          ...
+          print(OTHER_x)  # OK
+          print(x)        # COMPILE ERROR, `x` was hidden from this scope.
+          ...
+     do_stuff_(x)
+     do_stuff_(x: x // 2)
+     do_stuff_(x: x // 4)
+     x // 8
 ```
 
 Similarly, you can define new variables with namespaces, in case you need a new variable
@@ -1702,13 +1714,13 @@ in the current space.  This might be useful in a class method like this:
 
 ```
 my_class_: [x; dbl_]
-{   # this is a situation where you might like to use namespaces.
-    ;;do_something_(NEW_x. dbl_): dbl_
-        # NOTE: if you just want to create a swapper, you should
-        # probably just use this idiom: `;;x_(dbl;): null_ {m x <-> dbl}`.
-        OLD_x: m x!
-        m x = NEW_x
-        OLD_x
+{    # this is a situation where you might like to use namespaces.
+     ;;do_something_(NEW_x. dbl_): dbl_
+          # NOTE: if you just want to create a swapper, you should
+          # probably just use this idiom: `;;x_(dbl;): null_ {m x <-> dbl}`.
+          OLD_x: m x!
+          m x = NEW_x
+          OLD_x
 }
 ```
 
@@ -1721,18 +1733,18 @@ This also works with default-named variables, which is a primary use-case.
 
 ```
 some_function_(INPUT_index): null_
-    # `INPUT_index` is a default-named variable of type `index_`, but we refer to it
-    # within this scope using `INPUT_index`.
-    even_(index): bool_
-        index % 2 == 0
-    # you can define other namespaces inline as well:
-    INPUT_index each ANOTHER_index:
-        if even_(ANOTHER_index)
-            print_(ANOTHER_index)
+     # `INPUT_index` is a default-named variable of type `index_`, but we refer to it
+     # within this scope using `INPUT_index`.
+     even_(index): bool_
+          index % 2 == 0
+     # you can define other namespaces inline as well:
+     INPUT_index each ANOTHER_index:
+          if even_(ANOTHER_index)
+               print_(ANOTHER_index)
         
 x: index_ = 100
 some_function_(x)   # note that we don't need to call as `some_function_(index: x)`
-                    # nor `some_function_(INPUT_index: x)` (definitely not idiomatic).
+                         # nor `some_function_(INPUT_index: x)` (definitely not idiomatic).
 ```
 
 You can use the same namespace for multiple variables, e.g., `INPUT_rune` and `INPUT_string`,
@@ -1759,12 +1771,12 @@ readonly/writable `m` (self/this) as an argument.
 
 ```
 example_class_: [x: int_, y: dbl_]
-{   ;;renew_(m x: int_, m y: dbl_): null_
-        print_("x ${x} y ${y}")
+{    ;;renew_(m x: int_, m y: dbl_): null_
+          print_("x ${x} y ${y}")
 
-    # this `::` prefix is shorthand for `multiply_(m:, ...): dbl_`:
-    ::multiply_(z: dbl_): dbl_
-        m x * m y * z
+     # this `::` prefix is shorthand for `multiply_(m:, ...): dbl_`:
+     ::multiply_(z: dbl_): dbl_
+          m x * m y * z
 }
 ```
 
@@ -1793,18 +1805,18 @@ does not change the instance but returns a sorted copy of the array (`::sort(): 
 ```
 # there are better ways to get a median, but just to showcase member access:
 get_median_slow_(array_[int_]): hm_[ok_: int_, er_: string_]
-    if array count_() == 0
-        return er_("no elements in array, can't get median.")
-    # make a copy of the array, but no longer allow access to it (via `@hide`):
-    SORTED_array: @hide array sort_()   # same as `array::sort_()` since `array` is readonly.
-    ok(SORTED_array[SORTED_array count_() // 2])
+     if array count_() == 0
+          return er_("no elements in array, can't get median.")
+     # make a copy of the array, but no longer allow access to it (via `@hide`):
+     SORTED_array: @hide array sort_()   # same as `array::sort_()` since `array` is readonly.
+     ok(SORTED_array[SORTED_array count_() // 2])
 
 # sorts the array and returns the median.
 get_median_slow_(array[int_];): hm_[ok_: int_, er_: string_]
-    if array count_() == 0
-        return er_("no elements in array, can't get median.")
-    array sort_()   # same as `array;;sort_()` since `array` is writable.
-    ok_(array[array count_() // 2])
+     if array count_() == 0
+          return er_("no elements in array, can't get median.")
+     array sort_()   # same as `array;;sort_()` since `array` is writable.
+     ok_(array[array count_() // 2])
 ```
 
 Note that if the LHS is readonly, you will not be able to use a `;;` method.
@@ -1978,14 +1990,14 @@ is truthy, the result will be the truthy operand.  An example implementation:
 ```
 # you can define it as nullable via `xor_(~x, ~y): one_of_[x_, y_, null_]` or like this:
 xor_(~x, ~y)?: one_of_[x_, y_]
-    x_is_true: bool_(x)     # `x_is_true: !!x` is also ok.
-    y_is_true: bool_(y)
-    if x_is_true
-        if y_is_true {null} else {x}
-    elif y_is_true
-        y
-    else
-        null
+     x_is_true: bool_(x)     # `x_is_true: !!x` is also ok.
+     y_is_true: bool_(y)
+     if x_is_true
+          if y_is_true {null} else {x}
+     elif y_is_true
+          y
+     else
+          null
 ```
 
 Thus `xor` will thus return a nullable value, unless you do an assert.
@@ -2020,11 +2032,11 @@ Use sparingly.
 
 ```
 x: if some_condition -> then:
-    if other_condition
-        then exit_(5)
-    then exit_(7)
+     if other_condition
+          then exit_(5)
+     then exit_(7)
 else -> then:
-    then exit_(10)
+     then exit_(10)
 
 # the above is equivalent to the following:
 x: if some_condition { if other_condition {5} else {7} } else {10}
@@ -2118,16 +2130,16 @@ some_class_: []{ ::some_method_(): int }
 nullable?; some_class_ = null
 
 value?: nullable some_method_() # `value` has type `one_of_[int_, null_]` now,
-                                # so it needs to be defined with `?`
+                                        # so it needs to be defined with `?`
 
 # eventually we want to support things like this, where the compiler
 # can tell if the type is nullable or not:
 if nullable != null
-    non_null_value: nullable some_method_() # `non_null_value` here must be `int_`.
+     non_null_value: nullable some_method_() # `non_null_value` here must be `int_`.
 
 # however the easier compiler thing to do is use the `is` reduction.
 if nullable is some_class:
-    non_null_value: some_class some_method_()   # `non_null_value` here must be `int_`.
+     non_null_value: some_class some_method_()   # `non_null_value` here must be `int_`.
 ```
 
 See the [`is` operator](#is-operator) for more details.
@@ -2152,8 +2164,8 @@ is null on it.  For example, the symmetric type `s8_` defines null as `-128` lik
 
 ```
 s8_?: s8_
-{   null: -128_i8
-    ::is_(null_): m == -128_i8
+{    null: -128_i8
+     ::is_(null_): m == -128_i8
 }
 ```
 
@@ -2169,30 +2181,30 @@ can do one of the following:
 
 ```
 my_class_: [@private some_state: int_]
-{   ;;renew_(m some_state: int_): {}
+{    ;;renew_(m some_state: int_): {}
 
-    ::normal_method_(): int_
-        m some_state + 3
+     ::normal_method_(): int_
+          m some_state + 3
 
-    # the nullable definition, inside a class:
-    ?: m_
-    {   null: [some_state: -1]
-        ::is_null_(): m some_state < 0
+     # the nullable definition, inside a class:
+     ?: m_
+     {    null: [some_state: -1]
+          ::is_null_(): m some_state < 0
 
-        ::additional_null_method_(): int_
-            if m is_null_() {0}
-            else {m some_state * 5}
-    }
+          ::additional_null_method_(): int_
+               if m is_null_() {0}
+               else {m some_state * 5}
+     }
 }
 
 # nullable definition, outside a class (but same file).
 # both internal/external definitions aren't required of course.
 my_class_?: my_class_
-{   null: [some_state: -1]
-    ::is_null_(): m some_state < 0
-    ::additional_null_method_(): int_
-        if m is_null_() {0}
-        else {m some_state * 5}
+{    null: [some_state: -1]
+     ::is_null_(): m some_state < 0
+     ::additional_null_method_(): int_
+          if m is_null_() {0}
+          else {m some_state * 5}
 }
 ```
 
@@ -2204,21 +2216,21 @@ since we don't want to make users extend from a base nullable class.
 # `nullable ?? x` to return `x` if `nullable` is null,
 # otherwise the non-null value in `nullable`.
 nullish_or_(~FIRST_a?., SECOND_a.): a_
-    what FIRST_a
-        non_null: {non_null}
-        null {SECOND_a}
+     what FIRST_a
+          non_null: {non_null}
+          null {SECOND_a}
 
 # boolean or.
 # `nullable || x` to return `x` if `nullable` is null or falsey,
 # otherwise the non-null truthy value in `nullable`.
 or_(~FIRST_a?., SECOND_a.): a
-    what FIRST_a
-        non_null:
-            if non_null
+     what FIRST_a
+          non_null:
+               if non_null
                 non_null
-            else
+               else
                 SECOND_a
-        null {SECOND_a}
+          null {SECOND_a}
 ```
 
 We'll support more complicated pattern matching (like in Rust) using
@@ -2226,11 +2238,11 @@ the `where` operator.  The shorter version of the above `what` statement is:
 
 ```
 or_(~FIRST_a?., SECOND_a.): a
-    what FIRST_a
-        NON_NULL_a: where !!NON_NULL_a
-            NON_NULL_a
-        null
-            SECOND_a
+     what FIRST_a
+          NON_NULL_a: where !!NON_NULL_a
+               NON_NULL_a
+          null
+               SECOND_a
 ```
 
 In this case, you can think of the `what` cases as being evaluated in order,
@@ -2288,8 +2300,8 @@ mutable_mix = mix_match_(wr: 6, ro: 3)  # OK, mutable_mix is writable and thus r
 mutable_mix renew_(wr: 100, ro: 300)    # OK, will update `ro` to 300 and `wr` to 100
 mutable_mix wr += 4                     # OK, mutable_mix is writable and this field is writable
 mutable_mix ro -= 1                     # COMPILE ERROR, mutable_mix is writable but this field is readonly.
-                                        # if you want to modify the `ro` field, you need to reassign
-                                        # the variable completely or call `renew_`.
+                                                  # if you want to modify the `ro` field, you need to reassign
+                                                  # the variable completely or call `renew_`.
 
 # when defined with `:`, the object is readonly, so its fields cannot be changed:
 readonly_mix: mix_match_ = [wr: 5, ro: 3]
@@ -2323,12 +2335,12 @@ e.g., if lambdas are called which modify it, but you will not be able to explici
 x; int_ = 4 # defined as writable and reassignable
 
 if some_condition
-    @lock x = 7 # locks x after assigning it to the value of 7.
+     @lock x = 7 # locks x after assigning it to the value of 7.
                 # For the remainder of this indented block, you can use x but not reassign it.
                 # You also can't use writable, i.e., non-const, methods on x.
 else
-    @lock x # lock x to whatever value it was for this block.
-            # You can still use x but not reassign/mutate it.
+     @lock x # lock x to whatever value it was for this block.
+               # You can still use x but not reassign/mutate it.
 
 print_(x)   # will either be 7 (if some_condition was true) or 4 (if !some_condition)
 x += 5      # can modify x back in this block; there are no constraints here.
@@ -2358,7 +2370,7 @@ for variable renaming.  See the following example:
 
 ```
 do_something_(date: str_("2023-01-01")):
-    date: date_(@hide date!)
+     date: date_(@hide date!)
 ```
 
 # functions
@@ -2375,9 +2387,9 @@ v_(): int_
 
 # setting/defining/initializing the function:
 v_(): int_
-    # `return` is optional for the last line in a block.
-    # e.g., the following could have been `return 600`.
-    600
+     # `return` is optional for the last line in a block.
+     # e.g., the following could have been `return 600`.
+     600
 
 # inline definition
 v_(): 600
@@ -2387,16 +2399,16 @@ v_(): int_(600)
 
 # function with X,Y double-precision float arguments that returns nothing
 v_(x: dbl_, y: dbl_): null_
-    print_("x = ${x}, y = ${y}, atan_(y, x) = ${\\math atan_(x, y)}")
-    # Note this could also be defined more concisely using $(),
-    # which also prints the expression inside the parentheses with an equal sign and its value,
-    # although this will print `x: ..., y: ..., atan: ...`, e.g.:
-    # print("$(x, y, \\math atan_(x, y))")
+     print_("x = ${x}, y = ${y}, atan_(y, x) = ${\\math atan_(x, y)}")
+     # Note this could also be defined more concisely using $(),
+     # which also prints the expression inside the parentheses with an equal sign and its value,
+     # although this will print `x: ..., y: ..., atan: ...`, e.g.:
+     # print("$(x, y, \\math atan_(x, y))")
 
 # Note that it is also ok to use parentheses around a function definition,
 # but you should use braces `{}`.
 excite_(times: int_): str_
-{   "hi!" * times
+{    "hi!" * times
 }
 
 # You can define a multi-statement function in one line like this,
@@ -2496,11 +2508,11 @@ TODO: we probably need a borrow checker (like Rust):
 ```
 result?; some_nullable_result_()
 if result is non_null:
-    print_(non_null)
-    result = some_other_function_possibly_null_()
-    # this could be undefined behavior if `non_null` is a reference to the
-    # nonnull part of `result` but `result` became null with `some_other_function_possibly_null_()`
-    print_(non_null)
+     print_(non_null)
+     result = some_other_function_possibly_null_()
+     # this could be undefined behavior if `non_null` is a reference to the
+     # nonnull part of `result` but `result` became null with `some_other_function_possibly_null_()`
+     print_(non_null)
 ```
 
 Alternatively, we pass around "full references" whenever we can't determine that
@@ -2530,12 +2542,12 @@ a y *= 37    # OK
 
 # This is not OK:
 return_a_(q: int_): a_
-    # x and y are defined locally here, and will be descoped at the
-    # end of this function call.
-    x: (q dbl_() ?? nan) * 4.567
-    y; q * 3
-    # ERROR! we can't return x, y as references here.  z is fine.
-    (x, y, z. "world")
+     # x and y are defined locally here, and will be descoped at the
+     # end of this function call.
+     x: (q dbl_() ?? nan) * 4.567
+     y; q * 3
+     # ERROR! we can't return x, y as references here.  z is fine.
+     (x, y, z. "world")
 ```
 
 Note that we *can* return reference object instances from functions, but they must be
@@ -2545,11 +2557,11 @@ For example:
 ```
 x: 4.56
 return_a_(q; int_): (x: dbl_, y; int_, z. str_)
-    q *= 37
-    # x has a lifetime that outlives this function.
-    # y has the lifetime of the passed-in variable, which exceeds the return type.
-    # z is passed by value, so no lifetime concerns.
-    (x, y; q, z. "sky")
+     q *= 37
+     # x has a lifetime that outlives this function.
+     # y has the lifetime of the passed-in variable, which exceeds the return type.
+     # z is passed by value, so no lifetime concerns.
+     (x, y; q, z. "sky")
 ```
 
 Argument objects are helpful if you want to have arguments that should be
@@ -2565,14 +2577,14 @@ DESTINATION_pixels; pixels_()
 size: rectangle_(width: 10, height: 7)
 
 copy_
-(   from: 
-    (   SOURCE_pixels
-        size + vector2_(x: 3, y: 4)
-    )
-    to:
-    (   ;DESTINATION_pixels
-        size + Vector2_(x: 9, y: 8)
-    )
+(    from: 
+     (    SOURCE_pixels
+          size + vector2_(x: 3, y: 4)
+     )
+     to:
+     (    ;DESTINATION_pixels
+          size + Vector2_(x: 9, y: 8)
+     )
 )
 ```
 
@@ -2595,9 +2607,9 @@ For example, this is illegal:
 original_referent: int_ = 3
 my_reference: (int:) = original_referent
 if some_condition
-{   nested_referent: int_ = 5
-    # COMPILE ERROR: `nested_referent` doesn't live as long as `my_reference`
-    (my_reference) = nested_referent
+{    nested_referent: int_ = 5
+     # COMPILE ERROR: `nested_referent` doesn't live as long as `my_reference`
+     (my_reference) = nested_referent
 }
 ```
 
@@ -2606,11 +2618,11 @@ However, since function arguments can be references (e.g., if they are defined w
 
 ```
 fifth_element_(array[int_];): (int;)
-    # this is OK because `array` is a mutable reference
-    # to an array that already exists outside of this scope.
-    # NOTE: this actually returns a pointer to the array with an offset (i.e., 4)
-    #       in case the array reallocates, etc.
-    (;array[4])
+     # this is OK because `array` is a mutable reference
+     # to an array that already exists outside of this scope.
+     # NOTE: this actually returns a pointer to the array with an offset (i.e., 4)
+     #       in case the array reallocates, etc.
+     (;array[4])
 
 my_array; array_[int_](1, 2, 3, 4, 5, 6)
 (fifth;) = fifth_element_(;my_array)
@@ -2665,7 +2677,7 @@ is just the `variable_case` version of the `type_case_` type (i.e., remove the t
 ```
 # this function declaration is equivalent to `f_(int: int_): int_`:
 f_(int:): int_
-    int + 5
+     int + 5
 
 z: 3
 f_(z)                   # ok
@@ -2689,19 +2701,19 @@ q_(fn_(): bool_): null_
 
 # defining a function that takes a lambda.
 q_(fn_(): bool_): null_
-    if fn_()
-        print_("function returned true!")
-    else
-        print_("function returned false!")
+     if fn_()
+          print_("function returned true!")
+     else
+          print_("function returned false!")
 
 q_
-(   name_it_what_you_want_(): true
+(    name_it_what_you_want_(): true
 )   # should print "function returned true!"
 
 # or you can create a default-named function yourself:
 q_
-(   fn_(): bool_
-        random_() > 0.5
+(    fn_(): bool_
+          random_() > 0.5
 )   # will print one of the above due to randomness.
 # equivalent to `q_(fn_(): random_() > 0.5)` or `q_({random_() > 0.5})`
 
@@ -2713,8 +2725,8 @@ q_({true})
 # or you can do multiline:
 x; bool_
 q_
-(   fn_():
-        x
+(    fn_():
+          x
 )
 # equivalent to `q_(fn_(): {x})`
 # also equivalent to `q_({x})`
@@ -2738,10 +2750,10 @@ you're creating an*o*ther instance.
 
 ```
 value_(): int_
-    return 1234 + 5
+     return 1234 + 5
 
 what_is_this_(value: int_): null_
-    print_(value)
+     print_(value)
 
 what_is_this_(value: 10)    # prints 10
 what_is_this_(value_())     # prints 1239
@@ -2752,13 +2764,13 @@ or some other named argument by renaming.
 
 ```
 takes_default_(int): string_
-    string_(int)
+     string_(int)
 
 takes_default_(value_())    # OK.  we try `value: value_()`
                             # and then the type of `value_()` next
 
 other_function_(not_value: int_): string_
-    return "!" * not_value
+     return "!" * not_value
 
 other_function_(value_())               # ERROR! no overload for `value` or for `int`.
 other_function_(not_value: value_())    # OK
@@ -2788,14 +2800,14 @@ the default overload for a function that we pass in as `greet_`.
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
 # if it can't find it.
 detect_(greet_(int): string_): int_
-    100 each CHECK_int:
-        if greet_(CHECK_int) == "hello, world!"
-            return CHECK_int
-    return -1
+     100 each CHECK_int:
+          if greet_(CHECK_int) == "hello, world!"
+               return CHECK_int
+     return -1
 
 # if your function is named the same as the function argument...
 greet_(int): string_
-    return "hay"
+     return "hay"
 # you can use it directly, although you still need to specify which overload you're using,
 detect_(greet_(int): string_)   # returns -1
 # also ok, but a bit verbose:
@@ -2804,14 +2816,14 @@ detect_(greet_(int): greet_(int) string)
 # if your function is not named the same, you can do argument renaming;
 # internally this does not create a new function:
 say_hi_(int): string_
-    return "hello, world" + "!" * int
+     return "hello, world" + "!" * int
 detect_(greet_(int): string_ = say_hi_) # returns 1
 
 # you can also create a function named correctly inline -- the function
 # will not be available outside, after this call (it's scoped to the function arguments).
 detect_
-(   greet_(int): string_
-        "hello, world!!!!" substring_(length: int)
+(    greet_(int): string_
+          "hello, world!!!!" substring_(length: int)
 )   # returns 13
 
 detect_(greet_(int): {["hi", "hey", hello"][int % 3] + ", world!"}) # returns 2
@@ -2828,7 +2840,7 @@ or by using a default name like `$int` to define an integer).  Some examples:
 
 ```
 run_asdf_(do_(j: int_, k: str_, l: dbl_): null_): null_
-    print_(do_(j: 5, k: "hay", l: 3.14))
+     print_(do_(j: 5, k: "hay", l: 3.14))
 
 # Note that `$k`, `$j`, and `$l` attach to the same lambda based on looking
 # for the first matching `{}`.
@@ -2840,7 +2852,7 @@ my_array: [0.06, 0.5, 4.0, 30.0, 200.0, 1000.0]
 run_asdf_({$k + str_(my_array[$j] * $l)})   # prints "hay3140"
 # The same example with an indent:
 run_asdf_
-(   $k + str_(my_array[$j] * $l)
+(    $k + str_(my_array[$j] * $l)
 )
 # this is wrong, this looks like line continuation.
 run_asdf_
@@ -2859,9 +2871,9 @@ run_({$x + run_nested_({$y + $$x})})
 
 # or with indents
 run_
-(   $x + run_nested_
-    (   $y + $$x
-    )
+(    $x + run_nested_
+     (    $y + $$x
+     )
 )
 ```
 
@@ -2883,7 +2895,7 @@ which infers the types based on instances of the type.
 ```
 # generic function taking an instance of `x_` and returning one.
 do_something_(~x): x_
-    return x * 2
+     return x * 2
 
 do_something_(123)    # returns 246
 do_something_(0.75)   # returns 1.5
@@ -2901,7 +2913,7 @@ the type of something.  We can use `of_` as a type name to get default naming.
 # `whatever_constraints_` can be something like `number_`,
 # or you can elide it if you want no constraints.
 do_something_(of_: whatever_constraints_): of_
-    return of_(123)
+     return of_(123)
 
 print_(do_something_(dbl_)) # returns 123.0
 print_(do_something_(u8_))  # returns u8(123)
@@ -2910,7 +2922,7 @@ print_(do_something_(u8_))  # returns u8(123)
 Or we could do this as a a generic type, like this:
 ```
 do_something_(~x_): x_
-    return x_(123)
+     return x_(123)
 
 print_(do_something_(dbl_)) # returns 123.0
 print_(do_something_(u8_))  # returns u8(123)
@@ -2942,21 +2954,21 @@ prefer a more reasonable example.
 # it's preferable to return a more specific value here, like
 # `one_of_[int_, dbl_, string_]`, but `any_` works as well.
 random_class_[]: any_
-    if random_(dbl_) < 0.5
-        int_
-    elif random_(dbl_) < 0.5
-        dbl_
-    else
-        string_
+     if random_(dbl_) < 0.5
+          int_
+     elif random_(dbl_) < 0.5
+          dbl_
+     else
+          string_
 
 x: random_class_[] = 123
 match x
-    int:
-        print("x is an int_: ${int}")
-    dbl:
-        print("x is a dbl_: ${dbl}")
-    string:
-        print("x is a string_: ${string}")
+     int:
+          print("x is an int_: ${int}")
+     dbl:
+          print("x is a dbl_: ${dbl}")
+     string:
+          print("x is a string_: ${string}")
 ```
 
 We can also pass in named types as arguments.  Here is an example
@@ -2965,7 +2977,7 @@ where we also return a type constructor.  Named types are just
 
 ```
 random_class_[~x_, named_new_: ~y_]: one_of_[x_, y_]
-    if random_(dbl_) < 0.5 {x_} else {named_new_}
+     if random_(dbl_) < 0.5 {x_} else {named_new_}
 
 # will print `int_` or `dbl_` with 50-50 probability
 print_(random_class_[int_, named_new_: dbl_])
@@ -2992,10 +3004,10 @@ An example of (1) is in a function like `max_`:
 ```
 @order_independent
 max_(int, OTHER_int): int_
-    if int >= OTHER_int
-        int
-    else
-        OTHER_int
+     if int >= OTHER_int
+          int
+     else
+          OTHER_int
 
 max_(5, 3) == max_(3, 5)
 ```
@@ -3011,20 +3023,20 @@ that is in method definitions.  Take for example the vector dot product:
 
 ```
 vector2_: [x; dbl_, y; dbl_]
-{   ;;renew_(m x. dbl_, m y. dbl_): {}
+{    ;;renew_(m x. dbl_, m y. dbl_): {}
 
-    # this is required to create vectors like this: `vector2_(1.0, 2.0)`
-    # since we are explicit about `FIRST_` and `SECOND_` we don't need the
-    # `@order_dependent` annotation.
-    m(FIRST_dbl., SECOND_dbl.): m_
-        m(x. FIRST_dbl, y. SECOND_dbl)
+     # this is required to create vectors like this: `vector2_(1.0, 2.0)`
+     # since we are explicit about `FIRST_` and `SECOND_` we don't need the
+     # `@order_dependent` annotation.
+     m(FIRST_dbl., SECOND_dbl.): m_
+          m(x. FIRST_dbl, y. SECOND_dbl)
 
-    @order_independent
-    # can also use `o` instead of `vector2` as the argument name for an `o`ther
-    # of the same type as `m`, and then you can omit the `@order_independent`
-    # (or `@order_dependent`) annotation.
-    ::dot_(vector2): dbl_
-        m x * vector2 x + m y * vector2 y
+     @order_independent
+     # can also use `o` instead of `vector2` as the argument name for an `o`ther
+     # of the same type as `m`, and then you can omit the `@order_independent`
+     # (or `@order_dependent`) annotation.
+     ::dot_(vector2): dbl_
+          m x * vector2 x + m y * vector2 y
 }
 vector2: vector2_(1, 2)
 other_vector2: vector2_(3, -4)
@@ -3048,22 +3060,22 @@ somewhat trivial, `a cross_(b) == -b cross_(a)`, and this simplicity should be a
 
 ```
 vector3_: [x; dbl_, y; dbl_, z; dbl_]
-{   ;;renew_(m x. dbl_, m y. dbl_, m z. dbl_): {}
+{    ;;renew_(m x. dbl_, m y. dbl_, m z. dbl_): {}
 
-    # defined in the class body, we do it like this:
-    ::cross_(o): m_
-    (   x. m y * o z - m z * o y
-        y. m z * o x - m x * o z
-        z. m x * o y - m y * o x
-    )
+     # defined in the class body, we do it like this:
+     ::cross_(o): m_
+     (    x. m y * o z - m z * o y
+          y. m z * o x - m x * o z
+          z. m x * o y - m y * o x
+     )
 }
 
 # defined outside the class body, we do it like this:
 # NOTE: both definitions are *not* required, only one.
 cross_(FIRST_vector3, SECOND_vector3): vector3_
-(   x: FIRST_vector3 y * SECOND_vector3 z - FIRST_vector3 z * SECOND_vector3 y
-    y: FIRST_vector3 z * SECOND_vector3 x - FIRST_vector3 x * SECOND_vector3 z
-    z: FIRST_vector3 x * SECOND_vector3 y - FIRST_vector3 y * SECOND_vector3 x
+(    x: FIRST_vector3 y * SECOND_vector3 z - FIRST_vector3 z * SECOND_vector3 y
+     y: FIRST_vector3 z * SECOND_vector3 x - FIRST_vector3 x * SECOND_vector3 z
+     z: FIRST_vector3 x * SECOND_vector3 y - FIRST_vector3 y * SECOND_vector3 x
 )
 ```
 
@@ -3082,14 +3094,14 @@ argument modifiers (i.e., `;` and `:` are different overloads, as are nullable t
 
 ```
 greet_(string): null_
-    print_("Hello, ${string}!")
+     print_("Hello, ${string}!")
 
 greet_(say: string_, to: string_): null_
-    print_("${say}, ${to}!")
+     print_("${say}, ${to}!")
 
 greet_(say: string_, to: string_, times: int_): null_
-    times each _int:
-        greet_(say, to)
+     times each _int:
+          greet_(say, to)
 
 # so you call this in different ways:
 greet_("World")
@@ -3098,8 +3110,8 @@ greet_(times: 5, say: "Hey", to: "Sam")
 
 # note this is a different overload, since it must be called with `say;`
 greet_(say; string_): null_
-    say += " wow"
-    print_("${say}, world...")
+     say += " wow"
+     print_("${say}, world...")
 
 my_say; "hello"
 greet_(say; my_say) # prints "hello wow, world..."
@@ -3113,18 +3125,18 @@ and `fn_(int)` are different overloads).
 
 ```
 fibonacci_(times: int_): int_
-    previous; 1
-    current; 0
-    times each _int:
-        next_previous: current
-        current += previous
-        previous = next_previous
-    current
+     previous; 1
+     current; 0
+     times each _int:
+          next_previous: current
+          current += previous
+          previous = next_previous
+     current
 
 fibonacci_(times: dbl_): int_
-    golden_ratio: dbl_ = (1.0 + \\math sqrt_(5)) * 0.5
-    other_ratio: dbl_ = (1.0 - \\math sqrt_(5)) * 0.5
-    round_((golden_ratio^times - other_ratio^times) / \\math sqrt_(5))
+     golden_ratio: dbl_ = (1.0 + \\math sqrt_(5)) * 0.5
+     other_ratio: dbl_ = (1.0 - \\math sqrt_(5)) * 0.5
+     round_((golden_ratio^times - other_ratio^times) / \\math sqrt_(5))
 # COMPILE ERROR: function overloads of `fibonacci_` must have unique argument names,
 #                not argument types.
 
@@ -3187,20 +3199,20 @@ again, only Cases (1) and (2) are compatible and can be defined together.
 ```
 # missing argument (case 1):
 some_function_(): dbl_
-    987.6
+     987.6
 
 # present argument (case 2):
 some_function_(y: int_): dbl_
-    2.3 * dbl_(y)
+     2.3 * dbl_(y)
 
 # nullable argument (case 3):
 some_function_(y?: int_): dbl_
-    if y != null {1.77} else {y + 2.71}
+     if y != null {1.77} else {y + 2.71}
 
 # default argument (case 4):
 # `y: 3` is short for `y: @type_of(3) = 3`, and `@type_of(3)` is `int_`.
 some_function_(y: 3): dbl_
-    dbl_(y)
+     dbl_(y)
 ```
 
 Note that writable arguments `;` are distinct overloads, which indicate either mutating
@@ -3213,9 +3225,9 @@ we define present and missing argument overloads in the following way:
 
 ```
 overloaded_(): dbl_
-    123.4
+     123.4
 overloaded_(y: int_): string_
-    "hi ${y}"
+     "hi ${y}"
 ```
 
 The behavior that we get when we call `overloaded_` will depend on whether we
@@ -3242,7 +3254,7 @@ Just like when we define nullable variables, we use `?:` or `?;`, we need to use
 
 ```
 some_function_(x?: int_): int_
-    x ?? 1000
+     x ?? 1000
 
 # when argument is not null:
 some_function_(x: 100)      # OK, expression for `x` is definitely not null
@@ -3258,7 +3270,7 @@ some_function_(x: some_nullish_function_())     # ERROR! `some_nullish_function_
 
 # where some_nullish_function might look like this:
 some_nullish_function_()?: int_
-    if some_condition { null } else { 100 }
+     if some_condition { null } else { 100 }
 ```
 
 Note however that if a value is definitely null, then we don't allow passing
@@ -3266,7 +3278,7 @@ it in as a nullable argument.
 
 ```
 some_null_function_(): null_
-    print_("go team")
+     print_("go team")
  
 # COMPILE ERROR, `x` is always null.
 # cleaner: `some_null_function_(), some_function_()`:
@@ -3297,11 +3309,11 @@ This can also be used with the `return` function to only return if the value is 
 
 ```
 do_something_(x?: int_): int_
-    y?: ?x * 3    # `y` is null or `x*3` if `X` is not null.
-    return ?y       # only returns if `y` is not null
-    #( do some other stuff )#
-    ...
-    return 3
+     y?: ?x * 3    # `y` is null or `x*3` if `X` is not null.
+     return ?y       # only returns if `y` is not null
+     #( do some other stuff )#
+     ...
+     return 3
 ```
 
 ### nullable output arguments
@@ -3318,18 +3330,18 @@ TODO: discussion on `fn_(): [x?: int_]` differences from `fn_()?: [x: int_]`.
 ```
 # case 1, missing output (not compatible with case 3):
 my_overload_(y: str_): null_
-    print_(y)
+     print_(y)
 
 # case 2, present output:
 my_overload_(y: str_): [x: int_]
-    [x: int_(y) ?? panic_("should be an integer")]
+     [x: int_(y) ?? panic_("should be an integer")]
 
 # case 3, nullable output (not compatible with case 1):
 my_overload_(y: str_): [x?: int_]
-    # this is essentially an implementation of `x?: int_(y), return [x]`
-    what int_(y)
-        ok: $[x: ok]
-        er: $[]
+     # this is essentially an implementation of `x?: int_(y), return [x]`
+     what int_(y)
+          ok: $[x: ok]
+          er: $[]
 
 [x]: my_overload_(y: "1234")    # calls (2) if it's defined, otherwise it's a compiler error.
 [x?]: my_overload_(y: "abc")    # calls (1) or (3) if one is defined, otherwise it's a compiler error.
@@ -3431,21 +3443,21 @@ based on the caller using `.`, `:`, or `;`.  Some examples:
 ```
 # this function passes by value and won't modify the external variable
 check_(arg123. string_): string_
-    arg123 += "-tmp"    # OK since `arg123` is defined as writable, implicit in `.`
-    arg123
+     arg123 += "-tmp"    # OK since `arg123` is defined as writable, implicit in `.`
+     arg123
 
 # this function passes by reference and will modify the external variable
 check_(arg123; string_): string_
-    arg123 += "-writable"   # OK since `arg123` is defined as writable via `;`.
-    arg123
+     arg123 += "-writable"   # OK since `arg123` is defined as writable via `;`.
+     arg123
 
 # this function passes by constant reference and won't allow modifications
 check_(arg123: string_): string_
-    arg123 + "-readonly"
+     arg123 + "-readonly"
 
 my_value; string_ = "great"
 check_(arg123. my_value o_())   # returns "great-tmp".  needs `o_` (copy) since
-                                # `.` requires a temporary.
+                                        # `.` requires a temporary.
 print_(my_value)            # prints "great"
 check_(arg123: my_value)    # returns "great-readonly"
 print_(my_value)            # prints "great"
@@ -3459,7 +3471,7 @@ for writable-reference or temporary-variable arguments.
 
 ```
 only_readonly_(a: int_): str_
-    str_(a) * a
+     str_(a) * a
 
 my_a; 10
 only_readonly_(a; my_a)         # COMPILE ERROR, no writable overload
@@ -3469,9 +3481,9 @@ print_(only_readonly_(a: 3))    # OK, prints "333"
 print_(only_readonly_(a: my_a)) # OK, prints "10101010101010101010"
 
 only_mutable_(b; int_): str_
-    result: str_(b) * b
-    b /= 2
-    result
+     result: str_(b) * b
+     b /= 2
+     result
 
 my_b; 10
 only_mutable_(b: my_b)          # COMPILE ERROR, no readonly overload
@@ -3481,12 +3493,12 @@ print_(only_mutable_(b; my_b))  # OK, prints "10101010101010101010"
 print_(only_mutable_(b; my_b))  # OK, prints "55555"
 
 only_temporary_(c. int_): str_
-    result; ""
-    while c != 0
-        result append_(str_(c % 3))
-        c /= 3
-    result reverse_()
-    result
+     result; ""
+     while c != 0
+          result append_(str_(c % 3))
+          c /= 3
+     result reverse_()
+     result
 
 my_c; 5
 only_temporary_(c: my_c)        # COMPILE ERROR, no readonly overload
@@ -3503,11 +3515,11 @@ For a full example:
 
 ```
 reference_this_(a; int_): int_
-    b; a    # `b` is a mutable copy of `a`.
-            # if you want a reference, use `(b;) = a` or `(b); a`.
-    a *= 2
-    b *= 3
-    b
+     b; a    # `b` is a mutable copy of `a`.
+               # if you want a reference, use `(b;) = a` or `(b); a`.
+     a *= 2
+     b *= 3
+     b
 
 my_a; 10
 print_(reference_this_(a; my_a))    # prints 30, not 60.
@@ -3520,16 +3532,16 @@ a reference type is allowed.
 
 ```
 fn_(b; int_(3)): int_
-    b += 3
-    b
+     b += 3
+     b
 
 # This definition would have the same return value as the previous function:
 fn_(b?; int_): int_
-    if b is non_null;
-        non_null += 3
-        non_null    # note that this will make a copy.
-    else
-        6
+     if b is non_null;
+          non_null += 3
+          non_null    # note that this will make a copy.
+     else
+          6
 
 # and can be called with or without an argument:
 print_(fn_())           # returns 6
@@ -3544,7 +3556,7 @@ unless otherwise specified.
 
 ```
 over_(load. int_): str_
-    str_(++load)
+     str_(++load)
 
 load; 100
 print_(over_(load!))    # calls `over_(load.)` with a temporary, prints 101
@@ -3577,15 +3589,15 @@ Similarly for the const template `:;`, `respectively_[a, b]` will give `a` for `
 
 ```
 my_class_[of_]: [x; of_]
-{   ;;take_(of.):
-        m x = of!
-    ;;take_(of:):
-        m x = of
+{    ;;take_(of.):
+          m x = of!
+     ;;take_(of:):
+          m x = of
 
-    # maybe something like this?
-    ;;take_(of;:):
-        m x = @moot_or_copy(of)
-        # `@moot_or_copy(z)` can expand to `@if @readonly(z) {z o_()} @else {z!}`
+     # maybe something like this?
+     ;;take_(of;:):
+          m x = @moot_or_copy(of)
+          # `@moot_or_copy(z)` can expand to `@if @readonly(z) {z o_()} @else {z!}`
 }
 ```
 
@@ -3593,14 +3605,14 @@ Alternatively, we can rely on some boilerplate that the language will add for us
 
 ```
 my_class_[of_]: [x; of_]
-{   # these are added automatically by the compiler since `x; of_` is defined.
-    ;;x_(of;): { m x<->of }
-    ;;x_(of:): { m x = of }
-    ;;x_(of.): { m x = of! }
+{    # these are added automatically by the compiler since `x; of_` is defined.
+     ;;x_(of;): { m x<->of }
+     ;;x_(of:): { m x = of }
+     ;;x_(of.): { m x = of! }
 
-    # so `take_` would become:
-    ;;take_(of:;.):
-        m x_(of)
+     # so `take_` would become:
+     ;;take_(of:;.):
+          m x_(of)
 }
 ```
 
@@ -3631,8 +3643,8 @@ an example with an array:
 ```
 array; [0, 1, 2, 3, 4]
 saw_off_branch_(int;): null_
-    array erase_(int)
-    int *= 10
+     array erase_(int)
+     int *= 10
 
 saw_off_branch_(array[3];)
 print_(array)   # prints [0, 1, 2, 40]
@@ -3657,10 +3669,10 @@ the argument doesn't change, especially when we're doing self-referential logic 
 animals; ["hello": cat_(), "world": snake_(name: "Woodsy")]
 
 do_something_(animal:): string_
-    result; animal name
-    animals["world"] = cat_()       # overwrites `snake_` with a `cat_`
-    result += " ${animal speak_()}"
-    result
+     result; animal name
+     animals["world"] = cat_()       # overwrites `snake_` with a `cat_`
+     result += " ${animal speak_()}"
+     result
 
 print_(do_something_(animals["world"])) # returns "Woodsy hisss!" (snake name + cat speak)
 ```
@@ -3673,12 +3685,12 @@ to reason about, we'll probably want to detect this (if possible) and give an er
 ```
 my_int; 100
 not_actually_constant_(int:): null_
-    print_("int before ${int}")
-    my_int += int
-    print_("int middle ${int}")
-    my_int += int
-    print_("int after ${int}")
-    # int += 5  # this would be a compiler error since `int` is readonly in this scope.
+     print_("int before ${int}")
+     my_int += int
+     print_("int middle ${int}")
+     my_int += int
+     print_("int after ${int}")
+     # int += 5  # this would be a compiler error since `int` is readonly in this scope.
 
 not_actually_constant_(my_int) # prints "int before 100", then "int middle 200", then "int after 400"
 ```
@@ -3733,11 +3745,11 @@ Some worked examples follow, including field renaming.
 
 ```
 fraction_(in: string_, io; dbl_): [round_down: int_, round_up: int_]
-    print_(in)
-    round_down: io round_(down)
-    round_up: io round_(up)
-    io -= round_down
-    [round_down, round_up]
+     print_(in)
+     round_down: io round_(down)
+     round_up: io round_(up)
+     io -= round_down
+     [round_down, round_up]
 
 # destructuring
 io; 1.234
@@ -3765,11 +3777,11 @@ an iterator into a list, for example.
 
 ```
 countdown_(count): all_of_[iterator_[count_], m_: [count]]
-{   ::next_()?: count_
-        if m count > 0
-            --m count
-        else
-            null
+{    ::next_()?: count_
+          if m count > 0
+               --m count
+          else
+               null
 }
 
 my_array: array_[count_] = countdown_(5)
@@ -3781,17 +3793,17 @@ more in the function overload section, but here are some examples.
 ```
 # standard definition:
 wow_(lives: int_)?: cat_
-    if lives == 9
-        cat_()
-    else
-        null
+     if lives == 9
+          cat_()
+     else
+          null
 ```
 
 For nested object return types, there is some syntactic sugar for dealing with them.
 
 ```
 nest_(x: int_, y: str_): [w: [z: [a: int_], b: str_, c: str_]]
-    [w: [z: [a: x], b: y, c: y * x]]
+     [w: [z: [a: x], b: y, c: y * x]]
 
 # defines `a`, `b`, and `c` in the outside scope:
 # TODO: i'm not sure i like this syntax.  we should define the variable on the left.
@@ -3859,11 +3871,11 @@ there is at least one argument, so `arguments[0]` is always defined.
 
 ```
 max_(arguments[int_]): int_
-    max; arguments[0]
-    range_(1, arguments count_()) each index:
-        if arguments[index] > max
-            max = arguments[index]
-    max
+     max; arguments[0]
+     range_(1, arguments count_()) each index:
+          if arguments[index] > max
+               max = arguments[index]
+     max
 ```
 
 ### dynamically determining arguments for a function
@@ -3876,36 +3888,36 @@ that the function call can do anything (including fetching data from a remote se
 
 ```
 call_:
-[   input; lot_[at_: str_, any_]
-    output; lot_[at_: str_, any_]
-    # things printed to stdout via `print_`:
-    prints; array_[str_]
-    # things printed to stderr via `print_(error)`:
-    errors; array_[str_]
+[    input; lot_[at_: str_, any_]
+     output; lot_[at_: str_, any_]
+     # things printed to stdout via `print_`:
+     prints; array_[str_]
+     # things printed to stderr via `print_(error)`:
+     errors; array_[str_]
 ]
-{   # adds a named argument to the function call.
-    # e.g., `call input_(at. "Cave", "Story")`
-    ;;input_(at. str_, any.): null_
-        input[at] = any
+{    # adds a named argument to the function call.
+     # e.g., `call input_(at. "Cave", "Story")`
+     ;;input_(at. str_, any.): null_
+          input[at] = any
 
-    ;;input_(any.): null_
-        m input_(at. any type_id to_(), any)
+     ;;input_(any.): null_
+          m input_(at. any type_id to_(), any)
 
-    # TODO: this breaks the rule that we don't hold on to references/pointers
-    # beyond the scope of the function.
-    ;;input_(at. str_, any:;): null_
-        input[at] = (at:; any)
+     # TODO: this breaks the rule that we don't hold on to references/pointers
+     # beyond the scope of the function.
+     ;;input_(at. str_, any:;): null_
+          input[at] = (at:; any)
 
-    # adds a named field to the return type with a default value.
-    # e.g., `call output_(at. "field_name", 123)` will ensure
-    # `[field_name]` is defined in the return value, with a
-    # default of 123 if `field_name` is not set in the function.
-    ;;output_(at. str_, any.): null_
-        output_[at] =  any
+     # adds a named field to the return type with a default value.
+     # e.g., `call output_(at. "field_name", 123)` will ensure
+     # `[field_name]` is defined in the return value, with a
+     # default of 123 if `field_name` is not set in the function.
+     ;;output_(at. str_, any.): null_
+          output_[at] =  any
 
-    # adds a default-named return type, with a default value.
-    ;;output_(any.): null_
-        ;;output_(at. any type_id to_(), any)
+     # adds a default-named return type, with a default value.
+     ;;output_(any.): null_
+          ;;output_(at. any type_id to_(), any)
 }
 ```
 
@@ -3918,10 +3930,10 @@ overwritten if the function doesn't write to them.  Let's try an example:
 ```
 # define some function to call:
 some_function_(x: int_): str_
-    "hi" * x
+     "hi" * x
 # second overload:
 some_function_(x: str_): int_
-    x count_bytes_()
+     x count_bytes_()
 
 my_string: str_ = some_function_(x: 100)    # uses the first overload
 my_int: int_ = some_function_(x: "cow")     # uses the second overload because the return type is asked for.
@@ -3949,9 +3961,9 @@ print_(call output) # prints `["int": 5]`
 # dynamically determine the function overload:
 call; call_
 if some_condition_()
-    call@ {input_(at. "x", 5), output_("?")}
+     call@ {input_(at. "x", 5), output_("?")}
 else
-    call@ {input_(at. "x", "hey"), output_(-1)}
+     call@ {input_(at. "x", "hey"), output_(-1)}
 
 some_function_(;call)
 print_(call output)  # will print `["str": "hihihihihi"]` or `["int": 3]` depending on `some_condition()`.
@@ -3985,7 +3997,7 @@ This will give a compile error, e.g.:
 ```
 # COMPILE ERROR!!  you cannot define a function overload with a default-named `call` argument!
 some_function_(call;): null_
-    print_(call input["x"])
+     print_(call input["x"])
 ```
 
 This is because all overloads need to be representable by `call; call_`, including any
@@ -3994,7 +4006,7 @@ overloads you would create with `call`.  Instead, you can create an overload wit
 
 ```
 some_function_(my_call; call_): null_
-    print_(my_call input["x"])  # OK
+     print_(my_call input["x"])  # OK
 ```
 
 ### callable
@@ -4010,14 +4022,14 @@ To declare a reassignable function, use `;` after the arguments.
 
 ```
 greet_(noun: string_); null_
-    print_("Hello, ${noun}!")
+     print_("Hello, ${noun}!")
 
 # you can use the function:
 greet_(noun: "World")
 
 # or you can redefine it:
 greet_(noun: string_); null_
-    print_("Overwriting!")
+     print_("Overwriting!")
 # it's not ok if we use `greet_(noun: string_): null_` when redefining
 # since that looks like we're just defining another overload.
 ```
@@ -4069,7 +4081,7 @@ example; example_(x: 5)
 
 # define your own function for `optional_fn_`:
 example::optional_fn_(z: dbl_); int_
-    floor_(z * m x)
+     floor_(z * m x)
 
 # or set it to null:
 example optional_fn_?(z: dbl_); int_ = null
@@ -4092,8 +4104,8 @@ what the type is.  You can use any unused identifier for the new type, e.g.,
 
 ```
 copy_(value: ~t_): t_
-    print_("got $(value)")
-    t_(value)
+     print_("got $(value)")
+     t_(value)
 
 vector3_: [x: dbl_, y: dbl_, z: dbl_]
 vector3: vector3_(y: 5)
@@ -4113,8 +4125,8 @@ defining the function.
 ```
 # this generic function does not infer any types because it doesn't use `~`.
 copy_[the_type_](value: the_type_): the_type_
-    ...
-    the_type_(value)
+     ...
+     the_type_(value)
 
 # therefore we need to specify the generics in brackets before calling the function.
 copy_[the_type_: int_](value: 1234) # returns 1234
@@ -4129,8 +4141,8 @@ for an `[of_]`-defined generic.  See also
 ```
 # this generic function does not infer any types because it doesn't use `~`.
 copy_[of_](value: of_): of_
-    ...
-    of_(value)
+     ...
+     of_(value)
 
 # because the type is not inferred, you always need to specify it in brackets.
 # you can use `of_: the_type_` but this is not idiomatic:
@@ -4155,8 +4167,8 @@ which is more idiomatic: `~my_type;` or `~t:`.  Here is a complete example:
 
 ```
 logger_(~t): t_
-    print_("got ${t}")
-    t
+     print_("got ${t}")
+     t
 
 vector3_: [x: dbl_, y: dbl_, z: dbl_]
 vector3: vector3_(y: 5)
@@ -4176,8 +4188,8 @@ the function arguments like this:
 
 ```
 logger_[of_: some_constraint_](of.): of_
-    print_("got ${of}")
-    of
+     print_("got ${of}")
+     of
 
 # need to explicitly add the type since it's never inferred.
 logger_[int_](3)  # returns the integer `3`
@@ -4189,8 +4201,8 @@ you can use the `NAMED_` namespace.  This suppresses the default naming.
 
 ```
 logger_(~NAMED_of.): of_
-    print_("got ${of}")
-    of
+     print_("got ${of}")
+     of
 
 # need to explicitly add the argument name `of` but
 # the type can be inferred due to `~` in the definition.
@@ -4203,8 +4215,8 @@ so default names can apply.
 
 ```
 logger_[value_](value.): value_
-    print_("got ${value}")
-    value
+     print_("got ${value}")
+     value
 
 logger_[value_: dbl_](3)    # will return `3.0` and print "got 3.0"
 ```
@@ -4215,8 +4227,8 @@ want default names to apply, which we do using the `NAMED_` namespace.
 
 ```
 logger_(~NAMED_value.): value_
-    print_("got ${NAMED_value}")
-    NAMED_value
+     print_("got ${NAMED_value}")
+     NAMED_value
 
 # because of the `~` on the type, it can be called like this,
 # which implicitly infers the `value_` type:
@@ -4228,8 +4240,8 @@ And as in other contexts, you can avoid inferring the type by omitting `~`.
 ```
 # this generic needs to be specified in brackets at the call site: 
 logger_[value_](NAMED_value.): value_
-    ...
-    NAMED_value
+     ...
+     NAMED_value
 
 # and because it has a `NAMED_` namespace,
 # you need to call it like this:
@@ -4247,22 +4259,22 @@ for `this_function_(argument_at: str_, argument: known_type_)`, so
 
 ```
 this_function_(~argument: int_): null_
-    argument_name: str_(@@argument)
-    print("calling this_function with ${argument_name}: ${argument}")
+     argument_name: str_(@@argument)
+     print("calling this_function with ${argument_name}: ${argument}")
 
 # internally defines this overload:
 this_function_(argument_at: str_, argument: int_): null_
-    argument_name: str_(argument_at)
-    print("calling this_function with ${argument_name}: ${argument}")
+     argument_name: str_(argument_at)
+     print("calling this_function with ${argument_name}: ${argument}")
 
 # and this overload, but this is only for `call_`ers.
 this_function_(argument: int_): null_
-    this_function(argument_at: "argument", :argument)
+     this_function(argument_at: "argument", :argument)
 
 # TODO: there's probably some way to define something like this;
 # but we don't actually want to alias this.
 @alias this_function_(@match_field(argument_at, argument): int_): null_
-    this_function_(:argument_at, argument)
+     this_function_(:argument_at, argument)
 ```
 
 Defining such an overload will of course make it impossible to define any
@@ -4290,23 +4302,23 @@ specified by hand, e.g., `my_class_[int_, n: 0, require: true]` is a compile err
 
 ```
 my_class_[of_, n: count_, require: n > 0]:
-[   value: of_
-    # this field `second_value` is only present if `n` is 2 or more.
-    # TODO: does this conflict with any other usages of generic classes?
-    # if so, let's switch to `@if n >= 2 {second_value: of_}`
-    second_value[require: n >= 2]: of_
-    # this field `third_value` is only present if `n` is 3 or more.
-    third_value[require: n >= 3]: of_
-    ... # plz help am i coding this right??     (no, prefer `vector_[n, of_]`)
+[    value: of_
+     # this field `second_value` is only present if `n` is 2 or more.
+     # TODO: does this conflict with any other usages of generic classes?
+     # if so, let's switch to `@if n >= 2 {second_value: of_}`
+     second_value[require: n >= 2]: of_
+     # this field `third_value` is only present if `n` is 3 or more.
+     third_value[require: n >= 3]: of_
+     ... # plz help am i coding this right??     (no, prefer `vector_[n, of_]`)
 ]
-{   # `of_ is hashable_` is true iff `of_` extends `hashable_` either explicitly
-    # or implicitly by implementing a `hash_` method like this:
-    ::hash_[require: of_ is hashable_](~builder):
-        builder hash_(value)
-        @if n > 1 {builder hash_(second_value)}
-        @if n > 2 {builder hash_(third_value)}
-        # TODO: maybe add something like `builder hash_(@?second_value)`
-        ...
+{    # `of_ is hashable_` is true iff `of_` extends `hashable_` either explicitly
+     # or implicitly by implementing a `hash_` method like this:
+     ::hash_[require: of_ is hashable_](~builder):
+          builder hash_(value)
+          @if n > 1 {builder hash_(second_value)}
+          @if n > 2 {builder hash_(third_value)}
+          # TODO: maybe add something like `builder hash_(@?second_value)`
+          ...
 }
 ```
 
@@ -4336,9 +4348,9 @@ to refer to the current class instance/type.  E.g.,
 # classes can enclose their body in `{}`, which is recommended for long class definitions.
 # for short classes, it's ok to leave braces out.
 my_class_: [variable_x: int_]
-    ::o_(): m_   # OK
-        print_("logging a copy")
-        m_(m variable_x o_())
+     ::o_(): m_   # OK
+          print_("logging a copy")
+          m_(m variable_x o_())
 ```
 
 Inside the class body, you must use `m` to refer to any other instance variables or methods,
@@ -4354,9 +4366,9 @@ to be a part of the function body/definition:
 
 ```
 my_fn_(int:): [x: int_, y: dbl_]
-{   # this is part of the `my_fn_` definition,
-    # and never a part of the `[x: int_, y: dbl_]` class body.
-    [x: 5, y: 3.0]
+{    # this is part of the `my_fn_` definition,
+     # and never a part of the `[x: int_, y: dbl_]` class body.
+     [x: 5, y: 3.0]
 }
 ```
 
@@ -4365,11 +4377,11 @@ class first.
 
 ```
 x_and_y_: [x: int_, y: dbl_]
-{   ::my_method_(): x + round_(y) int
+{    ::my_method_(): x + round_(y) int
 }
 
 my_fn_(int): x_and_y_
-    [x: int + 5, y: 3.0]
+     [x: int + 5, y: 3.0]
 ```
 
 ## example class definition
@@ -4379,78 +4391,78 @@ parent_class_: [name: str_]
 
 # example class definition
 example_class_: all_of_
-[   parent_class_
-    m_:
-    [   # given the inheritance with `parent_class_`,
-        # child instance variables should be defined in this `m_: [...]` block.
-        # if they are public, a public constructor like `example_class_(x;:. int_)`
-        # will be created.
-        x; int_
+[    parent_class_
+     m_:
+     [    # given the inheritance with `parent_class_`,
+          # child instance variables should be defined in this `m_: [...]` block.
+          # if they are public, a public constructor like `example_class_(x;:. int_)`
+          # will be created.
+          x; int_
 
-        # instance functions can also be defined here.  they can be set 
-        # individually for each class instance, unlike a class function/method
-        # which is shared.
-        # we define a default for this function but you could change its definition in a constructor.
-        # NOTE: instance functions can use `m` as necessary.
-        #       even though we could use the notation `::instance_function_()` here,
-        #       we prefer to keep that for methods, to make it more clear that
-        #       this is different in principle.
-        instance_function_(m:): null_
-            print_("hello ${m x}!")
+          # instance functions can also be defined here.  they can be set 
+          # individually for each class instance, unlike a class function/method
+          # which is shared.
+          # we define a default for this function but you could change its definition in a constructor.
+          # NOTE: instance functions can use `m` as necessary.
+          #       even though we could use the notation `::instance_function_()` here,
+          #       we prefer to keep that for methods, to make it more clear that
+          #       this is different in principle.
+          instance_function_(m:): null_
+               print_("hello ${m x}!")
 
-        # this class instance function can be changed after the instance has been created
-        # (due to being declared with `;`), as long as the instance is mutable.
-        some_mutable_function_(); null_
-            print_("hello!")
-    ]
+          # this class instance function can be changed after the instance has been created
+          # (due to being declared with `;`), as long as the instance is mutable.
+          some_mutable_function_(); null_
+               print_("hello!")
+     ]
 ]
-{   # classes must be resettable to a blank state, or to whatever is specified
-    # as the starting value based on a `renew_` function.  this is true even
-    # if the class instance variables are defined as readonly.
-    # NOTE:  defining this method isn't necessary since we already would have had
-    # `example_class_(x: int_)` based on the public variable definition of `x`, but
-    # we include it as an example in case you want to do extra work in the constructor
-    # (although avoid doing work if possible).
-    ;;renew_(x. int_): null_
-        parent_class renew_(name: "Example")
-        m x = x!
-    # or short-hand: `;;renew_(m x. int_, parent_class name: "Example"): {}`
-    # adding `m` to the arg name will automatically set `m x` to the passed in `x`.
+{    # classes must be resettable to a blank state, or to whatever is specified
+     # as the starting value based on a `renew_` function.  this is true even
+     # if the class instance variables are defined as readonly.
+     # NOTE:  defining this method isn't necessary since we already would have had
+     # `example_class_(x: int_)` based on the public variable definition of `x`, but
+     # we include it as an example in case you want to do extra work in the constructor
+     # (although avoid doing work if possible).
+     ;;renew_(x. int_): null_
+          parent_class renew_(name: "Example")
+          m x = x!
+     # or short-hand: `;;renew_(m x. int_, parent_class name: "Example"): {}`
+     # adding `m` to the arg name will automatically set `m x` to the passed in `x`.
 
-    # create a different constructor.  constructors use the class reference `m` and must
-    # return either an `m_` or a `hm_[ok_: m_, er_]` for any error type `er_`.
-    # this constructor returns `m_`:
-    m_(k: int_): m_(x. k * 1000)
+     # create a different constructor.  constructors use the class reference `m` and must
+     # return either an `m_` or a `hm_[ok_: m_, er_]` for any error type `er_`.
+     # this constructor returns `m_`:
+     m_(k: int_): m_(x. k * 1000)
 
-    # some more examples of class methods:
-    # prefix `::` (`;;`) is shorthand for adding `m: m_` (`m; m_`) as an argument.
-    # this one does not change the underlying instance:
-    ::do_something_(int:): int_
-        print_("My name is ${m name}")   # `m name` will check child first, then parents.
-        # also ok, if we know it's definitely in `parent_class_`:
-        print_("My name is ${parent_class name}")
-        x + int     # equivalent to `m x + int`
+     # some more examples of class methods:
+     # prefix `::` (`;;`) is shorthand for adding `m: m_` (`m; m_`) as an argument.
+     # this one does not change the underlying instance:
+     ::do_something_(int:): int_
+          print_("My name is ${m name}")   # `m name` will check child first, then parents.
+          # also ok, if we know it's definitely in `parent_class_`:
+          print_("My name is ${parent_class name}")
+          x + int     # equivalent to `m x + int`
 
-    # this method mutates the class instance, so it uses `;;` instead of `::`:
-    ;;add_something_(int:): null_
-        x += int    # equivalent to `m x += int`
+     # this method mutates the class instance, so it uses `;;` instead of `::`:
+     ;;add_something_(int:): null_
+          x += int    # equivalent to `m x += int`
 
-    # COMPILE ERROR: reassignable methods are currently not supported;
-    # they may be in the future but would require hotswapping functions.
-    # in case someone is running an old function, we need to let them
-    # finish before reclaiming the memory of that function.
-    ::reassignable_method_(int:); str_
-        str_(x + int)
+     # COMPILE ERROR: reassignable methods are currently not supported;
+     # they may be in the future but would require hotswapping functions.
+     # in case someone is running an old function, we need to let them
+     # finish before reclaiming the memory of that function.
+     ::reassignable_method_(int:); str_
+          str_(x + int)
 
-    # some examples of class functions:
-    # this function does not require an instance and cannot use instance variables:
-    some_static_function_(y; int_): int_
-        y /= 2
-        y!
+     # some examples of class functions:
+     # this function does not require an instance and cannot use instance variables:
+     some_static_function_(y; int_): int_
+          y /= 2
+          y!
 
-    # this function also does not require an instance and cannot use instance variables:
-    some_static_function_(y: int_): null_
-        write_(y, file: "y.txt")
+     # this function also does not require an instance and cannot use instance variables:
+     some_static_function_(y: int_): null_
+          write_(y, file: "y.txt")
 }
 
 example; example_class_(x: 5)
@@ -4484,35 +4496,35 @@ a few methods, but don't use `:` since we're no longer declaring the class.
 ```
 # static function that constructs a type or errors out
 example_class_(z: dbl_): hm_[ok_: example_class_, er_: str_]
-    # TODO: can we use `map_{$er, ...}` instead of `map_({$er, ...})`???
-    x: z round_() int_() map_(er: "Need `round_(z)` representable as an `int`.") assert_()
-    example_class_(x)
+     # TODO: can we use `map_{$er, ...}` instead of `map_({$er, ...})`???
+     x: z round_() int_() map_(er: "Need `round_(z)` representable as an `int`.") assert_()
+     example_class_(x)
 
 # static function that is not a constructor.
 # this function does not require an instance, and cannot use instance variables,
 # but it can read (but not write) global variables (or other files):
 example_class_ some_static_function_(): int_
-    y_string: read_(file: "y.txt")
-    return int_(?y_string) ?? 7
+     y_string: read_(file: "y.txt")
+     return int_(?y_string) ?? 7
 
 # a method which can mutate the class instance:
 # this could also be defined as `example_class_ another_method_(m;, plus_k: int_): null_`.
 example_class_;;another_method_(plus_k: int_): null_
-    # outside of a class body, `m` is required to namespace any instance fields,
-    # because they are not obviously in scope here like in a class body.
-    m x += plus_k * 1000
+     # outside of a class body, `m` is required to namespace any instance fields,
+     # because they are not obviously in scope here like in a class body.
+     m x += plus_k * 1000
 
 # Use sequence building.
 example_class_@
-{   # with sequence building
-    # `example_class_ my_added_class_function_(k: int_): example_class_`
-    # is exactly how you'd define a class function.
-    my_added_class_function_(k: int_): example_class_
-        example_class_(x. k * 1000)
+{    # with sequence building
+     # `example_class_ my_added_class_function_(k: int_): example_class_`
+     # is exactly how you'd define a class function.
+     my_added_class_function_(k: int_): example_class_
+          example_class_(x. k * 1000)
 
-    # a method which keeps the instance readonly:
-    ::my_added_method_(y: int_): int_
-        m x * 1000 + y * 100
+     # a method which keeps the instance readonly:
+     ::my_added_method_(y: int_): int_
+          m x * 1000 + y * 100
 }
 ```
 
@@ -4540,21 +4552,21 @@ to define any of `m_` or `;;renew_` with the same arguments.
 
 ```
 destructor_class_: [x: int_]
-{   # TODO: the `@debug` annotation should do something interesting, like
-    #       stop the debugger when the value is `set`ted or `get`ted.
-    m_(DEBUG_x. int_): m_
-        print_("x ${DEBUG_x}")
-        [x. DEBUG_x]
-    # `m_(...): m_` will also add methods like this:
-    #   ;;renew_(DEBUG_x. int_): null_
-    #       # this will call `m descope_()` just before reassignment.
-    #       m = m_(.DEBUG_x)
+{    # TODO: the `@debug` annotation should do something interesting, like
+     #       stop the debugger when the value is `set`ted or `get`ted.
+     m_(DEBUG_x. int_): m_
+          print_("x ${DEBUG_x}")
+          [x. DEBUG_x]
+     # `m_(...): m_` will also add methods like this:
+     #   ;;renew_(DEBUG_x. int_): null_
+     #       # this will call `m descope_()` just before reassignment.
+     #       m = m_(.DEBUG_x)
 
-    # you can define the destructor:
-    ;;descope_(): null_
-        print_("going out of scope, had x ${x}")
-        # note that destructors of instance variables (e.g., `x`)
-        # will automatically be called, in reverse order of definition.
+     # you can define the destructor:
+     ;;descope_(): null_
+          print_("going out of scope, had x ${x}")
+          # note that destructors of instance variables (e.g., `x`)
+          # will automatically be called, in reverse order of definition.
 }
 ```
 
@@ -4717,34 +4729,34 @@ print_(w x) # prints "hello, world"
 
 # expands to this:
 example_:
-[   @invisible
-    x; str_("hello")
+[    @invisible
+     x; str_("hello")
 ]
-{   # no-copy readonly reference getter.
-    @visibility
-    ::x_(): (str:)
-        (str: m x)
+{    # no-copy readonly reference getter.
+     @visibility
+     ::x_(): (str:)
+          (str: m x)
 
-    # no-copy writable reference getter.
-    ;;x_(): (str;)
-        (str; m x)
+     # no-copy writable reference getter.
+     ;;x_(): (str;)
+          (str; m x)
 
-    # copy getter; has lower priority than no-copy getters.
-    ::x_(): str_
-        m x
+     # copy getter; has lower priority than no-copy getters.
+     ::x_(): str_
+          m x
 
-    # setter.
-    ;;x_(str.):
-        m x = str!
+     # setter.
+     ;;x_(str.):
+          m x = str!
 
-    # swapper: swaps the value of `x` with whatever is passed in.
-    @visibility
-    ;;x_(str;):
-        m x <-> str
+     # swapper: swaps the value of `x` with whatever is passed in.
+     @visibility
+     ;;x_(str;):
+          m x <-> str
 
-    # no-copy "take" method.  moves `x` from this temporary.
-    @visibility
-    ..x_(): m x!
+     # no-copy "take" method.  moves `x` from this temporary.
+     @visibility
+     ..x_(): m x!
 }
 w = example_()
 w x_() += ", world")
@@ -4762,98 +4774,98 @@ and modifier classes.
 ```
 # a class with a getter and setter gets reference getters automatically:
 just_copyable_: [@invisible a_var; int_]
-{   ::some_var_(): int_
-        m a_var - 1000
+{    ::some_var_(): int_
+          m a_var - 1000
 
-    ;;some_var_(int.): null_
-        m a_var = int + 1000
+     ;;some_var_(int.): null_
+          m a_var = int + 1000
 
-    #(#
-    # the following references become automatically defined;
-    # they are just thin wrappers around the getters/setters.
+     #(#
+     # the following references become automatically defined;
+     # they are just thin wrappers around the getters/setters.
 
-    # writable reference
-    ;;some_var_(): (int;)
-        refer_
-        (   ;m
-            {$o some_var_()}        # getter: `o` is an instance of `just_copyable_`
-            {$o some_var_(.$int)}   # setter
-        )
+     # writable reference
+     ;;some_var_(): (int;)
+          refer_
+          (    ;m
+               {$o some_var_()}        # getter: `o` is an instance of `just_copyable_`
+               {$o some_var_(.$int)}   # setter
+          )
 
-    # readonly reference
-    ::some_var_(): (int:)
-        refer_
-        (   :m
-            {some_var_(:$o)}
-        )
+     # readonly reference
+     ::some_var_(): (int:)
+          refer_
+          (    :m
+               {some_var_(:$o)}
+          )
 
-    # TODO: we can use reflection to do this, but probably not in a generic way
-    # if the getter is an opaque function.
-    # similarly a no-copy take method becomes defined based on the getter.
-    ..some_var_(): int
-        m a_var! - 1000
-    #)#
+     # TODO: we can use reflection to do this, but probably not in a generic way
+     # if the getter is an opaque function.
+     # similarly a no-copy take method becomes defined based on the getter.
+     ..some_var_(): int
+          m a_var! - 1000
+     #)#
 }
 
 # a class with a swapper method gets a setter and taker method automatically:
 just_swappable_: [@invisible some_var; int_]
-{   @visibility
-    ;;some_var_(int;): null_
-        m some_var <-> int
-        # you can do some checks/modifications on `some_var` here if you want,
-        # though it's best not to surprise developers.  a default-constructed
-        # value for `some_var` (e.g., in this case `int: 0`) should be allowed
-        # since we use it in the modifier to swap out the real value into a temp.
-        # if that's not allowed, you would want to define both the swapper
-        # and modifier methods yourself.
+{    @visibility
+     ;;some_var_(int;): null_
+          m some_var <-> int
+          # you can do some checks/modifications on `some_var` here if you want,
+          # though it's best not to surprise developers.  a default-constructed
+          # value for `some_var` (e.g., in this case `int: 0`) should be allowed
+          # since we use it in the modifier to swap out the real value into a temp.
+          # if that's not allowed, you would want to define both the swapper
+          # and modifier methods yourself.
 
-    #(#
-    # the following setter becomes automatically defined:
-    ;;some_var_(int.): null_
-        m some_var_(;int)
+     #(#
+     # the following setter becomes automatically defined:
+     ;;some_var_(int.): null_
+          m some_var_(;int)
 
-    # and the following take method becomes automatically defined:
-    ..some_var_(): int_
-        temporary; int_
-        # swap `some_var` into `temporary`:
-        m some_var_(;temporary)
-        temporary!
-    #)#
+     # and the following take method becomes automatically defined:
+     ..some_var_(): int_
+          temporary; int_
+          # swap `some_var` into `temporary`:
+          m some_var_(;temporary)
+          temporary!
+     #)#
 }
 
 # a class with a readonly reference getter method gets a copy getter automatically:
 just_gettable_: [@invisible some_var; int_]
-{   ::some_var_(): (int:)
-        (int: some_var)
+{    ::some_var_(): (int:)
+          (int: some_var)
 
-    #(#
-    # the following becomes automatically defined:
-    ::some_var_(): int_
-        (int:) = m some_var()
-        int
-    #)#
+     #(#
+     # the following becomes automatically defined:
+     ::some_var_(): int_
+          (int:) = m some_var()
+          int
+     #)#
 }
 
 # a class with a writable reference method gets a swapper and taker method automatically:
 just_referable_: [@invisible some_var; int_]
-{   ;;some_var_(): (int;)
-        (int; m some_var)
+{    ;;some_var_(): (int;)
+          (int; m some_var)
 
-    #(#
-    # the following swapper becomes automatically defined:
-    ;;some_var_(int;): null_
-        m some_var_() <-> int
+     #(#
+     # the following swapper becomes automatically defined:
+     ;;some_var_(int;): null_
+          m some_var_() <-> int
 
-    # the following setter becomes automatically defined:
-    ;;some_var_(int.): null_
-        some_var_() = int!
+     # the following setter becomes automatically defined:
+     ;;some_var_(int.): null_
+          some_var_() = int!
 
-    # and the following taker method becomes automatically defined:
-    ..some_var_(): int_
-        result; int_
-        result <-> some_var_()
-        result
-    #)#
+     # and the following taker method becomes automatically defined:
+     ..some_var_(): int_
+          result; int_
+          result <-> some_var_()
+          result
+     #)#
 }
 
 # A class with just a take method doesn't get swapper and modifier methods automatically;
@@ -4892,35 +4904,35 @@ Some examples:
 
 ```
 animal_: [name: string_]
-{   ;;renew_(m name. string_): {}
+{    ;;renew_(m name. string_): {}
 
-    # define two methods on `animal_`: `speak_` and `go_`.
-    # these are "abstract" methods, i.e., not implemented by this base class.
-    ::speak_(): null_
-    ::go_(): string_
+     # define two methods on `animal_`: `speak_` and `go_`.
+     # these are "abstract" methods, i.e., not implemented by this base class.
+     ::speak_(): null_
+     ::go_(): string_
 
-    # this method is defined, so it's implemented by the base class.
-    # derived classes can still override it, but this default will be defined for them.
-    ::escape_(): null
-        print_("${m name} ${m go_()} away!!")
+     # this method is defined, so it's implemented by the base class.
+     # derived classes can still override it, but this default will be defined for them.
+     ::escape_(): null
+          print_("${m name} ${m go_()} away!!")
 
-    # copy method that returns an instance of whatever the class instance
-    # type is known to be.  e.g., an animal returns an animal instance,
-    # while a subclass would return a subclass instance:
-    ::o_(): m_
-        m_(name o_())
+     # copy method that returns an instance of whatever the class instance
+     # type is known to be.  e.g., an animal returns an animal instance,
+     # while a subclass would return a subclass instance:
+     ::o_(): m_
+          m_(name o_())
 }
 
 snake_: animal_
-{   # if no `renew_` functions are defined,
-    # child classes will inherit their parent `renew_()` methods.
+{    # if no `renew_` functions are defined,
+     # child classes will inherit their parent `renew_()` methods.
 
-    ::speak_(): null_
-        print_("hisss!")
-    ::go_(): string_
-        "slithers"
+     ::speak_(): null_
+          print_("hisss!")
+     ::go_(): string_
+          "slithers"
 
-    # no need to override `o_`, since we can copy a snake just by name like the parent.
+     # no need to override `o_`, since we can copy a snake just by name like the parent.
 }
 
 snake: snake_(name. "Fred")
@@ -4931,27 +4943,27 @@ To define extra instance variables for a child class, you'll use this notation:
 
 ```
 cat_: all_of_[animal_, m_: [fur_balls: int_]]
-{   # here we define a `renew_` method, so the parent `renew_` methods
-    # become hidden to users of this child class:
-    ;;renew_(): null
-        # can refer to parent methods using the `variable_case`
-        # version of the `type_case_` class name:
-        animal renew_(Name: "Cat-don't-care-what-you-name-it")
-        m fur_balls = 0
+{    # here we define a `renew_` method, so the parent `renew_` methods
+     # become hidden to users of this child class:
+     ;;renew_(): null
+          # can refer to parent methods using the `variable_case`
+          # version of the `type_case_` class name:
+          animal renew_(Name: "Cat-don't-care-what-you-name-it")
+          m fur_balls = 0
 
-    ::speak_(): null_
-        print_("hisss!")
-    ::go_(): string_
-        "saunters"
+     ::speak_(): null_
+          print_("hisss!")
+     ::go_(): string_
+          "saunters"
 
-    ::escape_(): null_
-        print_("CAT ESCAPES DARINGLY!")
+     ::escape_(): null_
+          print_("CAT ESCAPES DARINGLY!")
 
-    # the parent `o_()` method won't work (`cat_` has instance fields)
-    # so we need to override:
-    ::o_(): m
-        # cats are essentially singletons, that cannot have their own name;
-        m_()
+     # the parent `o_()` method won't work (`cat_` has instance fields)
+     # so we need to override:
+     ::o_(): m
+          # cats are essentially singletons, that cannot have their own name;
+          m_()
 }
 
 cat: cat_()
@@ -4966,16 +4978,16 @@ you can make it simpler like this instead:
 
 ```
 horse_: all_of_[animal_, m_: [owner: str_]]
-{   # this passes `name` to the `animal_` constructor and sets `owner` on self:
-    ;;renew_(animal name: str_, m owner: str_, neigh_times: int_ = 0)
-        neigh_times each int_:
-            m speak_()
+{    # this passes `name` to the `animal_` constructor and sets `owner` on self:
+     ;;renew_(animal name: str_, m owner: str_, neigh_times: int_ = 0)
+          neigh_times each int_:
+               m speak_()
 
-    ::speak_(): null_
-        print_("neigh!")
+     ::speak_(): null_
+          print_("neigh!")
 
-    ::go_(): string_
-        "gallops"
+     ::go_(): string_
+          "gallops"
 }
 
 horse: horse_(name: "James", owner: "Fred", neigh_times: 1)
@@ -4992,16 +5004,16 @@ as a shortcut for `speak_(m:): null_`, which works as a lambda.
 
 ```
 weird_animal: animal_
-(   name: "Waberoo"
-    ::speak_(): null_
-        print_("Meorooo")
-    ::go_(): "meanders"
-    ::escape_(): null_
-        # to call the parent method `escape_()` in here, we can use this:
-        animal::escape_()
-        print_("${m name} ${m go_()} back...")
-        # or we can use this:
-        animal escape_(M)
+(    name: "Waberoo"
+     ::speak_(): null_
+          print_("Meorooo")
+     ::go_(): "meanders"
+     ::escape_(): null_
+          # to call the parent method `escape_()` in here, we can use this:
+          animal::escape_()
+          print_("${m name} ${m go_()} back...")
+          # or we can use this:
+          animal escape_(M)
 )
 
 weird_animal escape_()  # prints "Waberoo meanders away!!", "Waberoo meanders back...", "Waberoo meanders away!!"
@@ -5014,28 +5026,28 @@ To overload operators for a class, we use the following syntax.
 ```
 # this class checks for overflow/underflow and switches to a "null" (-128) if so.
 flow8_: [i8;]
-{   ;;renew_(m i8. -128): {}
+{    ;;renew_(m i8. -128): {}
 
-    # cloning works without errors:
-    ::o_(): m_
-        [m i8]
+     # cloning works without errors:
+     ::o_(): m_
+          [m i8]
 
-    ::!(): bool_    # overload `!m`
-        m i8 == 0 || m i8 == -128
+     ::!(): bool_    # overload `!m`
+          m i8 == 0 || m i8 == -128
 
-    ;;+=(o): null_
-        if m i8 == -128
-            return
-        if o i8 == -128
-            m i8 = -128
-            return
-        i16. m i8 + o i8
-        m i8 = i8_(i16) map_({$_er, -128})
+     ;;+=(o): null_
+          if m i8 == -128
+               return
+          if o i8 == -128
+               m i8 = -128
+               return
+          i16. m i8 + o i8
+          m i8 = i8_(i16) map_({$_er, -128})
 
-    ::+(o): flow8_
-        copy; m o_()
-        copy += o
-        copy
+     ::+(o): flow8_
+          copy; m o_()
+          copy += o
+          copy
 }
 ```
 
@@ -5104,11 +5116,11 @@ You can define methods on your class that work for a variety of types.
 
 ```
 some_example: [value: int_]
-{   ;;renew_(int.): null_
-        m value = int!
+{    ;;renew_(int.): null_
+          m value = int!
 
-    ::to_(): ~t_
-        t_(m value)
+     ::to_(): ~t_
+          t_(m value)
 }
 
 some_example: some_example_(5)
@@ -5130,8 +5142,8 @@ But note that if you have a generic function defined like this,
 we are already assuming some constraints:
 ```
 my_generic_[of_](y: of_, z: of_): of_
-    x: y * z
-    x
+     x: y * z
+     x
 ```
 If `of_` was nullable, then `x` would potentially be nullable, and should
 be defined via `x?: y * z`.  But because oh-lang does template specialization
@@ -5152,11 +5164,11 @@ like this: `my_single_generic_class_[int_] my_class_function_(...)` or
 
 ```
 generic_class_[id_, value_]: [id;, value;]
-{   # this gives a method to construct the instance and infer types.
-    # `g_` is like `m_` but without the template specialization, so
-    # `g_` is `generic_class_` in this class body.
-    g_(id. ~t_, value. ~u_): g_[id_: t_, value_: u_]
-        [id, value]
+{    # this gives a method to construct the instance and infer types.
+     # `g_` is like `m_` but without the template specialization, so
+     # `g_` is `generic_class_` in this class body.
+     g_(id. ~t_, value. ~u_): g_[id_: t_, value_: u_]
+          [id, value]
 }
 
 # creating an instance using type inference.
@@ -5189,22 +5201,22 @@ can we use `~` instead with a space afterwards?
 
 ```
 mutable_types_[x_, y_, z_]:
-[   # these fields are always readonly:
-    r_x: x_
-    r_y: y_
-    r_z: z_
-    # these fields are always writeable:
-    w_x; x_
-    w_y; y_
-    w_z; z_
-    # these fields are readonly/writeable based on what is passed in
-    # to `mutable_types_` for each of `x_`, `y_`, and `z_`, respectively.
-    v_x` x_
-    v_y` y_
-    v_z` z_
+[    # these fields are always readonly:
+     r_x: x_
+     r_y: y_
+     r_z: z_
+     # these fields are always writeable:
+     w_x; x_
+     w_y; y_
+     w_z; z_
+     # these fields are readonly/writeable based on what is passed in
+     # to `mutable_types_` for each of `x_`, `y_`, and `z_`, respectively.
+     v_x` x_
+     v_y` y_
+     v_z` z_
 ]
-{   # you can also use these in method/function definitions:
-    ::some_method_(whatever_x` x_, whatever_y` y_): null
+{    # you can also use these in method/function definitions:
+     ::some_method_(whatever_x` x_, whatever_y` y_): null
 }
 
 # the following specification will make `v_x` and `v_z` writeable
@@ -5227,8 +5239,8 @@ You can also have virtual generic methods on generic classes, which is not allow
 
 ```
 generic_[of_]: [value; of_]
-{   ::method_(~u): u_
-        u + u_(u * m value) ?? panic_()
+{    ::method_(~u): u_
+          u + u_(u * m value) ?? panic_()
 }
 
 generic; generic_[str_]
@@ -5236,11 +5248,11 @@ generic value = "3"
 print_(generic method_(2_i32))  # prints "35" via `2_i32 + i32_(2_i32 * "3")`
 
 specific_[of_: number_]: all_of_[generic_[of_], m_: [scale; of_]]
-{   ;;renew_(m scale. of_ = 1, generic value.): {}
+{    ;;renew_(m scale. of_ = 1, generic value.): {}
 
-    ::method_(~u): u_
-        parent_result: generic method_(U)
-        scale * parent_result
+     ::method_(~u): u_
+          parent_result: generic method_(U)
+          scale * parent_result
 }
 
 specific(value. 10_i8, scale. 2_i8)
@@ -5299,12 +5311,12 @@ pair_of_arrays: pair_[array_[int_]]([first. [1, 2], second. [3, 4]])
 # examples using `pair_[first_, second_]`: ======
 # an array of pairs:
 pair_array: array_[pair_[first_: int_, second_: dbl_]]
-(   [first. 1, second. 2.3]
-    [first. 100, second. 0.5]
+(    [first. 1, second. 2.3]
+     [first. 100, second. 0.5]
 )
 # a lot of pairs:
 pair_lot: lot_[at_: str_, pair_[first_: int_, second_: dbl_]]
-(   "hi there". [first. 1, second. 2.3]
+(    "hi there". [first. 1, second. 2.3]
 )
 ```
 
@@ -5360,8 +5372,8 @@ some_class_[of_, n: count_]: some_class_[x_: of_, y_: of_, n]
 
 # this is also OK:
 child_class_[of_]: some_class_[x_: of_, y_: of_, n: 256]
-{   # additional child methods
-    ...
+{    # additional child methods
+     ...
 }
 some_class_[of_]: child_class_[of_]
 
@@ -5404,10 +5416,10 @@ Here is an example of returning a tuple type.
 
 ```
 tuple_[dbl]: [precision_, vector2: any_]
-    if abs_(dbl) < 128.0
-        [precision_: flt_, vector2_: [x: flt_, y: flt_]]
-    else
-        [precision_: dbl_, vector2_: [x: dbl_, y: dbl_]]
+     if abs_(dbl) < 128.0
+          [precision_: flt_, vector2_: [x: flt_, y: flt_]]
+     else
+          [precision_: dbl_, vector2_: [x: dbl_, y: dbl_]]
 
 my_tuples_: tuple_[random_() dbl * 256.0]
 my_number; my_tuples_ precision_(5.0)
@@ -5446,31 +5458,31 @@ All classes have a few compiler-provided methods which have special constraints;
 some cannot be overridden, and some must have certain function signatures.
 
 * `(m;)!: m_` creates a temporary with the current instance's values, while
-    resetting the current instance to a default instance -- i.e., calling `;;renew_()`.
-    Internally, this swaps pointers, but not actual data, so this method
-    should be faster than copy for dynamically-allocated types.  This method
-    cannot be overridden.  Similarly for `(m.)!: m_`, although this may
-    elide the `renew_` call on the temporary.
+     resetting the current instance to a default instance -- i.e., calling `;;renew_()`.
+     Internally, this swaps pointers, but not actual data, so this method
+     should be faster than copy for dynamically-allocated types.  This method
+     cannot be overridden.  Similarly for `(m.)!: m_`, although this may
+     elide the `renew_` call on the temporary.
 * `..map_(an_(m.): ~t_): t_` to easily convert types or otherwise transform
-    the data held in `m`.  This method consumes `m`.  You can also overload
-    `map_` to define other useful transformations on your class, but not override.
+     the data held in `m`.  This method consumes `m`.  You can also overload
+     `map_` to define other useful transformations on your class, but not override.
 * `::map_(an_(m:): ~t_): t_` is similar to `..map_(an_(m.): ~t_): t_`,
-    but this method keeps `m` constant (readonly).  You can overload but not override.
+     but this method keeps `m` constant (readonly).  You can overload but not override.
 * you can define one of `m_(...): m_` (class constructors) or `;;renew_(...): null` 
-    (renew methods), and the other will be automatically defined with the same arguments.
-    `;;renew_` can be called on any writable variable even if some fields are constant.
+     (renew methods), and the other will be automatically defined with the same arguments.
+     `;;renew_` can be called on any writable variable even if some fields are constant.
 * you can define one of `m_(...): hm_[ok_: m_, er_]` (class-or-error constructors)
-    or `;;renew_(...): hm_[ok_: m_, er_]` (renew-or-error methods), and the other will be
-    automatically defined with the same arguments.
+     or `;;renew_(...): hm_[ok_: m_, er_]` (renew-or-error methods), and the other will be
+     automatically defined with the same arguments.
 * besides `m_(...): m_` and `m_(...): hm_[ok_: m_, er_]`, you are not allowed to define
-    any other methods named `m_` that return anything else.  Defining both is ok,
-    and defining overloads for different input arguments is ok.
+     any other methods named `m_` that return anything else.  Defining both is ok,
+     and defining overloads for different input arguments is ok.
 * you can define `::o_(): m_` (copy constructor) or `::o_(): hm_[ok_: m_, er_]`
-    (copy-or-error constructor), or both.
+     (copy-or-error constructor), or both.
 * besides `::o_(): m_` and `::o_(): hm_[ok_: m_, er_]`, you are not allowed to define
-    any other methods named `o_`.  Defining both is ok; whichever one comes first
-    is the default copy method, so we recommend the copy-or-error constructor coming
-    first.
+     any other methods named `o_`.  Defining both is ok; whichever one comes first
+     is the default copy method, so we recommend the copy-or-error constructor coming
+     first.
 
 ## singletons
 
@@ -5479,12 +5491,12 @@ by using `variable_case` when defining it.
 
 ```
 awesome_service: all_of_
-[   parent_class1_, parent_class2_, #(etc.)#,
-    m_: [url_base: "http://my/website/address.bazinga"]
+[    parent_class1_, parent_class2_, #(etc.)#,
+     m_: [url_base: "http://my/website/address.bazinga"]
 ]
-{   ::get_(id: string_): awesome_data_
-        json: http get_("${m url_base}/awesome/${id}")
-        awesome_data_(json)
+{    ::get_(id: string_): awesome_data_
+          json: http get_("${m url_base}/awesome/${id}")
+          awesome_data_(json)
 }
 ```
 
@@ -5497,17 +5509,17 @@ thrown if multiple children implement the parent and instantiate.
 ### screen.oh ###
 @singleton
 screen_: []
-{   ;;draw_(image;, vector2.): null_
-    ;;clear_(color. color_ black)
+{    ;;draw_(image;, vector2.): null_
+     ;;clear_(color. color_ black)
 }
 ### implementation/sdl-screen.oh ###
 sdl_screen_: \/../screen screen_
-{   ;;draw_(image;, vector2.): null_
-        # actual implementation code:
-        m sdl_surface draw_(image, vector2)
+{    ;;draw_(image;, vector2.): null_
+          # actual implementation code:
+          m sdl_surface draw_(image, vector2)
 
-    ;;clear_(color. color_ black)
-        m sdl_surface clear_(color)
+     ;;clear_(color. color_ black)
+          m sdl_surface clear_(color)
 }
 ### some-other-file.oh ###
 # this is an error if we haven't imported the sdl-screen file somewhere:
@@ -5544,17 +5556,17 @@ a bunch of mutations like this:
 ```
 # class definition:
 my_builder_: [...]
-{   ;;set_(string., int.): null_    # no need to return `(m;)`
+{    ;;set_(string., int.): null_    # no need to return `(m;)`
 }
 
 # Note, inside the `{}` we allow mutating methods because `my_builder_()` is a temporary.
 # The resulting variable will be readonly after this definition + mutation chain,
 # due to `my_builder` being defined with `:`.
 my_builder: my_builder_()@
-{   set_("abc", 123)
-    set_("lmn", 456)
-    set_("xyz", 789)
-    # etc.
+{    set_("abc", 123)
+     set_("lmn", 456)
+     set_("xyz", 789)
+     # etc.
 }
 
 # You can also do inline, but you should use commas here.
@@ -5584,24 +5596,24 @@ Some examples of the LHS being a reference follow:
 ```
 readonly_array: [0, 100, 20, 30000, 4000]
 results: readonly_array@
-[   [2]            # returns 20
-    ::sort_()      # returns a sorted copy of the array; `::` is unnecessary
-    ::print_()     # prints unsorted array; `::` is unnecessary
-    # this will throw a compile-error, but we'll discuss results
-    # as if this wasn't here.
-    ++@;;[3]       # compile error, `readonly_array` is readonly
+[    [2]            # returns 20
+     ::sort_()      # returns a sorted copy of the array; `::` is unnecessary
+     ::print_()     # prints unsorted array; `::` is unnecessary
+     # this will throw a compile-error, but we'll discuss results
+     # as if this wasn't here.
+     ++@;;[3]       # compile error, `readonly_array` is readonly
 ]
 # should print [0, 100, 20, 30000, 4000] without the last statement
 # results == [int: 20, sort: [0, 20, 100, 4000, 30000]]
 
 writeable_array; [-1, 100, 20, 30000, 4000]
 result: writeable_array@
-[   [2]             # returns 20
-    sort_()         # in-place sort, i.e., `;;sort_()`
-    ++@;;[3]        # OK, a bit verbose since `;;` is unnecessary
-    # prints the array after all the above modifications:
-    ::print_()      # OK, we probably don't have a `;;print_()` but you never know
-    min_()
+[    [2]             # returns 20
+     sort_()         # in-place sort, i.e., `;;sort_()`
+     ++@;;[3]        # OK, a bit verbose since `;;` is unnecessary
+     # prints the array after all the above modifications:
+     ::print_()      # OK, we probably don't have a `;;print_()` but you never know
+     min_()
 ]
 # should print [-1, 20, 100, 4001, 30000]
 # note that `sort_()` returns null and is collapses.
@@ -5618,27 +5630,27 @@ the sequence builder.
 ```
 my_class: [...]
 results: my_class@
-[   field1: @ my_method_()
-    field2: @ next_method_()
+[    field1: @ my_method_()
+     field2: @ next_method_()
 ]
 # The above is equivalent to the following:
 results:
-[   field1: my_class my_method_()
-    field2: my_class next_method_()
+[    field1: my_class my_method_()
+     field2: my_class next_method_()
 ]
 
 # This is a compile error because the LHS of the sequence builder `my_class get_value_()`
 # is a temporary, so the fields are not used in the return value.
 # this also would be a compile error for `()` sequence builders.
 results: my_class get_value_()@
-[   field1: @ do_something_()
-    field2: @ do_something_else_()
+[    field1: @ do_something_()
+     field2: @ do_something_else_()
 ]   # COMPILE ERROR: `field1` is an unused variable
 
 # this would be ok:
 results: my_class get_value_()@
-{   field1: @ do_something_()
-    print_(@ do_something_else_() * field1)
+{    field1: @ do_something_()
+     print_(@ do_something_else_() * field1)
 }
 ```
 
@@ -5650,9 +5662,9 @@ inside nested sequence builders.  We don't expect this to be a common practice.
 ```
 # Example method sequence builder:
 my_class@
-[   my_method_()@ [next_method_(), next_method2_(), nested_field]
-    other_method_()
-    some_field
+[    my_method_()@ [next_method_(), next_method2_(), nested_field]
+     other_method_()
+     some_field
 ]
 
 # Is equivalent to this sequence:
@@ -5676,12 +5688,12 @@ Aliases can be used for simple naming conventions, e.g.:
 
 ```
 options_: one_of
-[   align_inherit_x: 0
-    align_center_x
-    align_left
-    align_right
+[    align_inherit_x: 0
+     align_center_x
+     align_left
+     align_right
 ]
-{   @alias inherit_align_x: align_inherit_x
+{    @alias inherit_align_x: align_inherit_x
 }
 
 Options: options inherit_align_x    # converts to `options align_inherit_x` on next format.
@@ -5691,16 +5703,16 @@ Aliases can also be used for more complicated logic and even deprecating code.
 
 ```
 my_class_: [x; int_]
-{   # implicit constructor:
-    ;;renew_(m x. int_): {}
+{    # implicit constructor:
+     ;;renew_(m x. int_): {}
 
-    # This was here before...
-    # ;;my_deprecated_method_(delta_x: int_): null_
-    #     m x += delta_x
+     # This was here before...
+     # ;;my_deprecated_method_(delta_x: int_): null_
+     #     m x += delta_x
 
-    # But we're preferring direct access now:
-    @alias ;;my_deprecated_method_(delta_x: int_): null_
-        m x += delta_x
+     # But we're preferring direct access now:
+     @alias ;;my_deprecated_method_(delta_x: int_): null_
+          m x += delta_x
 }
 
 my_class; my_class_(x: 4)
@@ -5735,10 +5747,10 @@ to invoke logic from these external files.
 ```
 # vector2.oh
 vector2_: [x: dbl_, y: dbl_]
-{   ;;renew_(m x. dbl_, m y. dbl_): {}
+{    ;;renew_(m x. dbl_, m y. dbl_): {}
 
-    ::dot_(o): dbl_
-        m x * o x + m y * o y
+     ::dot_(o): dbl_
+          m x * o x + m y * o y
 }
 
 # main.oh
@@ -5842,32 +5854,32 @@ we are declaring a test.
 ```
 @private
 private_function_(x: int_, y: int_): [z: str_]
-    z: "${x}:${y}"
+     z: "${x}:${y}"
 
 @protected
 protected_function_(x: int_, y: int_): [z: str_]
-    [z;] = private_function_(x, y)
-    z += "!"
-    [z]
+     [z;] = private_function_(x, y)
+     z += "!"
+     [z]
 
 public_function_(x1: int_, y1: int_, x2: int_, y2: int_): null_
-    print_(protected_function_(x: x1, y: y1) z, private_function_(x: x2, y: y2))
+     print_(protected_function_(x: x1, y: y1) z, private_function_(x: x2, y: y2))
 
 @test "foundation works fine":
-    test_(private_function_(x: 5, y: 3)) == [z: "5:3"]
-    test_(private_function_(x: -2, y: -7)) == [z: "-2:-7"]
+     test_(private_function_(x: 5, y: 3)) == [z: "5:3"]
+     test_(private_function_(x: -2, y: -7)) == [z: "-2:-7"]
 
 @test "building blocks work fine":
-    test_(protected_function_(x: 5, y: -3)) == [z: "5:-3!"]
-    test_(protected_function_(x: -2, y: 7)) == [z: "-2:7!"]
+     test_(protected_function_(x: 5, y: -3)) == [z: "5:-3!"]
+     test_(protected_function_(x: -2, y: 7)) == [z: "-2:7!"]
 
 @test "public function works correctly":
-    public_function_(x1: -5, y1: 3, x2: 2, y2: 7)
-    test_(context printed_()) == ["-5:3!2:7"]
+     public_function_(x1: -5, y1: 3, x2: 2, y2: 7)
+     test_(context printed_()) == ["-5:3!2:7"]
 
-    @test "nested tests also work":
-        public_function_(x1: 2, y1: -7, x2: -5, y2: -3)
-        test_(context printed_()) == ["2:-7!-5:-3"]
+     @test "nested tests also work":
+          public_function_(x1: 2, y1: -7, x2: -5, y2: -3)
+          test_(context printed_()) == ["2:-7!-5:-3"]
 ```
 
 See [the test definition](https://github.com/oh-lang/oh/blob/main/core/test.oh) for
@@ -5894,19 +5906,19 @@ test_case_: [argument: str_, result: int_]
 
 @test_only
 test_cases: lot_[at_: str_, test_case_]
-[   "hello": [argument: "hello world", result: 11]
-    "wow": [argument: "wowee", result: 5]
+[    "hello": [argument: "hello world", result: 11]
+     "wow": [argument: "wowee", result: 5]
 ]
 
 @test "do_something":
-    # this common setup executes before each parametric test;
-    # each nested test starts with the common setup from fresh
-    # and doesn't continue to use the environment for the next nested test.
-    get_environment_set_up_()
+     # this common setup executes before each parametric test;
+     # each nested test starts with the common setup from fresh
+     # and doesn't continue to use the environment for the next nested test.
+     get_environment_set_up_()
 
-    test_cases @each (name: at_, test_case:)
-        @test "testing ${name}":
-            test_(do_something_(test_case argument)) == test_case result
+     test_cases @each (name: at_, test_case:)
+          @test "testing ${name}":
+               test_(do_something_(test_case argument)) == test_case result
 ```
 
 Integration tests can be written in files that end with `.test.oh` or `.test.ohs` (i.e., as a script).
@@ -5957,7 +5969,7 @@ for methods built on top of the `one_of_[ok_, er_]` type.
 ```
 result: if x { ok_(3) } else { er_("oh no") }
 if result is_ok_()
-    print_("ok")
+     print_("ok")
 
 # but it'd be nice to transform `result` into the `ok` (or `er`) value along the way.
 result is_(an_(ok): print_("ok: ${ok}"))
@@ -5973,19 +5985,19 @@ we declare an `ok` variable here so we need to use a colon (e.g., `ok:`).
 
 ```
 if result is ok:
-    print_("ok: ", ok)
+     print_("ok: ", ok)
 elif result is er:
-    print_("er: ", er)
+     print_("er: ", er)
 ```
 
 Or use `what` if you want to ensure via the compiler that you get all cases:
 
 ```
 what result
-    ok:
-        print_("ok: ", ok)
-    er:
-        print_("er: ", er)
+     ok:
+          print_("ok: ", ok)
+     er:
+          print_("er: ", er)
 ```
 
 If you want to be more strict in matching after defining a variable,
@@ -6000,8 +6012,8 @@ as well for debugging purposes for debug-compiled code.  For more technical deta
 
 ```
 assert_(some_variable) == expected_value    # "throws" if `some_variable != expected_value`,
-                                            # printing to stderr the values of both `some_variable`
-                                            # and `expected_value` if so.
+                                                       # printing to stderr the values of both `some_variable`
+                                                       # and `expected_value` if so.
 
 # both of the next statements throw if `some_class method_(100)` is not truthy,
 # but the first also logs `some_class`, the text `some_class method_(100)`, and its value.
@@ -6009,8 +6021,8 @@ assert_(some_class) method_(100)
 assert_(some_class method_(100))
 
 assert_(some_class) other_method_("hi") > 10    # throws if `some_class other_method_("hi") <= 10`,
-                                                # printing value of `some_class` as well as
-                                                # `some_class other_method_("hi")`.
+                                                            # printing value of `some_class` as well as
+                                                            # `some_class other_method_("hi")`.
 ```
 
 Note that `assert_` logic is always run, even in non-debug code.  To only check statements in the
@@ -6118,10 +6130,10 @@ and define it on the heap in case of runtime values for count.
 # note you can use an input argument to define the return type's
 # fixed-array count, which is something like a generic:
 count_up_(count_arch.): vector_[int_, count_arch]
-    result; return_
-    count_arch each index: count_arch_
-        result[index] = index
-    result
+     result; return_
+     count_arch each index: count_arch_
+          result[index] = index
+     result
 
 print_(count_up_(10))    # prints [0,1,2,3,4,5,6,7,8,9]
 ```
@@ -6159,19 +6171,19 @@ jim2: "Jim D"
 jim: 456
 # lot linking string to ints:
 employee_ids_: lot_[at_: int_, str_]
-(   # option 1.A: `x: y` syntax
-    "Jane": 123
-    # option 1.B: `[at: x, of: y]` syntax
-    [at: "Jane", of: 123]
-    # option 1.C: `[x, y]` syntax
-    ["jane", 123]
-    # if you have some variables to define your `at`, you need to take care.
-    # option 2.A, wrap in braces to indicate it's a variable not an ID
-    {jim1}: 203
-    # option 2.B
-    [at: jim1, of: 203]
-    # option 2.C
-    [jim1, 203]
+(    # option 1.A: `x: y` syntax
+     "Jane": 123
+     # option 1.B: `[at: x, of: y]` syntax
+     [at: "Jane", of: 123]
+     # option 1.C: `[x, y]` syntax
+     ["jane", 123]
+     # if you have some variables to define your `at`, you need to take care.
+     # option 2.A, wrap in braces to indicate it's a variable not an ID
+     {jim1}: 203
+     # option 2.B
+     [at: jim1, of: 203]
+     # option 2.C
+     [jim1, 203]
 )
 # note that commas are optional if elements are separated by newlines,
 # but required if elements are placed on the same line.
@@ -6220,7 +6232,7 @@ TODO: make it easy to pass in a set as an argument and return a lot with e.g. th
 
 ```
 fn_(pick_from: ~o_, ats: ~k_ from ats_(o_)): pick_(o_, k_)
-    pick_(pick_from, ats)
+     pick_(pick_from, ats)
 ```
 
 TODO: discuss how `in` sounds like just one key from the set of IDs (e.g., `k_ in ats_(o_)`)
@@ -6233,30 +6245,30 @@ For example, here is a way to create an iterator over some incrementing values:
 
 ```
 my_range_[of_: number_]: all_of_
-[   @private m_:
-    [   next_value; of_ = 0
-        less_than: of_
-    ]
-    iterator_[of_]
+[    @private m_:
+     [    next_value; of_ = 0
+          less_than: of_
+     ]
+     iterator_[of_]
 ]
-{   ;;renew_(start_at. of_ = 0, m less_than. of_ = 0): null_
-        m next_value = start_at
+{    ;;renew_(start_at. of_ = 0, m less_than. of_ = 0): null_
+          m next_value = start_at
 
-    ;;next_()?: of_
-        if m next_value < m less_than
-            m next_value++
-        else
-            null
+     ;;next_()?: of_
+          if m next_value < m less_than
+               m next_value++
+          else
+               null
 
-    ::peak_()?: of_
-        if m next_value < m less_than
-            m next_value 
-        else
-            null
+     ::peak_()?: of_
+          if m next_value < m less_than
+               m next_value 
+          else
+               null
 }
 
 my_range_(less_than: index_(10)) each index:
-    print_(index)
+     print_(index)
 # prints "0" to "9"
 ```
 
@@ -6286,8 +6298,8 @@ The way we achieve that is through using an array iterator:
 # `@only` annotations (e.g., if `iterator` was not allowed to change) and
 # throw a compile error.
 next_[t_](iterator[t_]; @becomes array_iterator_[t_], array[~t_]:)?: t_
-    iterator = array_iterator_[t_]()
-    iterator;;next_(array)
+     iterator = array_iterator_[t_]()
+     iterator;;next_(array)
 ```
 
 Where [the array iterator is defined here](https://github.com/oh-lang/oh/blob/main/core/array/iterator.oh).
@@ -6300,13 +6312,13 @@ TODO: is this true, can we really infer?
 
 ```
 array_[of_]: []
-{   # TODO: technically this should be a `block`, right?
-    # look at `if_block` example below.
-    ;:each_(fn_(of;:): loop_): bool_
-        m count_() each index:
-            if fn_(m[index];:) is_break_()
+{    # TODO: technically this should be a `block`, right?
+     # look at `if_block` example below.
+     ;:each_(fn_(of;:): loop_): bool_
+          m count_() each index:
+               if fn_(m[index];:) is_break_()
                 return true
-        return false
+          return false
 }
 ```
 
@@ -6343,34 +6355,32 @@ you can do `if whatever -> then[my_if_block_type_]:`.
 
 ```
 if some_condition -> then:
-    # do stuff
-    if some_other_condition -> SOME_NAMESPACE_then:
-        if something_else1
-            then exit_()
-        if something_else2
-            SOME_NAMESPACE_then exit_()
-    # do other stuff
+     # do stuff
+     if some_other_condition -> SOME_NAMESPACE_then:
+          if something_else1
+               then exit_()
+          if something_else2
+               SOME_NAMESPACE_then exit_()
+     # do other stuff
 
 result: what some_value -> then[str_]:
-    5
-        ...
-        if other_condition
-            then exit_("Early return for `what`")
-        ...
-    ...
+     5
+          ...
+          if other_condition
+               then exit_("Early return for `what`")
+          ...
+     ...
 
 # if you are running out of space, try using parentheses.
 if
 (       some long condition
-    &&  some other_fact
-    &&  need_this too_()
+     &&  some other_fact
+     &&  need_this too_()
 ) -> then:
-    print_("good")
-    ...
+     print_("good")
+     ...
 
 # of you can just use double indents:
-# TODO: i think 5-space tabs look fine, and they help with 3-character operators
-# like `||=` or `and` being distinguishable for a tab-after from just a single after-space.
 if some long condition
      &&   some other_fact
      &&   need_this too_()
@@ -6624,11 +6634,11 @@ speed1: speed_ = what update -> then[speed_]:
           print_("going slow, checking up/down")
           then exit_
           (    if velocity y abs_() < 0.2
-                    going_sideways
+                         going_sideways
                elif velocity y > 0.0
-                    going_up
+                         going_up
                else
-                    going_down
+                         going_down
           )
      else
           then exit_(none)
@@ -6690,20 +6700,20 @@ is typically used in a `what` statement like this:
 
 ```
 cows_: one_of_
-[   one:
-    two:
-    many: i32_
+[    one:
+     two:
+     many: i32_
 ]
 cows: some_function_returning_cows_()
 what cows
-    one
-        print_("got one cow")
-    two
-        print_("got two cows")
-    many: where many <= 5       # optionally `many: i32_ where many <= 5`
-        print_("got a handful of cows")
-    many:                       # optionally `many: i32`
-        print_("got ${many} cows")
+     one
+          print_("got one cow")
+     two
+          print_("got two cows")
+     many: where many <= 5       # optionally `many: i32_ where many <= 5`
+          print_("got a handful of cows")
+     many:                       # optionally `many: i32`
+          print_("got ${many} cows")
 ```
 
 It can also be used in a conditional alongside the `is` operator.
@@ -6712,11 +6722,11 @@ Using the same `cows` definition from above for an example:
 ```
 cows: some_function_returning_cows_()
 if cows is many: where many > 5
-    # executes if `cows` is `cows_ many` and `many` is 6 or more.
-    print_("got ${many} cows")
+     # executes if `cows` is `cows_ many` and `many` is 6 or more.
+     print_("got ${many} cows")
 else
-    # executes if `cows` is something else.
-    print_("not a lot of cows")
+     # executes if `cows` is something else.
+     print_("not a lot of cows")
 ```
 
 `where` is similar to the [`require`](#require) field, but
@@ -6739,24 +6749,24 @@ here.
 
 ```
 my_vec2: [X; dbl, Y; dbl]
-{   ::what
-    (   do(QuadrantI. dbl): ~a
-        do(QuadrantII. dbl): ~b
-        do(QuadrantIII. dbl): ~c
-        do(QuadrantIV. dbl): ~d
-        else(): ~e
-    ): flatten[a, b, c, d, e]
-        if X == 0.0 or Y == 0.0
-            else()
-        elif X > 0.0
-            if Y > 0.0
+{    ::what
+     (    do(QuadrantI. dbl): ~a
+          do(QuadrantII. dbl): ~b
+          do(QuadrantIII. dbl): ~c
+          do(QuadrantIV. dbl): ~d
+          else(): ~e
+     ): flatten[a, b, c, d, e]
+          if X == 0.0 or Y == 0.0
+               else()
+          elif X > 0.0
+               if Y > 0.0
                 do(QuadrantI. +X + Y)
-            else
+               else
                 do(QuadrantIV. +X - Y)
-        else
-            if Y > 0.0
+          else
+               if Y > 0.0
                 do(QuadrantII. -X + Y)
-            else
+               else
                 do(QuadrantIII. -X - Y)
 }
 ```
@@ -6767,22 +6777,22 @@ my_vec2: [X; dbl, Y; dbl]
 ```
 # The implementation can be pretty simple.
 switch (Update.hm_Is)
-{   case update::status::hm_Is:
-        DEFINE_CAST(update::status *, Status, &Update.hm_Value);
-        if (*Status == status::Unknown)
-        {   // print("unknown update")
-            ...
-        }
-        else
-        {   // print("known status: ${Status}")
-            ...
-        }
-        break;
-    case update::position::hm_Is:
-        DEFINE_CAST(update::position *, Position, &Update.hm_Value);
-        // print("got position update: ${Position}")
-        break;
-    ...
+{    case update::status::hm_Is:
+          DEFINE_CAST(update::status *, Status, &Update.hm_Value);
+          if (*Status == status::Unknown)
+          {    // print("unknown update")
+               ...
+          }
+          else
+          {    // print("known status: ${Status}")
+               ...
+          }
+          break;
+     case update::position::hm_Is:
+          DEFINE_CAST(update::position *, Position, &Update.hm_Value);
+          // print("got position update: ${Position}")
+          break;
+     ...
 }
 ```
 
@@ -6795,19 +6805,19 @@ code:
 
 ```
 switch (fast_hash(Considered_string, Compile_time_salt))
-{   case fast_hash(String_case1, Compile_time_salt): // precomputed with a stable hash
-    {   if (Considered_string != String_case1)
-        {   goto __Default__;
-        }
-        // logic for String_case1...
-        break;
-    }
-    // and similarly for other string cases...
-    default:
-    {   // Locating here so that we can also get no-matches from hash collisions:
-        __Default__:
-        // logic for no match
-    }
+{    case fast_hash(String_case1, Compile_time_salt): // precomputed with a stable hash
+     {    if (Considered_string != String_case1)
+          {    goto __Default__;
+          }
+          // logic for String_case1...
+          break;
+     }
+     // and similarly for other string cases...
+     default:
+     {    // Locating here so that we can also get no-matches from hash collisions:
+          __Default__:
+          // logic for no match
+     }
 }
 ```
 
@@ -6825,14 +6835,14 @@ were added to the `what` statement.
 
 ```
 X: what String    #salt(1234)
-    "hello"
-        print("hello to you, too!")
-        5
-    "world"
-        print("it's a big place")
-        7
-    else
-        100
+     "hello"
+          print("hello to you, too!")
+          5
+     "world"
+          print("it's a big place")
+          7
+     else
+          100
 ```
 
 Similarly, any class that supports a compile-time fast hash with a salt can be
@@ -6845,18 +6855,18 @@ and other containers of precise types, as well as recursive containers thereof.
 # note it's not strictly necessary to mention you implement `hashable`
 # if you have the correct `hash` method signature.
 my_hashable_class: all_of[hashable, m: [Id: u64, Name; string]]
-{   # we allow a generic hash builder so we can do cryptographically secure hashes
-    # or fast hashes in one definition, depending on what is required.
-    # This should automatically be defined for classes with precise fields (e.g., int, u32, string, etc.)!
-    ::hash(~Builder;):
-        Builder hash(Id)    # you can use `hash` via the builder or...
-        Name hash(Builder;) # you can use `hash` via the field.
+{    # we allow a generic hash builder so we can do cryptographically secure hashes
+     # or fast hashes in one definition, depending on what is required.
+     # This should automatically be defined for classes with precise fields (e.g., int, u32, string, etc.)!
+     ::hash(~Builder;):
+          Builder hash(Id)    # you can use `hash` via the builder or...
+          Name hash(Builder;) # you can use `hash` via the field.
 
-    # equivalent definition via sequence building:
-    ::hash(~Builder;): Builder@
-    {   hash(Id)
-        hash(Name)
-    }
+     # equivalent definition via sequence building:
+     ::hash(~Builder;): Builder@
+     {    hash(Id)
+          hash(Name)
+     }
 }
 
 # note that defining `::hash(~Builder;)` automatically defines a `fast_hash` like this:
@@ -6868,12 +6878,12 @@ my_hashable_class: all_of[hashable, m: [Id: u64, Name; string]]
 My_hashable_class: my_hashable_class(Id: 123, Name: "Whatever")
 
 what My_hashable_class
-    my_hashable_class(Id: 5, Name: "Ok")
-        print("5 OK")
-    my_hashable_class(Id: 123, Name: "Whatever")
-        print("great!")
-    My_hashable_class:
-        print("it was something else: ${My_hashable_class}")
+     my_hashable_class(Id: 5, Name: "Ok")
+          print("5 OK")
+     my_hashable_class(Id: 123, Name: "Whatever")
+          print("great!")
+     My_hashable_class:
+          print("it was something else: ${My_hashable_class}")
 ```
 
 Note that if your `fast_hash` implementation is terrible (e.g., `fast_hash(Salt): Salt`),
@@ -6901,24 +6911,24 @@ Note that all container classes have an `each` method defined, and some
 # iterating from 0 to `Count - 1`:
 Count: 5
 Count each Int:
-    print(Int)  # prints 0 to 4 on successive lines
+     print(Int)  # prints 0 to 4 on successive lines
 
 # iterating over a range:
 range(1, 10) each Int:
-    print(Int)  # prints 1 to 9 on successive lines.
+     print(Int)  # prints 1 to 9 on successive lines.
 
 # iterating over non-number elements:
 vector2: [X: dbl, Y: dbl]
 Array[vector2]: [[X: 5, Y: 3], [X: 10, Y: 17]]
 
 Array each Vector2:
-    print(Vector2)
+     print(Vector2)
 
 # if the variable is already declared, you avoid the declaration `:` or `;`:
 # NOTE the variable should be writable!
 Iterating_vector; vector2
 Array each Iterating_vector
-    print(Iterating_vector)
+     print(Iterating_vector)
 # this is useful if you want to keep the result of the last element outside the for-loop.
 ```
 
@@ -6929,28 +6939,28 @@ Like `return`, `break` can pass a value back.
 ```
 # Result needs to be nullable in case the iteration doesn't break anything.
 Result?: range(123) each Int:
-    if Int == 120
-        break Int
+     if Int == 120
+          break Int
 
 # you can use an `else` which will fire if the iterator doesn't have
 # any values *or* if the iteration never hit a `break` command.
 # in this case, `Result` can be non-null.
 Result: range(123) each Int:
-    if Int == 137
-        break Int
+     if Int == 137
+          break Int
 else
-    44
+     44
 ```
 
 Of course, you can use the `else` block even if you don't capture a result.
 
 ```
 range(123) each Int:
-    print(Int)
-    if Int == 500
-        break
+     print(Int)
+     if Int == 500
+          break
 else
-    print("only fires if `break` never occurs")
+     print("only fires if `break` never occurs")
 ```
 
 Here are some examples of iterating over a container while mutating some values.
@@ -6959,19 +6969,19 @@ Here are some examples of iterating over a container while mutating some values.
 A_array; array[int] = [1, 2, 3, 4]
 # this is clearly a reference since we have `Int` in parentheses, `(Int;)`:
 A_array each(Index, Int;)
-    Int += Index
+     Int += Index
 A_array == [1, 3, 5, 7] # should be true
 
 B_array; array[int] = [10, 20, 30]
 B_array each(Int;)
-    Int += 1
+     Int += 1
 B_array == [11, 21, 31] # should be true
 
 C_array; array[int] = [88, 99, 110]
 Start_referent; int = 77
 (Iterand_value;) = Start_referent
 C_array each Iterand_value  # TODO: do we need `each(Iterand_value)` here??
-    Iterand_value -= 40
+     Iterand_value -= 40
 C_array == [48, 59, 70] # should be true
 ```
 
@@ -6982,19 +6992,19 @@ unless the RHS of the `each` is wrapped in parentheses.
 B_array; array[int] = [10, 20, 30]
 # WARNING! this is not the same as the previous `B_array` logic.
 B_array each Int;
-    # NOTE: `Int` is a mutable copy of each value of `B_array` element.
-    Int += 1
-    # TODO: we probably should have a compile error here since
-    #       `Int` is not used to affect anything else and
-    #       `Int;` here is *NOT* a reference to the `C_array` elements.
-    #       e.g., "use (Int;) if you want to modify the elements"
+     # NOTE: `Int` is a mutable copy of each value of `B_array` element.
+     Int += 1
+     # TODO: we probably should have a compile error here since
+     #       `Int` is not used to affect anything else and
+     #       `Int;` here is *NOT* a reference to the `C_array` elements.
+     #       e.g., "use (Int;) if you want to modify the elements"
 B_array == [11, 21, 31] # FALSE
 
 C_array; array[int] = [88, 99, 110]
 Iterand_value; 77 
 C_array each Iterand_value
-    # NOTE: `Iterand_value` is a mutable copy of each `C_array` element.
-    Iterand_value -= 40
+     # NOTE: `Iterand_value` is a mutable copy of each `C_array` element.
+     Iterand_value -= 40
 C_array == [48, 59, 70] # FALSE
 C_array == [88, 99, 110] # true, unchanged.
 Iterand_value == 70 # true
@@ -7015,15 +7025,15 @@ have its own tab stop.  E.g.,
 
 ```
 array[of]: []
-{   ...
-    ::print(): null
-        if count() == 0
-            return print("[]")
-        print("[")
-        with indent():
-            each Of:
+{    ...
+     ::print(): null
+          if count() == 0
+               return print("[]")
+          print("[")
+          with indent():
+               each Of:
                 print(Of)
-        print("]")
+          print("]")
 }
 ```
 
@@ -7053,41 +7063,41 @@ indent(~Declaring., fn(Block[~t, declaring]): never): t
 
 @referenceable_as(then)
 block[of, declaring: null]:
-[   # variables defined only for the lifetime of this block's scope.
-    # TODO: give examples, or maybe remove, if this breaks cleanup with the `jump` ability
-    Declaring` declaring
+[    # variables defined only for the lifetime of this block's scope.
+     # TODO: give examples, or maybe remove, if this breaks cleanup with the `jump` ability
+     Declaring` declaring
 ]
-{   # exits the `indent` with the corresponding `of` value.  example:
-    #   Value; 0
-    #   what indent
-    #   (   fn(Block[str]): never
-    #           OLD_value: Value
-    #           Value = Value // 2 + 9
-    #           # sequence should be: 0, 9, 4+9=13, 6+9=15, 7+9=16, 8+9=17
-    #           if OLD_value == Value
-    #               Block exit("exited at ${OLD_value}")
-    #           # note we need to `loop` otherwise we won't satisfy the `never`
-    #           # part of the indent function.
-    #           Block loop()
-    #   )
-    #       Str.
-    #           print(Str)       # should print "exited at 17"
-    ::exit(Of.): jump
+{    # exits the `indent` with the corresponding `of` value.  example:
+     #   Value; 0
+     #   what indent
+     #   (    fn(Block[str]): never
+     #           OLD_value: Value
+     #           Value = Value // 2 + 9
+     #           # sequence should be: 0, 9, 4+9=13, 6+9=15, 7+9=16, 8+9=17
+     #           if OLD_value == Value
+     #               Block exit("exited at ${OLD_value}")
+     #           # note we need to `loop` otherwise we won't satisfy the `never`
+     #           # part of the indent function.
+     #           Block loop()
+     #   )
+     #       Str.
+     #           print(Str)       # should print "exited at 17"
+     ::exit(Of.): jump
 
-    # like a `continue` statement; will bring control flow back to
-    # the start of the `indent` block.  example:
-    #   Value; 0
-    #   indent
-    #   (   fn(Block[str]):
-    #           if ++Value >= 10 {Block exit("done")}
-    #           if Value % 2
-    #               Block loop()
-    #           print(Value)
-    #           Block loop()
-    #   )
-    #   # should print "2", "4", "6", "8"
-    @hide_from(then)
-    ::loop(): jump
+     # like a `continue` statement; will bring control flow back to
+     # the start of the `indent` block.  example:
+     #   Value; 0
+     #   indent
+     #   (    fn(Block[str]):
+     #           if ++Value >= 10 {Block exit("done")}
+     #           if Value % 2
+     #               Block loop()
+     #           print(Value)
+     #           Block loop()
+     #   )
+     #   # should print "2", "4", "6", "8"
+     @hide_from(then)
+     ::loop(): jump
 }
 ```
 
@@ -7095,10 +7105,10 @@ block[of, declaring: null]:
 
 ```
 My_int: indent
-(   Block[int]:
-        if some_condition()
-            Block exit(3)
-        Block loop()
+(    Block[int]:
+          if some_condition()
+               Block exit(3)
+          Block loop()
 )
 ```
 
@@ -7115,23 +7125,23 @@ both blocks.
 
 ```
 if Some_condition -> Then[str]:
-    if Other_condition
-        if Nested_condition
-            Then exit(X)
-    else
-        Then exit("whatever")
-    # COMPILE ERROR, this function returns here if
-    # `Other_condition && !Nested_condition`.
+     if Other_condition
+          if Nested_condition
+               Then exit(X)
+     else
+          Then exit("whatever")
+     # COMPILE ERROR, this function returns here if
+     # `Other_condition && !Nested_condition`.
 
 # here's an example where we re-use a function for the block.
 My_then: then[str]
-    ... complicated logic ...
-    exit("made it")
+     ... complicated logic ...
+     exit("made it")
 
 Result: if Some_condition -> My_then
 elif Some_thing_else
-    print("don't use `My_then` here")
-    "no"
+     print("don't use `My_then` here")
+     "no"
 else -> My_then
 ```
 
@@ -7150,13 +7160,13 @@ to one that is not defined explicitly with `block`.
 # or `Block loop(...)` on the last line of the function block).
 # i.e., you must use `Block exit(...)` to return a value from this function.
 my_function(X: int, Block[str]): never
-    inner_function(Y: int): dbl
-        if Y == 123
-            Block exit("123")    # early return from `my_function`
-        Y dbl() ?? panic()
-    range(X) each Y:
-        inner_function(Y)
-    Block exit("normal exit")
+     inner_function(Y: int): dbl
+          if Y == 123
+               Block exit("123")    # early return from `my_function`
+          Y dbl() ?? panic()
+     range(X) each Y:
+          inner_function(Y)
+     Block exit("normal exit")
 ```
 
 ## coroutines
@@ -7193,11 +7203,11 @@ its result into the immediate future.  If `h` takes a long time to run, prefer
 ```
 # you don't even need to type your function as `um[~]`, but it's highly recommended:
 some_very_long_running_function(Int): um[string]
-    Result; ""
-    Int each COUNT_int:
-        sleep(Seconds: COUNT_int)
-        Result += str(COUNT_int)
-    Result
+     Result; ""
+     Int each COUNT_int:
+          sleep(Seconds: COUNT_int)
+          Result += str(COUNT_int)
+     Result
 
 # this approach calls the default `string` return overload, which blocks:
 print("starting a long running function...")
@@ -7226,8 +7236,8 @@ and one using an object of futures:
 ```
 # you don't even need to type your function as `um[~]`, but it's highly recommended:
 after(Seconds: int, Return: string): um[string]
-    sleep(Seconds)
-    Return
+     sleep(Seconds)
+     Return
 
 Futures_array; array[um[string]]
 # no need to use `after(...) Um` here since `Futures_array`
@@ -7241,8 +7251,8 @@ print(Results_array) # prints `["hello", "world"]` after 2ish seconds.
 # here we put them all in at once.
 # notice you can use `Field: um[type] = fn()` or `Field: fn() Um`.
 Futures_object:
-[   Greeting: after(Seconds: 2, Return: "hello") Um
-    Noun: um[string] = after(Seconds: 1, Return: "world")
+[    Greeting: after(Seconds: 2, Return: "hello") Um
+     Noun: um[string] = after(Seconds: 1, Return: "world")
 ]
 print(decide(Futures_object)) # prints `[Greeting: "hello", Noun: "world"]`
 
@@ -7253,8 +7263,8 @@ future_type: [Greeting: um[str], Noun: um[str]]
 # so that the compiler knows that the arguments are futures and should
 # receive the `um` overload.
 Futures: future_type
-(   Greeting: after(Seconds: 2, Return: "hi")
-    Noun: after(Seconds: 1, Return: "you")
+(    Greeting: after(Seconds: 2, Return: "hi")
+     Noun: after(Seconds: 1, Return: "you")
 )
 # this whole statement should take ~2s and not ~3s; the two fields are
 # initialized in parallel.
@@ -7275,8 +7285,8 @@ container is defined without `um`:
 # if any field in an object/container is an `um` class, we expect everyone to be.
 # this is to save developers from accidentally forgetting an `Um`
 Object_or_container:
-[   Greeting: after(Seconds: 2, Return: "hello")    # COMPILE ERROR!
-    Noun: after(Seconds: 1, Return: "world") Um     # ok
+[    Greeting: after(Seconds: 2, Return: "hello")    # COMPILE ERROR!
+     Noun: after(Seconds: 1, Return: "world") Um     # ok
 ]
 ```
 
@@ -7320,10 +7330,10 @@ depends on if we want to require it always with function arguments and with brac
 
 ```
 my_enum: one_of
-[   First_value_defaults_to_zero
-    Second_value_increments
-    Third_value_is_specified: 123
-    Fourth_value_increments
+[    First_value_defaults_to_zero
+     Second_value_increments
+     Third_value_is_specified: 123
+     Fourth_value_increments
 ]
 assert my_enum First_value_defaults_to_zero == 0
 assert my_enum Second_value_increments == 1
@@ -7343,9 +7353,9 @@ Crazy: 15
 # `other_enum Super = 12`,
 # and `other_enum Other_value2 = 15`.
 other_enum: one_of
-[   Other_value1
-    Super
-    Other_value2: Crazy
+[    Other_value1
+     Super
+     Other_value2: Crazy
 ]
 ```
 
@@ -7366,9 +7376,9 @@ check if an enum instance `enum` is a specific value `this_value` via
 Test: bool = False  # or `Test: bool False`
 
 if Test == True     # OK
-    print("test is true :(")
+     print("test is true :(")
 if Test is_false()   # also OK
-    print("test is false!")
+     print("test is false!")
 
 # get the count (number of enumerated values) of the enum:
 print("bool has ${bool count()} possibilities:")
@@ -7387,19 +7397,19 @@ in case you use non-standard enumerations (i.e., with values less than 0):
 
 ```
 sign: one_of
-[   Negative: -1
-    Zero: 0
-    Positive: 1
+[    Negative: -1
+     Zero: 0
+     Positive: 1
 ]
 
 print("sign has ${sign count()} values")   # 3
 print("starting at ${sign min()} and going to ${sign max()}")     # -1 and 1
 
 weird: one_of
-[   X: 1
-    Y: 2
-    Z: 3
-    Q: 9
+[    X: 1
+     Y: 2
+     Z: 3
+     Q: 9
 ]
 
 print(weird count())   # prints 4
@@ -7429,13 +7439,13 @@ to explicitly set each enum value; they start at 0 and increment by default.
 
 ```
 option: one_of
-[   Unselected
-    Not_a_good_option
-    Content_with_life
-    Better_options_out_there
-    Best_option_still_coming
-    Oops_you_missed_it
-    Now_you_will_be_sad_forever
+[    Unselected
+     Not_a_good_option
+     Content_with_life
+     Better_options_out_there
+     Best_option_still_coming
+     Oops_you_missed_it
+     Now_you_will_be_sad_forever
 ]
 
 print("number of options should be 7:  ${option count()}")
@@ -7444,21 +7454,21 @@ Option1: option Content_with_life
 
 # avoid doing this if you are checking many possibilities:
 if Option1 is_not_a_good_option()   # OK
-    print("oh no")
+     print("oh no")
 elif Option1 == Oops_you_missed_it # also OK
-    print("whoops")
+     print("whoops")
 ...
 
 # instead, consider doing this:
 what Option1
-    Not_a_good_option
-        print("oh no")
-    Best_option_still_coming
-        print("was the best actually...")
-    Unselected
-        fall_through
-    else
-        print("that was boring")
+     Not_a_good_option
+          print("oh no")
+     Best_option_still_coming
+          print("was the best actually...")
+     Unselected
+          fall_through
+     else
+          print("that was boring")
 ```
 
 Note that we don't have to do `option Not_a_good_option` (and similarly for other options)
@@ -7487,11 +7497,11 @@ Take this example `one_of`.
 
 ```
 tree: one_of
-[   leaf: [Value; int]
-    branch:
-    [   Left; tree
-        Right; tree
-    ]
+[    leaf: [Value; int]
+     branch:
+     [    Left; tree
+          Right; tree
+     ]
 ]
 ```
 
@@ -7502,13 +7512,13 @@ it, where `internal_type` is either `leaf` or `branch` in this case.  For exampl
 
 ```
 Tree; tree = if Abc
-    leaf(Value: 3)
+     leaf(Value: 3)
 else
-    branch(Left: leaf(Value: 1), Right: leaf(Value: 5))
+     branch(Left: leaf(Value: 1), Right: leaf(Value: 5))
 
 if Tree is_leaf()
-    # no type narrowing, not ideal.
-    print(Tree)
+     # no type narrowing, not ideal.
+     print(Tree)
 
 # narrowing to a `leaf` type that is readonly, while retaining a reference
 # to the original `Tree` variable.  the nested function only executes if
@@ -7518,10 +7528,10 @@ Tree is(fn(Leaf): print(Leaf))
 # narrowing to a `branch` type that is writable.  `Tree` was writable, so `Branch` can be.
 # the nested function only executes if `Tree` is internally of type `branch`:
 Tree is
-(   fn(Branch;):
-        print(Branch Left, " ", Branch Right)
-        # this operation can affect/modify the `Tree` variable.
-        Branch Left some_operation()
+(    fn(Branch;):
+          print(Branch Left, " ", Branch Right)
+          # this operation can affect/modify the `Tree` variable.
+          Branch Left some_operation()
 )
 ```
 
@@ -7531,10 +7541,10 @@ Even better, use the [`is` operator](#is-operator) and define a block:
 # you can also use this in a conditional; note we don't wrap in a lambda function
 # because we're using fancier `Block` syntax.
 if Tree is Branch;
-    Branch Left some_operation()
-    print("a branch")
+     Branch Left some_operation()
+     print("a branch")
 else
-    print("not a branch") 
+     print("not a branch") 
 ```
 
 If you need to manipulate most of the internal types, use `what` to narrow the type
@@ -7542,12 +7552,12 @@ and handle all the different cases.
 
 ```
 what Tree
-    Leaf: 
-        print(Leaf)
-    Branch;
-        # this operation can affect/modify the `Tree` variable.
-        print(Branch Left, " ", Branch Right)
-        Branch Left some_operation()
+     Leaf: 
+          print(Leaf)
+     Branch;
+          # this operation can affect/modify the `Tree` variable.
+          print(Branch Left, " ", Branch Right)
+          Branch Left some_operation()
 ```
 
 Since function arguments are references by default, the above options are useful
@@ -7559,18 +7569,18 @@ a copy and any changes to the new variables will not be reflected in `Tree`.
 
 ```
 one_of[..., t]: []
-{   # returns true if this `one_of` is of type `T`, also allowing access
-    # to the underlying value by passing it into the function.
-    # we return `never` here because we don't want people to use the
-    # value and expect it to return something based on the callback's return type,
-    # or be confused if it should always return true if the internal type is `t`.
-    ;:is(fn(T;:): null): never
+{    # returns true if this `one_of` is of type `T`, also allowing access
+     # to the underlying value by passing it into the function.
+     # we return `never` here because we don't want people to use the
+     # value and expect it to return something based on the callback's return type,
+     # or be confused if it should always return true if the internal type is `t`.
+     ;:is(fn(T;:): null): never
 
-    # type narrowing.
-    # the signature for `if Tree is Branch; {#[do stuff with `Branch`]#}`
-    # the method returns true iff the block should be executed.
-    # the block itself can return a value to the parent scope.
-    ;:.is(), Block[declaring:;. t, exit: ~u]: bool
+     # type narrowing.
+     # the signature for `if Tree is Branch; {#[do stuff with `Branch`]#}`
+     # the method returns true iff the block should be executed.
+     # the block itself can return a value to the parent scope.
+     ;:.is(), Block[declaring:;. t, exit: ~u]: bool
 }
 ```
 
@@ -7597,7 +7607,7 @@ The default name for a `one_of` argument is `One_of`.  E.g.,
 ```
 # this is short for `my_function(One_of: one_of[int, str]): dbl`:
 my_function(One_of[int, str]): dbl
-    dbl(One_of) ?? panic()
+     dbl(One_of) ?? panic()
 
 print(my_function(123))      # prints 123.0
 print(my_function("123.4"))  # prints 123.4
@@ -7615,7 +7625,7 @@ int_or_string: one_of[int, str]
 weird_number: one_of[u8, i32, dbl]
 
 my_function(Int_or_string, Weird_number): dbl
-    return dbl(Int_or_string) * Weird_number
+     return dbl(Int_or_string) * Weird_number
 ```
 
 However, you can also achieve the same thing using namespaces,
@@ -7624,7 +7634,7 @@ if you don't want to add specific names for the `one_of`s.
 ```
 # arguments short for `A_one_of: one_of_[int_, str_]` and `B_one_of: one_of_[u8_, i32_, dbl_]`.
 my_function(A_one_of[int_, str_], B_one_of[u8_, i32_, dbl_]): dbl
-    return dbl(A_one_of) * B_one_of
+     return dbl(A_one_of) * B_one_of
 ```
 
 Again, this fans out into multiple function overloads for each of the cases
@@ -7641,14 +7651,14 @@ the distinct types and not the combined type, like so:
 
 ```
 my_fn(Select[int, str]): str
-    "hello ${Select}"
+     "hello ${Select}"
 
 # becomes only these two functions internally:
 my_fn(Int): str
-    "hello ${Int}"
+     "hello ${Int}"
 
 my_fn(Str): str
-    "hello ${Str}"
+     "hello ${Str}"
 
 # when calling:
 my_fn(5)            # OK
@@ -7702,9 +7712,9 @@ TODO: is there a way to make this `any_of` and use 0 as the `null` value?
 
 ```
 food: choose
-[   Carrots
-    Potatoes
-    Tomatoes
+[    Carrots
+     Potatoes
+     Tomatoes
 ]
 # this creates a mask with `food Carrots == 1`,
 # `food Potatoes == 2`, and `food Tomatoes == 4`.
@@ -7722,10 +7732,10 @@ And here is an example with specified values.
 ```
 # the mask is required to specify types that are powers of two:
 non_mutually_exclusive_type: choose
-[   X: 1
-    Y: 2
-    Z: 4
-    T: 32
+[    X: 1
+     Y: 2
+     Z: 4
+     T: 32
 ]
 # `non_mutually_exclusive_type None` is automatically defined as 0.
 
@@ -7736,10 +7746,10 @@ non_mutually_exclusive_type max() == 39   # = X | Y | Z | T
 
 Options; non_mutually_exclusive_type()
 Options == 0        # True; masks start at 0, or `None`,
-                    # so `Options == None` is also true.
+                         # so `Options == None` is also true.
 Options |= X        # TODO: make sure it's ok to implicitly add the mask type here.
-                    #       maybe it's only ok if no `X` is in scope, otherwise
-                    #       you need to make it explicit.
+                         #       maybe it's only ok if no `X` is in scope, otherwise
+                         #       you need to make it explicit.
 Options |= non_mutually_exclusive_type Z   # explicit mask type
 
 Options has_x()  # True
@@ -7758,10 +7768,10 @@ We can also create a mask with one or more `one_of` fields, e.g.:
 
 ```
 options: choose
-[   one_of[Align_center_x, Align_left, Align_right]
-    one_of[Align_center_y, Align_top, Align_bottom]
+[    one_of[Align_center_x, Align_left, Align_right]
+     one_of[Align_center_y, Align_top, Align_bottom]
 
-    one_of[Font_very_small, Font_small, Font_normal: 0, Font_large, Font_very_large]
+     one_of[Font_very_small, Font_small, Font_normal: 0, Font_large, Font_very_large]
 ]
 ```
 
@@ -7782,7 +7792,7 @@ is special logic with `|` and `&` for `one_of` values in masks.
 Options2; options = Align_center_x
 Options2 |= Align_right    # will clear out existing Align_center_x/Left/Right first before `OR`ing
 if Options2 & Align_center_x
-    print("this will never trigger even if Align_center_x == 4 and Align_right == 12.")
+     print("this will never trigger even if Align_center_x == 4 and Align_right == 12.")
 ```
 
 You can also explicitly tell the mask to avoid assigning a power of two to one of the
@@ -7802,7 +7812,7 @@ You can add some named combinations by extending a mask like this.
 
 ```
 my_mask: choose[X, Y]
-{   X_and_y: X | Y
+{    X_and_y: X | Y
 }
 
 Result: my_mask = X_and_y
@@ -7826,16 +7836,16 @@ Let's illustrate the problem with an example:
 ```
 # define a re-definable function.
 live_it_up(String); index
-    return String count_bytes()
+     return String count_bytes()
 
 if Some_condition
-    Some_index; index = 9
-    # redefine:
-    live_it_up(String); index
-        return String count_bytes() + ++Some_index
+     Some_index; index = 9
+     # redefine:
+     live_it_up(String); index
+          return String count_bytes() + ++Some_index
 
-    print(live_it_up("hi"))   # this should print 12
-    print(live_it_up("ok"))   # this should print 13
+     print(live_it_up("hi"))   # this should print 12
+     print(live_it_up("ok"))   # this should print 13
 
 print(live_it_up("no"))       # should this print 14 or 2??
 ```
@@ -7859,15 +7869,15 @@ would be allowed:
 ```
 Some_index; index = 9
 live_it_up(String); index
-    return String count_bytes()
+     return String count_bytes()
 
 if Some_condition
-    # redefine:
-    live_it_up(String); index
-        return String count_bytes() + ++Some_index
+     # redefine:
+     live_it_up(String); index
+          return String count_bytes() + ++Some_index
 
-    print(live_it_up("hi"))   # this should print 12
-    print(live_it_up("ok"))   # this should print 13
+     print(live_it_up("hi"))   # this should print 12
+     print(live_it_up("ok"))   # this should print 13
 
 print(live_it_up("no"))       # prints 14
 ```
@@ -7879,19 +7889,19 @@ new variables scoped into the function block.
 
 ```
 if Some_condition
-    live_it_up(String); index
-        # "@dynamic" means declare once and let changes persist across function invocations.
-        # Note that this functionality cannot be used to store references.
-        @dynamic X; int = 12345
-        return String count_bytes() + ++X
+     live_it_up(String); index
+          # "@dynamic" means declare once and let changes persist across function invocations.
+          # Note that this functionality cannot be used to store references.
+          @dynamic X; int = 12345
+          return String count_bytes() + ++X
 ```
 
 Similarly, returning a function from within a function is breaking scope:
 
 ```
 next_generator(Int; int): fn(): int
-    return ():
-        return ++Int
+     return ():
+          return ++Int
 ```
 
 However, technically this is OK because arguments in functions are references,
@@ -7913,8 +7923,8 @@ is descoped.
 #   other_fn(): int = wow(fn(): str = some_fn)
 #   print(other_fn()) # 3
 wow(Input fn(): string): fn(): int
-    (): int
-        Input fn() count_bytes()
+     (): int
+          Input fn() count_bytes()
 ```
 
 ## handling system callbacks
@@ -7928,46 +7938,46 @@ internally, so that the `caller` will no longer call the `callee`.
 
 ```
 callee[of]: []
-{   ;;call(Of@): null
+{    ;;call(Of@): null
 
-    ;;hang_up(): null
-        ... # some internal implementation
+     ;;hang_up(): null
+          ... # some internal implementation
 }
 
 caller[of]:
-[   # use `of@` to pass in the mutability of `of` from `caller` into `callee`,
-    Callees[ptr[callee[of@]]];
+[    # use `of@` to pass in the mutability of `of` from `caller` into `callee`,
+     Callees[ptr[callee[of@]]];
 ]
-{   ::run_callbacks(Of@):
-        Callees each Ptr: {Ptr call(Of@)}
+{    ::run_callbacks(Of@):
+          Callees each Ptr: {Ptr call(Of@)}
 }
 
 audio: caller[array[sample], Mutable]
-{   # this `audio` class will call the `call` method on the `callee` class.
-    # TODO: actually show some logic for the calling.
+{    # this `audio` class will call the `call` method on the `callee` class.
+     # TODO: actually show some logic for the calling.
 
-    # amount of time between samples:
-    Delta_t: flt
+     # amount of time between samples:
+     Delta_t: flt
 
-    # number of samples
-    Count; 500
+     # number of samples
+     Count; 500
 }
 
 audio_callee: all_of
-[   m: [Frequency; flt(440), Phase; flt]
-    callee[array[sample];]
+[    m: [Frequency; flt(440), Phase; flt]
+     callee[array[sample];]
 ]
-{   ;;call(Array[sample];): for Index: index < count(Array)
-        Array[Index] = sample(Mono: \\math sin(2 * \\math Pi * Phase))
-        Phase += Frequency * Audio Delta_t
+{    ;;call(Array[sample];): for Index: index < count(Array)
+          Array[Index] = sample(Mono: \\math sin(2 * \\math Pi * Phase))
+          Phase += Frequency * Audio Delta_t
 }
 
 some_function(): null
-    Callee; audio_callee
-    Callee Frequency = 880
-    Audio call(Callee;)
-    sleep(Seconds: 10)
-    # `Audio hang_up(Callee;)` automatically happens when `Callee` is descoped.
+     Callee; audio_callee
+     Callee Frequency = 880
+     Audio call(Callee;)
+     sleep(Seconds: 10)
+     # `Audio hang_up(Callee;)` automatically happens when `Callee` is descoped.
 ```
 
 # grammar/syntax
@@ -7981,10 +7991,10 @@ Note on terminology:
 * `Identifier`: starts with a non-numeric character, can have numerical characters after that.
 
 * `function_case_`/`type_case_`: Identifier which ends with a trailing underscore.
-    A leading underscore is allowed to indicate an unused function/type.
+     A leading underscore is allowed to indicate an unused function/type.
 
 * `variable_case`: Identifier which does *not* end with a trailing underscore.
-    A leading underscore is allowed to indicate an unused variable.
+     A leading underscore is allowed to indicate an unused variable.
 
 TODO: use an oh-lang version.
 See [the grammar definition](https://github.com/hm-lang/core/blob/main/transpiler/grammar.hm).
@@ -8009,44 +8019,44 @@ acting much like a vtable.  However, the type table includes more than just meth
 typedef u64 type_id;
 
 struct variable_type
-{   string Name;
-    type_id Type_id;
+{    string Name;
+     type_id Type_id;
 };
 
 typedef array<variable_type> arguments_type;
 
 struct overload_type
-{   type_id Instance_type_id; // 0 if this is not a method overload
-    arguments_type Input;
-    arguments_type Output;
+{    type_id Instance_type_id; // 0 if this is not a method overload
+     arguments_type Input;
+     arguments_type Output;
 };
 
 struct overload
-{   type_id Instance_type_id; // 0 if this is not a method overload
-    arguments_type Input;
-    arguments_type Output;
+{    type_id Instance_type_id; // 0 if this is not a method overload
+     arguments_type Input;
+     arguments_type Output;
 
-    void *Function_pointer;
+     void *Function_pointer;
 };
 
 struct overload_matcher
-{   array<overload> Overloads;
+{    array<overload> Overloads;
 
-    // TODO: can `reference` be a no-copy no-move type class?
-    // TODO: can we make this an `array_element_reference` under the hood with type erasure?
-    const_nullable_reference<overload> match(const overload_type &Overload_type) const;
+     // TODO: can `reference` be a no-copy no-move type class?
+     // TODO: can we make this an `array_element_reference` under the hood with type erasure?
+     const_nullable_reference<overload> match(const overload_type &Overload_type) const;
 };
 
 // C++ code: info for a type
 struct type_info
-{   type_id Id;
-    string Name;
+{    type_id Id;
+     string Name;
 
-    // Class types have variables, methods, and class functions defined in here:
-    array<variable_type> Fields;
+     // Class types have variables, methods, and class functions defined in here:
+     array<variable_type> Fields;
 
-    // A function type_info should have nonempty Overloads:
-    overload_matcher Overload_matcher;
+     // A function type_info should have nonempty Overloads:
+     overload_matcher Overload_matcher;
 };
 ```
 
@@ -8074,26 +8084,26 @@ We'll use the following example oh-lang class and other functions for transpilat
 
 ```
 example_class: 
-[   A; f32
-    B; f32
-    X; i32
-    Y; i32
+[    A; f32
+     B; f32
+     X; i32
+     Y; i32
 ]
-{   ;;renew(M X. i32, M Y. i32):
-        A = X - Y
-        B = X + Y
+{    ;;renew(M X. i32, M Y. i32):
+          A = X - Y
+          B = X + Y
 
-    ::readonly_method(Z. i32): i32
-        X * Y - Z
+     ::readonly_method(Z. i32): i32
+          X * Y - Z
 
-    ;;writable_method(Q. f32): f32
-        A *= Q
-        B *= 1.0 / (1.0 + abs(Q))
-        A * B
+     ;;writable_method(Q. f32): f32
+          A *= Q
+          B *= 1.0 / (1.0 + abs(Q))
+          A * B
 }
 
 example_function(X: i64, A: dbl): [Y: i64, B: dbl]
-    [Y: X - 1, B: A * X]
+     [Y: X - 1, B: A * X]
 ```
 
 ## C API
@@ -8101,45 +8111,45 @@ example_function(X: i64, A: dbl): [Y: i64, B: dbl]
 ```
 // example_class.h
 typedef struct example_class
-{   float A;
-    float B;
-    int32_t X;
-    int32_t Y;
-}   example_class_t;
+{    float A;
+     float B;
+     int32_t X;
+     int32_t Y;
+}    example_class_t;
 
 typedef struct example_class_renew_input_X_Y
-{   int32_t X;
-    int32_t Y;
-}   example_class_renew_input_X_Y_t;
+{    int32_t X;
+     int32_t Y;
+}    example_class_renew_input_X_Y_t;
 
 typedef struct example_class_readonly_method_input_Z_t
-{   int32_t Z;
-}   example_class_readonly_method_input_Z_t;
+{    int32_t Z;
+}    example_class_readonly_method_input_Z_t;
 
 typedef struct example_class_writable_method_input_Q_t
-{   float Q;
-}   example_class_writable_method_input_Q_t;
+{    float Q;
+}    example_class_writable_method_input_Q_t;
 
 void example_class_renew_X_Y(example_class_t *M, example_class_renew_input_X_Y_t input);
 int32_t example_class_readonly_method_input_Z_output_i32(
-    const example_class_t *M, example_class_readonly_method_input_Z_t input
+     const example_class_t *M, example_class_readonly_method_input_Z_t input
 );
 float example_class_writable_method_input_Q_output_f32(
-    example_class_t *M, example_class_writable_method_input_Q_t input
+     example_class_t *M, example_class_writable_method_input_Q_t input
 );
 
 typedef struct example_function_input_A_X_t
-{   double A;
-    int64 X;
-}   example_function_input_A_X_t;
+{    double A;
+     int64 X;
+}    example_function_input_A_X_t;
 
 typedef struct example_function_output_B_Y_t
-{   double B;
-    int64 Y;
-}   example_function_output_B_Y_t;
+{    double B;
+     int64 Y;
+}    example_function_output_B_Y_t;
 
 example_function_output_B_Y_t example_function_input_A_X_output_B_Y(
-    example_function_input_A_X_t input
+     example_function_input_A_X_t input
 );
 ```
 
@@ -8160,10 +8170,10 @@ of `block`, via, e.g., `check Nullable, NonNull: do_something(NonNull)`, where
 we have 
 ```
 check(T?` ~t, Blockable[~u, declaring` t])?: u
-    what T
-        T`
-            Blockable block(T`)
-        null: {null}
+     what T
+          T`
+               Blockable block(T`)
+          null: {null}
 ```
 without some deep programming, we won't be able to have the option of doing things like
 `return X + Y`, since `return` breaks order of operations.
@@ -8178,8 +8188,8 @@ that start with `@`.
 ```
 # oh-lang
 my_class: []
-{   ::readonly_method(Int): null
-    ;;mutating_method(Int): null
+{    ::readonly_method(Int): null
+     ;;mutating_method(Int): null
 }
 
 # C++
