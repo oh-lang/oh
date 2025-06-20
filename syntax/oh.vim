@@ -34,7 +34,7 @@ syn keyword ohStatement		break continue fall_through
 syn keyword ohStatement		pass return
 syn keyword ohJump	assert_ exit_
 syn keyword ohConditional	elif else if
-syn keyword ohConditional	what where with
+syn keyword ohConditional	what when where with
 syn keyword ohRepeat		each while
 syn keyword ohOperator		and is not or xor
 syn keyword ohError		er er_
