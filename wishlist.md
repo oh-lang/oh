@@ -6682,6 +6682,9 @@ what whatever!      # ensure passing as a temporary by mooting here.
 
 ### where operator
 
+TODO: could we just use `if` or `when` here?  i like how `where` reads, though,
+very mathematically.
+
 The `where` operator can be used to further narrow a conditional.  It
 is typically used in a `what` statement like this:
 
