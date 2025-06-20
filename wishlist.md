@@ -6689,38 +6689,38 @@ The `where` operator can be used to further narrow a conditional.  It
 is typically used in a `what` statement like this:
 
 ```
-cows: one_of
-[   One
-    Two
-    many: i32
+cows_: one_of_
+[   one:
+    two:
+    many: i32_
 ]
-Cows: some_function_returning_cows()
-what Cows
-    One
-        print("got one cow")
-    Two
-        print("got two cows")
-    Many: where Many <= 5       # optionally `Many: i32 where Many <= 5`
-        print("got a handful of cows")
-    Many:                       # optionally `Many: i32`
-        print("got ${Many} cows")
+cows: some_function_returning_cows_()
+what cows
+    one
+        print_("got one cow")
+    two
+        print_("got two cows")
+    many: where many <= 5       # optionally `many: i32_ where many <= 5`
+        print_("got a handful of cows")
+    many:                       # optionally `many: i32`
+        print_("got ${many} cows")
 ```
 
 It can also be used in a conditional alongside the `is` operator.
 Using the same `cows` definition from above for an example:
 
 ```
-Cows: some_function_returning_cows()
-if Cows is Many: where Many > 5
-    # executes if `Cows` is `cows many` and `Many` is 6 or more.
-    print("got ${Many} cows")
+cows: some_function_returning_cows_()
+if cows is many: where many > 5
+    # executes if `cows` is `cows_ many` and `many` is 6 or more.
+    print_("got ${many} cows")
 else
-    # executes if `Cows` is something else.
-    print("not a lot of cows")
+    # executes if `cows` is something else.
+    print_("not a lot of cows")
 ```
 
-`where` is similar to the [`Require`](#require) field, but
-`Require` needs to be computable at compile-time, and `where`
+`where` is similar to the [`require`](#require) field, but
+`require` needs to be computable at compile-time, and `where`
 can be computed at run-time.
 
 TODO: do we really need `where`?  what's wrong with `and`?
@@ -7290,6 +7290,10 @@ use `um(Immediate: ...)` to make it clear that you want it that way.
 
 TODO: should we use `all_of_[parent_class, m: [...]]`??
 we maybe should do the same for `one_of_[u32, f32, ...]`?
+TODO: should these be macros like `@one_of(u32, ...)`?  if not, we need to have
+the ability to pass in additional parameters to other templates, e.g.,
+`my_class_[whatever: int_, required_type_, ...optional_types_]`.
+as much as possible, we don't want to hide language features behind a garden wall.
 
 We can create a new type that exhaustively declares all possible values it can take.
 The syntax is `type_case_: one_of` followed by a list of named values
