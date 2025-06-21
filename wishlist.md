@@ -1191,12 +1191,12 @@ Putting it all together in one big example:
 ```
 some_line_continuation_example_variable:
           optional_expression_explicitly_at_plus_two_indent
-     +   5 - some_function_
-          (       another_optional_expression
-               +   next_variable
-               -   can_keep_going
-               /   indefinitely
-                r: 123.4
+     +    5 - some_function_
+          (    some_expression
+                    +    next_variable
+                    -    can_keep_going
+                    /    indefinitely
+               r: 123.4
           )
 ```
 
@@ -1752,6 +1752,7 @@ as long as the variable names don't overlap.
 
 ### full list of reserved namespaces
 
+* `OH_` - used internally by oh-lang, do not use
 * `FIRST_` - for the first operand in a binary operation (where order matters)
 * `SECOND_` - for the second operand in a binary operation (where order matters)
 * `NAMED_` - for arguments that should be explicitly named in [functions](#defining-generic-functions)
@@ -2227,9 +2228,9 @@ or_(~FIRST_a?., SECOND_a.): a
      what FIRST_a
           non_null:
                if non_null
-                non_null
+                    non_null
                else
-                SECOND_a
+                    SECOND_a
           null {SECOND_a}
 ```
 
@@ -2336,8 +2337,8 @@ x; int_ = 4 # defined as writable and reassignable
 
 if some_condition
      @lock x = 7 # locks x after assigning it to the value of 7.
-                # For the remainder of this indented block, you can use x but not reassign it.
-                # You also can't use writable, i.e., non-const, methods on x.
+                    # For the remainder of this indented block, you can use x but not reassign it.
+                    # You also can't use writable, i.e., non-const, methods on x.
 else
      @lock x # lock x to whatever value it was for this block.
                # You can still use x but not reassign/mutate it.
@@ -6317,7 +6318,7 @@ array_[of_]: []
      ;:each_(fn_(of;:): loop_): bool_
           m count_() each index:
                if fn_(m[index];:) is_break_()
-                return true
+                    return true
           return false
 }
 ```
@@ -6603,7 +6604,7 @@ with earlier `what` cases taking precedence.
 what update
      # no trailing `:` because we're not declaring anything here:
      status_ unknown
-          print("unknown update")
+          print_("unknown update")
      status:
           # match all other statuses:
           print_("got update: $(status)")
@@ -6690,6 +6691,64 @@ what whatever!      # ensure passing as a temporary by mooting here.
           do_something_else_(card!)
 ```
 
+TODO: do we even really want a `fall_through` keyword?  it makes it complicated that it
+will essentially be a `goto` because fall through won't work due to the check for string
+equality.  probably not, because it might not play well with declared values (like `str.`
+and `card.` above).
+
+### restrictions for what
+
+Any class that supports a compile-time fast hash with a salt can be
+put into a `what` statement.  Floating point classes or containers thereof
+(e.g., `dbl_` or `array_[flt_]`) are not considered *exact* enough to be hashable, but
+oh-lang will support fast hashes for classes like `int_`, `i32_`, and `array_[u64_]`,
+and other containers of precise types, as well as recursive containers thereof.
+
+```
+# note it's not strictly necessary to mention you implement `hashable_`
+# if you have the correct `hash` method signature.
+my_hashable_class_: all_of_[hashable_, m: [Id: u64, Name; string]]
+{    # we allow a generic hash builder so we can do cryptographically secure hashes
+     # or fast hashes in one definition, depending on what is required.
+     # This should automatically be defined for classes with precise fields (e.g., int, u32, string, etc.)!
+     ::hash(~Builder;):
+          Builder hash(Id)    # you can use `hash` via the builder or...
+          Name hash(Builder;) # you can use `hash` via the field.
+
+     # equivalent definition via sequence building:
+     ::hash(~Builder;): Builder@
+     {    hash(Id)
+          hash(Name)
+     }
+}
+
+# note that defining `::hash(~Builder;)` automatically defines a `fast_hash` like this:
+# fast_hash(My_hashable_class, ~Salt): salt
+#   Builder: \\hash fast(Salt)
+#   Builder hash(My_hashable_class)
+#   return Builder build()
+
+My_hashable_class: my_hashable_class(Id: 123, Name: "Whatever")
+
+what My_hashable_class
+     my_hashable_class(Id: 5, Name: "Ok")
+          print("5 OK")
+     my_hashable_class(Id: 123, Name: "Whatever")
+          print("great!")
+     My_hashable_class:
+          print("it was something else: ${My_hashable_class}")
+```
+
+Note that if your `fast_hash` implementation is terrible (e.g., `fast_hash(Salt): Salt`),
+then the compiler will error out after a certain number of attempts with different salts.
+
+For sets and lots, we use a hash method that is order-independent (even if the container
+is insertion-ordered).  E.g., we can sum the hash codes of each element, or `xor` them.
+Arrays have order-dependent hashes, since `[1, 2]` should be considered different than `[2, 1]`,
+but the lot `["hi": 1, "hey": 2]` should be the same as `["hey": 2, "hi": 1]` (different
+insertion order, but same contents).
+
+
 ### where operator
 
 TODO: could we just use `if` or `when` here?  i like how `where` reads, though,
@@ -6741,159 +6800,36 @@ we could do something like `if other_condition_() or cows is many:`;
 we probably can fix by using `or cows is many?:` to indicate `many`
 might not be defined.
 
-### what operator
+### what operator overloading
 
+TODO:
 Can we overload the `what` operator?  oh-lang would like to avoid walling off
 parts of the code that you can't touch.  We'd need to figure out a good syntax
 here.
 
 ```
-my_vec2: [X; dbl, Y; dbl]
-{    ::what
-     (    do(QuadrantI. dbl): ~a
-          do(QuadrantII. dbl): ~b
-          do(QuadrantIII. dbl): ~c
-          do(QuadrantIV. dbl): ~d
-          else(): ~e
-     ): flatten[a, b, c, d, e]
-          if X == 0.0 or Y == 0.0
-               else()
-          elif X > 0.0
-               if Y > 0.0
-                do(QuadrantI. +X + Y)
+my_vec2_: [x; dbl_, y; dbl_]
+{    ::what_
+     (    do_(quadrant_i. dbl_): ~a_
+          do_(quadrant_ii. dbl_): ~b_
+          do_(quadrant_iii. dbl_): ~c_
+          do_(quadrant_iv. dbl_): ~d_
+          else_(): ~e_
+     ): flatten_[a_, b_, c_, d_, e_]
+          if x == 0.0 or y == 0.0
+               else_()
+          elif x > 0.0
+               if y > 0.0
+                    do_(quadrant_i. +x + y)
                else
-                do(QuadrantIV. +X - Y)
+                    do_(quadrant_iv. +x - y)
           else
-               if Y > 0.0
-                do(QuadrantII. -X + Y)
+               if y > 0.0
+                    do_(quadrant_ii. -x + y)
                else
-                do(QuadrantIII. -X - Y)
+                    do_(quadrant_iii. -x - y)
 }
 ```
-
-
-### what implementation details
-
-```
-# The implementation can be pretty simple.
-switch (Update.hm_Is)
-{    case update::status::hm_Is:
-          DEFINE_CAST(update::status *, Status, &Update.hm_Value);
-          if (*Status == status::Unknown)
-          {    // print("unknown update")
-               ...
-          }
-          else
-          {    // print("known status: ${Status}")
-               ...
-          }
-          break;
-     case update::position::hm_Is:
-          DEFINE_CAST(update::position *, Position, &Update.hm_Value);
-          // print("got position update: ${Position}")
-          break;
-     ...
-}
-```
-
-Implementation details for strings: at compile time we do a fast hash of each 
-string case, and at run time we do a switch-case on the fast hash of the considered
-string.  (If the hashes of any two string cases collide, we redo all hashes with a
-different salt.)  Of course, at run-time, there might be collisions, so before we
-proceed with a match (if any), we check for string equality.  E.g., some pseudo-C++
-code:
-
-```
-switch (fast_hash(Considered_string, Compile_time_salt))
-{    case fast_hash(String_case1, Compile_time_salt): // precomputed with a stable hash
-     {    if (Considered_string != String_case1)
-          {    goto __Default__;
-          }
-          // logic for String_case1...
-          break;
-     }
-     // and similarly for other string cases...
-     default:
-     {    // Locating here so that we can also get no-matches from hash collisions:
-          __Default__:
-          // logic for no match
-     }
-}
-```
-
-TODO: do we even really want a `fall_through` keyword?  it makes it complicated that it
-will essentially be a `goto` because fall through won't work due to the check for string
-equality.
-
-TODO: we probably don't want to pollute code with compiler optimizations.  probably should
-wait to include this and see if we actually need it for performance.
-
-We'll add a compiler hint with the best compile-time `Salt` to the `what` statement,
-so that future transpilations are faster.  The compiler will still try more salts
-if the chosen salt doesn't work, however, e.g., in the situation where new cases
-were added to the `what` statement.
-
-```
-X: what String    #salt(1234)
-     "hello"
-          print("hello to you, too!")
-          5
-     "world"
-          print("it's a big place")
-          7
-     else
-          100
-```
-
-Similarly, any class that supports a compile-time fast hash with a salt can be
-put into a `what` statement.  Floating point classes or containers thereof
-(e.g., `dbl` or `array[flt]`) are not considered *exact* enough to be hashable, but
-oh-lang will support fast hashes for classes like `int`, `i32`, and `array[u64]`,
-and other containers of precise types, as well as recursive containers thereof.
-
-```
-# note it's not strictly necessary to mention you implement `hashable`
-# if you have the correct `hash` method signature.
-my_hashable_class: all_of[hashable, m: [Id: u64, Name; string]]
-{    # we allow a generic hash builder so we can do cryptographically secure hashes
-     # or fast hashes in one definition, depending on what is required.
-     # This should automatically be defined for classes with precise fields (e.g., int, u32, string, etc.)!
-     ::hash(~Builder;):
-          Builder hash(Id)    # you can use `hash` via the builder or...
-          Name hash(Builder;) # you can use `hash` via the field.
-
-     # equivalent definition via sequence building:
-     ::hash(~Builder;): Builder@
-     {    hash(Id)
-          hash(Name)
-     }
-}
-
-# note that defining `::hash(~Builder;)` automatically defines a `fast_hash` like this:
-# fast_hash(My_hashable_class, ~Salt): salt
-#   Builder: \\hash fast(Salt)
-#   Builder hash(My_hashable_class)
-#   return Builder build()
-
-My_hashable_class: my_hashable_class(Id: 123, Name: "Whatever")
-
-what My_hashable_class
-     my_hashable_class(Id: 5, Name: "Ok")
-          print("5 OK")
-     my_hashable_class(Id: 123, Name: "Whatever")
-          print("great!")
-     My_hashable_class:
-          print("it was something else: ${My_hashable_class}")
-```
-
-Note that if your `fast_hash` implementation is terrible (e.g., `fast_hash(Salt): Salt`),
-then the compiler will error out after a certain number of attempts with different salts.
-
-For sets and lots, we use a hash method that is order-independent (even if the container
-is insertion-ordered).  E.g., we can sum the hash codes of each element, or `xor` them.
-Arrays have order-dependent hashes, since `[1, 2]` should be considered different than `[2, 1]`,
-but the lot `["hi": 1, "hey": 2]` should be the same as `["hey": 2, "hi": 1]` (different
-insertion order, but same contents).
 
 ## for-each loops
 
@@ -7032,7 +6968,7 @@ array[of]: []
           print("[")
           with indent():
                each Of:
-                print(Of)
+                    print(Of)
           print("]")
 }
 ```

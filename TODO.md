@@ -411,6 +411,91 @@ and reduce it for local tags so your entire type fits within a certain number of
 
 let's maybe converge on a name for them, e.g., "partial types" and "full types".
 
+
+## what implementation
+
+from the `update` `one_of` and `status` enum from the wishlist section on `what`.
+
+```
+enum OH_tag__update
+{    OH_tag__update__status,
+     OH_tag__update__position,
+     OH_tag__update__velocity,
+};
+
+typedef struct OH_update
+{    union
+     {    OH__status_ status;
+          OH__vector3_ position;
+          OH__vector3_ velocity;
+     };
+
+     u8_ OH_tag : 2;
+}         OH_update_;
+
+// the implementation can be pretty simple.
+switch (update.OH_tag)
+{    case OH_tag__update__status:
+     {    OH__status_ *status = &update.status;
+          if (*status == OH__status__unknown)
+          {    printf("unknown update\n")
+          }
+          else
+          {    printf("got status update: %d", *status")
+          }
+          break;
+     }
+     case OH_tag__update__position:
+     {    OH__vector3_ *position = &update.position;
+          printf("got position update: " "vector3(%f, %f, %f)", position->x, position->y, position->z);
+          break;
+     }
+     ...
+}
+```
+
+implementation details for strings: at compile time we do a fast hash of each 
+string case, and at run time we do a switch-case on the fast hash of the considered
+string.  (if the hashes of any two string cases collide, we redo all hashes with a
+different salt.)  of course, at run-time, there might be collisions, so before we
+proceed with a match (if any), we check for string equality.  e.g., some pseudo-C++
+code:
+
+```
+// T = temporary, C = constant pointer, P = writable pointer
+// R = readonly reference, W = writable reference
+switch (OH_fast_hash__Tsalt__Cstr_(12345, &considered_string))
+{    case 9876: // precomputed via `OH_fast_hash__Tsalt__Cstr_(12345, &string_case1)`
+     {    if (!OH_eq__Cstr__Cstr_(&considered_string, &string_case1)
+          {    goto OH_location__default;
+          }
+          // logic for `string_case1`...
+          break;
+     }
+     // and similarly for other string cases...
+     default:
+     {    // locating here so that we can also get no-matches from hash collisions:
+          OH_location__default:
+          // logic for no match
+     }
+}
+```
+
+originally we were thinking of adding `#@salt(12345)` to the oh-lang file, but we probably
+can calculate this on the fly and see if we actually need it for performance.
+
+```
+x: what string    #@salt(12345)
+     "hello"
+          print_("hello to you, too!")
+          5
+     "world"
+          print_("it's a big place")
+          7
+     else
+          100
+```
+
 ## jit
 
 this seems fairly tricky.  we could ship part of `tcc` (not `arm-gen.c`) inside of
@@ -498,6 +583,8 @@ where we represent numbers like this? `x << a + y << b`, and try to manage the
 size of all `int`s involved?
 
 ## translation process
+
+TODO: instead of dagging, can we just forward declare everything?
 
 we need to keep track of which names are needed where.
 
