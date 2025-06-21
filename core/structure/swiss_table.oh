@@ -32,15 +32,6 @@ swiss_table_
      capacity_: count_
 
      @private
-     table_element_: @if remaining_hash_ is null_
-          element_
-     @else
-          [remaining_hash:, element;]
-
-     split_[require: remaining_hash_ is not_[null_]](hash. u64_): [hash_start: u6_, remaining_hash:]
-          [hash_start: _(truncate: hash), remaining_hash: _(truncate. hash >> 6)]
-
-     @private
      table_[capacity]:
      [    metadata; vector_[count: capacity, metadatum_]
           elements; buffer_[count: capacity, table_element_]
@@ -59,6 +50,16 @@ swiss_table_
                     m elements move_construct_(in_bounds, [remaining_hash, element])
                in_bounds
      }
+
+     @private
+     table_element_: @if remaining_hash_ is null_
+          element_
+     @else
+          [remaining_hash:, element;]
+
+     @private
+     split_[require: remaining_hash_ is not_[null_]](hash. u64_): [hash_start: u6_, remaining_hash:]
+          [hash_start: _(truncate: hash), remaining_hash: _(truncate. hash >> 6)]
 }
 
 @private
