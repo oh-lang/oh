@@ -86,12 +86,20 @@ internal underscores cannot be repeated), we'll use them to namespace in
 the generated code so there aren't any collisions.
 we'll also alphabetize input (and output) arguments.
 
+* T = temporary
+* C = constant pointer
+* P = writable pointer
+* R = readonly reference
+* W = writable reference
+* X = exit/return value
+* N = named
+
 ```
 # in oh-lang, in file `my_file.oh`:
 my_function_(y: dbl_, x; int_): str_
 
-# in C, RWP = read-write pointer, ROP = read-only pointer
-OH_str_ OH_MY_FILE__my_function__RWP_int_AS_x__ROP_dbl_AS_y__RETURN_str_(OH_int_ *x, const OH_dbl_ *y);
+# in C
+OH_str_ MY_FILE__my_function__NPint__x__NCdbl__y__Xstr_(OH_int_ *x, const OH_dbl_ *y);
 ```
 
 we also need to supply a few different function signatures for when
@@ -146,25 +154,61 @@ with some DAG logic for where things should be defined.
 
 ## classes
 
+### dynamic vs. only typing
+
+every variable instance has two different storage layouts, one for "only type" and one for
+"dynamic type."  "only-type" variables require no extra memory to determine what type they are.
+for example, an array of `i32_` has some storage layout for the `array_` type, but
+each `i32_` element has "only type" storage, which is 4 consecutive bytes, ensuring that the
+array is packed tightly.  "dynamic-type" variables include things like objects and instances
+that could be one of many class types (e.g., a parent or a child class).  because of this,
+dynamic-type variables include a 64 bit field for their type at the start of the instance,
+acting much like a vtable.
+
+because of this split, we'll need to support calling dynamic-type functions with only-type
+information that isn't at the start of the class, e.g., `call_dynamic_(dynamic_class_ *dynamic_class)`
+and `call_only_(type_id_ type_id, only_class_ *only_class)`.  we need this in case `call_only_`
+internally calls another method on the class; TODO: or do we?  can we know automatically here and
+call the correct override?
+
+TODO: storage for dynamic types, can we create wrapper classes with enough memory and
+cast to them (i.e., without allocation)?  need to know the possible memory layouts beforehand,
+i.e., all possible child classes.  since we should know
+all imports ahead of time, however, we could just get the largest child implementation and use that.
+(maybe check if one child uses a lot more memory than other siblings and push to a pointer.)
+for scripts that extend a class, we might fit in as much as we can to the wrapper classes
+memory but then use a pointer to the rest.  it's ok if scripts take a performance hit (pointer dereference).
+
+TODO: a general purpose "part of your memory is here, part of your memory is there" class
+almost sounds like virtual memory with mappings.  that should probably be non-standard/non-core.
+
+TODO: discuss having all instance methods in some special virtual table, e.g., possibly 
+with additional reflection information (for things like `@mutators(my_class_) @each callable;`
+macro code).
+we also may need to have a fallback table for functions that are defined locally.
+or ideally, we just rely on the global functions so we don't have to specify the vtable
+(unless we're overriding things).
+
 ### type layout
 
 structs are laid out like the oh-lang class bodies (in `[]`).
 
 ```
 # in oh-lang, define a class in file `linear.oh`:
-vector3: [X: dbl, Y: dbl, Z: dbl]
-{   ::length(): dbl
-        sqrt(M X^2 + M Y^2 + M Z^2)
+vector3_: [x: dbl_, y: dbl_, z: dbl_]
+{    ::length_(): dbl_
+          sqrt_(m x^2 + m y^2 + m z^2)
 }
 
-# in C:
-typedef struct
-{   double X;
-    double Y;
-}       LINEAR_OH__vector3;
+// in C:
+typedef struct LINEAR_OH_vector3
+{    OH_dbl_ x;
+     OH_dbl_ y;
+     OH_dbl_ z;
+}         LINEAR_OH_vector3_;
 
-double LINEAR_OH__length__vector3__return__double(const LINEAR_OH__vector3 *M)
-{   return sqrt(M->X * M->X + M->Y * M->Y + M->Z * M->Z);
+OH_dbl_ LINEAR_OH__length__Cvector3__Xdbl_(const LINEAR_OH_vector3_ *m)
+{    return sqrt(m->x * m->x + m->y * m->y + m->z * m->z);
 }
 ```
 
@@ -243,37 +287,52 @@ x; hashable_, ..., x = implicitly_hashable_("hi")
 ```
 
 because we want to support duck typing, we don't want to require users to explicitly add the
-`hashable_` parent class, but we do need to add it.  it will translate to code like this
-inside the `.hash.generated.c` file (generated from the library `hash.oh`):
+`hashable_` parent class, so the compiler needs to add it.  it will translate to code like this
+inside `.hash.generated.c/h` files (generated from the library `hash.oh`):
 
 ```
-typedef struct oh_dynamic_hashable_t
-{   u64_t type_id;
-    union
-    {   // child classes if they fit within 3 words:
-        explicitly_hashable_t explicitly_hashable;
-        // child classes if they don't fit into 3 words....
-        big_child_t *big_child;
-    };
-}       oh_dynamic_hashable_t;
+typedef struct HASH_OH_hashable
+{    OH_type_ OH_type;
+     // `BLOB_SIZE` is at least 1 word long, to support child classes as pointers
+     // in case they are large compared to the parent class.  it is something like
+     // `min(sizeof(parent_class_) + 2 * sizeof(word_), sizeof(max_child_class_))`.
+     union
+     {    void *ptr;
+          OH_u8_ blob[BLOB_SIZE];
+     }         dynamic;
+     /*
+     // `dynamic` should look something like this, but it would add a cyclic reference to the header files.
+     // so we cast to the child types inside of the `c` file.
+     union
+     {    // child classes if they fit within ~2-3 words from the parent class,
+          // e.g., this one from `explicitly_hashable.oh`:
+          EXPLICITLY_HASHABLE_OH__explicitly_hashable_ explicitly_hashable;
+          // child classes if they don't fit into 3 words....
+          BIG_CHILD_OH__big_child_ *big_child;
+     }         dynamic;
+     */
+}         HASH_OH_hashable_;
 
-void oh__hash__dynamic_hashable_q
-(   const oh_dynamic_hashable_t *dynamic_hashable,
-    ...
+// in the `c` file, we `#include` every child class header file like `explicitly_hashable.h`,
+// or we can forward declare the things we need here.
+OH_u64_ HASH_OH__hash__Chashable__NTu64__salt__Xu64_
+(    const HASH_OH_hashable_ *hashable,
+     OH_u64_ salt
 )
-{   switch (dynamic_hashable->type_id)
-    {   case oh_type_id__explicitly_hashable:
-            return oh__hash__explicitly_hashable_
-            (   &dynamic_hashable->explicitly_hashable,
-                ...
-            );
-        case oh_type_id__big_child:
-            return oh__hash__big_child_
-            (   dynamic_hashable->big_child,
-                ...
-            );
-    }
-    exit(1);
+{    switch (hashable->OH_type)
+     {    case OH_type__EXPLICITLY_HASHABLE_OH__explicitly_hashable:
+               return EXPLICITLY_HASHABLE_OH__hash__Cexplicitly_hashable__NTu64__salt__Xu64_
+               (    (const EXPLICITLY_HASHABLE_OH__explicitly_hashable_ *)hashable->dynamic.blob,
+                    salt
+               );
+          case OH_type__BIG_CHILD_OH__big_child:
+               return BIG_CHILD_OH__hash__Cbig_child__NTu64__salt__Xu64_
+               (    (const BIG_CHILD_OH__big_child_ *)hashable->dynamic.ptr,
+                    salt
+               );
+          ...
+     }
+     exit(1);
 }
 ```
 
@@ -462,11 +521,9 @@ proceed with a match (if any), we check for string equality.  e.g., some pseudo-
 code:
 
 ```
-// T = temporary, C = constant pointer, P = writable pointer
-// R = readonly reference, W = writable reference
-switch (OH_fast_hash__Tsalt__Cstr_(12345, &considered_string))
-{    case 9876: // precomputed via `OH_fast_hash__Tsalt__Cstr_(12345, &string_case1)`
-     {    if (!OH_eq__Cstr__Cstr_(&considered_string, &string_case1)
+switch (OH__fast_hash__NTu64__salt__Cstr__Xu64_(12345, &considered_string))
+{    case 9876: // precomputed via `OH__fast_hash__NTu64__salt__Cstr__Xu64_(12345, &string_case1)`
+     {    if (!OH_eq__Cchars__Cstr_("string case 1", &considered_string)
           {    goto OH_location__default;
           }
           // logic for `string_case1`...
