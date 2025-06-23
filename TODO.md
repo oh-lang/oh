@@ -97,13 +97,23 @@ we'll also alphabetize input (and output) arguments.
 ```
 # in oh-lang, in file `my_file.oh`:
 my_function_(y: dbl_, x; int_): str_
+# TODO: probably can't export a namespaced identifier like `NAMESPACED_fn_`
+# maybe that's one way to make something private.
+namespaced_fn_(GREAT_z. flt_): [round: i32_]
 
 # in C
 OH_str_ MY_FILE__my_function__NPint__x__NCdbl__y__Xstr_(OH_int_ *x, const OH_dbl_ *y);
+// Notice the `GREAT_` namespace is on the variable itself but *not* the function signature:
+OH_i32_ MY_FILE__namespaced_fn__NTflt__z__NXi32__round_(OH_flt_ GREAT_z);
 ```
 
 we also need to supply a few different function signatures for when
 references are more complicated than just a pointer (e.g., via the `refer` class).
+
+module naming requirements (e.g., `MY_FILE__my_function...`):
+* we need to support calling functions from different files with the same oh-lang name in another file.
+* we need to support moving files around and updating all callers nicely
+* could just use file name (without full path) as a prefix.
 
 ### lambda functions
 
