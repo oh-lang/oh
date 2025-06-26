@@ -102,18 +102,28 @@ my_function_(y: dbl_, x; int_): str_
 namespaced_fn_(GREAT_z. flt_): [round: i32_]
 
 # in C
-OH_str_ MY_FILE__my_function__NPint__x__NCdbl__y__Xstr_(OH_int_ *x, const OH_dbl_ *y);
+OH_str_t MYFILE__my_function__NPint__x__NCdbl__y__Xstr_(OH_int_t *x, const OH_dbl_t *y);
 // Notice the `GREAT_` namespace is on the variable itself but *not* the function signature:
-OH_i32_ MY_FILE__namespaced_fn__NTflt__z__NXi32__round_(OH_flt_ GREAT_z);
+OH_i32_t MYFILE__namespaced_fn__NTflt__z__NXi32__round_(OH_flt_t GREAT_z);
 ```
 
 we also need to supply a few different function signatures for when
 references are more complicated than just a pointer (e.g., via the `refer` class).
 
-module naming requirements (e.g., `MY_FILE__my_function...`):
+module naming requirements (e.g., `MYFILE__my_function...`):
 * we need to support calling functions from different files with the same oh-lang name in another file.
 * we need to support moving files around and updating all callers nicely
-* could just use file name (without full path) as a prefix.
+* could just use file name (without full path) as a prefix, however that might break with moving files around.
+* can we generate a random prefix?  can look to the .generated file, if present, to maintain the prefix.
+     * this works as long as people move the .generated files around with the moved file.
+     * alternatively we can add some metadata to files:
+          * from_code_root/my_file.oh file: `#@filetag Am!4Ko%4l` where we can recover the original file path
+               from "Am!4Ko%4l", so that we can determine which generated file to move.
+          * the tag should not be human readable so that people don't think to update it when moving files around.
+          * we'll put the tag at the end of the file so it's less annoying.
+          * from_code_root/.my_file.generated.h: `//prefix(UKAFR)` where `UKAFR` is randomly generated and
+               added to all exported variables/functions.  (just A-Z to make it look like a namespace.)
+
 
 ### lambda functions
 

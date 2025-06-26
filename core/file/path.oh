@@ -1,5 +1,11 @@
 file_path_:
-[    @private m_: [array[u8_];]
+[    @private m_:
+     [    # we'll keep a copy of the WTF8 path for OSes that don't use UTF8.
+          str;
+          # as needed, the internal representation for other OSes.
+          @if arch_ windows_
+               array[u8_];
+     ]
 ]
 {    # some operating systems have different ways of representing file paths,
      # so convert from WTF8 to the OS representation here.
@@ -27,6 +33,15 @@ file_path_:
      # NOTE: this is purely a mechanical operation that does not rely on the file system.
      # if you need to make sure the path is valid, use `..resolve_()` before calling this.
      ::parent_(): directory_path_
+
+     # optimization for when you don't need to keep this instance around.
+     ..parent_(): directory_path_
+
+     ::str_(): (str:)
+          m str
+
+     ..str_(): str_
+          m str!
 }
 
 directory_path_: file_path_
