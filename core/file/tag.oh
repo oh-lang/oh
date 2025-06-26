@@ -1,17 +1,8 @@
-#[#
-     ```
-     file_tag_("abc/def.oh")
+file_tag_(str:): str_
+     swizzle_(encode_(str))
 
-     ```
-#]#
-file_tag_: str_
-{    m_(str:): m_
-          encode. _(str)
-          # next step: reverse the position of every other rune with one at the end of the array.
-          swizzle_(encode)
-
-     ::to_(): str_
-}
+file_untag_(str:): str_
+     decode_(swizzle_(str o_()))
 
 #[#
 substitute di/trigraphs or inserting them for rare letters.
@@ -23,6 +14,19 @@ unicode (and common letters) are passed through as-is.
      "." -> "\."
      ```
 #]#
+@test "encode_"
+     @test ". should normally be .oh"
+          assert_(encode_(".oh")) == "."
+          # we could optimize this to be `"\\.|"` but this is correct for now:
+          assert_(encode_(".or")) == "\\.or"
+          assert_(encode_("en.oh")) == "&."
+     @test "qu and q"
+          assert_(encode_("quell")) == "qeL"
+          assert_(encode_("qwack")) == "\\qwaK"
+     @test "brackets and braces"
+          assert_(encode_("tion")) == "[]"
+          assert_(encode_("code")) == "{}"
+@private
 encode_(str:): str_
 {    result; str_
      iterator[rune_, can: peek]; _(str)
@@ -34,41 +38,102 @@ encode_(str:): str_
           what rune
                't'
                     what iterator peek_(str)
-                         'h'
+                         'h'  # "th"
                               iterator next_(str)
-                              result += 'P'
-                         'i'
+                              result += '#'  # # -> th
+                         'i'  # "ti"
                               iterator next_(str)
-                              result += 'j'
-                         'e'
+                              result += '['  # [ -> ti
+                         'e'  # "te"
                               iterator next_(str)
-                              result += 'T'
-                         'o'
+                              result += ';'  # ; -> te
+                         'o'  # "to"
                               iterator next_(str)
-                              result += 'Q'
+                              result += 'Q'  # Q -> to
                          else
                               result += 't'
                'h'
-                    if iterator peek_(str) == 'e'
+                    if iterator peek_(str) == 'e' # "he"
                          iterator next_(str)
-                         result += 'H'
+                         result += 'H'  # H -> he
                     else
                          result += 'h'
                'i'
                     what iterator peek_(str)
-                         'n'
+                         'n'  # "in"
                               iterator next_(str)
-                              result += 'P'
-                         't'
-                         'r'
+                              result += 'I'  # I -> in
+                         't'  # "it"
+                              iterator next_(str)
+                              result += 'K'  # K -> it
+                         'e'  # "ie"
+                              iterator next_(str)
+                              result += '?'  # ? -> ie
+                         'r'  # "ir"
+                              iterator next_(str)
+                              result += '<'  # < -> ir
                          else
                               result += 'i'
+               'e'
+                    what iterator peek_(str)
+                         'e'  # "ee"
+                              iterator next_(str)
+                              result += 'E'  # E -> ee
+                         'r'  # "er"
+                              iterator next_(str)
+                              result += '>'  # > -> er
+                         'n'  # "en"
+                              iterator next_(str)
+                              result += '&'  # & -> en
+                         else
+                              result += 'e'
+               'a'
+                    what iterator peek_(str)
+                         'r'  # "ar"
+                              iterator next_(str)
+                              result += '^'  # ^ -> ar
+                         else
+                              result += 'a'
+               'u'
+                    if iterator peek_(str) == 'r'
+                         iterator next_(str)
+                         result += 'V'  # V -> ur
+               'n'
+                    what iterator peek_(str)
+                         'n'  # "nn"
+                              iterator next_(str)
+                              result += 'N'
+                         else
+                              result += 'n'
+                    
+               'o'
+                    what iterator peek_(str)
+                         'n'  # "on"
+                              iterator next_(str)
+                              result += ']'  # ] -> on
+                         'r'  # "or"
+                              iterator next_(str)
+                              result += '|'  # | -> or
+                         'u'  # "ou"
+                              iterator next_(str)
+                              result += 'U'  # U -> ou
+                         'o'  # "oo"
+                              iterator next_(str)
+                              result += 'O'  # O -> oo
+                         'w'  # "ow"
+                              iterator next_(str)
+                              result += '!'  # ! -> ow
+                         'a'  # "oa"
+                              iterator next_(str)
+                              result += '\'' # ' -> oa
+                         else
+                              result += 'o'
                '.'
                     if iterator peek_(str) == 'o'
                          iterator next_(str)
                          if iterator peek_(str) == 'h'
                               iterator next_(str)
-                              result += '.' # stands for ".oh"
+                              result += '.' # . -> .oh
                          else
                               # we had `.o` and then something else...
                               # for the `.` and the `o`:
@@ -84,7 +149,9 @@ encode_(str:): str_
                          result += 'q'
                     else
                          result += "\\q"
-               'j',
+               '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '-', '=',
+               '[', ']', '{', '}', '\\', '|', ';', ':', '\'', '"', ',', '<', '>', '?',
+               'j', 'x', 'z', # q is another rarely used lowercase letter, but is handled above.
                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
                'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
                     result += '\\'
@@ -107,6 +174,7 @@ encode_(str:): str_
           assert_(swizzle_("abcd")) == "dbca"
           assert_(swizzle_("123456")) == "624351"
           assert_(swizzle_("builders")) == "sueldirb"
+@private
 swizzle_(str.): str_
 {    # there's a way to do this in place, but it feels harder from a maintenance/logic
      # perspective because strings are utf8 encoded (packed).

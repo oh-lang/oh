@@ -113,17 +113,17 @@ references are more complicated than just a pointer (e.g., via the `refer` class
 module naming requirements (e.g., `MYFILE__my_function...`):
 * we need to support calling functions from different files with the same oh-lang name in another file.
 * we need to support moving files around and updating all callers nicely
-* could just use file name (without full path) as a prefix, however that might break with moving files around.
-* can we generate a random prefix?  can look to the .generated file, if present, to maintain the prefix.
-     * this works as long as people move the .generated files around with the moved file.
-     * alternatively we can add some metadata to files:
-          * from_code_root/my_file.oh file: `#@filetag Am!4Ko%4l` where we can recover the original file path
-               from "Am!4Ko%4l", so that we can determine which generated file to move.
-          * the tag should not be human readable so that people don't think to update it when moving files around.
-          * we'll put the tag at the end of the file so it's less annoying.
-          * from_code_root/.my_file.generated.h: `//prefix(UKAFR)` where `UKAFR` is randomly generated and
-               added to all exported variables/functions.  (just A-Z to make it look like a namespace.)
 
+solution:
+* generate a random prefix.  can look to the .generated file, if present, to maintain the prefix.
+* users *can* move the .generated files around with moved files, but it's not required.
+* we can add some metadata to files:
+     * from_code_root/my_file.oh file: `#@filetag Am!4Ko%4l` where we can recover the original file path
+          from "Am!4Ko%4l", so that we can determine which generated file to move.
+     * the tag should not be human readable so that people don't think to update it when moving files around.
+     * we'll put the tag at the end of the file so it's less annoying.
+     * from_code_root/.my_file.generated.h: `//prefix(UKAFR)` where `UKAFR` is randomly generated and
+          added to all exported variables/functions.  (just A-Z to make it look like a namespace.)
 
 ### lambda functions
 
