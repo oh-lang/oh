@@ -17,8 +17,7 @@ unicode (and common letters) are passed through as-is.
 @test "encode_"
      @test ". should normally be .oh"
           assert_(encode_(".oh")) == "."
-          # we could optimize this to be `"\\.|"` but this is correct for now:
-          assert_(encode_(".or")) == "\\.or"
+          assert_(encode_(".or")) == "\\.|"
           assert_(encode_("en.oh")) == "&."
      @test "qu and q"
           assert_(encode_("quell")) == "qeL"
@@ -36,119 +35,6 @@ encode_(str:): str_
                     # this is invalid as a character in a Windows path anyway.
                     rune = '/'
           what rune
-               't'
-                    what iterator peek_(str)
-                         'h'  # "th"
-                              iterator next_(str)
-                              result += '#'  # # -> th
-                         'i'  # "ti"
-                              iterator next_(str)
-                              result += '['  # [ -> ti
-                         'e'  # "te"
-                              iterator next_(str)
-                              result += ';'  # ; -> te
-                         'o'  # "to"
-                              iterator next_(str)
-                              result += 'Q'  # Q -> to
-                         else
-                              result += 't'
-               'h'
-                    if iterator peek_(str) == 'e' # "he"
-                         iterator next_(str)
-                         result += 'H'  # H -> he
-                    else
-                         result += 'h'
-               'i'
-                    what iterator peek_(str)
-                         'n'  # "in"
-                              iterator next_(str)
-                              result += 'I'  # I -> in
-                         't'  # "it"
-                              iterator next_(str)
-                              result += 'K'  # K -> it
-                         'e'  # "ie"
-                              iterator next_(str)
-                              result += '?'  # ? -> ie
-                         'r'  # "ir"
-                              iterator next_(str)
-                              result += '<'  # < -> ir
-                         else
-                              result += 'i'
-               'e'
-                    what iterator peek_(str)
-                         'e'  # "ee"
-                              iterator next_(str)
-                              result += 'E'  # E -> ee
-                         'r'  # "er"
-                              iterator next_(str)
-                              result += '>'  # > -> er
-                         'n'  # "en"
-                              iterator next_(str)
-                              result += '&'  # & -> en
-                         else
-                              result += 'e'
-               'a'
-                    what iterator peek_(str)
-                         'r'  # "ar"
-                              iterator next_(str)
-                              result += '^'  # ^ -> ar
-                         else
-                              result += 'a'
-               'u'
-                    if iterator peek_(str) == 'r'
-                         iterator next_(str)
-                         result += 'V'  # V -> ur
-               'n'
-                    what iterator peek_(str)
-                         'n'  # "nn"
-                              iterator next_(str)
-                              result += 'N'
-                         else
-                              result += 'n'
-                    
-               'o'
-                    what iterator peek_(str)
-                         'n'  # "on"
-                              iterator next_(str)
-                              result += ']'  # ] -> on
-                         'r'  # "or"
-                              iterator next_(str)
-                              result += '|'  # | -> or
-                         'u'  # "ou"
-                              iterator next_(str)
-                              result += 'U'  # U -> ou
-                         'o'  # "oo"
-                              iterator next_(str)
-                              result += 'O'  # O -> oo
-                         'w'  # "ow"
-                              iterator next_(str)
-                              result += '!'  # ! -> ow
-                         'a'  # "oa"
-                              iterator next_(str)
-                              result += '\'' # ' -> oa
-                         else
-                              result += 'o'
-               '.'
-                    if iterator peek_(str) == 'o'
-                         iterator next_(str)
-                         if iterator peek_(str) == 'h'
-                              iterator next_(str)
-                              result += '.' # . -> .oh
-                         else
-                              # we had `.o` and then something else...
-                              # for the `.` and the `o`:
-                              result += "\\.o"
-                              # theoretically we could backtrack and see if `o` digraphs
-                              # with anything, but for simplicity of iteration we'll do this.
-                    else
-                         # we had `.` but something else, escape it:
-                         result += "\\."
-               'q'
-                    if iterator peek_(str) == 'u'
-                         iterator next_(str)
-                         result += 'q'
-                    else
-                         result += "\\q"
                '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '-', '=',
                '[', ']', '{', '}', '\\', '|', ';', ':', '\'', '"', ',', '<', '>', '?',
                'j', 'x', 'z', # q is another rarely used lowercase letter, but is handled above.
@@ -158,6 +44,69 @@ encode_(str:): str_
                     result += rune
      result
 }
+
+@private
+substitutions3: map_[at_: str_, rune_]
+(    [".oh", '.']   # .oh -> .
+)
+
+@private
+substitutions2: map_[at_: str_, rune_]
+(    ["ar", '^']    # ar -> ^
+     ["ee", 'E']    # ee -> E
+     ["en", '&']    # en -> & for the Dutch
+     ["er", 'E']    # er -> >
+     ["he", 'H']    # he -> H
+     ["ie", '?']    # ie -> ?
+     ["in", 'I']    # in -> I
+     ["ir", '<']    # ir -> <
+     ["it", 'K']    # it -> K
+     ["nn", 'N']    # nn -> N
+     ["qu", 'q']    # qu -> q
+     ["oa", '\'']   # oa -> '
+     ["on", ']']    # on -> ]
+     ["or", '|']    # or -> |
+     ["oo", 'O']    # oo -> O
+     ["ou", 'U']    # ou -> UA
+     ["ow", '!']    # ow -> !
+     ["th", '#']    # th -> #
+     ["te", ';']    # te -> ;
+     ["ti", '[']    # ti -> [
+     ["to", 'Q']    # to -> Q
+     ["ur", 'V']    # ur -> V
+)
+
+@private
+substitutions: map_[at_: rune_, str_]
+(    # `/` is invalid as a character in a Windows path anyway,
+     # so replace `\\` (directory separator) with `/`.
+     # for people with `\\` in their paths (on non-Windows platforms),
+     # they will make life harder for Windows interop.
+     # TODO: nonprintable characters \00 etc.
+     ['\\', @if arch_ windows { "/" } else { "\\\\" } ]
+     ['.', "\\."]
+     ['!', "\\!"]
+     ['?', "\\?"]
+     ['|', "\\|"]
+     ['&', "\\&"]
+     ['#', "\\#"]
+     [';', "\\;"]
+     ['\'', "\\'"]
+     ['^', "\\^"]
+     ['<', "\\<"]
+     ['>', "\\>"]
+     ['[', "\\["]
+     [']', "\\]"]
+     ['E', "\\E"]
+     ['I', "\\I"]
+     ['K', "\\K"]
+     ['H', "\\H"]
+     ['O', "\\O"]
+     ['Q', "\\Q"]
+     ['q', "\\q"]
+     ['U', "\\U"]
+     ['V', "\\V"]
+)
 
 # swaps every other letter from the start of the string with those from the back.
 @test "swizzle_"
