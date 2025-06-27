@@ -77,7 +77,8 @@ syn region ohParened matchgroup=ohParens
       \ start=+(+ end=")"
       \ contains=ALL
 
-syn match   ohCompilerComment	"#@.*$"
+syn match   ohCompilerErrorComment	"#@!.*$"
+syn match   ohCompilerComment	"#@[^!].*$"
 syn match   ohEndOfLineComment	"#[^()[\]{}@].*$"
       \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
@@ -159,6 +160,7 @@ hi def link ohBuiltinType		Question
 hi def link ohFunction		Function
 hi def link ohUnusedVariable	Comment
 hi def link ohUnusedFunction	Include
+hi def link ohCompilerErrorComment		Error
 hi def link ohCompilerComment		PreProc
 hi def link ohEndOfLineComment		Comment
 hi def link ohMultilineComment	Comment
