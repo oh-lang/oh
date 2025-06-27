@@ -125,6 +125,21 @@ solution:
      * from_code_root/.my_file.generated.h: `//prefix(UKAFR)` where `UKAFR` is randomly generated and
           added to all exported variables/functions.  (just A-Z to make it look like a namespace.)
 
+i think we're making things a bit too complicated/premature optimization for the file-tag bit:
+* .generated files should not take long to generate, and even when someone moves a file,
+they shouldn't expect things to be perfectly optimized
+
+we could just add the file prefix to the .oh file itself, e.g., `#@file_prefix(UKAFR)`
+HOWEVER there are some downsides when copying.  if you copy file `a.oh` to `b.oh` and don't
+remove the `#@file_prefix`, should oh-lang try to use the same prefix for both?  there could
+be errors/collisions that are hard for the developer to debug.  one alternative would be
+to use `#@file_tag %$AsdfJ` followed by `#@file_prefix(UKAFR)`.  if the file gets copied,
+we can tell based on the file tag, and then change the file prefix for the file that doesn't match.
+i think having easy access to `file_prefix` might be a headache for new developers, however.
+maybe expect one of `#@file_tag` or `#@file_prefix` in the oh-lang file (the latter for
+advanced developers, we'd never put it there), but use the original idea (indirection,
+use `@file_tag` in the `.oh` file and `//prefix(UKAFR)` in the .generated file)
+
 ### lambda functions
 
 we'll need to support lambda functions by pulling them into the root scope

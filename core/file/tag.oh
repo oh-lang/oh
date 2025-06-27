@@ -36,27 +36,48 @@ encode_(str:): str_
           if remaining >= 3 and substitutions3[str slice_(u8_, index, index + 3)] is rune.
                result += rune
                index += 3
-               continue
-          if remaining >= 2 and substitutions2[str slice_[u8_](index, index + 2)] is rune.
+          elif remaining >= 2 and substitutions2[str slice_[u8_](index, index + 2)] is rune.
                result += rune
                index += 2
-               continue
-          char: u8_ = str[index]
-          if substitutions[char] is str.
-               result += str
           else
-               result += char
-          index += 1
+               # this could be a bit smarter about skipping unicode chars and consuming them
+               # at this time, instead of checking substitutions for each code point above.
+               char: u8_ = str[index]
+               if arch_ windows and char == '\\'
+                    # `/` is invalid as a character in a Windows path anyway,
+                    # so replace `\\` (directory separator) with `/`.
+                    result += '/'
+               if needs_escape[char]
+                    result += '\\'
+                    result += char
+               else
+                    result += char
+               index += 1
      result
 }
 
 @private
-substitutions3: map_[at_: str_, rune_]
+decode_(str:): str_
+{    result; str_
+     escaped; false
+     str iterator_[u8_, ~]() each u8.
+          if escaped
+               escaped = false
+               result += u8
+          elif u8 == '\\'
+               escaped = true
+          else
+               result += unsubstitute
+     result
+}
+
+@private
+substitutions3: map_[at_: str_, u8_]
 (    [".oh", '.']   # .oh -> .
 )
 
 @private
-substitutions2: map_[at_: str_, rune_]
+substitutions2: map_[at_: str_, u8_]
 (    ["ar", '^']    # ar -> ^
      ["ee", 'E']    # ee -> E
      ["en", '&']    # en -> & for the Dutch
@@ -82,36 +103,14 @@ substitutions2: map_[at_: str_, rune_]
 )
 
 @private
-substitutions: map_[at_: u8_, str_]
-(    # `/` is invalid as a character in a Windows path anyway,
-     # so replace `\\` (directory separator) with `/`.
-     # for people with `\\` in their paths (on non-Windows platforms),
-     # they will make life harder for Windows interop.
-     # TODO: nonprintable characters \00 etc.
-     ['\\', @if arch_ windows { "/" } else { "\\\\" } ]
-     ['.', "\\."]
-     ['!', "\\!"]
-     ['?', "\\?"]
-     ['|', "\\|"]
-     ['&', "\\&"]
-     ['#', "\\#"]
-     [';', "\\;"]
-     ['\'', "\\'"]
-     ['^', "\\^"]
-     ['<', "\\<"]
-     ['>', "\\>"]
-     ['[', "\\["]
-     [']', "\\]"]
-     ['E', "\\E"]
-     ['I', "\\I"]
-     ['K', "\\K"]
-     ['H', "\\H"]
-     ['O', "\\O"]
-     ['Q', "\\Q"]
-     ['q', "\\q"]
-     ['U', "\\U"]
-     ['V', "\\V"]
-)
+needs_escape: set_[u8_]
+{    set[u8_];
+     substitutions3 each (_at: str_, of: u8_)
+          set add_(of)
+     substitutions2 each (_at: str_, of: u8_)
+          set add_(of)
+     set
+}
 
 # swaps every other letter from the start of the string with those from the back.
 @test "swizzle_"
