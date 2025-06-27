@@ -26,7 +26,7 @@ set cpo&vim
 syn keyword ohBuiltinVariable	false true none null unspecified
 syn keyword ohBuiltinVariable	ctx debug m o require
 syn keyword ohBuiltinFunction	is_ m_ o_ renew_
-syn keyword ohBuiltinFunction	count_ each_ test_
+syn keyword ohBuiltinFunction	count_ each_ test_ to_
 syn keyword ohBuiltinFunction	abs_ ceil_ floor_ max_ min_
 syn keyword ohBuiltinFunction	error_ print_
 syn keyword ohBuiltinType	never_ disallowed_
@@ -77,7 +77,8 @@ syn region ohParened matchgroup=ohParens
       \ start=+(+ end=")"
       \ contains=ALL
 
-syn match   ohEndOfLineComment	"# .*$"
+syn match   ohCompilerComment	"#@.*$"
+syn match   ohEndOfLineComment	"#[^()[\]{}@].*$"
       \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ oneline display
@@ -158,6 +159,7 @@ hi def link ohBuiltinType		Question
 hi def link ohFunction		Function
 hi def link ohUnusedVariable	Comment
 hi def link ohUnusedFunction	Include
+hi def link ohCompilerComment		PreProc
 hi def link ohEndOfLineComment		Comment
 hi def link ohMultilineComment	Comment
 hi def link ohMidlineComment	Comment
