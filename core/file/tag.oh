@@ -28,20 +28,25 @@ unicode (and common letters) are passed through as-is.
 @private
 encode_(str:): str_
 {    result; str_
-     iterator[rune_, can: peek]; _(str)
-     while iterator next_(str) is rune.
-          @if arch_ windows
-               if rune == file_path_ separator
-                    # this is invalid as a character in a Windows path anyway.
-                    rune = '/'
-          what rune
-               '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '-', '=',
-               '[', ']', '{', '}', '\\', '|', ';', ':', '\'', '"', ',', '<', '>', '?',
-               'j', 'x', 'z', # q is another rarely used lowercase letter, but is handled above.
-               'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-               'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-                    result += '\\'
-                    result += rune
+     index; 0
+     BYTE_count: str count_(u8_)
+     while index < BYTE_count
+          remaining: BYTE_count - index
+          # TODO: decide on `slice_(u8_, ...)` vs. `slice_[u8_](...)`
+          if remaining >= 3 and substitutions3[str slice_(u8_, index, index + 3)] is rune.
+               result += rune
+               index += 3
+               continue
+          if remaining >= 2 and substitutions2[str slice_[u8_](index, index + 2)] is rune.
+               result += rune
+               index += 2
+               continue
+          char: u8_ = str[index]
+          if substitutions[char] is str.
+               result += str
+          else
+               result += char
+          index += 1
      result
 }
 
@@ -77,7 +82,7 @@ substitutions2: map_[at_: str_, rune_]
 )
 
 @private
-substitutions: map_[at_: rune_, str_]
+substitutions: map_[at_: u8_, str_]
 (    # `/` is invalid as a character in a Windows path anyway,
      # so replace `\\` (directory separator) with `/`.
      # for people with `\\` in their paths (on non-Windows platforms),
