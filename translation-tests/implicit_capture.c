@@ -28,7 +28,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef struct counter_fn_ctx_t
+typedef struct counter_fn_ctx_
 {   uint64_t *counter; // TODO: should become a "reference offsets" type
 }       counter_fn_ctx_t;
 

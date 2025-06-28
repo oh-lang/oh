@@ -18,16 +18,16 @@ STACK(stack_flt)
 #undef IMPL
 
 void add_values_(stack_stack_flt_t *stack_stack)
-{   uint32_t offset = 1;
+{   u32_t offset = 1;
     stack_flt_t *stack = stack_stack_flt_p__offset_p_(stack_stack, &offset);
-    ASSERT_EQUAL(uint32, stack_stack->count, 2);
+    ASSERT_EQUAL(u32, stack_stack->count, 2);
     stack_flt_p__append_default_(stack);
     stack_flt_p__append_default_(stack);
     stack_flt_p__append_default_(stack);
     stack->data[0] = 1.234;
     stack->data[1] = 2.345;
     stack->data[2] = 3.456;
-    ASSERT_EQUAL(uint32, stack->count, 3);
+    ASSERT_EQUAL(u32, stack->count, 3);
 }
 
 int main()
@@ -39,13 +39,13 @@ int main()
     PRINT(stdout, stack_flt, &stack);
     ASSERT_EQUAL(flt, stack_flt_p__pop_(&stack), 3.456);
     ASSERT_EQUAL(flt, stack_flt_p__pop_(&stack), 2.345);
-    ASSERT_EQUAL(uint32, stack.count, 1);
+    ASSERT_EQUAL(u32, stack.count, 1);
 
     refer_t flt;
     refer_flt_p__enscope_from_stack_(&flt, &stack, 10);
-    ASSERT_EQUAL(uint32, stack.count, 1); // doesn't change immediately
+    ASSERT_EQUAL(u32, stack.count, 1); // doesn't change immediately
     *flt_p__from__refer_p_stack_(&flt) = 10.20;
-    ASSERT_EQUAL(uint32, stack.count, 11);
+    ASSERT_EQUAL(u32, stack.count, 11);
     PRINT(stdout, stack_flt, &stack);
 
     stack_stack_flt_p__descope_(&stack_stack);

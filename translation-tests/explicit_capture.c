@@ -29,7 +29,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef struct inner_ctx_t
+typedef struct inner_ctx_
 {   uint64_t counter;
     uint64_t xorer;
 }       inner_ctx_t;

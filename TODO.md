@@ -86,13 +86,16 @@ internal underscores cannot be repeated), we'll use them to namespace in
 the generated code so there aren't any collisions.
 we'll also alphabetize input (and output) arguments.
 
-* T = temporary
-* C = constant pointer
-* P = writable pointer
-* R = readonly reference
-* W = writable reference
-* X = exit/return value
-* N = named
+* `_t` = temporary
+* `_c` = constant pointer
+* `_p` = writable pointer
+* `_r` = readonly reference
+* `_w` = writable reference
+* `_x` = exit/return value (as "temporary")
+* named variables (inputs/outputs) directly follow with one underscore.
+    TODO: if we require arguments to be named differently (e.g., not just typed differently),
+    then we can just put in the named argument *without a `_t`*, or maybe just `_n` after,
+    e.g., `my_fn_(arg_name; int_): null_` becomes `void PREFIX_my_fn__arg_name_n_(int_p arg_name);`
 
 ```
 # in oh-lang, in file `my_file.oh`:
@@ -101,10 +104,11 @@ my_function_(y: dbl_, x; int_): str_
 # maybe that's one way to make something private.
 namespaced_fn_(GREAT_z. flt_): [round: i32_]
 
-# in C
-OH_str_t MYFILE__my_function__NPint__x__NCdbl__y__Xstr_(OH_int_t *x, const OH_dbl_t *y);
-// Notice the `GREAT_` namespace is on the variable itself but *not* the function signature:
-OH_i32_t MYFILE__namespaced_fn__NTflt__z__NXi32__round_(OH_flt_t GREAT_z);
+// in C
+str_t MYFILE__my_function__int_p_x__dbl_c_y__str_x_(int_p x, dbl_c y);
+// where `int_p` is `int_t *`, and `dbl_c` is `const dbl_t *`);
+// notice the `GREAT_` namespace is on the variable itself but *not* the function signature:
+i32_t MYFILE__namespaced_fn__flt_t_z__i32_x_round_(flt_t GREAT_z);
 ```
 
 we also need to supply a few different function signatures for when
@@ -148,13 +152,8 @@ if there are any captures.
 
 ### errors
 
-we'll need to standardize on how we'll return errors.  one idea, functions
-that never error out return void, and functions that can error out return
-the error type.  however, we'd need to require that the error type can be something
-that isn't an error (e.g., if `er: int`, then `Er: 0` should be not an error).
-this also would require special handling for `hm` types when we need `one_of`s
-for other things anyway.  probably can do the standard thing and return the
-struct.
+we'll need to standardize on how we'll return errors.  do the expected thing
+and return a specialized struct.
 
 ### generics
 
@@ -170,8 +169,9 @@ multiply_(a: -5, b: 20)     # should return -100
 multiply_(a: "A", b: "B")   # should fail at compilation
 
 # in C, specialized after we infer `int_` for `t_`:
-OH_int_ OH_FILE__multiply__ROP_int_AS_a__ROP_int_AS_b__RETURN_int_(const OH_int_ *a, const OH_int_ *b)
-{   return OH__multiply__ROP_int__ROP_int__RETURN_int_(a, b);
+int_t PREFIX__multiply__int_c_a__int_c_b__int_x_(int_c a, int_c b)
+{   // built-in function:
+    return multiply__int_c__int_c__int_x_(a, b);
 }
 ```
 

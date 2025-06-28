@@ -4,19 +4,51 @@
 #include <stdint.h>
 #include <stdio.h>
 
-typedef float flt_t;
-typedef double dbl_t;
-// TODO: something like this probably, or wrap success_t in a [[nodiscard]] struct
-// and do `if (ok_(my_function__success_rt_(...)))` or `if (!ok_(...))`
-typedef int success_t;
-// #define success_rt [[nodiscard("check this function for success!")]] success_t
+// TODO: switch to [[nodiscard]] with C23:
+// enum [[nodiscard]] success_t { ... };
+typedef enum success_
+{   er = 0,
+    ok = 1,
+}       success_t;
 
-typedef enum bool_t
+typedef enum bool_
 {   false = 0,
     true = 1,
 }       bool_t;
 
+typedef float flt_t;
+typedef double dbl_t;
+typedef uint32_t u32_t;
+typedef uint64_t u64_t;
+
+#define TYPES(t) \
+typedef t##_t *t##_p; \
+typedef const t##_t *t##_c;
+
+#define PRIMITIVE_TYPE(t, zero, fmt) \
+IMPL(,TYPES(t),) \
+IMPL \
+(   void t##_p__enscope_(t##_p number),, \
+    {   *number = zero; \
+    } \
+) \
+IMPL \
+(   void t##_p__descope_(t##_p number),, \
+    {   /* nothing to do */ \
+    } \
+) \
+IMPL \
+(   void t##_c__print_(FILE *f, t##_c number),, \
+    {   fprintf(f, fmt, *number); \
+    } \
+) \
+
 #define ALIGN __attribute__((aligned(8)))
+
+#define PRINT(f, T, x) \
+{   T##_c__print_(f, (x)); \
+    fprintf(f, "\n"); \
+}
 
 #ifndef NDEBUG
 #define DEBUG
@@ -45,47 +77,15 @@ typedef enum bool_t
 #define DEBUG_ASSERT(x) {}
 #endif
 
-#define PRINT(f, T, x) \
-{   T##_p__print_(f, (x)); \
-    fprintf(f, "\n"); \
-}
-
 #define COMMON /*
 { */ \
+PRIMITIVE_TYPE(flt, 0.0, "%f") \
+PRIMITIVE_TYPE(dbl, 0.0, "%lf") \
+PRIMITIVE_TYPE(u32, 0, "%d") \
 IMPL \
-(   void flt_p__enscope_(flt_t *flt),, \
-    {   *flt = 0.0; \
-    } \
-) \
-IMPL \
-(   void flt_p__descope_(flt_t *flt),, \
-    {   /* nothing to do */ \
-    } \
-) \
-IMPL \
-(   void uint32_p__enscope_(uint32_t *uint32),, \
-    {   *uint32 = 0; \
-    } \
-) \
-IMPL \
-(   void uint32_p__descope_(uint32_t *uint32),, \
-    {   /* nothing to do */ \
-    } \
-) \
-IMPL \
-(   bool_t uint32_p__equal_(uint32_t *a, uint32_t *b),, \
-    {   return *a == *b ? true : false; \
-    } \
-) \
-IMPL \
-(   void uint32_p__print_(FILE *f, uint32_t *uint32),, \
-    {   fprintf(f, "%d", *uint32); \
-    } \
-) \
-IMPL \
-(   bool_t flt_p__equal_(flt_t *a, flt_t *b),, \
+(   bool_t flt_c__equal_(flt_c a, flt_c b),, \
     {   if ((*a != *a) && (*b != *b)) \
-        {   /* we're breaking IEEE standard here but nan is nan. */ \
+        {   /* we're breaking IEEE standard here but nan is NaN. */ \
             return true; \
         } \
         float abs_delta = fabs(*a - *b); \
@@ -98,17 +98,19 @@ IMPL \
     } \
 ) \
 IMPL \
-(   void flt_p__print_(FILE *f, flt_t *flt),, \
-    {   fprintf(f, "%f", *flt); \
+(   bool_t u32_c__equal_(u32_c a, u32_c b),, \
+    {   return *a == *b ? true : false; \
     } \
 ) \
 /*
 } end COMMON */
 
+// header file:
 #define IMPL(fn, attr, impl) fn attr;
 COMMON
 #undef IMPL
 
+// header + implementation file:
 #ifdef SINGLE_IMPORT
 #define IMPL(fn, attr, impl) fn impl
 COMMON
