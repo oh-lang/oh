@@ -36,6 +36,8 @@ typedef union word_
     flt_t flt;
     u64_t u64;
     u32_t u32;
+    u16_t u16;
+    u8_t u8;
     /* non-referential values above, referential values below. */
     /* see logic in `resolve_start_` for how `ptr` is used. */
     size_t ptr;
@@ -73,7 +75,7 @@ TYPES(refer)
 { */ \
 IMPL \
 (   refer_t owned__##d##_x_(d##_t data, descope_f descope_),, \
-    {   d##_t *owned_pointer = malloc(sizeof(d##_t)); \
+    {   d##_p owned_pointer = malloc(sizeof(d##_t)); \
         size_t reference = (size_t)refer__ignore_start_return_offset_; \
         DEBUG_ASSERT(reference % 8 == 0); \
         return (refer_t) \
@@ -95,7 +97,7 @@ IMPL \
     } \
 ) \
 IMPL \
-(   void *refer__resolve_(refer_t *refer),, \
+(   void *refer__resolve_(refer_p refer),, \
     {   const size_t seven = 7; \
         void *offset = refer__resolve_offset_(refer->maybe_descope_offset, &refer->offset); \
         if (offset == NULL) return NULL; \
@@ -106,7 +108,7 @@ IMPL \
     } \
 ) \
 IMPL \
-(   void *refer__resolve_start_(uint32_t tag, word_t *word),, \
+(   void *refer__resolve_start_(uint32_t tag, word_p word),, \
     {   switch (tag) \
         {   case REFER_TAG_POINTER: \
                 /* we'll avoid making users do `**ptr` in `reference_` code. */ \
@@ -124,7 +126,7 @@ IMPL \
     } \
 )   \
 IMPL \
-(   void *refer__resolve_offset_(size_t maybe_descope_offset, word_t *word),, \
+(   void *refer__resolve_offset_(size_t maybe_descope_offset, word_p word),, \
     {   switch (maybe_descope_offset) \
         {   case REFER_TAG_POINTER: \
                 /* we'll avoid making users do `**ptr` in `reference_` code. */ \

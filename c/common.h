@@ -18,6 +18,8 @@ typedef enum bool_
 
 typedef float flt_t;
 typedef double dbl_t;
+typedef uint8_t u8_t;
+typedef uint16_t u16_t;
 typedef uint32_t u32_t;
 typedef uint64_t u64_t;
 
@@ -40,6 +42,13 @@ IMPL \
 IMPL \
 (   void t##_c__print_(FILE *f, t##_c number),, \
     {   fprintf(f, fmt, *number); \
+    } \
+) \
+
+#define PRIMITIVE_PERFECT_EQUALITY(t) \
+IMPL \
+(   bool_t t##_c__equal_(t##_c a, t##_c b),, \
+    {   return *a == *b ? true : false; \
     } \
 ) \
 
@@ -80,8 +89,6 @@ IMPL \
 #define COMMON /*
 { */ \
 PRIMITIVE_TYPE(flt, 0.0, "%f") \
-PRIMITIVE_TYPE(dbl, 0.0, "%lf") \
-PRIMITIVE_TYPE(u32, 0, "%d") \
 IMPL \
 (   bool_t flt_c__equal_(flt_c a, flt_c b),, \
     {   if ((*a != *a) && (*b != *b)) \
@@ -97,11 +104,15 @@ IMPL \
         return *a == *b ? true : false; \
     } \
 ) \
-IMPL \
-(   bool_t u32_c__equal_(u32_c a, u32_c b),, \
-    {   return *a == *b ? true : false; \
-    } \
-) \
+PRIMITIVE_TYPE(dbl, 0.0, "%lf") \
+PRIMITIVE_TYPE(u64, 0, "%ld") \
+PRIMITIVE_PERFECT_EQUALITY(u64) \
+PRIMITIVE_TYPE(u32, 0, "%d") \
+PRIMITIVE_PERFECT_EQUALITY(u32) \
+PRIMITIVE_TYPE(u16, 0, "%d") \
+PRIMITIVE_PERFECT_EQUALITY(u16) \
+PRIMITIVE_TYPE(u8, 0, "%d") \
+PRIMITIVE_PERFECT_EQUALITY(u8) \
 /*
 } end COMMON */
 

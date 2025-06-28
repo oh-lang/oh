@@ -9,17 +9,17 @@
 #include <stdlib.h>
 
 #define IMPL(fn, attr, impl) fn attr;
-STACK(flt)
-STACK(stack_flt)
+STACK(flt, u32)
+STACK(stack_flt, u8)
 #undef IMPL
 #define IMPL(fn, attr, impl) fn impl
-STACK(flt)
-STACK(stack_flt)
+STACK(flt, u32)
+STACK(stack_flt, u8)
 #undef IMPL
 
-void add_values_(stack_stack_flt_t *stack_stack)
-{   u32_t offset = 1;
-    stack_flt_t *stack = stack_stack_flt_p__offset_p_(stack_stack, &offset);
+void add_values_(stack_stack_flt_p stack_stack)
+{   u8_t offset = 1;
+    stack_flt_p stack = stack_stack_flt_p__offset_p_(stack_stack, &offset);
     ASSERT_EQUAL(u32, stack_stack->count, 2);
     stack_flt_p__append_default_(stack);
     stack_flt_p__append_default_(stack);

@@ -2,20 +2,20 @@
 
 #include "common.h"
 
-#define STACK(T) /*
+#define STACK(T, C) /*
 { */ \
 IMPL \
 (,  typedef struct stack_##T##_ \
     {   T##_p data; \
-        u32_t capacity; \
-        u32_t count; \
+        C##_t capacity; \
+        C##_t count; \
     }       stack_##T##_t \
 ,) \
 IMPL(,TYPES(stack_##T),) \
 IMPL \
 (   void stack_##T##_p__descope_(stack_##T##_p stack),, \
     {   while (stack->count > 0) \
-        {   u32_t index = --stack->count; \
+        {   C##_t index = --stack->count; \
             T##_p__descope_(&stack->data[index]); \
         } \
         free(stack->data); \
@@ -30,7 +30,7 @@ IMPL \
 ) \
 /* TODO: add a `stack_capacity` overload that calls this overload and exits on failure. */ \
 IMPL \
-(   success_t stack_##T##_p__capacity_t__success_rt_(stack_##T##_p stack, u32_t capacity),, \
+(   success_t stack_##T##_p__capacity_t__success_rt_(stack_##T##_p stack, C##_t capacity),, \
     {   while (stack->count > capacity) \
         {   T##_t element = stack_##T##_p__pop_(stack); \
             T##_p__descope_(&element); \
@@ -59,7 +59,7 @@ IMPL \
 IMPL \
 (   success_t stack_##T##_p__append_default_(stack_##T##_p stack),, \
     {   if (stack->count == stack->capacity) \
-        {   u32_t desired_capacity = stack->capacity * 2; \
+        {   C##_t desired_capacity = stack->capacity * 2; \
             if (desired_capacity < stack->capacity) \
             {   return 0; \
             } \
@@ -86,7 +86,7 @@ IMPL \
     {   if (a->count != b->count) \
         {   return false; \
         } \
-        for (u32_t index = 0; index < a->count; ++index) \
+        for (C##_t index = 0; index < a->count; ++index) \
         {   if (!(T##_c__equal_(a->data + index, b->data + index))) \
             {   return false; \
             } \
@@ -97,7 +97,7 @@ IMPL \
 IMPL \
 (   void stack_##T##_c__print_(FILE *f, stack_##T##_c stack),, \
     {   fprintf(f, "["); \
-        for (u32_t index = 0; index < stack->count; ++index) \
+        for (C##_t index = 0; index < stack->count; ++index) \
         {   T##_c__print_(f, &stack->data[index]); \
             fprintf(f, ", "); \
         } \
@@ -105,7 +105,7 @@ IMPL \
     } \
 ) \
 IMPL \
-(   T##_p stack_##T##_p__offset_p_(stack_##T##_p stack, u32_p offset), ALIGN, \
+(   T##_p stack_##T##_p__offset_p_(stack_##T##_p stack, C##_p offset), ALIGN, \
     {   if (*offset == UINT32_MAX) \
         {   fprintf(stderr, "invalid offset: %d", UINT32_MAX); \
             exit(1); \
@@ -117,7 +117,7 @@ IMPL \
     } \
 ) \
 IMPL \
-(   void refer_##T##_p__enscope_from_stack_(refer_p refer, stack_##T##_p stack, u32_t offset),, \
+(   void refer_##T##_p__enscope_from_stack_(refer_p refer, stack_##T##_p stack, C##_t offset),, \
     {   reference_f reference_ = (reference_f)stack_##T##_p__offset_p_; \
         DEBUG_ASSERT((size_t)reference_ % 8 == 0); \
         *refer = \
@@ -125,13 +125,13 @@ IMPL \
             {   .tagged_reference = ((size_t)reference_) | REFER_TAG_POINTER, \
                 .start = (word_t){ .ptr = (size_t)stack }, \
                 .maybe_descope_offset = REFER_TAG_VALUE, /* no need to free. */ \
-                .offset = (word_t){ .u32 = offset }, \
+                .offset = (word_t){ . C = offset }, \
             } \
         ); \
     } \
 ) \
 IMPL \
-(   void refer_##T##_p__enscope_from_refer_stack_(refer_p refer, refer_t refer_stack, u32_t offset),, \
+(   void refer_##T##_p__enscope_from_refer_stack_(refer_p refer, refer_t refer_stack, C##_t offset),, \
     /*
     TODO: if we add a `refer_p refer_stack` overload and `refer_stack` is an owned pointer,
     we can just use `start` as a pointer that equals the owned pointer.  (i.e., we won't own it.)
@@ -145,7 +145,7 @@ IMPL \
             {   .tagged_reference = ((size_t)reference_) | REFER_TAG_OWNED_REFER, \
                 .start = (word_t){ .refer = nested_refer }, \
                 .maybe_descope_offset = REFER_TAG_VALUE, /* no need to free. */ \
-                .offset = (word_t){ .u32 = offset }, \
+                .offset = (word_t){ . C = offset }, \
             } \
         ); \
     } \
