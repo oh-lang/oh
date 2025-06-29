@@ -1,0 +1,10 @@
+memory_: arch_ unsigned_
+{    ::allocate_(): hm_[ptr_[u8_]]
+     ::reallocate_(ptr_[u8_];): hm_[null_]
+}
+
+er_: one_of_
+[    out_of_memory:
+]
+
+hm_[of_]: hm_[ok_: of_, er_]

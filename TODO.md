@@ -97,6 +97,9 @@ we'll also alphabetize input (and output) arguments.
     then we can just put in the named argument *without a `_t`*, or maybe just `_n` after,
     e.g., `my_fn_(arg_name; int_): null_` becomes `void PREFIX_my_fn__arg_name_n_(int_p arg_name);`
 
+methods get the name of the class first.  TODO: but how are we going to handle programmatically
+creating the function name?
+
 ```
 # in oh-lang, in file `my_file.oh`:
 my_function_(y: dbl_, x; int_): str_

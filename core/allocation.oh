@@ -1,0 +1,84 @@
+allocation_
+[    of_
+     # if not null, we allocate just enough space for this extra data
+     # just before the buffer of `of_` values.  there can be multiple
+     # `of` values, but only ever one instance of `extra_data` is added.
+     extra_data_: null_
+     # determines the maximum size of the allocation, and
+     # makes indexing this allocation potentially more efficient.
+     count_: select_count_
+     # whether to include capacity inside this allocation.
+     # if not, you need to supply it when running various methods.
+     local_capacity: bool_ = true
+]:
+[    @private m:
+     [    ptr[of_];
+          capacity[require: local_capacity];
+     ]
+]
+{    ::capacity_[require: local_capacity](): m capacity
+
+     # ensure you free any elements that were initialized.
+     # this data structure does not keep track of those.
+     ;;capacity_[require: local_capacity](new. capacity_): hm_[null_]
+          m capacity_(new, old. m capacity_())
+
+     @private_if(local_capacity)
+     ;;capacity_(new. capacity_, old. capacity_): hm_[null_]
+          required_bytes: memory_ = assert_
+          (    new * of_ bytes_() + extra_data_bytes
+               er: out_of_memory
+          )
+          if old == 0
+               ptr[u8_]: required_bytes allocate_() assert_(er: out_of_memory)
+               m ptr = ptr + extra_data_bytes
+          else
+               ptr[u8_]; m ptr
+               ptr -= extra_data_bytes
+               required_bytes reallocate_(;ptr) assert_(er: out_of_memory)
+               m ptr = ptr + extra_data_bytes
+
+     # make sure that this element is already initialized.
+     # this will return an error if `offset` is out of bounds.
+     ;:at_[require: local_capacity](offset.): hm_[(of;:)]
+
+     ;;initialize_[require: local_capacity](offset., of.): hm_[null_]
+
+     ;;deinitialize_[require: local_capacity](offset.): hm_[null_]
+
+     ;;remove_[require: local_capacity](offset.): hm_[of_]
+
+     # TODO: non-local_capacity versions of the above, call them.
+
+     @private
+     extra_data_bytes: memory_
+          @if extra_data_ is null_
+               0
+          @else
+               bytes: memory_(extra_data_)
+               word_memory: memory_(arch_ word_)
+               need_one_more_word: bytes %% word_memory != 0
+               return (bytes // word_memory + need_one_more_word) * word_memory
+
+     # if not allocated, this can return an error for `::`;
+     # it can also return an error for `;;` if we run out of memory.
+     ;:extra_data_[require: extra_data_ is not_[null_]](): hm_[(extra_data;:)]
+          if m ptr == null
+               m capacity_(small_capacity) assert_()
+          ptr[u8_]: m ptr  # TODO: casting??
+          ptr -= extra_data_bytes  # `extra_data_` starts before the `of_` buffer
+          ptr to_()
+
+     # TODO: update based on size of `of_`
+     small_capacity: 4
+
+     capacity_: count_
+     offset_: offset_[count_]
+
+     hm_[of_]: hm_[of_]
+}
+
+hm_[of_]: hm_
+[    ok_: of_
+     er_: container_ er_
+]

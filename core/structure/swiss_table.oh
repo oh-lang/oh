@@ -1,69 +1,72 @@
-# low level data structure that is useful as a foundation for hash maps.
-swiss_table_
+# low level data structure that is useful as a foundation for insertion-ordered
+# containers that are indexed by an `at`, e.g., insertion-ordered hash maps.
+linked_swiss_table_
 [    # key for the hash map
      at_
-     # value for the hash map
-     of_
-     # element to be held *in* the hash map.
-     # override if your data is somewhere else.
-     element_: [at:, of;]
-     # if not null, this will increase the size of the `table_element`
-     # held in the hash map by the size of this type.
-     remaining_hash_: arch_ unsigned_
+     # element to be held *in* the hash map.  this should include `at`
+     # or some way to look up the key `at`.  (see `retrieve_`.)
+     element_
+     # override if there's another way to get `at` from `element`.
+     retrieve_(m;:, element;:): (at;:)
+          element at
+     bucket_count: count_ = 16
      # type used for counting elements in this table.
-     count_: arch_ count_
-     # override if there's a chance that storing data can fail.
-     store_er_: never_
-     # override if there's another way to combine `at` and `of` into an `element`.
-     store_(m;, at., of.): hm_[ok_: element_, er_: store_er_]:
-          [at, of]
-     # override if there's another way to get `of` from `element`.
-     retrieve_(m;:, element;:): (of;:)
-          element of
+     count_: select_count_ = arch_ count_
 ]:
 [    @private m:
-     [    table; ptr_[null_]
-          count;
-          capacity;
+     [    # we don't use local_capacity so that we can pack these structs better.
+          elements; allocation_[element_, local_capacity: false]
+          links; allocation_[link_, count_, extra_data_: linked_head_]
+          ELEMENTS_capacity;
+          ELEMENTS_count;
      ]
 ]
-{    new_table_(capacity.): ptr_[table_[capacity]]
+{    @private
+     link_:
+     [    metadata; vector_[bucket_count, metadatum_]
+          linked_offsets; buffer_[bucket_count, linked_offset_]
+     ]
+
+     @private
+     linked_offset_:
+     [    # possibly a partial hash if `count_ < arch_ count_`.
+          hash; count_ unsigned_
+          offset; count_ offset_
+          next; count_ offset_
+          previous; count_ offset_
+     ]
+
+     # TODO: options in `[]` to put these in the table locally or not.
+     @private
+     linked_head_:
+     [    start; count_ offset_
+          end; count_ offset_
+          # index into `linked_offsets` that is the first free in the list.
+          # essentially will a list of the tombstoned elements.
+          first_free; count_ offset_
+     ]
 
      capacity_: count_
-
-     @private
-     table_[capacity]:
-     [    metadata; vector_[count: capacity, metadatum_]
-          elements; buffer_[count: capacity, table_element_]
-     ]
-     {    ;;insert_(hash: u64_, element.): u64_
-               in_bounds; hash % capacity
-               while m metadata[in_bounds] presence == full
-                    in_bounds = (in_bounds + 1) % capacity
-               @if remaining_hash_ is null_:
-                    hash_start: u6_(truncate: hash)
-                    m metadata[in_bounds] = [hash_start, presence: full]
-                    m elements move_construct_(in_bounds, element)
-               @else
-                    [hash_start, remaining_hash]: split_(hash)
-                    m metadata[in_bounds] = [hash_start, presence: full]
-                    m elements move_construct_(in_bounds, [remaining_hash, element])
-               in_bounds
-     }
-
-     @private
-     table_element_: @if remaining_hash_ is null_
-          element_
-     @else
-          [remaining_hash:, element;]
-
-     @private
-     split_[require: remaining_hash_ is not_[null_]](hash. u64_): [hash_start: u6_, remaining_hash:]
-          [hash_start: _(truncate: hash), remaining_hash: _(truncate. hash >> 6)]
 }
 
 @private
-metadatum_:
-[    hash_start; u6_ = 0
-     presence; one_of_[empty, full, deleted] = empty
+metadatum_: u8_
+[    ;;renew_(): null_
+          u8 = 0
+
+     ::empty_(): bool_
+          u8 == 0
+     ::full_(): bool_
+          u8 & 128
+     ::tombstoned_(): bool_
+          u8 == 127
+     # TODO: `matches_(hash)`
+
+     ;;clear_(): null_
+          u8 = 0
+     ;;fill_(hash. u64_): [remaining_hash: u64_]
+          u8 = 128 | (hash & 127)
+          remaining_hash: hash >> 7
+     ;;tombstone_(): null_
+          u8 = 127
 ]
