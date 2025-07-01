@@ -7,7 +7,7 @@ dll_[of_, count_with_: count_arch_]: all_of_
           next_free_offset; offset_ max_()
      ]
 ]
-{   offset_: count_with_ unsigned_
+{    offset_: count_with_ unsigned_
 
      ::count_(): count_with_
           m count

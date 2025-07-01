@@ -1,5 +1,6 @@
 # low level data structure that is useful as a foundation for insertion-ordered
 # containers that are indexed by an `at`, e.g., insertion-ordered hash maps.
+# at a low level, it interleaves a doubly-linked list and a swiss table.
 linked_swiss_table_
 [    # key for the hash map
      at_
@@ -12,16 +13,40 @@ linked_swiss_table_
      bucket_count: count_ = 16
      # type used for counting elements in this table.
      count_: select_count_ = arch_ count_
+     # if you really want to optimize the size of this struct, we can use
+     # some indirection to put `count` in an allocated spot.
+     local_count: bool_ = true
 ]:
 [    @private m:
      [    # we don't use local_capacity so that we can pack these structs better.
-          elements; allocation_[element_, local_capacity: false]
-          links; allocation_[link_, count_, extra_data_: linked_head_]
+          elements; raw_allocation_[element_, header_: element_header_]
+          # data for the doubly-linked list.  we don't use a normal DLL
+          # because we don't grow this like a stack, we index into it
+          # via hash truncation.
+          links; raw_allocation_[link_, header_: links_header_]
+          # for optimal packing, we put all counts here at the end.
           ELEMENTS_capacity;
-          ELEMENTS_count;
+          LINKS_capacity;
+          count[require: local_count];
      ]
 ]
-{    @private
+{    ::count_(): count_
+          @if local_count
+               m count
+          @else
+               if !m elements
+                    0
+               else
+                    # TODO: there should be an "easy" way to tell oh-lang that
+                    # `m elements header_()` should not throw because `!!m elements` is true.
+                    m elements header_() count
+
+     @private
+     element_header_:
+     [    count[require: !local_count];
+     ]
+
+     @private
      link_:
      [    metadata; vector_[bucket_count, metadatum_]
           linked_offsets; buffer_[bucket_count, linked_offset_]
@@ -38,7 +63,7 @@ linked_swiss_table_
 
      # TODO: options in `[]` to put these in the table locally or not.
      @private
-     linked_head_:
+     links_header_:
      [    start; count_ offset_
           end; count_ offset_
           # index into `linked_offsets` that is the first free in the list.
@@ -47,6 +72,14 @@ linked_swiss_table_
      ]
 
      capacity_: count_
+
+     @private
+     raw_allocation_[of_, header_]: allocation_
+     [    of_
+          count_
+          local_capacity: false
+          header_
+     ]
 }
 
 @private
