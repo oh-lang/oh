@@ -1,0 +1,4 @@
+#[#
+idea is to have a hash map + a list of recently-used values.
+recently-used values are indexed by an SLL.
+#]#
