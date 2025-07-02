@@ -61,21 +61,33 @@ allocation_
           @else
                bytes: memory_(header_)
                word_memory: memory_(arch_ word_)
+               # TODO: maybe just `ceil(bytes / word_memory) * word_memory`??
                need_one_more_word: bytes %% word_memory != 0
                (bytes // word_memory + need_one_more_word) * word_memory
 
-     ;:header_[require: header_ is not_[null_]](fn_(header;:): ~t_, default. t_): t_
+     ::header_[require: header_ is not_[null_]](): hm_[(header;)]
+          if m
+               ok_(m head_() to_())
+          else
+               er_(unallocated)
+
+     ;;header_
+     [    require: header_ is not_[null_] and local_capacity
+     ](): hm_[(header;)]
+          m header_(m capacity_())
+
+     @private_if(local_capacity)
+     ;;header_[require: header_ is not_[null_]]
+     (    capacity.
+     ): hm_[(header;)]
           if !m
-               @if @readonly(m)
-                    return fn_(default)
-               if m capacity_(small_capacity) is_er_()
-                    return fn_(default)
+               m capacity_(new. small_capacity, old. capacity) assert_()
           debug assert_(!!m)
-          m header_(fn_)
+          ok_(m head_() to_())
 
      # the no-default version to get the `header`, when `m` is truthy.
-     ;:header_[require: header_ is not_[null_]](fn_(header;:): ~t_): t_ where !!m
-          fn_(head_() to_())
+     ;:header_[require: header_ is not_[null_]](): (header;:) where !!m
+          m head_() to_()
 
      @private
      ;;head_(ptr[u8_].): null_

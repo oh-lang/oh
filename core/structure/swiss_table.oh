@@ -34,7 +34,11 @@ linked_swiss_table_
           @if local_count
                m count
           @else
-               m elements header_({$element_header count}, default. 0)
+               # TODO: this might be cleaner:
+               # `m elements header_() count ?? 0`
+               # but we'd have to do something like `vector3?;`, `vector3 x` being nullish,
+               # and the corresponding stuff for `hm_` as well.
+               m elements header_() map_({$ok count}, {$_er, 0})
 
      @private
      element_header_:
