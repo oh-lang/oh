@@ -13,14 +13,14 @@ allocation_
      local_capacity: bool_ = true
 ]:
 [    @private m:
-     [    ptr[of_];
+     [    of_ptr[of_];
           capacity[require: local_capacity];
      ]
 ]
 {    ::capacity_[require: local_capacity](): m capacity
 
      ::!(): bool_
-          m ptr == null
+          m of_ptr == null
 
      # ensure you free any elements that were initialized
      # if the new capacity is smaller than the old capacity.
@@ -36,12 +36,11 @@ allocation_
           )
           if old == 0
                ptr[u8_]: required_bytes allocate_() assert_(er: out_of_memory)
-               m ptr = ptr + header_bytes
+               m head_(ptr)
           else
-               ptr[u8_]; m ptr
-               ptr -= header_bytes
+               ptr[u8_]; m head_()
                required_bytes reallocate_(;ptr) assert_(er: out_of_memory)
-               m ptr = ptr + header_bytes
+               m head_(ptr)
 
      # make sure that this element is already initialized.
      # this will return an error if `offset` is out of bounds.
@@ -63,27 +62,34 @@ allocation_
                bytes: memory_(header_)
                word_memory: memory_(arch_ word_)
                need_one_more_word: bytes %% word_memory != 0
-               return (bytes // word_memory + need_one_more_word) * word_memory
+               (bytes // word_memory + need_one_more_word) * word_memory
 
-     # if not allocated, this can return an error for `::`;
-     # it can also return an error for `;;` if we run out of memory.
-     ;:header_[require: header_ is not_[null_]](): hm_[(header;:)]
+     ;:header_[require: header_ is not_[null_]](fn_(header;:): ~t_, default. t_): t_
           if !m
-               if @readonly(m)
-                    return er_(not_allocated)
-               else
-                    m capacity_(small_capacity) assert_()
-          # TODO: is this the best way to assert using the no-throw version of `header_`?
-          # or should we have a cast like `(m where !!m) header_()` or `with`
-          # or maybe `assume_(!!m)`, e.g., `assume_(!!m) {m header_()}`
+               @if @readonly(m)
+                    return fn_(default)
+               if m capacity_(small_capacity) is_er_()
+                    return fn_(default)
           debug assert_(!!m)
-          m header_()
+          m header_(fn_)
 
-     # the no-throw version to get the `header`, when `m` is truthy.
-     ;:header_[require: header_ is not_[null_]](): (header;:) where !!m
-          ptr[u8_]: m ptr  # TODO: casting??
+     # the no-default version to get the `header`, when `m` is truthy.
+     ;:header_[require: header_ is not_[null_]](fn_(header;:): ~t_): t_ where !!m
+          fn_(head_() to_())
+
+     @private
+     ;;head_(ptr[u8_].): null_
+          m of_ptr = ptr + header_bytes
+
+     @private
+     ::head_(): ptr_[u8_] where !!m
+          ptr[u8_]: m of_ptr  # TODO: casting??
           ptr -= header_bytes  # `header_` starts before the `of_` buffer
-          ptr to_()
+          ptr
+
+     @private
+     ::head_(): ptr_[u8_] where !m
+          ptr_()    # null pointer
 
      # TODO: update based on size of `of_`
      small_capacity: 4

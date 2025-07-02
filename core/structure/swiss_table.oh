@@ -34,10 +34,7 @@ linked_swiss_table_
           @if local_count
                m count
           @else
-               if !m elements
-                    0
-               else
-                    m elements header_() count
+               m elements header_({$element_header count}, default. 0)
 
      @private
      element_header_:
