@@ -6752,7 +6752,9 @@ insertion order, but same contents).
 ### where operator
 
 TODO: could we just use `if` or `when` here?  i like how `where` reads, though,
-very mathematically.
+very mathematically.  also it might be required to have a different keyword
+for the specialized versions of methods, like `::do_this(): hm_[i32_]`
+and `::do_this(): i32_ where !!m`, which will never throw.
 
 The `where` operator can be used to further narrow a conditional.  It
 is typically used in a `what` statement like this:

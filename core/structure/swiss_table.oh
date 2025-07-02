@@ -37,8 +37,6 @@ linked_swiss_table_
                if !m elements
                     0
                else
-                    # TODO: there should be an "easy" way to tell oh-lang that
-                    # `m elements header_()` should not throw because `!!m elements` is true.
                     m elements header_() count
 
      @private

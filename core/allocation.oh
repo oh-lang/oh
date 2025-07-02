@@ -69,7 +69,18 @@ allocation_
      # it can also return an error for `;;` if we run out of memory.
      ;:header_[require: header_ is not_[null_]](): hm_[(header;:)]
           if !m
-               m capacity_(small_capacity) assert_()
+               if @readonly(m)
+                    return er_(not_allocated)
+               else
+                    m capacity_(small_capacity) assert_()
+          # TODO: is this the best way to assert using the no-throw version of `header_`?
+          # or should we have a cast like `(m where !!m) header_()` or `with`
+          # or maybe `assume_(!!m)`, e.g., `assume_(!!m) {m header_()}`
+          debug assert_(!!m)
+          m header_()
+
+     # the no-throw version to get the `header`, when `m` is truthy.
+     ;:header_[require: header_ is not_[null_]](): (header;:) where !!m
           ptr[u8_]: m ptr  # TODO: casting??
           ptr -= header_bytes  # `header_` starts before the `of_` buffer
           ptr to_()
