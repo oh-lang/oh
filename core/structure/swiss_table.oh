@@ -4,18 +4,19 @@
 linked_swiss_table_
 [    # key for the hash map
      at_
-     # element to be held *in* the hash map.  this should include `at`
-     # or some way to look up the key `at`.  (see `retrieve_`.)
-     element_
-     # override if there's another way to get `at` from `element`.
-     retrieve_(m;:, element;:): (at;:)
-          element at
+     # what's stored in a element at `at` in the table.
+     # can be null if we're a `set_`.
+     of_
      bucket_count: count_ = 16
      # type used for counting elements in this table.
      count_: select_count_ = arch_ count_
      # if you really want to optimize the size of this struct, we can use
-     # some indirection to put `count` in an allocated spot.
+     # some indirection to put `count` in an allocated spot if `false`.
      local_count: bool_ = true
+     # these also optimize the size of the struct (if `false`).
+     local_start: bool_ = false
+     local_end: bool_ = false
+     local_first_free: bool_ = false
 ]:
 [    @private m:
      [    # we don't use local_capacity so that we can pack these structs better.
@@ -23,11 +24,14 @@ linked_swiss_table_
           # data for the doubly-linked list.  we don't use a normal DLL
           # because we don't grow this like a stack, we index into it
           # via hash truncation.
-          links; raw_allocation_[link_, header_: links_header_]
+          link_buckets; raw_allocation_[link_bucket_, header_: links_header_]
           # for optimal packing, we put all counts here at the end.
           ELEMENTS_capacity;
-          LINKS_capacity;
+          LINK_BUCKETS_capacity;
           count[require: local_count];
+          start[require: local_start]; offset_
+          end[require: local_end]; offset_
+          first_free[require: local_first_free]; offset_
      ]
 ]
 {    ::count_(): count_
@@ -40,37 +44,103 @@ linked_swiss_table_
                # and the corresponding stuff for `hm_` as well.
                m elements header_() map_({$ok count}, {$_er, 0})
 
+     # shuffles the iteration order of this table
+     ;;shuffle_(): null_
+
+     # optimizes this table so that all elements are laid out in order
+     # and the linked list goes from left to right contiguously.
+     # this is not really necessary to do unless elements have been deleted,
+     # or the table has been shuffled/sorted.
+     # TODO: should this perform a rehash?  probably?
+     ;;defrag_(): null_
+
+     ;;remaining_capacity_(): count_
+          m LINK_BUCKETS_capacity * bucket_count - m count_()
+
+     # returns an error if there's already an element inside the table
+     # with the given `at`.  can also return an error if we are out of memory.
+     # see also `replace_`.
+     ;;append_(at., of[require: of_ is not_[null_]].): hm_[null_]
+
+     @alias ;;insert_(at., of.): m append_(at, of)
+
+     # returns the element `of` that was at `at`, or an error if there wasn't
+     # already an element inside the table with the given `at`.
+     # see also `append_` and `remove_`.
+     ;;replace_[require: of_ is not_[null_]](at:, of.): hm_[of_]
+
+     # returns an error if there's not already an element inside the table
+     # with the given `at`, otherwise the element's `of`.
+     ;;remove_(at:): hm_[of_]
+
+     # returns the number of elements deleted, should be 0 or 1.
+     ;;delete_(at:): count_
+
+     # deletes any elements which match the given `of`.
+     # returns the number of elements deleted.
+     ;;delete_[require: of_ is not_[null_]](of:): count_
+
+     # if readonly, returns an error if there's not already an element inside
+     # the table with the given `at`.  if writable, returns an error if we
+     # run out of memory or `of_` is not defaultable and `at` is not in the table.
+     ;:at_[require: of_ is not_[null_]](at.): hm_[(of;:)]
+
+     # NOTE TO SELF: we can't do `;;at_(...): (of?;)` because we'll potentially
+     # swallow errors (e.g., `map at_(3) = null` should be fine from a memory standpoint,
+     # but `map at_(3) = 7` may throw due to running out of memory.
+     ::at_[require: of_ is not_[null_]](at.): hm_[(of?:)]
+
+     @private
+     ;:start_(): (offset_;:) where !!m
+          @if local_start
+               m start
+          @else
+               m link_buckets header_(m LINK_BUCKETS_capacity) start
+
+     @private
+     ;:end_(): (offset_;:) where !!m
+          @if local_end
+               m end
+          @else
+               m link_buckets header_(m LINK_BUCKETS_capacity) end
+
+     @private
+     ;:first_free_(): (offset_;:) where !!m
+          @if local_first_free
+               m first_free
+          @else
+               m link_buckets header_(m LINK_BUCKETS_capacity) first_free
+
      @private
      element_header_:
      [    count[require: !local_count];
      ]
 
      @private
-     link_:
+     link_buckets_header_:
+     [    start[require: !local_start]; offset_
+          end[require: !local_end]; offset_
+          # index into `linked_offsets` that is the first free in the list.
+          # essentially will a list of the tombstoned elements.
+          first_free[require: !local_first_free]; offset_
+     ]
+
+     @private
+     link_bucket_:
      [    metadata; vector_[bucket_count, metadatum_]
           linked_offsets; buffer_[bucket_count, linked_offset_]
      ]
 
      @private
      linked_offset_:
-     [    # possibly a partial hash if `count_ < arch_ count_`.
-          hash; count_ unsigned_
-          offset; count_ offset_
-          next; count_ offset_
-          previous; count_ offset_
-     ]
-
-     # TODO: options in `[]` to put these in the table locally or not.
-     @private
-     links_header_:
-     [    start; count_ offset_
-          end; count_ offset_
-          # index into `linked_offsets` that is the first free in the list.
-          # essentially will a list of the tombstoned elements.
-          first_free; count_ offset_
+     [    partial_hash; count_ unsigned_
+          offset; offset_
+          next; offset_
+          previous; offset_
      ]
 
      capacity_: count_
+     offset_: count_ offset_
 
      @private
      raw_allocation_[of_, header_]: allocation_
@@ -79,6 +149,8 @@ linked_swiss_table_
           local_capacity: false
           header_
      ]
+
+     @private element_: [at:, of[require: of_ is not_[null_]];]
 }
 
 @private
