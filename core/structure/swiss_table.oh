@@ -44,16 +44,6 @@ linked_swiss_table_
                # and the corresponding stuff for `hm_` as well.
                m elements header_() map_({$ok count}, {$_er, 0})
 
-     # shuffles the iteration order of this table
-     ;;shuffle_(): null_
-
-     # optimizes this table so that all elements are laid out in order
-     # and the linked list goes from left to right contiguously.
-     # this is not really necessary to do unless elements have been deleted,
-     # or the table has been shuffled/sorted.
-     # TODO: should this perform a rehash?  probably?
-     ;;defrag_(): null_
-
      ;;remaining_capacity_(): count_
           m LINK_BUCKETS_capacity * bucket_count - m count_()
 
@@ -73,22 +63,41 @@ linked_swiss_table_
      # with the given `at`, otherwise the element's `of`.
      ;;remove_(at:): hm_[of_]
 
+     @private
+     ::locate_(for_replacing: at_): one_of_[ELEMENT_offset, LINK_offset
+
      # returns the number of elements deleted, should be 0 or 1.
      ;;delete_(at:): count_
 
-     # deletes any elements which match the given `of`.
+     # deletes any elements which match the given `all`.
      # returns the number of elements deleted.
-     ;;delete_[require: of_ is not_[null_]](of:): count_
+     ;;delete_[require: of_ is not_[null_]](all: of_): count_
+
+     # returns the number of elements deleted, should be 0 or 1.
+     ;;delete_[require: of_ is not_[null_]](first: of_): count_
+
+     # returns the number of elements deleted, should be 0 or 1.
+     ;;delete_[require: of_ is not_[null_]](last: of_): count_
 
      # if readonly, returns an error if there's not already an element inside
-     # the table with the given `at`.  if writable, returns an error if we
-     # run out of memory or `of_` is not defaultable and `at` is not in the table.
+     # the table with the given `at`.  if writable, returns an error if `at` is
+     # not in the table and either we ran out of memory or `of_` is not defaultable.
      ;:at_[require: of_ is not_[null_]](at.): hm_[(of;:)]
 
      # NOTE TO SELF: we can't do `;;at_(...): (of?;)` because we'll potentially
      # swallow errors (e.g., `map at_(3) = null` should be fine from a memory standpoint,
      # but `map at_(3) = 7` may throw due to running out of memory.
      ::at_[require: of_ is not_[null_]](at.): hm_[(of?:)]
+
+     # shuffles the iteration order of this table
+     ;;shuffle_(): null_
+
+     # optimizes this table so that all elements are laid out in order
+     # and the linked list goes from left to right contiguously.
+     # this is not really necessary to do unless elements have been deleted,
+     # or the table has been shuffled/sorted.
+     # TODO: should this perform a rehash?  probably?
+     ;;defrag_(): null_
 
      @private
      ;:start_(): (offset_;:) where !!m
