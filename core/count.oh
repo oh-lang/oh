@@ -1,16 +1,11 @@
 #[#
-TODO: i think we want to do u8 count from 0 to 255.
-and u8 index from 0 to 254, with 255 a special "nullish" index.
-normally we've been trying to save room for negative indexing,
-so count is only valid from 0 to 128, so all signed indexes
-from -128 to 127 are valid (and no room for an invalid index).
-choosing one over the other comes down to whether we want to
-always support pythonic negative indexing, or if it's more
-important to squeeze the most juice out of each count.
-this is more important for u8 than u16 and up.
+we leave room for negative indexing, so a `u8_` count is only valid
+from 0 to 128, so all signed `i8_` indexes from -128 to 127 are valid
+(and there is no space for an invalid index), i.e., via `count_ index_`.
+we also have concepts of an `count_ offset_` which is an unsigned
+index that is valid from 0 to 127 for a `u8_` count.
 #]#
-
-count_primitive_: select_[count64_, count32_, count16_, count8_]
+select_count_: select_[count64_, count32_, count16_, count8_]
 
 count_arch_: count_[arch_ unsigned_]
 
@@ -20,7 +15,7 @@ count16_: count_[u16_]
 count8_: count_[u8_]
 
 @final
-count_[of_: unsigned_primitive_]: all_of_
+count_[of_: select_unsigned_]: all_of_
 [    m: [@private value; of_]
      integer
 ]
@@ -61,6 +56,9 @@ count_[of_: unsigned_primitive_]: all_of_
                [value: m value * 2]
           else
                max_()
+
+     index_: index_[signed_[of_]]
+     offset_: offset_[of_]
 }
 
 hm_[of_]: hm_[ok_: of_, number_ er_]
@@ -88,3 +86,9 @@ hm_[of_]: hm_[ok_: of_, number_ er_]
           assert_(c_(65) double_or_max_()) == 128
           assert_(c_(127) double_or_max_()) == 128
           assert_(c_(128) double_or_max_()) == 128
+
+@test "index and offset"
+     @test "count8_"
+          c_: count8_
+          assert_(c_ index_) == index_[i8_]
+          assert_(c_ offset_) == offset_[u8_]
