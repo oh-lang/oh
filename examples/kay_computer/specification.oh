@@ -1,42 +1,48 @@
 #[#
 the kay computer is named for 1000 being a "k" amount of something,
-and the word for this computer can contain 1000 possibilities.
-because `1000 = 26^2 + 18^2`, we represent a word using either
-two alphabetic letters in sequence (e.g., "Az"), in particular
+and the word size for this computer can contain 1000 possibilities.
+because `1000 = 26^2 + 18^2`, we can represent a word using either
+two alphabetic letters in sequence (e.g., Az), in particular
 capitalizing the first so we know it's the start of a word,
-or by choosing from the following 18 pairs (first, second),
+or by choosing two from the following 18 pairs (first, second),
 again making first/second digits distinguishable to make sure
-we know where the start of a word is.
+we know where the start of a word is (e.g., 4& or @-).
 ```
-     pairs:
-     [    ['{', '/']
-          ['|', '0']
-          ['}', '1']
-          ['~', '2']
-          ['!', '3']
-          ['"', '4']
-          ['#', '5']
-          ['$', '6']
-          ['%', '7']
-          ['&', '8']
-          ['\'', '9']
-          ['(', ':'],
-          [')', ';'],
-          ['*', '<'],
-          ['+', '='],
-          [',', '>'],
-          ['-', '?'],
-          ['.', '@'],
+     pairs: array_[pair_[u8_]] =
+     [    ['/', '{']
+          ['0', '|']
+          ['1', '}']
+          ['2', '~']
+          ['3', '!']
+          ['4', '"']
+          ['5', '#']
+          ['6', '$']
+          ['7', '%']
+          ['8', '&']
+          ['9', '\'']
+          [':', '(']
+          [';', ')']
+          ['<', '*']
+          ['=', '+']
+          ['>', ',']
+          ['?', '-']
+          ['@', '.']
      ]
-     # which can be calculated as `pairs[eighteen] = [first_(eighteen), second_(eighteen)]` from:
+     # which can be calculated as
+     # `pairs[eighteen] = [first_(eighteen), second_(eighteen)]` via:
      eighteen_: one_of_[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
      first_(eighteen.): u8_
+          47 + digit
+     second_(eighteen.): u8_
           if eighteen < 4
                123 + eighteen
           else
                29 + eighteen
-     second_(eighteen.): u8_
-          47 + digit
 ```
 code can be commented via `[this is a comment]`.
+all other characters, including newlines and spaces, are ignored.
+we reserve the right to "truncate" words, e.g., "AB" would be
+"short word A" followed by a "short word B", whereas "AbCd" would
+be a normal word "Ab" followed by a normal word "Cd".
+however, for the time being, short words are errors.
 #]#
