@@ -47,12 +47,13 @@ be a normal word Ab followed by a normal word 3%.
 however, for the time being, short words are errors.
 
 just because the word size is 1000 doesn't mean we can't represent
-larger numbers; the kay computer has mega types (2 words, up to
-1_000_000 possibilities), giga types (3 words, up to 1_000_000_000
-possibilities), and tera types (4 words, up to 1_000_000_000_000
-possibilities).  kay computers specify the endianness of these
-larger primitive types as little endian.  along with kilo types
-(for 1000 possibilities), these are all "unsigned" types.  e.g.,
+larger numbers; the basic kilo types have 1000 possibilities, but
+there are also mega types (2 words, up to 1_000_000 possibilities),
+giga types (3 words, up to 1_000_000_000 possibilities), and tera
+types (4 words, up to 1_000_000_000_000 possibilities).  kay computers
+specify the endianness of these larger primitive types as little endian.
+
+positive numbers can be represented by unsigned types, e.g.,
 `u_kilo_` represent numbers from 0 to 999, `u_mega_` from 0 to 999_999, etc.
 
 pessimistic types can represent positive and negative numbers,
