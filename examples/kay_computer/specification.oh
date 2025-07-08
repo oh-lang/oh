@@ -78,4 +78,11 @@ to class variables, i.e., when those variables are strongly typed.
      # so `data_` is exactly three words if its type is known.
      data_: [u: u_kilo_, p: p_mega_]
 ```
+
+you can create a stack of any type, including `any_` type.  if
+the type has ambiguities (e.g., `any_` can be any type), there is
+a type ID that gets appended before the instance data.  stacks
+have `O(1)` pop/append but because `any_` type data can be sized
+differently, looking up the `k`th element is `O(min_(k, n - k))`.
+
 #]#
