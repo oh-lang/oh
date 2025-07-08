@@ -4,20 +4,27 @@ allocation_
      # if not null, we allocate just enough space for this extra data
      # just before the buffer of `of_` values.  there can be multiple
      # `of` values, but only ever one instance of `header` is added.
-     header_: null_
+     header_: any_ = null_
      # determines the maximum size of the allocation, and
      # makes indexing this allocation potentially more efficient.
      count_: select_count_
-     # whether to include capacity inside this allocation.
-     # if not, you need to supply it when running various methods.
-     local_capacity: bool_ = true
+     # use an alias so we can do, e.g., `allocation_[capacity_managed_ on_heap]`
+     # to specify `capacity_managed` (see next field).
+     capacity_managed_: managed_
+     # whether to put capacity locally inside this allocation.
+     # if `on_heap`, it gets added to the `full_header_`
+     capacity_managed:
 ]:
 [    @private m:
      [    of_ptr[of_];
-          capacity[require: local_capacity];
+          capacity[require: capacity_managed == locally];
      ]
 ]
-{    ::capacity_[require: local_capacity](): m capacity
+{    ::capacity_(): capacity_
+          @if local_capacity
+               m capacity
+          @else
+               m full_head_() capacity
 
      ::!(): bool_
           m of_ptr == null
@@ -25,13 +32,13 @@ allocation_
      # ensure you free any elements that were initialized
      # if the new capacity is smaller than the old capacity.
      # this data structure does not keep track of which elements are initialized.
-     ;;capacity_[require: local_capacity](new. capacity_): hm_[null_]
+     ;;capacity_(new. capacity_): hm_[null_]
           m capacity_(new, old. m capacity_())
 
-     @private_if(local_capacity)
+     @private
      ;;capacity_(new. capacity_, old. capacity_): hm_[null_]
           required_bytes: memory_ = assert_
-          (    new * of_ memory_() + header_bytes
+          (    new * of_ memory_() + full_header_bytes
                er: out_of_memory
           )
           if old == 0
@@ -44,63 +51,59 @@ allocation_
 
      # make sure that this element is already initialized.
      # this will return an error if `offset` is out of bounds.
-     ;:at_[require: local_capacity](offset.): hm_[(of;:)]
+     ;:at_(offset.): hm_[(of;:)]
 
-     ;;initialize_[require: local_capacity](offset., of.): hm_[null_]
+     ;;initialize_(offset., of.): hm_[null_]
 
-     ;;deinitialize_[require: local_capacity](offset.): hm_[null_]
+     ;;deinitialize_(offset.): hm_[null_]
 
-     ;;remove_[require: local_capacity](offset.): hm_[of_]
+     ;;remove_(offset.): hm_[of_]
 
      # TODO: non-local_capacity versions of the above, call them.
 
      @private
-     header_bytes: memory_
-          @if header_ is null_
+     full_header_bytes: memory_
+          @if full_header_ is null_
                0
           @else
-               bytes: memory_(header_)
+               bytes: memory_(full_header_)
                word_memory: memory_(arch_ word_)
                # TODO: maybe just `ceil(bytes / word_memory) * word_memory`??
                need_one_more_word: bytes %% word_memory != 0
                (bytes // word_memory + need_one_more_word) * word_memory
 
-     ::header_[require: header_ is not_[null_]](): hm_[(header;)]
+     # TODO: decide if we're doing a `fn_(header;:): ~t_` version instead;
+     # return `hm_[ok_: t_, er_: unallocated_]` if so.
+     ;:header_[require: header_ is not_[null_]](): hm_[(header;:)]
           if m
-               ok_(m head_() to_())
+               ok_(m header_())
           else
                er_(unallocated)
 
-     ;;header_
-     [    require: header_ is not_[null_] and local_capacity
-     ](): hm_[(header;)]
-          m header_(m capacity_())
-
-     @private_if(local_capacity)
-     ;;header_[require: header_ is not_[null_]]
-     (    capacity.
-     ): hm_[(header;)]
-          if !m
-               m capacity_(new. small_capacity, old. capacity) assert_()
-          debug assert_(!!m)
-          ok_(m head_() to_())
-
-     # the no-default version to get the `header`, when `m` is truthy.
+     # gets the `header`, when `m` is truthy.
      ;:header_[require: header_ is not_[null_]](): (header;:) where !!m
-          m head_() to_()
+          (full_header;:) = m full_head_() to_()
+          full_header header
 
      @private
-     ;;head_(ptr[u8_].): null_
-          m of_ptr = ptr + header_bytes
+     has_full_header_():
+          header_ is not_[null_] or capacity_managed == on_heap
 
      @private
-     ::head_(): ptr_[u8_] where !!m
+     ;;full_head_(ptr[u8_].): null_
+          if ptr == null
+               m of_ptr = null
+          else
+               m of_ptr = ptr + full_header_bytes
+
+     @private
+     ::full_head_[require: full_header_ is not_[null_]](): ptr_[u8_] where !!m
           ptr[u8_]: m of_ptr  # TODO: casting??
-          ptr -= header_bytes  # `header_` starts before the `of_` buffer
+          ptr -= full_header_bytes  # `full_header_` starts before the `of_` buffer
           ptr
 
      @private
-     ::head_(): ptr_[u8_] where !m
+     ::full_head_(): ptr_[u8_] where !m
           ptr_()    # null pointer
 
      # TODO: update based on size of `of_`
@@ -108,6 +111,14 @@ allocation_
 
      capacity_: count_
      offset_: offset_[count_]
+
+     @if header_ is not_[null_] or capacity_managed == on_heap
+          @private full_header_:
+          [    header[require: header_ is not_[null_]];
+               capacity[require: capacity_managed == on_heap];
+          ]
+     @else
+          @private full_header_: null_
 
      hm_[of_]: hm_[of_]
 }

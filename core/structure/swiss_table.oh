@@ -10,24 +10,23 @@ linked_swiss_table_
      bucket_count: count_ = 16
      # type used for counting elements in this table.
      count_: select_count_ = arch_ count_
+     count_managed_: managed_
      # if you really want to optimize the size of this struct, we can use
      # some indirection to put `count` in an allocated spot if `false`.
-     local_count: bool_ = true
+     count_managed:
      # these also optimize the size of the struct (if `false`).
+     # TODO: switch to `managed_` values.
      local_start: bool_ = false
      local_end: bool_ = false
      local_first_free: bool_ = false
 ]:
 [    @private m:
-     [    # we don't use local_capacity so that we can pack these structs better.
-          elements; raw_allocation_[element_, header_: element_header_]
+     [    elements; size_optimized_allocation_[element_, header_: element_header_]
           # data for the doubly-linked list.  we don't use a normal DLL
           # because we don't grow this like a stack, we index into it
           # via hash truncation.
-          link_buckets; raw_allocation_[link_bucket_, header_: links_header_]
+          link_buckets; size_optimized_allocation_[link_bucket_, header_: links_header_]
           # for optimal packing, we put all counts here at the end.
-          ELEMENTS_capacity;
-          LINK_BUCKETS_capacity;
           count[require: local_count];
           start[require: local_start]; offset_
           end[require: local_end]; offset_
@@ -152,10 +151,10 @@ linked_swiss_table_
      offset_: count_ offset_
 
      @private
-     raw_allocation_[of_, header_]: allocation_
+     size_optimized_allocation_[of_, header_]: allocation_
      [    of_
           count_
-          local_capacity: false
+          capacity_managed_ on_heap
           header_
      ]
 
