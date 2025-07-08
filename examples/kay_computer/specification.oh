@@ -1,9 +1,9 @@
 #[#
 the kay computer is named for 1000 being a "k" amount of something,
 and the word size for this computer can contain 1000 possibilities.
-because `1000 = 26^2 + 18^2`, we can represent a word using either
-two alphabetic letters in sequence (e.g., Az), in particular
-capitalizing the first so we know it's the start of a word,
+because `1000 == 26^2 + 18^2`, we can represent a word in executable
+code using either two alphabetic letters in sequence (e.g., Az), in
+particular capitalizing the first so we know it's the start of a word,
 or by choosing two from the following 18 pairs (first, second),
 again making first/second digits distinguishable to make sure
 we know where the start of a word is (e.g., 4& or @-).
@@ -39,10 +39,42 @@ we know where the start of a word is (e.g., 4& or @-).
           else
                29 + eighteen
 ```
-code can be commented via `[this is a comment]`.
+executable code can be commented via `[this is a comment]`.
 all other characters, including newlines and spaces, are ignored.
-we reserve the right to "truncate" words, e.g., "AB" would be
-"short word A" followed by a "short word B", whereas "AbCd" would
-be a normal word "Ab" followed by a normal word "Cd".
+we reserve the right to "truncate" words, e.g., A3 would be
+short word A followed by a short word 3, whereas Ab3% would
+be a normal word Ab followed by a normal word 3%.
 however, for the time being, short words are errors.
+
+just because the word size is 1000 doesn't mean we can't represent
+larger numbers; the kay computer has mega types (2 words, up to
+1_000_000 possibilities), giga types (3 words, up to 1_000_000_000
+possibilities), and tera types (4 words, up to 1_000_000_000_000
+possibilities).  kay computers specify the endianness of these
+larger primitive types as little endian.  along with kilo types
+(for 1000 possibilities), these are all "unsigned" types.  e.g.,
+`u_kilo_` represent numbers from 0 to 999, `u_mega_` from 0 to 999_999, etc.
+
+pessimistic types can represent positive and negative numbers,
+and are called pessimistic because they skew towards negative numbers,
+e.g, `p_kilo_` represents numbers from 0 to 499, then -500 to -1.
+this is like two's complement in standard binary computers.
+
+optimistic types are similar but skew towards positive numbers.
+e.g., `o_kilo_` represents numbers from 0 to 500, then -499 to -1.
+
+symmetric types represent equal counts of positive and negative
+numbers, with an additional null value.  e.g., `s_kilo_` represents
+numbers from 0 to 499, then a null value, then -499 to -1.
+
+where possible, the kay computer tries to avoid adding type data
+to class variables, i.e., when those variables are strongly typed.
+
+```
+     # `u_kilo_` is a word, `p_mega_` is two words,
+     # so `data_` is exactly three words if its type is known.
+     data_: [u: u_kilo_, p: p_mega_]
+```
+
+the kay computer strives to make adding classes easy.
 #]#
