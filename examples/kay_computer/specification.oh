@@ -68,6 +68,8 @@ symmetric types represent equal counts of positive and negative
 numbers, with an additional null value.  e.g., `s_kilo_` represents
 numbers from 0 to 499, then a null value, then -499 to -1.
 
+the kay computer strives to make adding classes/types easy.
+
 where possible, the kay computer tries to avoid adding type data
 to class variables, i.e., when those variables are strongly typed.
 
@@ -76,6 +78,4 @@ to class variables, i.e., when those variables are strongly typed.
      # so `data_` is exactly three words if its type is known.
      data_: [u: u_kilo_, p: p_mega_]
 ```
-
-the kay computer strives to make adding classes easy.
 #]#
