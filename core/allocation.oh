@@ -43,42 +43,52 @@ allocation_
           )
           if old == 0
                ptr[u8_]: required_bytes allocate_() assert_(er: out_of_memory)
-               m head_(ptr)
+               m full_head_(ptr)
           else
-               ptr[u8_]; m head_()
+               ptr[u8_]; m full_head_()
                required_bytes reallocate_(;ptr) assert_(er: out_of_memory)
-               m head_(ptr)
+               m full_head_(ptr)
 
-     # make sure that this element is already initialized.
+     # make sure that this element is already initialized;
+     # this `allocation` does not keep track of which elements are initialized.
      # this will return an error if `offset` is out of bounds.
      ;:at_(offset.): hm_[(of;:)]
+          assert_(offset < m capacity_())
+          to_(m of_ptr + offset)
 
+     # make sure that this element is NOT already initialized;
+     # this `allocation` does not keep track of which elements are initialized.
      ;;initialize_(offset., of.): hm_[null_]
+          assert_(offset < m capacity_())
+          ptr_offset: ptr_[of_] = m of_ptr + offset
+          memory_ initialize_(of, ptr_offset)
 
+     # make sure that this element is already initialized;
+     # this `allocation` does not keep track of which elements are initialized.
      ;;deinitialize_(offset.): hm_[null_]
+          assert_(offset < m capacity_())
+          ptr_offset: ptr_[of_] = m of_ptr + offset
+          memory_ deinitialize_(ptr_offset)
 
+     # make sure that this element is already initialized;
+     # this `allocation` does not keep track of which elements are initialized.
      ;;remove_(offset.): hm_[of_]
+          assert_(offset < m capacity_())
+          ptr_offset: ptr_[of_] = m of_ptr + offset
+          memory_ remove_(ptr_offset)
 
      # TODO: non-local_capacity versions of the above, call them.
-
-     @private
-     full_header_bytes: memory_
-          @if full_header_ is null_
-               0
-          @else
-               bytes: memory_(full_header_)
-               word_memory: memory_(arch_ word_)
-               # TODO: maybe just `ceil(bytes / word_memory) * word_memory`??
-               need_one_more_word: bytes %% word_memory != 0
-               (bytes // word_memory + need_one_more_word) * word_memory
-
-     # TODO: decide if we're doing a `fn_(header;:): ~t_` version instead;
-     # return `hm_[ok_: t_, er_: unallocated_]` if so.
-     ;:header_[require: header_ is not_[null_]](): hm_[(header;:)]
+     ::header_[require: header_ is not_[null_]](): hm_[(header:)]
           if m
                ok_(m header_())
           else
                er_(unallocated)
+
+     ;;header_[require: header_ is not_[null_]](): hm_[(header;)]
+          if !m
+               m capacity_(small_capacity) assert_()
+          assert_(!!m)
+          ok_(m header_())
 
      # gets the `header`, when `m` is truthy.
      ;:header_[require: header_ is not_[null_]](): (header;:) where !!m
@@ -105,6 +115,18 @@ allocation_
      @private
      ::full_head_(): ptr_[u8_] where !m
           ptr_()    # null pointer
+
+     @private
+     full_header_bytes: memory_
+          @if full_header_ is null_
+               0
+          @else
+               at_least_memory: memory_(full_header_)
+               word_memory: memory_(arch_ word_)
+               # TODO: maybe just `ceil(at_least_memory / word_memory) * word_memory`??
+               need_one_more_word: at_least_memory %% word_memory != 0
+               (at_least_memory // word_memory + need_one_more_word) * word_memory
+
 
      # TODO: update based on size of `of_`
      small_capacity: 4

@@ -12,7 +12,7 @@ linked_swiss_table_
      count_: select_count_ = arch_ count_
      count_managed_: managed_
      # if you really want to optimize the size of this struct, we can use
-     # some indirection to put `count` in an allocated spot if `false`.
+     # some indirection to put `count` in an allocated spot if `on_heap`.
      count_managed:
      # these also optimize the size of the struct (if `false`).
      # TODO: switch to `managed_` values.

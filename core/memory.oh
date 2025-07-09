@@ -1,6 +1,21 @@
 memory_: arch_ unsigned_
 {    ::allocate_(): hm_[ptr_[u8_]]
      ::reallocate_(ptr_[u8_];): hm_[null_]
+
+     # assumes that the value at `ptr` hasn't been initialized
+     # and moves `t` into that memory location.  this does not
+     # check `ptr` for any null or empty value before nuking it.
+     initialize_(~t., ptr[~t_]:): null_
+
+     # assumes that the value at `ptr` has been initialized
+     # and deinitializes it.  in debug mode, the `ptr` is cleared,
+     # while in non-debug it is not.
+     deinitialize_(ptr_[~t_]:): null_
+
+     # assumes that the value at `ptr` has been initialized
+     # and returns it.  in debug mode, the `ptr` is cleared,
+     # while in non-debug it is not.
+     remove_(ptr_[~t_]:): t_
 }
 
 er_: one_of_
