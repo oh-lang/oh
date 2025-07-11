@@ -57,20 +57,21 @@ more kays into several bytes, but we take a conservative approach and
 use an lexicographic code with `N = 16` bits, minimum `D = 4` bits of
 distance between code points, e.g., using an algorithm adapted from
 https://en.wikipedia.org/wiki/Lexicographic_code#Implementation; this
-would normally give 2048 code points, but we include the code point
-8194 initially and require every code point's individual bytes to
-have values of at least 32.  these artificial inefficiencies reduce
-the number of code points to 1000.  the first 30 of them are (putting
-8914 into its sorted position):
+would normally give 2048 code points, but we include the code points
+352 and 8483 and require every additional code point's individual bytes
+to not have a 0 byte or a byte from '\n' to '#'.  these inefficiencies
+reduce the number of code points to 1001.  to reduce to 1000 valid code
+points, we make 8483, which is "#!" in little endian, a special command
+for the file reader.  it instructs the file reader to skip subsequent
+bytes until a '\n' byte is found.  this enables a line that indicates
+how to run the binary, e.g., "#!/usr/bin/kay" at the start of a file.
+the first 20 code points are (putting 352 into its sorted position):
 ```
-8224, 8239, 8259, 8268, 8309, 8314, 8325, 8330, 8371, 8380,
-8409, 8422, 8502, 8505, 8528, 8543, 8673, 8809, 8863, 8914,
-8995, 9004, 9029, 9034, 9088, 9141, 9146, 9180, 9199, 9302,
+261, 302, 313, 331, 342, 352, 386, 412, 439, 465
+493, 506, 515, 548, 570, 584, 597, 623, 653, 656
 ```
 because this code has a Hamming distance of 4, we can correct 1 bit
-errors and detect up to 3 bit errors when reading code.  we also
-check if the first byte of a binary file is `#`, and if so, we ignore
-the rest of the line (i.e., up to and including '\n').
+errors and detect up to 3 bit errors when reading code.
 
 just because the kay count is 1000 doesn't mean we can't represent
 larger numbers; the basic kilo types have 1000 possibilities, but
@@ -117,6 +118,12 @@ by a certain number of arguments (specified by the operation).
 ```
      0-100     # push a `u_kilo_` number to the stack, i.e., 0 through 100, no argument
      101-200   # push a `p_kilo_` number to the stack, -100 through -1, no argument
+               # concatenate
+               # multiply
+               # divide
+               # modify the next opcode by popping the TOS, interpreting it as a stack,
+               #    running the next operation with that stack
+               #    then pushing the stack back onto the stack.
 ```
 
 #]#
