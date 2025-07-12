@@ -1,48 +1,3 @@
-# for a byte-code interpreter
-
-stack of call-frames for functions, but `Block`s can jump back more than one.
-this is almost continuation passing, but i think we can get away with
-jumping back a certain number of call frames, e.g., with `Block exit(3)`.
-
-probably only want one `Block` per function argument.
-
-when determining what overload to call for a function, we probably
-want to still have stack-based arguments, but alphabetized.  so we
-probably need to normalize:  `fn(B, C: some_function(), A: other_function())`
-needs to become something like `fn(A: other_function(), B, C: some_function())`.
-HOWEVER we need to keep the call order correct (e.g., `some_function()` should
-be called before `other_function()`).  either we'll need stack twizzling
-or references, e.g., stack: `..., B, C: some_function(), A: other_function(),`
-followed by `Ref_to_A: ref(-1), Ref_to_B: ref(-4), Ref_to_C: ref(-4)`.
-
-do stacks make sense for strongly-typed languages?  would likely have some
-indirection, e.g., a pointer stack, a type stack, and a value stack.  values
-can take up more space on the value stack based on size of the type.
-
-## reference implementation
-
-can we use [Futamura projection](https://en.wikipedia.org/wiki/Partial_evaluation)
-to implement the compiler and interpreter in one go?
-the idea is that you create an interpreter `I` for a language `L`, then feed it
-the program `P` you want to compile.  but instead of compiling the interpreter `I`
-and then running the program `P`, i.e., `c(I)(P)`, you compile with the interpreter
-and code combined, i.e., `c(I * P)`; thus making the compiler aware of what
-transformations you're trying to do in `P` via `I` to native code.  however, to
-specify `I * P`, you need to write `I` a special way.  if you feed in `P` as
-the compiler itself (written in language `L`), then you get your compiler at
-"native" (and not interpreted) speeds.
-
-this doesn't feel all that much different from transpiling to e.g., C++.
-
-unfortunately performance isn't that great:
-https://news.ycombinator.com/item?id=17946026
-
-but there are some interesting tools out there:
-https://github.com/BuildIt-lang/buildit
-
-Deegen, e.g., https://github.com/luajit-remake/luajit-remake, seems nice
-but also relies on LLVM.  But could be a model for writing a JIT.
-
 # ideas from vlang
 
 v-lang is super nice from a compile-time perspective.  for debug builds,
@@ -81,10 +36,7 @@ maybe `.my_file.release.c` and `.my_file.debug.c` if we want to make sure that
 ## function signatures
 
 we're going to need to create overloads ourselves with unique names.
-because capital letters aren't allowed to start a function (and because
-internal underscores cannot be repeated), we'll use them to namespace in
-the generated code so there aren't any collisions.
-we'll also alphabetize input (and output) arguments.
+we'll also alphabetize input arguments first and output arguments second.
 
 * `_t` = temporary
 * `_c` = constant pointer
@@ -92,32 +44,29 @@ we'll also alphabetize input (and output) arguments.
 * `_r` = readonly reference
 * `_w` = writable reference
 * `_x` = exit/return value (as "temporary")
-* named variables (inputs/outputs) directly follow with one underscore.
-    TODO: if we require arguments to be named differently (e.g., not just typed differently),
-    then we can just put in the named argument *without a `_t`*, or maybe just `_n` after,
-    e.g., `my_fn_(arg_name; int_): null_` becomes `void PREFIX_my_fn__arg_name_n_(int_p arg_name);`
 
-methods get the name of the class first.  TODO: but how are we going to handle programmatically
-creating the function name?
+because function overloads must have unique argument names, named arguments
+are simply the `my_name_t` or `named_p` for arguments like `my_name. int_`
+and `named; whatever_`.  default-named arguments like `int:` become `int_c`.
 
 ```
 # in oh-lang, in file `my_file.oh`:
 my_function_(y: dbl_, x; int_): str_
 # TODO: probably can't export a namespaced identifier like `NAMESPACED_fn_`
 # maybe that's one way to make something private.
-namespaced_fn_(GREAT_z. flt_): [round: i32_]
+namespaced_arg_(GREAT_z. flt_): [round: i32_]
 
 // in C
-str_t MYFILE__my_function__int_p_x__dbl_c_y__str_x_(int_p x, dbl_c y);
+str_t MYF1L3__my_function__x_p__y_c__str_x_(int_p x, dbl_c y);
 // where `int_p` is `int_t *`, and `dbl_c` is `const dbl_t *`);
 // notice the `GREAT_` namespace is on the variable itself but *not* the function signature:
-i32_t MYFILE__namespaced_fn__flt_t_z__i32_x_round_(flt_t GREAT_z);
+i32_t MYF1L3__namespaced_arg__z_t__round_x_(flt_t GREAT_z);
 ```
 
 we also need to supply a few different function signatures for when
 references are more complicated than just a pointer (e.g., via the `refer` class).
 
-module naming requirements (e.g., `MYFILE__my_function...`):
+module naming requirements (e.g., `MYF1L3__my_function...`):
 * we need to support calling functions from different files with the same oh-lang name in another file.
 * we need to support moving files around and updating all callers nicely
 
@@ -134,7 +83,8 @@ solution:
 
 i think we're making things a bit too complicated/premature optimization for the file-tag bit:
 * .generated files should not take long to generate, and even when someone moves a file,
-they shouldn't expect things to be perfectly optimized
+they shouldn't expect things to be perfectly optimized.  it'd be nice not to pollute the
+`oh` files with metadata.
 
 we could just add the file prefix to the .oh file itself, e.g., `#@file_prefix(UKAFR)`
 HOWEVER there are some downsides when copying.  if you copy file `a.oh` to `b.oh` and don't
@@ -150,7 +100,7 @@ use `@file_tag` in the `.oh` file and `//prefix(UKAFR)` in the .generated file)
 ### lambda functions
 
 we'll need to support lambda functions by pulling them into the root scope
-with an additional `Context` argument that gets automatically supplied
+with an additional `context` argument that gets automatically supplied
 if there are any captures.
 
 ### errors
@@ -508,42 +458,79 @@ and reduce it for local tags so your entire type fits within a certain number of
 
 let's maybe converge on a name for them, e.g., "partial types" and "full types".
 
-
-## what implementation
-
 from the `update` `one_of` and `status` enum from the wishlist section on `what`.
 
 ```
-enum OH_tag__update
-{    OH_tag__update__status,
-     OH_tag__update__position,
-     OH_tag__update__velocity,
-};
+// status_: one_of_[unknown:, alive:, dead:]
+typedef enum F1L3_tag__status
+{    F1L3_tag__status__unknown,
+     F1L3_tag__status__alive,
+     F1L3_tag__status__dead,
+}         F1L3_tag__status_;
+typedef struct F1L3__status
+{    // don't put in `F1L3_tag__status` directly because it
+     // will take up too much space; use a `u8_ ... : 2` instead.
+     u8_ OH_tag : 2;
+}         F1L3_status_;
 
-typedef struct OH_update
+// vector3_: [x; dbl_, y; dbl_, z; dbl_]
+// {    ::length_(): sqrt_(x^2 + y^2 + z^2)
+// }
+typedef struct F1L3__vector3
+{    dbl_ x;
+     dbl_ y;
+     dbl_ z;
+};        F1L3__vector3_
+dbl_ F1L3__length__vector3_c__dbl_x_(const F1L3__vector3 *vector3)
+{    return sqrt
+     (    vector3->x * vector3->x,
+          vector3->y * vector3->y,
+          vector3->z * vector3->z
+     );
+}
+
+// update_: one_of_
+// [    status:
+//      position: vector3_
+//      velocity: vector3_
+// ]
+enum F1L3_tag__update
+{    F1L3_tag__update__status,
+     F1L3_tag__update__position,
+     F1L3_tag__update__velocity,
+};
+typedef struct F1L3__update
 {    union
-     {    OH__status_ status;
-          OH__vector3_ position;
-          OH__vector3_ velocity;
+     {    F1L3__status_ status;
+          F1L3__vector3_ position;
+          F1L3__vector3_ velocity;
      };
 
+     // don't put in `F1L3_tag__update` directly because it
+     // will take up too much space; use a `u8_ ... : 2` instead.
      u8_ OH_tag : 2;
-}         OH_update_;
+}         F1L3__update_;
+```
 
+## what implementation
+
+given the tagged union in the previous section.
+
+```
 // the implementation can be pretty simple.
 switch (update.OH_tag)
-{    case OH_tag__update__status:
-     {    OH__status_ *status = &update.status;
-          if (*status == OH__status__unknown)
+{    case F1L3_tag__update__status:
+     {    F1L3__status_ *status = &update.status;
+          if (status->OH_tag == F1L3_tag__status__unknown)
           {    printf("unknown update\n")
           }
           else
-          {    printf("got status update: %d", *status")
+          {    printf("got status update: %d", status->OH_tag")
           }
           break;
      }
-     case OH_tag__update__position:
-     {    OH__vector3_ *position = &update.position;
+     case F1L3_tag__update__position:
+     {    F1L3__vector3_ *position = &update.position;
           printf("got position update: " "vector3(%f, %f, %f)", position->x, position->y, position->z);
           break;
      }
@@ -557,6 +544,8 @@ string.  (if the hashes of any two string cases collide, we redo all hashes with
 different salt.)  of course, at run-time, there might be collisions, so before we
 proceed with a match (if any), we check for string equality.  e.g., some pseudo-C++
 code:
+
+TODO: update `NT...` arguments, etc.:
 
 ```
 switch (OH__fast_hash__NTu64__salt__Cstr__Xu64_(12345, &considered_string))
@@ -778,4 +767,50 @@ type2_: [b; dbl_, type3;]
 type3_: [c; str_, type1;]
 ```
 
+# old ideas
+
+# for a byte-code interpreter
+
+stack of call-frames for functions, but `Block`s can jump back more than one.
+this is almost continuation passing, but i think we can get away with
+jumping back a certain number of call frames, e.g., with `Block exit(3)`.
+
+probably only want one `Block` per function argument.
+
+when determining what overload to call for a function, we probably
+want to still have stack-based arguments, but alphabetized.  so we
+probably need to normalize:  `fn(B, C: some_function(), A: other_function())`
+needs to become something like `fn(A: other_function(), B, C: some_function())`.
+HOWEVER we need to keep the call order correct (e.g., `some_function()` should
+be called before `other_function()`).  either we'll need stack twizzling
+or references, e.g., stack: `..., B, C: some_function(), A: other_function(),`
+followed by `Ref_to_A: ref(-1), Ref_to_B: ref(-4), Ref_to_C: ref(-4)`.
+
+do stacks make sense for strongly-typed languages?  would likely have some
+indirection, e.g., a pointer stack, a type stack, and a value stack.  values
+can take up more space on the value stack based on size of the type.
+
+## reference implementation
+
+can we use [Futamura projection](https://en.wikipedia.org/wiki/Partial_evaluation)
+to implement the compiler and interpreter in one go?
+the idea is that you create an interpreter `I` for a language `L`, then feed it
+the program `P` you want to compile.  but instead of compiling the interpreter `I`
+and then running the program `P`, i.e., `c(I)(P)`, you compile with the interpreter
+and code combined, i.e., `c(I * P)`; thus making the compiler aware of what
+transformations you're trying to do in `P` via `I` to native code.  however, to
+specify `I * P`, you need to write `I` a special way.  if you feed in `P` as
+the compiler itself (written in language `L`), then you get your compiler at
+"native" (and not interpreted) speeds.
+
+this doesn't feel all that much different from transpiling to e.g., C++.
+
+unfortunately performance isn't that great:
+https://news.ycombinator.com/item?id=17946026
+
+but there are some interesting tools out there:
+https://github.com/BuildIt-lang/buildit
+
+Deegen, e.g., https://github.com/luajit-remake/luajit-remake, seems nice
+but also relies on LLVM.  But could be a model for writing a JIT.
 
