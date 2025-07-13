@@ -545,12 +545,10 @@ different salt.)  of course, at run-time, there might be collisions, so before w
 proceed with a match (if any), we check for string equality.  e.g., some pseudo-C++
 code:
 
-TODO: update `NT...` arguments, etc.:
-
 ```
-switch (OH__fast_hash__NTu64__salt__Cstr__Xu64_(12345, &considered_string))
-{    case 9876: // precomputed via `OH__fast_hash__NTu64__salt__Cstr__Xu64_(12345, &string_case1)`
-     {    if (!OH_eq__Cchars__Cstr_("string case 1", &considered_string)
+switch (OH__fast_hash__salt_t__str_c__u64_x_(12345, &considered_string))
+{    case 9876: // precomputed via `OH__fast_hash__salt_t__str_c__u64_x_(12345, &string_case1)`
+     {    if (!OH_eq__chars_c__str_c_("string case 1", &considered_string)
           {    goto OH_location__default;
           }
           // logic for `string_case1`...
@@ -588,31 +586,31 @@ e.g., we want this to be possible:
 
 ```
 # vector.oh:
-vector3[of]: [X; of, Y; of, Z; of]
-vector3i: vector3[i64] # this specialization gets compiled in `.vector.generated.c`
+vector3_[of_]: [x; of_, y; of_, z; of_]
+vector3i_: vector3_[i64_]     # this specialization gets compiled in `.vector.generated.c`
 
 # some_other_file.oh
-compile_vector3d(): null
-    Lines;
-    [   "[vector3]: \/vector"
-        "vector3d: vector3[dbl]"    # new specialization
-        "print(vector3d(X: 0.5, Y: 0.3, Z: 0.1))"
+compile_vector3d_(): null_
+    lines;
+    [   "[vector3_]: \/vector_"
+        "vector3d_: vector3_[dbl_]"    # new specialization
+        "print_(vector3d_(x: 0.5, y: 0.3, z: 0.1))"
     ]
-    Executable: compile(Lines;) ?? panic("should have been ok")
-    Executable run()
+    executable: compile_(lines;) ?? panic_("should have been ok")
+    executable run_()
 
-compile_vector3i(): null
-    Lines;
-    [   "[vector3i]: \/vector"
-        "print(vector3i(X: 3, Y: 4, Z: 5))"
+compile_vector3i_(): null_
+    lines;
+    [   "[vector3i_]: \/vector_"
+        "print_(vector3i_(x: 3, y: 4, z: 5))"
     ]
-    Executable: compile(Lines;) ?? panic("should have been ok")
-    Executable run()
+    executable: compile_(lines;) ?? panic_("should have been ok")
+    executable run_()
 ```
 
 this would require some advanced linking logic.  would this require compiling
 everything but `main` into a library, then linking `main` with that library?
-then any new `compile` calls can rely on the library.
+then any new `compile_` calls can rely on the library.
 
 ## captures
 
