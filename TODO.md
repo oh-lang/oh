@@ -667,6 +667,20 @@ size of all `int`s involved?
 ## translation process
 
 TODO: instead of dagging, can we just forward declare everything?
+NO: that works if you're doing pointers, but not if you're including the whole struct.
+although, maybe it's fine if we do something like this and just put a list
+`MY_CLASS__MY_INNER_CLASS__memory` defines at the top of the file.
+```
+typedef struct my_class
+{    u8_ my_inner_class[MY_CLASS__MY_INNER_CLASS__memory];
+}         my_class_;
+typedef struct my_inner_class
+{    dbl_ x;
+}         my_inner_class_;
+
+my_class_ my_class;
+(my_inner_class_ *)my_class.my_inner_class
+```
 
 we need to keep track of which names are needed where.
 
