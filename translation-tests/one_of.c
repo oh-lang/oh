@@ -53,7 +53,7 @@ typedef struct FILE__multi_status
         FILE__status_ child_status;
     };
     // this tag is namespaced because it's not available to oh-lang code.
-    // need 1 bits because the `FILE_tag__multi_status_` enum fits in 1 bits.
+    // need 1 bit because the `FILE_tag__multi_status_` enum fits in 1 bit.
     uint8_t OH_tag : 1;
 }         FILE__multi_status_;
 
@@ -63,6 +63,9 @@ int main()
     // NOTE: this is a bit surprising (should be 2 bytes), but it does mean
     // that we don't need to worry about keeping `OH_tag` persistent when
     // users update `parent_status` or `child_status` with a `u8_ *` pointer.
+    // We could improve this by using a `u8_ *` pointer along with a bit mask
+    // for many operations, but we'd want to avoid slowing down operations
+    // on larger memory structs which don't need that.
     printf("multi_status one_of has size %ld\n", sizeof(FILE__multi_status_));
     return 0;
 }
