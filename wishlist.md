@@ -7027,7 +7027,7 @@ indent_(do_(block[~t_];): never_): t_
 indent_(~declaring;:., do_(block[~t_, (declaring;:.)];): never_): t_
 
 @referenceable_as(then_)
-block_[of_, declaring_: null_]:
+block_[of_, declaring_: any_ = null_]:
 [    # variables defined only for the lifetime of this block's scope.
      # TODO: give examples, or maybe remove, if this breaks cleanup with the `jump` ability
      declaring[require: declaring_ is not_[null_]]`
@@ -7043,6 +7043,8 @@ block_[of_, declaring_: null_]:
      #                   block exit_("exited at ${OLD_value}")
      #              # note we need to `loop_` otherwise we won't satisfy the `never_`
      #              # part of the indent function.
+     #              # TODO: i don't know if `loop_` makes sense for `block.
+     #              # how would `block` know to restart this `do_` function??
      #              block loop_()
      #    )
      #         str.
@@ -7054,7 +7056,7 @@ block_[of_, declaring_: null_]:
      # the start of the `indent` block.  example:
      #    value; 0
      #    indent
-     #    (    do_(block[str_]): never_
+     #    (    do_(block[str_];): never_
      #              if ++value >= 10 {block exit_("done")}
      #              if value % 2
      #                   block loop_()
@@ -7070,45 +7072,49 @@ block_[of_, declaring_: null_]:
 ### blocks to define a variable
 
 ```
-My_int: indent
-(    Block[int]:
-          if some_condition()
-               Block exit(3)
-          Block loop()
+my_int: indent_
+(    block[int_]:
+          if some_condition_()
+               block exit_(3)
+          block loop_()
 )
 ```
 
 ### then with blocks
 
-When using `then`, it's recommended to always exit explicitly, but like with the
-non-`then` version, the conditional block will exit with the value of the last
+When using `then_`, it's recommended to always exit explicitly, but like with the
+non-`then_` version, the conditional block will exit with the value of the last
 executed line.  There is a rawer version of this syntax that does require an
 explicit exit, but also doesn't allow any `return` functions since we are literally
-defining a `(Then): never` with its block inline.  This syntax is not recommended
+defining a `(then;): never_` with its block inline.  This syntax is not recommended
 unless you have identical block handling in separate conditional branches, but
 even that probably could be better served by pulling out a function to call in
 both blocks.
 
 ```
-if Some_condition -> Then[str]:
-     if Other_condition
-          if Nested_condition
-               Then exit(X)
+if some_condition -> then[str_]:
+     if other_condition
+          if nested_condition
+               then exit_(x)
      else
-          Then exit("whatever")
+          then exit_("whatever")
      # COMPILE ERROR, this function returns here if
      # `Other_condition && !Nested_condition`.
+     # needs a non-null exit value since we should return a `str_`.
 
 # here's an example where we re-use a function for the block.
-My_then: then[str]
+my_then: then_[str_]
      ... complicated logic ...
-     exit("made it")
+     # TODO: this syntax seems suspect, shouldn't it be `then exit_`?
+     # or maybe this should just be a function.
+     # e.g., `my_then: then_[str_]({ ... complicated logic ..., "made it" })`
+     exit_("made it")
 
-Result: if Some_condition -> My_then
-elif Some_thing_else
-     print("don't use `My_then` here")
+result: if some_condition -> my_then
+elif some_thing_else
+     print_("don't use `my_then` here")
      "no"
-else -> My_then
+else -> my_then
 ```
 
 ### function blocks

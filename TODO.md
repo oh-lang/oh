@@ -782,7 +782,19 @@ type3_: [c; str_, type1;]
 
 ## blocks
 
-TODO
+```
+indent_
+(    do_(block[str_];):
+          123 each u8.
+               if match_(u8)
+                    block exit_("matched")
+          block exit_("no match")
+)
+// becomes C code:
+// TODO
+```
+
+## futures
 
 # old ideas
 
