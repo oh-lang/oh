@@ -780,6 +780,10 @@ type2_: [b; dbl_, type3;]
 type3_: [c; str_, type1;]
 ```
 
+## blocks
+
+TODO
+
 # old ideas
 
 # for a byte-code interpreter

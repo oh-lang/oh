@@ -7014,55 +7014,56 @@ command triggers a stop at any point, then abort (and stop calling the method)
 ## blocks
 
 You can write your own `assert` or `return`-like statements using `block` logic.  The `block_`
-class has a method to return early if desired.  Calling `Block exit(...)` shortcircuits the
-rest of the block (and possibly other nested blocks).  This is annotated by using the `jump`
+class has a method to return early if desired.  Calling `block exit_(...)` shortcircuits the
+rest of the block (and possibly other nested blocks).  This is annotated by using the `jump_`
 return value.  You can also call `block loop_()` to return to the start of the block.
 You don't usually create a `block` instance; you'll use it in combination with the global
 `indent_` function.
 
 ```
-# indent function which returns whatever value the `Block` exits the loop with.
-indent(fn(Block[~t]): never): t
-# indent function which populates `Block Declaring` with the value passed in.
-indent(~Declaring., fn(Block[~t, declaring]): never): t
+# indent function which returns whatever value the `block` exits the loop with.
+indent_(do_(block[~t_];): never_): t_
+# indent function which populates `block declaring` with the value passed in.
+indent_(~declaring;:., do_(block[~t_, (declaring;:.)];): never_): t_
 
-@referenceable_as(then)
-block[of, declaring: null]:
+@referenceable_as(then_)
+block_[of_, declaring_: null_]:
 [    # variables defined only for the lifetime of this block's scope.
      # TODO: give examples, or maybe remove, if this breaks cleanup with the `jump` ability
-     Declaring` declaring
+     declaring[require: declaring_ is not_[null_]]`
 ]
-{    # exits the `indent` with the corresponding `of` value.  example:
-     #   Value; 0
-     #   what indent
-     #   (    fn(Block[str]): never
-     #           OLD_value: Value
-     #           Value = Value // 2 + 9
-     #           # sequence should be: 0, 9, 4+9=13, 6+9=15, 7+9=16, 8+9=17
-     #           if OLD_value == Value
-     #               Block exit("exited at ${OLD_value}")
-     #           # note we need to `loop` otherwise we won't satisfy the `never`
-     #           # part of the indent function.
-     #           Block loop()
-     #   )
-     #       Str.
-     #           print(Str)       # should print "exited at 17"
-     ::exit(Of.): jump
+{    # exits the `indent_` with the corresponding `of_` value.  example:
+     #    value; 0
+     #    what indent_
+     #    (    do_(block[str_];): never_
+     #              OLD_value: value
+     #              value = value // 2 + 9
+     #              # sequence should be: 0, 9, 4+9=13, 6+9=15, 7+9=16, 8+9=17
+     #              if OLD_value == value
+     #                   block exit_("exited at ${OLD_value}")
+     #              # note we need to `loop_` otherwise we won't satisfy the `never_`
+     #              # part of the indent function.
+     #              block loop_()
+     #    )
+     #         str.
+     #              print_(str)    # should print "exited at 17"
+     # TODO: should this be `never_` instead of `jump_`??
+     ::exit_(of.): jump_
 
      # like a `continue` statement; will bring control flow back to
      # the start of the `indent` block.  example:
-     #   Value; 0
-     #   indent
-     #   (    fn(Block[str]):
-     #           if ++Value >= 10 {Block exit("done")}
-     #           if Value % 2
-     #               Block loop()
-     #           print(Value)
-     #           Block loop()
+     #    value; 0
+     #    indent
+     #    (    do_(block[str_]): never_
+     #              if ++value >= 10 {block exit_("done")}
+     #              if value % 2
+     #                   block loop_()
+     #              print_(value)
+     #              block loop()
      #   )
      #   # should print "2", "4", "6", "8"
-     @hide_from(then)
-     ::loop(): jump
+     @hide_from(then_)
+     ::loop_(): jump_
 }
 ```
 
