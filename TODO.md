@@ -679,8 +679,9 @@ typedef struct my_inner_class
 }         my_inner_class_;
 
 my_class_ my_class;
-(my_inner_class_ *)my_class.my_inner_class
+my_inner_class_ *my_inner_reference = (my_inner_class_ *)my_class.my_inner_class;
 ```
+but we'd still need the DAG likely for counting how much memory each class is.
 
 we need to keep track of which names are needed where.
 

@@ -1280,7 +1280,10 @@ Other types which have a fixed amount of memory:
 * `null_`: should take up no memory, but can require an extra bit for an optional type.
 * `flt_`: single-precision floating-point number, AKA `f32_`
 * `dbl_`: double-precision floating-point number, AKA `f64_`
-* `bool_`: can hold a True or False value
+* `bool_`: can hold a true or false value
+     TODO: do we even want a `bool_`?  maybe require users to define their own,
+     especially since `one_of_[stream_on:, stream_off:]` can be much more useful
+     in context of a function call, e.g., `set_(stream_on)` than `set_(stream_on: true)`
 * `rune_`: a utf8 character, presumably held within an `i32`
 * `u8_`: unsigned byte (can hold values from 0 to 255, inclusive)
 * `u16_` : unsigned integer which can hold values from 0 to 65535, inclusive
@@ -6707,46 +6710,47 @@ and other containers of precise types, as well as recursive containers thereof.
 ```
 # note it's not strictly necessary to mention you implement `hashable_`
 # if you have the correct `hash` method signature.
-my_hashable_class_: all_of_[hashable_, m: [Id: u64, Name; string]]
+my_hashable_class_: all_of_[hashable_, m: [id: u64_, name; str_]]
 {    # we allow a generic hash builder so we can do cryptographically secure hashes
      # or fast hashes in one definition, depending on what is required.
-     # This should automatically be defined for classes with precise fields (e.g., int, u32, string, etc.)!
-     ::hash(~Builder;):
-          Builder hash(Id)    # you can use `hash` via the builder or...
-          Name hash(Builder;) # you can use `hash` via the field.
+     # This should automatically be defined for classes with precise fields
+     # (e.g., int, u32, string, etc.)!
+     ::hash_(~builder;): null_
+          builder hash_(m id)      # you can use `hash_` via the builder or...
+          m name hash_(;builder)   # you can use `hash_` via the field.
 
      # equivalent definition via sequence building:
-     ::hash(~Builder;): Builder@
-     {    hash(Id)
-          hash(Name)
+     ::hash_(~builder;): builder@
+     {    hash_(m id)
+          hash_(m name)
      }
 }
 
-# note that defining `::hash(~Builder;)` automatically defines a `fast_hash` like this:
-# fast_hash(My_hashable_class, ~Salt): salt
-#   Builder: \\hash fast(Salt)
-#   Builder hash(My_hashable_class)
-#   return Builder build()
+# note that defining `::hash_(~builder;)` automatically defines a `fast_hash_` like this:
+# fast_hash_(my_hashable_class:, salt. unsigned_ arch_): unsigned_ arch_
+#    builder; \\hash fast_(salt)
+#    builder hash_(my_hashable_class)
+#    builder build_()
 
-My_hashable_class: my_hashable_class(Id: 123, Name: "Whatever")
+my_hashable_class: my_hashable_class_(id. 123, name. "Whatever")
 
-what My_hashable_class
-     my_hashable_class(Id: 5, Name: "Ok")
-          print("5 OK")
-     my_hashable_class(Id: 123, Name: "Whatever")
-          print("great!")
-     My_hashable_class:
-          print("it was something else: ${My_hashable_class}")
+what my_hashable_class
+     my_hashable_class_(id. 5, name. "Ok")
+          print_("5 OK")
+     my_hashable_class_(id. 123, name. "Whatever")
+          print_("great!")
+     my_hashable_class:
+          print_("it was something else: ${my_hashable_class}")
 ```
 
-Note that if your `fast_hash` implementation is terrible (e.g., `fast_hash(Salt): Salt`),
+Note that if your `fast_hash_` implementation is terrible (e.g., `fast_hash_(salt): salt`),
 then the compiler will error out after a certain number of attempts with different salts.
 
 For sets and lots, we use a hash method that is order-independent (even if the container
 is insertion-ordered).  E.g., we can sum the hash codes of each element, or `xor` them.
-Arrays have order-dependent hashes, since `[1, 2]` should be considered different than `[2, 1]`,
-but the lot `["hi": 1, "hey": 2]` should be the same as `["hey": 2, "hi": 1]` (different
-insertion order, but same contents).
+Arrays have order-dependent hashes, since `[1, 2]` should be considered different than 
+`[2, 1]`, but the lot `["hi": 1, "hey": 2]` should be the same as `["hey": 2, "hi": 1]`
+(different insertion order, but same contents).
 
 
 ### where operator
