@@ -6974,26 +6974,26 @@ vs. `if result is ok;`.  The latter is a copy, the former is a no-copy reference
 # printing and echoing output
 
 TODO: allow tabbed print output.  instead of searching through each string,
-maybe we just look at `print` and add the newlines at the start.  Each thread should
+maybe we just look at `print_` and add the newlines at the start.  Each thread should
 have its own tab stop.  E.g.,
 
 ```
-array[of]: []
+array_[of_]: []
 {    ...
-     ::print(): null
-          if count() == 0
-               return print("[]")
-          print("[")
-          with indent():
-               each Of:
-                    print(Of)
+     ::print_(): null_
+          if m count_() == 0
+               return print_("[]")
+          print_("[")
+          with indent_():
+               m each of:
+                    print_(of)
           print("]")
 }
 ```
 
-TODO: defining `print` on a class will also define the `string()` method.
-essentially any `print`s called inside of the class `print` will be redirectable to
-a string-stream, etc.  `indent` should maybe do something different for `string()`;
+TODO: defining `print_` on a class will also define the `string_()` method.
+essentially any `print_`s called inside of the class `print_` will be redirectable to
+a string-stream, etc.  `indent_` should maybe do something different for `string_()`;
 maybe just add commas *after* the line instead of spaces before the line to be printed.
 
 TODO: we should also have a print macro here in case we want to stop printing,
