@@ -6405,6 +6405,10 @@ when other_condition
 else
      do_something_else_()
 ```
+HOWEVER we do need to handle the case if something like `if x {print_("asdf")}`
+followed by another `if y {print_("asdf2")}`, which with `when` `when` would only
+execute the second statement if `!x`, whereas the first one ignores the value of `x`.
+
 
 ```
 x: if condition
@@ -6757,8 +6761,8 @@ Arrays have order-dependent hashes, since `[1, 2]` should be considered differen
 
 TODO: could we just use `if` or `when` here?  i like how `where` reads, though,
 very mathematically.  also it might be required to have a different keyword
-for the specialized versions of methods, like `::do_this(): hm_[i32_]`
-and `::do_this(): i32_ where !!m`, which will never throw.
+for the specialized versions of methods, like `::do_this_(): hm_[i32_]`
+and `::do_this_(): i32_ where !!m`, which will never throw.
 
 The `where` operator can be used to further narrow a conditional.  It
 is typically used in a `what` statement like this:
@@ -6840,38 +6844,39 @@ my_vec2_: [x; dbl_, y; dbl_]
 ## for-each loops
 
 TODO: Can we write other conditionals/loops/etc. in terms of `indent/block` to make it easier to compile
-from fewer primitives?  E.g., `while Condition -> Do: {... Do exit(3) ...}`, where
-`do` is a thin wrapper over `block`?  or maybe `do -> Loop: {... Loop exit(3) ...}`
+from fewer primitives?  E.g., `while condition -> do: {... do exit_(3) ...}`, where
+`do` is a thin wrapper over `block`?  or maybe `do -> loop: {... loop exit_(3) ...}`
 
-oh-lang doesn't have `for` loops but instead uses `each` syntax on an iterator.
-The usual syntax is `Iterator each Iterand;:. {do_something(Iterand)}`.  If your
-iterand variable is already defined, you should use `Iterator each Iterand {...}`.
+oh-lang doesn't have `for` loops but instead uses the syntax `each` on an iterator.
+The usual syntax is `iterator each iterand;:. {do_something_(iterand)}`.  If your
+iterand variable is already defined, you should use `iterator each iterand {...}`.
 Note that all container classes have an `each` method defined, and some
 "primitive" classes like the `count` class do as well.
 
 ```
-# iterating from 0 to `Count - 1`:
-Count: 5
-Count each Int:
-     print(Int)  # prints 0 to 4 on successive lines
+# iterating from 0 to `count - 1`:
+count: 5
+count each int:
+     print_(int)    # prints 0 to 4 on successive lines
 
 # iterating over a range:
-range(1, 10) each Int:
-     print(Int)  # prints 1 to 9 on successive lines.
+range_(1, 10) each int:
+     print_(int)    # prints 1 to 9 on successive lines.
 
 # iterating over non-number elements:
-vector2: [X: dbl, Y: dbl]
-Array[vector2]: [[X: 5, Y: 3], [X: 10, Y: 17]]
+vector2_: [x: dbl_, y: dbl_]
+array[vector2_]: [[x: 5, y: 3], [x: 10, y: 17]]
 
-Array each Vector2:
-     print(Vector2)
+# should print `[x: 5, y: 3]` then `[x: 10, y: 17]`.
+array each vector2:
+     print_(vector2)
 
 # if the variable is already declared, you avoid the declaration `:` or `;`:
 # NOTE the variable should be writable!
-Iterating_vector; vector2
-Array each Iterating_vector
-     print(Iterating_vector)
-# this is useful if you want to keep the result of the last element outside the for-loop.
+iterating_vector; vector2_
+array each iterating_vector
+     print_(iterating_vector)
+# this is useful if you want to keep the result of the last element outside the loop.
 ```
 
 You can get the result of an `each` operation but this only really
@@ -6879,17 +6884,17 @@ makes sense if the `each` block has a `break` command in it.
 Like `return`, `break` can pass a value back.
 
 ```
-# Result needs to be nullable in case the iteration doesn't break anything.
-Result?: range(123) each Int:
-     if Int == 120
-          break Int
+# result needs to be nullable in case the iteration doesn't break anything.
+result?: range_(123) each int:
+     if int == 120
+          break int
 
 # you can use an `else` which will fire if the iterator doesn't have
 # any values *or* if the iteration never hit a `break` command.
-# in this case, `Result` can be non-null.
-Result: range(123) each Int:
-     if Int == 137
-          break Int
+# in this case, `result` can be non-null.
+result: range_(123) each int:
+     if int == 137
+          break int
 else
      44
 ```
@@ -6897,67 +6902,74 @@ else
 Of course, you can use the `else` block even if you don't capture a result.
 
 ```
-range(123) each Int:
-     print(Int)
-     if Int == 500
+count_(123) each int:
+     print_(int)
+     if int == 500
           break
 else
-     print("only fires if `break` never occurs")
+     print_("only fires if `break` never occurs")
 ```
 
 Here are some examples of iterating over a container while mutating some values.
 
 ```
-A_array; array[int] = [1, 2, 3, 4]
-# this is clearly a reference since we have `Int` in parentheses, `(Int;)`:
-A_array each(Index, Int;)
-     Int += Index
-A_array == [1, 3, 5, 7] # should be true
+a_array; array_[int_] = [1, 2, 3, 4]
+# this is clearly a reference since we have `int` in parentheses, `(int;)`:
+a_array each (index, int;)
+     int += index
+a_array == [1, 3, 5, 7] # should be true
 
-B_array; array[int] = [10, 20, 30]
-B_array each(Int;)
-     Int += 1
-B_array == [11, 21, 31] # should be true
+b_array; array_[int_] = [10, 20, 30]
+b_array each (int;)
+     int += 1
+b_array == [11, 21, 31] # should be true
 
-C_array; array[int] = [88, 99, 110]
-Start_referent; int = 77
-(Iterand_value;) = Start_referent
-C_array each Iterand_value  # TODO: do we need `each(Iterand_value)` here??
-     Iterand_value -= 40
-C_array == [48, 59, 70] # should be true
+c_array; array_[int_] = [88, 99, 110]
+start_referent; int_ = 77
+(iterand_value;) = start_referent
+c_array each iterand_value
+     iterand_value -= 40
+c_array == [48, 59, 70] # should be true
+iterand_value += 100
+c_array == [48, 59, 170] # should be true
 ```
 
 You should be careful not to assume that `;` (or `:`) means a reference
 unless the RHS of the `each` is wrapped in parentheses.
+TODO: revisit this logic.  we probably want to do references to avoid
+copies in most places, unless we're explicitly copying.
+but it does kinda make sense for the value that escapes the loop.
+let's try to figure out how to make the copy explicit.
 
 ```
-B_array; array[int] = [10, 20, 30]
-# WARNING! this is not the same as the previous `B_array` logic.
-B_array each Int;
-     # NOTE: `Int` is a mutable copy of each value of `B_array` element.
-     Int += 1
+b_array; array_[int_] = [10, 20, 30]
+# WARNING! this is not the same as the previous `b_array` logic.
+b_array each int;
+     # NOTE: `int` is a mutable copy of each value of `b_array` element.
+     int += 1
      # TODO: we probably should have a compile error here since
-     #       `Int` is not used to affect anything else and
-     #       `Int;` here is *NOT* a reference to the `C_array` elements.
-     #       e.g., "use (Int;) if you want to modify the elements"
-B_array == [11, 21, 31] # FALSE
+     #       `int` is not used to affect anything else and
+     #       `int;` here is *NOT* a reference to the `c_array` elements.
+     #       e.g., "use (int;) if you want to modify the elements"
+b_array == [11, 21, 31] # FALSE
 
-C_array; array[int] = [88, 99, 110]
-Iterand_value; 77 
-C_array each Iterand_value
-     # NOTE: `Iterand_value` is a mutable copy of each `C_array` element.
-     Iterand_value -= 40
-C_array == [48, 59, 70] # FALSE
-C_array == [88, 99, 110] # true, unchanged.
-Iterand_value == 70 # true
+c_array; array_[int_] = [88, 99, 110]
+iterand_value; 77 
+c_array each iterand_value
+     # NOTE: `iterand_value` is a mutable copy of each `c_array` element.
+     iterand_value -= 40
+c_array == [48, 59, 70] # FALSE
+c_array == [88, 99, 110] # true, unchanged.
+iterand_value == 70 # true
 ```
 
 TODO: there may be some internal inconsistency here.  let's make sure
-the way we define `;;each(...)` makes sense for the non-parentheses
+the way we define `;;each_(...)` makes sense for the non-parentheses
 case and the parentheses case.
 
-TODO: we need to discuss the same for `if Result is (Ok;)`, etc.,
-vs. `if Result is Ok;`.  The latter is a copy, the former is a no-copy reference.
+TODO: if we require parentheses for references here,
+we need to discuss this for `if result is (ok;)`, etc.,
+vs. `if result is ok;`.  The latter is a copy, the former is a no-copy reference.
 
 # printing and echoing output
 
