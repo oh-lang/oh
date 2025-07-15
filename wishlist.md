@@ -6342,6 +6342,18 @@ in C/C++ which takes up two symbols `?` and `:`).  In oh-lang, we borrow from Ko
 and similarly for `what` statements (similar to
 [`when` in kotlin](https://kotlinlang.org/docs/control-flow.html#when-expressions-and-statements)).
 
+## with statements
+
+`with x_()` is just a fancy way to say that we want to descope the value of `x_()`
+after the statement.  The statement usually includes an indented block after
+the `with`.  You can also declare a variable (that will get descoped).
+
+```
+with file; open_some_file_()
+     print_(file read_())
+     print_("ok")
+```
+
 ## then statements
 
 We can rewrite conditionals to accept an additional `then` "argument".  For `if`/`elif`
@@ -6756,7 +6768,6 @@ Arrays have order-dependent hashes, since `[1, 2]` should be considered differen
 `[2, 1]`, but the lot `["hi": 1, "hey": 2]` should be the same as `["hey": 2, "hi": 1]`
 (different insertion order, but same contents).
 
-
 ### where operator
 
 TODO: could we just use `if` or `when` here?  i like how `where` reads, though,
@@ -6984,7 +6995,7 @@ array_[of_]: []
           if m count_() == 0
                return print_("[]")
           print_("[")
-          with indent_():
+          with print_ indent_()
                m each of:
                     print_(of)
           print("]")
@@ -6993,7 +7004,7 @@ array_[of_]: []
 
 TODO: defining `print_` on a class will also define the `string_()` method.
 essentially any `print_`s called inside of the class `print_` will be redirectable to
-a string-stream, etc.  `indent_` should maybe do something different for `string_()`;
+a string-stream, etc.  `print_ indent_` should maybe do something different for `string_()`;
 maybe just add commas *after* the line instead of spaces before the line to be printed.
 
 TODO: we should also have a print macro here in case we want to stop printing,
@@ -7002,12 +7013,12 @@ command triggers a stop at any point, then abort (and stop calling the method)
 
 ## blocks
 
-You can write your own `assert` or `return`-like statements using `block` logic.  The `block`
+You can write your own `assert` or `return`-like statements using `block` logic.  The `block_`
 class has a method to return early if desired.  Calling `Block exit(...)` shortcircuits the
 rest of the block (and possibly other nested blocks).  This is annotated by using the `jump`
-return value.  You can also call `Block loop()` to return to the start of the block.
+return value.  You can also call `block loop_()` to return to the start of the block.
 You don't usually create a `block` instance; you'll use it in combination with the global
-`indent` function.
+`indent_` function.
 
 ```
 # indent function which returns whatever value the `Block` exits the loop with.
