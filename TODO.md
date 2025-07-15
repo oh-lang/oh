@@ -782,17 +782,70 @@ type3_: [c; str_, type1;]
 
 ## blocks
 
+blocks are somewhat like continuations, and essentially they
+can manipulate the function stack by going back a few levels.
+
+see https://stackoverflow.com/a/78111502/6586264
+but we'd also need a way to clean up functions along the way.
+e.g., if we create a block in function `PARENT_fn_`, call another function
+where an array gets allocated (`ARRAY_fn_`), and then call another function
+`CHILD_fn_` inside `ARRAY_fn_` which can exit the block for `PARENT_fn_`,
+we need to be able to deallocate the array in `ARRAY_fn_`.
+
+maybe we just need a method like `_has_exited_()` and check that on
+any functions that get called.  so cleanup is easier to handle, and
+we don't need to specifically modify the call stack (might not be portable).
+
 ```
-indent_
-(    do_(block[str_];):
-          123 each u8.
-               if match_(u8)
-                    block exit_("matched")
-          block exit_("no match")
-)
-// becomes C code:
-// TODO
+PARENT_fn_(): str_
+     block[str_];
+     ARRAY_fn_(;block)
+     if block exited_() is str.
+          return str
+     print_("UNEXPECTED STATE: ARRAY_fn_ should return a str")
+     return "default"
+
+ARRAY_fn_(block[str_];): never_
+     array[u32_]; [1, 2, 3, 4, 5]
+     if some_condition_()
+          array append_(6)
+     u32: CHILD_fn_(;block)
+     # if block didn't exit:
+     array append_(u32)
+     block exit_("${array}")
+
+# functions can return a value if the block doesn't exit.
+# this is needed for things like `hm assert_()`
+CHILD_fn_(block[str_];): u32_
+     if some_other_condition_()
+          block exit_("early return")
+     print_("some side effects")
+     12345
+
+# ========TRANSLATED!========
+# the called functions get translated into something like this:
+ARRAY_fn_(): str_
+     array[u32_]; [1, 2, 3, 4, 5]
+     if some_condition_()
+          array append_(6)
+     u32. what CHILD_fn_()
+          str. {return str}
+          u32. {u32}
+     array append_(u32)
+     return "${array}"
+
+# functions can return a value if the block doesn't exit.
+# this is needed for things like `hm assert_()`
+CHILD_fn_(): one_of_[str:, u32:]
+     if some_other_condition_()
+          return "early return"
+     print_("some side effects")
+     12345
 ```
+
+the "TRANSLATED" functions appear a bit more readable.  is there a way
+we can avoid needing `block`s for the first pass on oh-lang?  we could
+see if they're nice for `if -> then` statements.
 
 ## futures
 

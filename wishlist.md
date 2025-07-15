@@ -7120,25 +7120,25 @@ else -> my_then
 ### function blocks
 
 Similar to conditionals, we allow defining functions with `block` in order
-to allow low-level flow control.  Declarations like `my_function(X: int): str`,
-however, will be equivalent to `my_function(X: int, Block[str]): never`.  Thus
+to allow low-level flow control.  Declarations like `my_function_(x: int_): str_`,
+however, will be equivalent to `my_function_(x: int_, block[str_]): never_`.  Thus
 there is no way to overload a function defined with `block` statements compared
 to one that is not defined explicitly with `block`.
 
 ```
-# the `never` return type means that this function can't use `return`, either
+# the `never_` return type means that this function can't use `return`, either
 # explicitly via `return ...` or implicitly by leaving a value as the last
-# evaluated statement (which can occur if you don't use `Block exit(...)`
-# or `Block loop(...)` on the last line of the function block).
-# i.e., you must use `Block exit(...)` to return a value from this function.
-my_function(X: int, Block[str]): never
-     inner_function(Y: int): dbl
-          if Y == 123
-               Block exit("123")    # early return from `my_function`
-          Y dbl() ?? panic()
-     range(X) each Y:
-          inner_function(Y)
-     Block exit("normal exit")
+# evaluated statement (which can occur if you don't use `block exit_(...)`
+# or `block loop_(...)` on the last line of the function block).
+# i.e., you must use `block exit_(...)` to return a value from this function.
+my_function_(x: int_, block[str_];): never_
+     inner_function_(y: int_): dbl_
+          if y == 123
+               block exit_("123")  # early return from `my_function_`
+          y dbl_() ?? panic_()
+     range_(x) each y:
+          inner_function_(y)
+     block exit_("normal exit")
 ```
 
 ## coroutines
