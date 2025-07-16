@@ -7143,79 +7143,78 @@ my_function_(x: int_, block[str_];): never_
 
 ## coroutines
 
-We'll reserve `co[of]` for a coroutine for now, but I think futures are all
+We'll reserve `co_[of_]` for a coroutine for now, but I think futures are all
 that is necessary.
 
 # futures
 
 oh-lang wants to make it very simple to do async code, without additional
 metadata on functions like `async` (JavaScript).  You can indicate that
-your function takes a long time to run by returning the `um[of]` type,
-where `of` is the type that the future `um` will resolve to, but callers
+your function takes a long time to run by returning the `um_[of_]` type,
+where `of_` is the type that the future `um_` will resolve to, but callers
 will not be required to acknowledge this.  If you define some overload
-`my_overload(X: str): um[int]`, an overload `my_overload(X: str): int`
+`my_overload_(x: str_): um_[int_]`, an overload `my_overload_(x: str_): int_`
 will be defined for you that comes *before* your async definition, so that
-the default type of `Value` in `Value: my_overload(X: "asdf")` is `int`.
-We generally recommend a timeout `er` being present, however, so for
-convenience, we define `um[of, er]: um[hm[ok: of, er]]`.
+the default type of `value` in `value: my_overload_(x: "asdf")` is `int_`.
+We generally recommend a timeout `er_` being present, however, so for
+convenience, we define `um_[of_, er_]: um_[hm_[ok_: of_, er_]]`.
 
 The reason we obscure futures in this way is to avoid needing to change any
 nested function's signatures to return futures if an inner function becomes
 a future.  If the caller wants to treat a function as a future, i.e., to run
 many such futures in parallel, then they ask for it explicitly as a future
-by calling a function `f()` via `f() Um`, which returns the `um[of]` type,
-where `of` is the default overload's return type.  You can also type the
-variable explicitly as `um[of]`, e.g., `F: um[of] = f()`.  Note that
-`F: um(f())` is a compile error because casting to a future would still run
-`f()` serially.  You can use `F: um(Immediate: 123)` to create an "immediate
-future"; `F: um(Immediate: h())` similarly will run `h()` serially and put
-its result into the immediate future.  If `h` takes a long time to run, prefer
-`F: h() Um` of course.
+by calling a function `f_()` via `f_() um` or `um: f_()`.  You can also type
+the variable explicitly as `um_[of_]`, e.g., `f: um_[of_] = f_()`.  Note that
+`f: um_(f_())` is a compile error because casting to a future would still run
+`f_()` serially.  You can use `f: um_(immediate: 123)` to create an "immediate
+future"; `f: um_(immediate: h_())` similarly will run `h_()` serially and put
+its result into the immediate future.  If `h_` takes a long time to run, prefer
+`f: h_() um` of course.
 
 ```
-# you don't even need to type your function as `um[~]`, but it's highly recommended:
-some_very_long_running_function(Int): um[string]
-     Result; ""
-     Int each COUNT_int:
-          sleep(Seconds: COUNT_int)
-          Result += str(COUNT_int)
-     Result
+# you don't even need to type your function as `um_[~]`, but it's highly recommended:
+some_very_long_running_function_(int): um_[string_]
+     result; ""
+     int each COUNT_int:
+          sleep_(seconds: COUNT_int)
+          result += str_(COUNT_int)
+     result
 
-# this approach calls the default `string` return overload, which blocks:
-print("starting a long running function...")
-My_name: some_very_long_running_function(10)
-print("the result is ${My_name} many seconds later")
+# this approach calls the default `string_` return overload, which blocks:
+print_("starting a long running function...")
+my_name: some_very_long_running_function_(10)
+print_("the result is ${my_name} many seconds later")
 
 # this approach calls the function as a future:
-print("starting a future, won't make progress unless polled")
-# `Future` here has the type `um[string]`:
-Future: some_very_long_running_function(10) Um
-# Also ok: `Future: um[string] = some_very_long_running_function(10)`
-# Also ok: `Future: um[~] = some_very_long_running_function(10)` (infers the inner type)
-# Also ok: `Future: um[~inner] = some_very_long_running_function(10)` (infers inner type and gives it a name)
-# which is useful if you want to use the `inner` type later in this block.
-print("this `print` executes right away")
-Result: string = Future
-print("the result is ${Result} many seconds later")
+print_("starting a future, won't make progress unless polled")
+# `future` here has the type `um_[string_]`:
+future: some_very_long_running_function_(10) um
+# OR: `future: um_[string_] = some_very_long_running_function_(10)`
+# OR: `future: um_[~] = some_very_long_running_function_(10)` (infers the inner type)
+# OR: `future: um_[~inner_] = some_very_long_running_function_(10)` (infers inner type and gives it a name)
+# which is useful if you want to use the `inner_` type later in this block.
+print_("this `print` executes right away")
+result: string_ = future
+print_("the result is ${result} many seconds later")
 ```
 
 That is the basic way to resolve a future, but you can also use
-the `::decide(): of` method for an explicit conversion from `um[of]`
-to `of`.  Ultimately futures are more useful when combined for
+the `::decide_(): of_` method for an explicit conversion from `um_[of_]`
+to `of_`.  Ultimately futures are most useful when combined for
 parallelism.  Here are two examples, one using an array of futures
 and one using an object of futures:
 
 ```
-# you don't even need to type your function as `um[~]`, but it's highly recommended:
-after(Seconds: int, Return: string): um[string]
-     sleep(Seconds)
-     Return
+# you don't even need to type your function as `um_[~]`, but it's highly recommended:
+after_(seconds: int_, resolve: string_): um_[string_]
+     sleep_(seconds)
+     resolve
 
-Futures_array; array[um[string]]
+futures_array; array_[um_[string_]]
 # no need to use `after(...) Um` here since `Futures_array`
 # elements are already typed as `um[string]`:
-Futures_array append(after(Seconds: 2, Return: "hello"))
-Futures_array append(after(Seconds: 1, Return: "world"))
+Futures_array append(after(Seconds: 2, resolve: "hello"))
+Futures_array append(after(Seconds: 1, resolve: "world"))
 print("this executes immediately.  deciding futures now...")
 Results_array: decide(Futures_array)
 print(Results_array) # prints `["hello", "world"]` after 2ish seconds.
@@ -7223,8 +7222,8 @@ print(Results_array) # prints `["hello", "world"]` after 2ish seconds.
 # here we put them all in at once.
 # notice you can use `Field: um[type] = fn()` or `Field: fn() Um`.
 Futures_object:
-[    Greeting: after(Seconds: 2, Return: "hello") Um
-     Noun: um[string] = after(Seconds: 1, Return: "world")
+[    Greeting: after(Seconds: 2, resolve: "hello") Um
+     Noun: um[string] = after(Seconds: 1, resolve: "world")
 ]
 print(decide(Futures_object)) # prints `[Greeting: "hello", Noun: "world"]`
 
@@ -7235,8 +7234,8 @@ future_type: [Greeting: um[str], Noun: um[str]]
 # so that the compiler knows that the arguments are futures and should
 # receive the `um` overload.
 Futures: future_type
-(    Greeting: after(Seconds: 2, Return: "hi")
-     Noun: after(Seconds: 1, Return: "you")
+(    Greeting: after(Seconds: 2, resolve: "hi")
+     Noun: after(Seconds: 1, resolve: "you")
 )
 # this whole statement should take ~2s and not ~3s; the two fields are
 # initialized in parallel.
@@ -7257,8 +7256,8 @@ container is defined without `um`:
 # if any field in an object/container is an `um` class, we expect everyone to be.
 # this is to save developers from accidentally forgetting an `Um`
 Object_or_container:
-[    Greeting: after(Seconds: 2, Return: "hello")    # COMPILE ERROR!
-     Noun: after(Seconds: 1, Return: "world") Um     # ok
+[    Greeting: after(Seconds: 2, resolve: "hello")    # COMPILE ERROR!
+     Noun: after(Seconds: 1, resolve: "world") Um     # ok
 ]
 ```
 
