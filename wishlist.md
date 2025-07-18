@@ -7211,59 +7211,59 @@ after_(seconds: int_, resolve: string_): um_[string_]
      resolve
 
 futures_array; array_[um_[string_]]
-# no need to use `after(...) Um` here since `Futures_array`
+# no need to use `after_(...) um` here since `futures_array`
 # elements are already typed as `um[string]`:
-Futures_array append(after(Seconds: 2, resolve: "hello"))
-Futures_array append(after(Seconds: 1, resolve: "world"))
-print("this executes immediately.  deciding futures now...")
-Results_array: decide(Futures_array)
-print(Results_array) # prints `["hello", "world"]` after 2ish seconds.
+futures_array append_(after_(seconds: 2, resolve: "hello"))
+futures_array append_(after_(seconds: 1, resolve: "world"))
+print_("this executes immediately.  deciding futures now...")
+results_array: decide_(futures_array)
+print_(results_array)   # prints `["hello", "world"]` after 2ish seconds.
 
 # here we put them all in at once.
-# notice you can use `Field: um[type] = fn()` or `Field: fn() Um`.
-Futures_object:
-[    Greeting: after(Seconds: 2, resolve: "hello") Um
-     Noun: um[string] = after(Seconds: 1, resolve: "world")
+# notice you can use `field: um_[type_] = fn_()` or `field: fn_() um`.
+futures_object:
+[    greeting: after_(seconds: 2, resolve: "hello") um
+     noun: um_[string_] = after_(seconds: 1, resolve: "world")
 ]
-print(decide(Futures_object)) # prints `[Greeting: "hello", Noun: "world"]`
+print_(decide_(futures_object)) # prints `[greeting: "hello", noun: "world"]`
 
 # if your field types are already futures, you don't need to be
-# explicit with `Um`.
-future_type: [Greeting: um[str], Noun: um[str]]
-# note that we need to explicitly type this via `the_type(Args...)`
+# explicit with `um`.
+future_type_: [greeting: um_[str_], noun: um_[str_]]
+# note that we need to explicitly type this via `the_type_(args...)`
 # so that the compiler knows that the arguments are futures and should
-# receive the `um` overload.
-Futures: future_type
-(    Greeting: after(Seconds: 2, resolve: "hi")
-     Noun: after(Seconds: 1, resolve: "you")
+# receive the `um_` overload.
+futures: future_type_
+(    greeting: after_(seconds: 2, resolve: "hi")
+     noun: after_(seconds: 1, resolve: "you")
 )
 # this whole statement should take ~2s and not ~3s; the two fields are
 # initialized in parallel.
-Futures decide() print()    # prints `[Greeting: "hi", Noun: "you"]`
+futures decide_() print_()  # prints `[greeting: "hi", noun: "you"]`
 ```
 
-Notice that all containers with `um` types for elements will have
-an overload defined for `decide`, which can be used like with the
-`Futures_array` example above.  Similarly all object types with `um`
-fields have a `decide` function that awaits all internal fields that
-are futures before returning.  You can also use `Container decide()`
-instead of `decide(Container)` in case that makes more sense.
+Notice that all containers with `um_` types for elements will have
+an overload defined for `decide_`, which can be used like with the
+`futures_array` example above.  Similarly all object types with `um_`
+fields have a `decide_` function that awaits all internal fields that
+are futures before returning.  You can also use `container decide_()`
+instead of `decide_(container)` in case that makes more sense.
 
 We will also include a compile error if something inside a futures
 container is defined without `um`:
 
 ```
-# if any field in an object/container is an `um` class, we expect everyone to be.
-# this is to save developers from accidentally forgetting an `Um`
-Object_or_container:
-[    Greeting: after(Seconds: 2, resolve: "hello")    # COMPILE ERROR!
-     Noun: after(Seconds: 1, resolve: "world") Um     # ok
+# if any field in an object/container is an `um_` class, we expect everyone to be.
+# this is to save developers from accidentally forgetting an `um_`
+object_or_container:
+[    greeting: after_(seconds: 2, resolve: "hello")    # COMPILE ERROR!
+     noun: after_(seconds: 1, resolve: "world") um     # ok
 ]
 ```
 
 If you do need to pass in an immediate future as a container element
 (e.g., to simplify the API when calling with different conditions),
-use `um(Immediate: ...)` to make it clear that you want it that way.
+use `um_(immediate: ...)` to make it clear that you want it that way.
 
 # enums and masks
 
