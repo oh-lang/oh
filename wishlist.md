@@ -7454,6 +7454,19 @@ TODO: make sure we've done `one_of_[dbl:, ...]` everywhere instead of the old ap
 for types `one_of_[dbl_, ...]`.
 TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific instances.
 
+The `one_of_` type is a tagged union, which can easily mix pure enum values
+(with no accompanying data) with tagged data types.
+
+```
+id: one_of_
+[    unknown:                      # defaults to tag 0
+     another_pure_enum_value: 5    # value with explicit tag
+     int:                          # data type, implicitly tagged to 6
+     dbl: 9                        # data type with explicit tag of 9
+     named_type: u64_ = 15         # renamed data type with explicit tag of 15
+]
+```
+
 Nulls are highly encouraged to come last in a `one_of_`, because they will match any input,
 so casting like this: `one_of_[null:, int:](1234)` would actually become `null` rather than
 the expected value `1234`, since casts are attempted in order of the `one_of_` types.
@@ -7548,61 +7561,68 @@ one_of_[..., ~t_]: []
 
 ### flattening and containing
 
-Note that `one_of[one_of[a, b], one_of[c, d]]` is not the same as
-`one_of[a, b, c, d]`.  To get that result, use `flatten`, e.g.,
-`flatten[one_of[a, b], one_of[c, d]]` will equal `one_of[a, b, c, d]`.
-This is safe to use on other types, so `flatten[one_of[c, d], e]`
-is `one_of[c, d, e]`.
+Note that `one_of_[one_of_[a:, b:], one_of_[c:, d:]]` is not the same as
+`one_of_[a:, b:, c:, d:]`.  To get that result, use `flatten_`, e.g.,
+`flatten_[one_of_[a:, b:], one_of_[c:, d:]]` will equal `one_of_[a:, b:, c:, d:]`.
+This is safe to use on other types, so `flatten_[one_of_[c:, d:], e:]`
+is `one_of_[c:, d:, e:]`.
 
 If you want to check if a condition is true for a type,
-you can use notation like `x is one_of[a, b]`.  This is true if `x`
-is `a`, `b`, or even `one_of[a, b]`, and false otherwise.
-You can also use `contains` to go the opposite direction, e.g.,
-`one_of[a, b] contains(x)` is the same as `x is one_of[a, b]`.
-(Note we use parentheses in `contains(...)` because we return a value,
+you can use notation like `x is one_of_[a:, b:]`.  This is true if `x`
+is `a_`, `b_`, or even `one_of_[a:, b:]`, and false otherwise.
+You can also use `contains_` to go the opposite direction, e.g.,
+`one_of_[a:, b:] contains_(x_)` is the same as `x is one_of_[a:, b:]`.
+(Note we use parentheses in `contains_(...)` because we return a value,
 i.e., a boolean, not a type.)
 
 ### `one_of`s as function arguments
 
-The default name for a `one_of` argument is `One_of`.  E.g.,
+The default name for a `one_of_` argument is `one_of`.  E.g.,
 
 ```
-# this is short for `my_function(One_of: one_of[int, str]): dbl`:
-my_function(One_of[int, str]): dbl
-     dbl(One_of) ?? panic()
+# this is short for `my_function_(one_of: one_of_[int:, str:]): dbl_`:
+my_function_(one_of[int:, str:]:): dbl_
+     dbl_(one_of) ?? panic_()
 
-print(my_function(123))      # prints 123.0
-print(my_function("123.4"))  # prints 123.4
+print_(my_function_(123))      # prints 123.0
+print_(my_function_("123.4"))  # prints 123.4
 ```
 
 Internally this creates multiple function overloads:  one for when the argument's
 type is unknown at compile time, and one for each of the possible argument types
-when it is known (e.g., `int` and `str` in this case).
+when it is known (e.g., `int` and `str` in this case).  The latter is for
+flexibility, the former is for speed.
 
-If you need to use multiple `one_of`s in a function and still want them to be
-default-named, it's recommended to give specific names to each `one_of`, e.g.,
+If you need to use multiple `one_of_`s in a function and still want them to be
+default-named, it's recommended to give specific names to each `one_of_`, e.g.,
 
 ```
-int_or_string: one_of[int, str]
-weird_number: one_of[u8, i32, dbl]
+int_or_string_: one_of_[int:, str:]
+weird_number_: one_of_[u8:, i32:, dbl:]
 
-my_function(Int_or_string, Weird_number): dbl
-     return dbl(Int_or_string) * Weird_number
+my_function_(int_or_string:, weird_number:): dbl_
+     dbl_(int_or_string) ?? panic_() * weird_number
 ```
 
 However, you can also achieve the same thing using namespaces,
-if you don't want to add specific names for the `one_of`s.
+if you don't want to add specific names for the `one_of_`s.
 
 ```
-# arguments short for `A_one_of: one_of_[int_, str_]` and `B_one_of: one_of_[u8_, i32_, dbl_]`.
-my_function(A_one_of[int_, str_], B_one_of[u8_, i32_, dbl_]): dbl
-     return dbl(A_one_of) * B_one_of
+# arguments short for `A_one_of: one_of_[int:, str:]` and `B_one_of: one_of_[u8:, i32:, dbl:]`.
+my_function(A_one_of[int:, str:], B_one_of[u8:, i32:, dbl:]): dbl_
+     dbl_(A_one_of) ?? panic_() * B_one_of
 ```
 
 Again, this fans out into multiple function overloads for each of the cases
-of compile-time known and compile-time unknown arguments.
+of compile-time known and compile-time unknown arguments.  Similar to
+nullable arguments, this may create compile-time errors if the developer
+specifies an overload that the compiler is trying to generate.  In case
+you have a specialization you'd like to override specifically, you need
+to add an annotation like `@no_specialization(A_one_of: int_)` to the
+function with a `one_of` argument, in this example for a `one_of_` named
+`A_one_of` that has an `int_` option.
 
-TODO: ensure that we can use `Call` or similar to create our own version
+TODO: ensure that we can use `call` or similar to create our own version
 of a `one_of` with metaprogramming or whatever.
 
 ## select
