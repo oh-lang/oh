@@ -7627,41 +7627,36 @@ of a `one_of` with metaprogramming or whatever.
 
 ## select
 
-If you *don't* want to allow the combined case as an argument, e.g., `one_of[a, b]`,
-you can use `select[a, b]`.  This will only generate overloads with
-the distinct types and not the combined type, like so:
+If you *don't* want to allow the combined case as an argument, e.g., `one_of_[a:, b:]`,
+you can use `select_[a:, b:]` for a function argument.  This will only generate overloads
+with the distinct types and not the combined type, like so:
 
 ```
-my_fn(Select[int, str]): str
-     "hello ${Select}"
+my_fn_(select_[int:, str:]:): str_
+     "hello ${select}"
 
 # becomes only these two functions internally:
-my_fn(Int): str
-     "hello ${Int}"
+my_fn_(int:): str_
+     "hello ${int}"
 
-my_fn(Str): str
-     "hello ${Str}"
+my_fn_(str:): str_
+     "hello ${str}"
 
 # when calling:
-my_fn(5)            # OK
-my_fn("world")      # OK
-My_one_of; one_of[int, str](3)
+my_fn_(5)           # OK
+my_fn_("world")     # OK
+MY_one_of; one_of_[int:, str:](3)
 # ... some logic that might change My_one_of
-my_fn(My_one_of)    # COMPILE ERROR
+my_fn_(MY_one_of)   # COMPILE ERROR
 ```
 
-This can be used to restrict generics to a list of only certain types,
-e.g., `primitives: select[i8, i16], my_generic[of: primitives]: [Of]`
-will only allow specification as `my_generic[i8]` or `my_generic[i16]`,
-and not `my_generic[one_of[i8, i16]]`.
-
-Like with `one_of`, you can check if a `select` contains some type by
-using `contains`, e.g., `a_or_b: select[a, b], a_or_b contains(x)`
-is true if `x` is `a` or `b`, but not `one_of[a, b]`.  Note that
-`select` will expand so that `a_or_b contains(select[a, b])` could
-be true or false depending on the situation.  In this case, it would
-be a compile error because `select[a, b]` needs to be put into a named
-type (e.g., `a_or_b: select[a, b]`) since it is a bit of a meta-type.
+This is generally not recommended for function arguments, but it can
+be used to restrict class generics to a list of only certain types, e.g.,
+`primitives: select_[i8:, i16:], my_generic_[of_: primitives_]: [of;]`
+will only allow specification as `my_generic_[i8_]` or `my_generic_[i16_]`,
+and not `my_generic_[one_of_[i8:, i16:]]`.  Note that `select_` generally
+needs to be put into a named type (e.g., `a_or_b_: select_[a:, b:]`) and
+specified at compile time as exactly one of the subtypes since it is a meta-type.
 
 ## masks
 
