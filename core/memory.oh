@@ -16,6 +16,8 @@ memory_: arch_ unsigned_
      # and returns it.  in debug mode, the `ptr` is cleared,
      # while in non-debug it is not.
      remove_(ptr_[~t_]:): t_
+
+     heap_[t_: any_]: on_heap_[t_]
 }
 
 er_: one_of_
@@ -23,3 +25,11 @@ er_: one_of_
 ]
 
 hm_[of_]: hm_[ok_: of_, er_]
+
+@private
+on_heap_[of_]: all_of_
+[    m: [ptr[of_];]
+     refer[of_]
+]
+{    # TODO: deref logic
+}

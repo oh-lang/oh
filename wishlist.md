@@ -7277,18 +7277,19 @@ the ability to pass in additional parameters to other templates, e.g.,
 as much as possible, we don't want to hide language features behind a garden wall.
 
 We can create a new type that exhaustively declares all possible values it can take.
-The syntax is `type_case_: one_of` followed by a list of named values
-(each an `variable_case` identifier), with optional values they take, or subtypes
-(each a `type_case_` identifier) with their corresponding type definitions.  Enumerations
+The syntax is `type_case_: one_of_` followed by a list of named values
+(each an `variable_case:` declaration), with optional values they take, or subtypes
+(each a `variable_name: type_case_` definition, with default type names possible
+to abbreviate `u32:` as `u32: u32_`).  Enumerations
 are mutually exclusive -- no two values may be held simultaneously.  See
-masks for a similar class type that allows multiple options at once.
+masks (`choose_`) for a similar class type that allows multiple options at once.
 
 Enums are by default the smallest standard integral type that holds all values,
 but they can be signed types (in contrast to masks which are unsigned).
 If desired, you can specify the underlying enum type using `i8_ one_of_[...]` instead
 of `one_of_[...]`, but this will be a compile error if the type is not big enough to
 handle all options.  It will not be a compile warning if the `one_of_` includes types
-inside (e.g., `i8_ one_of_[u32_, f32_]`); we'll assume you want the tag to be an `i8_`.
+inside (e.g., `i8_ one_of_[u32:, f32:]`); we'll assume you want the tag to be an `i8_`.
 However, it should be clear that the full type will be at least the size of the
 tag plus the largest element in the `one_of_`; possibly more to achieve alignment.
 
@@ -7300,16 +7301,16 @@ should we use `one_of[First_value_defaults_to_zero:, Second_value_increments:, .
 depends on if we want to require it always with function arguments and with brackets.
 
 ```
-my_enum: one_of
-[    First_value_defaults_to_zero
-     Second_value_increments
-     Third_value_is_specified: 123
-     Fourth_value_increments
+my_enum_: one_of_
+[    first_value_defaults_to_zero:
+     second_value_increments:
+     third_value_is_specified: 123
+     fourth_value_increments:
 ]
-assert my_enum First_value_defaults_to_zero == 0
-assert my_enum Second_value_increments == 1
-assert my_enum Third_value_is_specified == 123
-assert my_enum Fourth_value_increments == 124
+assert_(my_enum first_value_defaults_to_zero) == 0
+assert_(my_enum second_value_increments) == 1
+assert_(my_enum third_value_is_specified) == 123
+assert_(my_enum fourth_value_increments) == 124
 ```
 
 You can even pass in existing variable(s) to the enum, although they should be
@@ -7317,24 +7318,24 @@ compile-time constants.  This uses the same logic as function arguments to
 determine what the name of the enum value is.
 
 ```
-Super: 12
-Crazy: 15
+super: 12
+crazy: 15
 # the following will define
-# `other_enum Other_value1 = 0`,
-# `other_enum Super = 12`,
-# and `other_enum Other_value2 = 15`.
-other_enum: one_of
-[    Other_value1
-     Super
-     Other_value2: Crazy
+# `other_enum other_value1 = 0`,
+# `other_enum super = 12`,
+# and `other_enum other_value2 = 15`.
+other_enum_: one_of_
+[    other_value1
+     super
+     other_value2: crazy
 ]
 ```
 
 Here is an example enum with just specified values, all inline:
 
 ```
-# fits in a `u1`.
-bool: one_of[False: 0, True: 1]
+# fits in a `u1_`.
+bool_: one_of_[false: 0, true: 1]
 ```
 
 Enums provide a few extra additional methods for free as well, including
@@ -7344,165 +7345,159 @@ check if an enum instance `enum` is a specific value `this_value` via
 `enum is_this_value_()` which will return true iff so.
 
 ```
-Test: bool = False  # or `Test: bool False`
+test: bool_ = false  # or `test: bool_ false`
 
-if Test == True     # OK
-     print("test is true :(")
-if Test is_false()   # also OK
-     print("test is false!")
+if test == true     # OK
+     print_("test is true :(")
+if test is_false_()   # also OK
+     print_("test is false!")
 
 # get the count (number of enumerated values) of the enum:
-print("bool has ${bool count()} possibilities:")
+print_("bool has ${bool_ count_()} possibilities:")
 # get the lowest and highest values of the enum:
-print("starting at ${bool min()} and going to ${bool max()}")
+print_("starting at ${bool_ min_()} and going to ${bool_ max_()}")
 ```
 
-Because of this, it is a bit confusing to create an enum that has `Count` as an
+Because of this, it is a bit confusing to create an enum that has `count` as an
 enumerated value name, but it is not illegal, since we can still distinguish between the
-enumerated value (`enum_name Count`) and total number of enumerated values (`enum_name count()`).
-Similarly for `Min`/`Max`.
+enumerated value (`enum_name_ count`) and total number of enumerated values (`enum_name_ count_()`).
+Similarly for `min`/`max`.
 
-Also note that the `count()` method will return the total number of
+Also note that the `count_()` method will return the total number of
 enumerations, not the number +1 after the last enum value.  This can be confusing
 in case you use non-standard enumerations (i.e., with values less than 0):
 
 ```
-sign: one_of
-[    Negative: -1
-     Zero: 0
-     Positive: 1
+# this will fit in an `i2_` due to having negative values.
+sign_: one_of_
+[    negative: -1
+     zero: 0
+     positive: 1
 ]
 
-print("sign has ${sign count()} values")   # 3
-print("starting at ${sign min()} and going to ${sign max()}")     # -1 and 1
+print_("sign has ${sign_ count_()} values")   # 3
+print_("starting at ${sign_ min_()} and going to ${sign_ max_()}")     # -1 and 1
 
-weird: one_of
-[    X: 1
-     Y: 2
-     Z: 3
-     Q: 9
+# this will fit in a `u4_` due to values going up to 9.
+weird_: one_of_
+[    x: 1
+     y: 2
+     z: 3
+     q: 9
 ]
 
-print(weird count())   # prints 4
-print(weird min())     # prints 1
-print(weird max())     # prints 9
+print_(weird_ count_())     # prints 4
+print_(weird_ min_())       # prints 1
+print_(weird_ max_())       # prints 9
 ```
 
-### default values for a `one_of`
+### default values for a `one_of_`
 
-Note that the default value for a `one_of` is the first value, unless zero is an option
-(and it's not the first value), unless `null` is an option -- in increasing precedence.
-E.g., `one_of[Option_a, Option_b]` defaults to `Option_a`, `one_of[A: -1, B: 0, C: 1]` 
-defaults to `B`, and `one_of[Option_c, null]` defaults to `null`, and
-`one_of[A: -1, B: 0, C: 1, null]` also defaults to `null`.
-TODO: `[null]` should collapse to `[]` based on how containers work.  Null is
-always the absence of a value and should never be considered present.  we can make
-`one_of` a macro but that might be a pain to be consistent (and use `@one_of` everywhere).
-maybe require using `?` for these sorts of things
-like `tye_type: one_of[A: -1, B: 0, C: 1]?` or `the_type?: one_of[A: -1, B: 0, C: 1]`
-otherwise `one_of[a, b, c, null]` is ok because `null` is a type.
+Note that the default value for a `one_of_` is the first value, unless zero is an option
+(and it's not the first value), unless `null_` is an option -- in increasing precedence.
+E.g., `one_of_[value_a:, value_b:]` defaults to `value_a`, `one_of_[a: -1, b: 0, c: 1]` 
+defaults to `b`, and `one_of_[option_c:, null:]` defaults to `null`, and
+`one_of_[a: -1, b: 0, c: 1, null:]` also defaults to `null`.  Notice that `[null]`
+collapses to `[]` based on how containers work; this is why we need to force a declaration
+in `one_of_` (like `:`) by using `one_of_[null:]`.  Null is always the absence of a value
+and should never be considered present (unless declared).
 
 ### testing enums with lots of values
 
 Note that if you are checking many values, a `what` statement may be more useful
 than testing each value against the various possibilities.  Also note that you don't need
 to explicitly set each enum value; they start at 0 and increment by default.
+But you do always need to include the declaration operator `:` because we
+are declaring new values in the enum.
 
 ```
-option: one_of
-[    Unselected
-     Not_a_good_option
-     Content_with_life
-     Better_options_out_there
-     Best_option_still_coming
-     Oops_you_missed_it
-     Now_you_will_be_sad_forever
+option_: one_of_
+[    unselected:
+     not_a_good_option:
+     content_with_life:
+     better_options_out_there:
+     best_option_still_coming:
+     oops_you_missed_it:
+     now_you_will_be_sad_forever:
 ]
 
-print("number of options should be 7:  ${option count()}")
+print_("number of options should be 7:  ${option_ count_()}")
 
-Option1: option Content_with_life
+option1: option_ content_with_life
 
 # avoid doing this if you are checking many possibilities:
-if Option1 is_not_a_good_option()   # OK
-     print("oh no")
-elif Option1 == Oops_you_missed_it # also OK
-     print("whoops")
+if option1 is_not_a_good_option_()  # OK
+     print_("oh no")
+elif option1 == oops_you_missed_it  # also OK
+     print_("whoops")
 ...
 
 # instead, consider doing this:
-what Option1
-     Not_a_good_option
-          print("oh no")
-     Best_option_still_coming
-          print("was the best actually...")
-     Unselected
+what option1
+     not_a_good_option
+          print_("oh no")
+     best_option_still_coming
+          print_("was the best actually...")
+     unselected
           fall_through
      else
-          print("that was boring")
+          print_("that was boring")
 ```
 
-Note that we don't have to do `option Not_a_good_option` (and similarly for other options)
-along with the cases.  The compiler knows that since `Option1` is of type `option`,
-that you are looking at the different values for `option` in the different cases.
+Note that we don't have to do `option_ not_a_good_option` (and similarly for other options)
+along with the cases.  The compiler knows that since `option1` is of type `option_`,
+that you are looking at the different values for `option_` in the different cases.
 
 ## one_of types
 
-TODO: i think we want to converge on `one_of_[dbl, int]`, so that we can do renaming
-like this: `one_of_[value1: dbl_, value2: dbl_]`, in case we want to have two different
-names that correspond to the same type.
-TODO: what's the difference between `one_of[Dbl, Int]` and `one_of[dbl, int]`?
-probably nothing??  but `one_of[New_identifier: 0, Other_identifier: 3]` would
-be different than `one_of[new_identifier: 0, other_identifier: 3]`? or not??
-in both cases, it seems like `0` and `3` are specifying the tag.  but would
-`one_of[new_id: [X: dbl], other_id: [Y: str]]` be different than
-`one_of[New_id: [X: dbl], Other_id: [Y: str]]`?...  maybe we just force lowercase.
+TODO: make sure we've done `one_of_[dbl:, ...]` everywhere instead of the old approach
+for types `one_of_[dbl_, ...]`.
 TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific instances.
 
-Nulls are
-highly encouraged to come last in a `one_of`, because they will match any input, so
-casting like this: `one_of[null, int](1234)` would actually become `null` rather than
-the expected value `1234`, since casts are attempted in order of the `one_of` types.
+Nulls are highly encouraged to come last in a `one_of_`, because they will match any input,
+so casting like this: `one_of_[null:, int:](1234)` would actually become `null` rather than
+the expected value `1234`, since casts are attempted in order of the `one_of_` types.
 
-Take this example `one_of`.
+Take this example `one_of_`.
 
 ```
-tree: one_of
-[    leaf: [Value; int]
+tree_: one_of_
+[    leaf: [value; int_]
      branch:
-     [    Left; tree
-          Right; tree
+     [    left; memory_ heap_[tree_]
+          right; memory_ heap_[tree_]
      ]
 ]
 ```
 
-When checking a `tree` type for its internal structure, you can use `is_leaf()` or `is_branch()`
+When checking a `tree_` type for its internal structure, you can use `is_leaf()` or `is_branch()`
 if you just need a boolean, but if you need to manipulate one of the internal types, you should
-use `::is(fn(Internal_type): null): bool` or `;;is(fn(Internal_type;): null): bool` if you need to modify
-it, where `internal_type` is either `leaf` or `branch` in this case.  For example:
+use `::is_(fn_(internal_type:): null_): bool_` or `;;is_(fn_(internal_type;): null_): bool_`
+if you need to modify it, where `internal_type_` is either `leaf_` or `branch_` in this case.
+For example:
 
 ```
-Tree; tree = if Abc
-     leaf(Value: 3)
+tree; tree_ = if some_condition
+     leaf_(value: 3)
 else
-     branch(Left: leaf(Value: 1), Right: leaf(Value: 5))
+     branch_(left: leaf_(value: 1), right: leaf_(value: 5))
 
-if Tree is_leaf()
+if tree is_leaf_()
      # no type narrowing, not ideal.
-     print(Tree)
+     print(tree)
 
-# narrowing to a `leaf` type that is readonly, while retaining a reference
-# to the original `Tree` variable.  the nested function only executes if
-# `Tree` is internally of type `leaf`:
-Tree is(fn(Leaf): print(Leaf))
+# narrowing to a `leaf_` type that is readonly, while retaining a reference
+# to the original `tree` variable.  the nested function only executes if
+# `tree` is internally of type `leaf_`:
+tree is_(fn_(leaf:): print_(leaf))  # for short, `tree is_({print_($leaf)})`
 
-# narrowing to a `branch` type that is writable.  `Tree` was writable, so `Branch` can be.
-# the nested function only executes if `Tree` is internally of type `branch`:
-Tree is
-(    fn(Branch;):
-          print(Branch Left, " ", Branch Right)
-          # this operation can affect/modify the `Tree` variable.
-          Branch Left some_operation()
+# narrowing to a `branch_` type that is writable.  `tree` was writable, so `branch` can be.
+# the nested function only executes if `tree` is internally of type `branch_`:
+tree is
+(    fn_(branch;):
+          print_(branch left, " ", branch right)
+          # this operation can affect/modify the `tree` variable.
+          branch left some_operation_()
 )
 ```
 
@@ -7510,48 +7505,44 @@ Even better, use the [`is` operator](#is-operator) and define a block:
 
 ```
 # you can also use this in a conditional; note we don't wrap in a lambda function
-# because we're using fancier `Block` syntax.
-if Tree is Branch;
-     Branch Left some_operation()
-     print("a branch")
+# because we're using fancier block syntax.
+if tree is branch;
+     branch left some_operation_()
+     print_("a branch")
 else
-     print("not a branch") 
+     print_("not a branch") 
 ```
 
 If you need to manipulate most of the internal types, use `what` to narrow the type
 and handle all the different cases.
 
 ```
-what Tree
-     Leaf: 
-          print(Leaf)
-     Branch;
-          # this operation can affect/modify the `Tree` variable.
-          print(Branch Left, " ", Branch Right)
-          Branch Left some_operation()
+what tree
+     leaf: 
+          print_(leaf)
+     branch;
+          # this operation can affect/modify the `tree` variable.
+          print_(branch left, " ", branch right)
+          branch left some_operation_()
 ```
 
-Since function arguments are references by default, the above options are useful
-when you want to modify the `Tree` variable by changing its internals whether
-selectively it's a `leaf` or a `branch`.  If you want to make a copy, you can do so
-via type casting: `New_leaf?; leaf = Tree` or `My_branch?; branch = Tree`; these
-variables will be null if the `Tree` is not of that type, but they will also be
-a copy and any changes to the new variables will not be reflected in `Tree`.
+If you want to make a copy, you can do so via type casting: `new_leaf?; leaf_ = tree`
+or `my_branch?; branch_ = tree`; these
+variables will be null if the `tree` is not of that type, but they will also be
+a copy and any changes to the new variables will not be reflected in `tree`.
+TODO: discuss how copies should generally have handle OOM errors.
 
 ```
-one_of[..., t]: []
-{    # returns true if this `one_of` is of type `T`, also allowing access
+one_of_[..., ~t_]: []
+{    # returns true if this `one_of_` is of type `t`, also allowing access
      # to the underlying value by passing it into the function.
-     # we return `never` here because we don't want people to use the
-     # value and expect it to return something based on the callback's return type,
-     # or be confused if it should always return true if the internal type is `t`.
-     ;:is(fn(T;:): null): never
+     ;:is_(fn_(t;:): null_): bool_
 
      # type narrowing.
-     # the signature for `if Tree is Branch; {#[do stuff with `Branch`]#}`
+     # the signature for `if tree is branch; {#[do stuff with `branch`]#}`
      # the method returns true iff the block should be executed.
      # the block itself can return a value to the parent scope.
-     ;:.is(), Block[declaring:;. t, exit: ~u]: bool
+     ;:.is_(), block[declaring:;. t_, exit_: ~u_]: bool_
 }
 ```
 
