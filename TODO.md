@@ -512,6 +512,34 @@ typedef struct F1L3__update
 }         F1L3__update_;
 ```
 
+we'll do the same for a mask implementation.  notice that enum
+values need to be powers of two, so we will need more bits for the
+tag than in an enum.
+
+```
+# oh-lang
+mask_: any_or_none_of_
+[    no_corresponding_data_value:
+     direction: vector3_
+]
+
+// c:
+enum F1L3_tag__mask
+{    F1L3_tag__mask__no_corresponding_data_value = 1,
+     F1L3_tag__mask__direction = 2,
+};
+typedef struct F1L3__mask
+{    // Data inside the mask, NO UNION since any data can be used.
+     F1L3__vector3_ direction;
+
+     // don't put in `F1L3_tag__mask` directly because it
+     // will take up too much space; use a `u8_ ... : 2` instead.
+     // we need 2 bits because a mask uses powers of two, and all
+     // values from 0 to 3 are valid masks here.
+     u8_ OH_tag : 2;
+}         F1L3__mask_;
+```
+
 ## what implementation
 
 given the tagged union in the previous section.

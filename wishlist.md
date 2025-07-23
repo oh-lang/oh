@@ -7660,30 +7660,41 @@ specified at compile time as exactly one of the subtypes since it is a meta-type
 
 ## masks
 
+TODO: is there a better word than `choose_` here?  we keep using the name `mask`
+and we should have a name that fits the verb we use.  i think i like "options"
+but we'll need to go back to the enum section and rename an example if so.
+or we go verbose with `any_or_none_of_` because that's the most concise and descriptive,
+that follows along with `all_of_`, `one_of_`, etc.  but would want to rename `select_` then.
+
 Masks are generalized from enumerations to allow multiple values held simultaneously.
 Each value can also be thought of as a flag or option, which are bitwise OR'd together
 (i.e., `|`) for the variable instance.  Under the hood, these are unsigned integer types.
-Trying to assign a negative value will throw a compiler error.
+Trying to assign a negative tag will throw a compiler error.
 Unlike enums which hold only `one_of_` the fields at a time, masks hold `any_or_none_of_`
-which is a bit too verbose; we use `choose_[a, b, c]` to declare a mask which can
+which is a bit too verbose; we use `choose_[a:, b:, c:]` to declare a mask which can
 be `a`, `b`, `c`, some combination of all three, or no values at all.
 
-Like with enums, you can specify the integer type that backs the mask, but in this case
-it must be an unsigned type, e.g., `choose u32[...]`.  Note that by default, the `mask_type`
+oh-lang masks share similar features with enums.
+
+* You can specify the integer type that backs the mask tag, but in this case
+it must be an unsigned type, e.g., `u32_ choose_[...]`.  Note that by default, the tag
 is exactly as many bits as it needs to be to fit the desired options, rounded up to
-the nearest standard unsigned type (`u8`, `u16`, `u32`, `u64`, `u128`, etc.).
-We will add a warning if the user is getting into the `u128+` territory.
+the nearest standard unsigned type (`u8_`, `u16_`, `u32_`, `u64_`, `u128_`, etc.).
+We will add a warning if the user is getting into the `u128_+` territory.
 
-TODO: is there a good generalization of "any type in an enum" functionality
-that rust provides, for masks?  e.g., `choose[a, b, c]` for types `a,b,c`?
+* Masks don't need to specify their tags; but if you do specify them,
+they must be powers of two.
 
-Also like enums, masks don't need to specify their values; unlike enums, if you do specify them,
-they must be powers of two.  Like enums, they have an `is_this_value()` method
-for a `This_value` option, which is true if the mask is exactly equal to `This_value`
-and nothing else.  You can use `has_this_value()` to see if it contains `This_value`,
-but may contain other values besides `This_value`.
+* Masks can have an `is_this_value_()` method for a `this_value` option,
+which is true if the mask is exactly equal to `this_value` **and nothing else**.
+You can use `has_this_value_()` to see if it contains `this_value`,
+but may contain other values besides `this_value`.
 
-TODO: should this be `contains_this_value()` to be consistent with containers?
+* Masks can contain data aside from tags.
+
+TODO: examples with mask types
+TODO: include a `has` operator (like `is`) operator.  discuss for arrays
+and lots.  maybe instead of `container` do `hasable`.
 
 TODO: is there a way to make this `any_of` and use 0 as the `null` value?
 
