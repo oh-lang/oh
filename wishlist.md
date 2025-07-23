@@ -7808,13 +7808,13 @@ name can thus be chosen for each `one_of_`, e.g., `one_of_[..., whatever_name: 0
 You can add some named combinations by extending a mask like this.
 
 ```
-my_mask: choose[X, Y]
-{    X_and_y: X | Y
+my_mask_: choose_[x:, y:]
+{    x_and_y: x | y
 }
 
-Result: my_mask = X_and_y
-print(Result & X) # truthy, should be 1
-print(Result & Y) # truthy, should be 2
+result: my_mask_ x_and_y
+print(result & x)   # truthy, should be 1
+print(result & y)   # truthy, should be 2
 ```
 
 # lifetimes and closures
@@ -7824,37 +7824,37 @@ print(Result & Y) # truthy, should be 2
 Variable and function lifetimes are usually scoped to the block that they
 were defined in.  Initialization happens when they are encountered, and
 descoping/destruction happens in reverse order when the block ends.  With
-functions we have to be especially careful when they are impure.
-If an impure function's lifetime exceeds that of any of its hidden
-inputs' lifetimes, we'll get a segfault or worse.
+lambda functions we have to be especially careful.  If a lambda function's
+lifetime exceeds that of any of its hidden inputs' lifetimes, we'll get a
+segfault or worse.
 
 Let's illustrate the problem with an example:
 
 ```
 # define a re-definable function.
-live_it_up(String); index
-     return String count_bytes()
+live_it_up_(string:); index_
+     string bytes_() count_()
 
-if Some_condition
-     Some_index; index = 9
+if some_condition
+     some_index; index_ = 9
      # redefine:
-     live_it_up(String); index
-          return String count_bytes() + ++Some_index
+     live_it_up_(string:); index_
+          string bytes_() count_() + ++some_index
 
-     print(live_it_up("hi"))   # this should print 12
-     print(live_it_up("ok"))   # this should print 13
+     print_(live_it_up_("hi"))     # this should print 12
+     print_(live_it_up_("ok"))     # this should print 13
 
-print(live_it_up("no"))       # should this print 14 or 2??
+print_(live_it_up_("no"))          # should this print 14 or 2??
 ```
 
-Within the `if Some_condition` block, a new variable `Some_index` gets defined,
-which is used to declare a new version of `live_it_up`.  But once that block
-is finished, `Some_index` gets cleaned up without care that it was used elsewhere,
-and if `live_it_up` is called with the new definition, it may segfault (or start
+Within the `if some_condition` block, a new variable `some_index` gets defined,
+which is used to declare a new version of `live_it_up_`.  But once that block
+is finished, `some_index` gets cleaned up without care that it was used elsewhere,
+and if `live_it_up_` is called with the new definition, it may segfault (or start
 changing some other random variable's data).  Therefore, we must not allow the
-expectation that `live_it_up("no")` will return 14 outside of the block.
+expectation that `live_it_up_("no")` will return 14 outside of the block.
 
-We actually don't want `live_it_up("no")` to return 2 here, either; we want this
+We actually don't want `live_it_up_("no")` to return 2 here, either; we want this
 code to fail at compilation.  We want to detect when users are trying to do
 closures (popular in garbage-collected languages) and let them know this is
 not allowed; at least, not like this.
@@ -7864,47 +7864,46 @@ but they must be defined *before* the impure function is first declared.  So thi
 would be allowed:
 
 ```
-Some_index; index = 9
-live_it_up(String); index
-     return String count_bytes()
+some_index; index_ = 9
+live_it_up_(string:); index_
+     string bytes_() count_()
 
-if Some_condition
+if some_condition
      # redefine:
-     live_it_up(String); index
-          return String count_bytes() + ++Some_index
+     live_it_up_(string:); index_
+          string bytes_() count_() + ++some_index
 
-     print(live_it_up("hi"))   # this should print 12
-     print(live_it_up("ok"))   # this should print 13
+     print_(live_it_up_("hi"))     # this should print 12
+     print_(live_it_up_("ok"))     # this should print 13
 
-print(live_it_up("no"))       # prints 14
+print_(live_it_up_("no"))     # can print 2 or 14 depending on `some_condition`.
 ```
 
-Alternatively, we allow an impure function to "take" a variable into
-its own private scope so that we could redefine `live_it_up` here with a new
+Alternatively, we allow a lambda function to "take" a variable into
+its own private scope so that we could redefine `live_it_up_` here with a new
 internal variable.  We still wouldn't allow references; they'd have to be
 new variables scoped into the function block.
 
 ```
-if Some_condition
-     live_it_up(String); index
+if some_condition
+     live_it_up_(string:); index_
           # "@dynamic" means declare once and let changes persist across function invocations.
           # Note that this functionality cannot be used to store references.
-          @dynamic X; int = 12345
-          return String count_bytes() + ++X
+          @dynamic x; index_ = 12345
+          string bytes_() count_() + ++x
 ```
 
-Similarly, returning a function from within a function is breaking scope:
+Similarly, returning a function from within a function might look like
+breaking scope.  But this is ok because functions are globally defined anyway:
 
 ```
-next_generator(Int; int): fn(): int
-     return ():
-          return ++Int
+next_generator_(int;): fn_(): int_
+     fn_(): ++int
 ```
 
-However, technically this is OK because arguments in functions are references,
-and they should therefore be defined before this function is called.
-Even if `Int;` here is a temporary, it is defined before this function
-(and not deleted after the function call).
+Because `;` and `:` arguments in functions are references, they are defined
+before this function is called.  E.g., even if `int;` was given as a temporary,
+it is defined before this function (and not deleted after the function call).
 
 Here is an example where the return value is a function which uses
 the another function from the input.  This is ok because the returned
@@ -7915,13 +7914,13 @@ is descoped.
 ```
 # function that takes a function as an argument and returns a function
 # example usage:
-#   some_fn(): "hey"
+#   some_fn_(): "hey"
 #   # need to specify the overload
-#   other_fn(): int = wow(fn(): str = some_fn)
-#   print(other_fn()) # 3
-wow(Input fn(): string): fn(): int
-     (): int
-          Input fn() count_bytes()
+#   other_fn_(): int_ = wow_(fn_(): str_ = some_fn_)
+#   print_(other_fn_()) # 3
+wow_(INPUT_fn_(): string_): fn_(): int_
+     fn_(): int_
+          INPUT_fn() bytes_() count_()
 ```
 
 ## handling system callbacks
