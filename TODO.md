@@ -462,26 +462,26 @@ from the `update` `one_of` and `status` enum from the wishlist section on `what`
 
 ```
 // status_: one_of_[unknown:, alive:, dead:]
-typedef enum F1L3_tag__status
+typedef enum F1L3_tag__status_
 {    F1L3_tag__status__unknown,
      F1L3_tag__status__alive,
      F1L3_tag__status__dead,
-}         F1L3_tag__status_;
-typedef struct F1L3__status
-{    // don't put in `F1L3_tag__status` directly because it
-     // will take up too much space; use a `u8_ ... : 2` instead.
-     u8_ OH_tag : 2;
-}         F1L3_status_;
+}         F1L3_tag__status_t;
+typedef struct F1L3__status_
+{    // don't put in `F1L3_tag__status_t` directly because it
+     // will take up too much space; use a `u8_t ... : 2` instead.
+     u8_t OH_tag : 2;
+}         F1L3_status_t;
 
 // vector3_: [x; dbl_, y; dbl_, z; dbl_]
 // {    ::length_(): sqrt_(x^2 + y^2 + z^2)
 // }
-typedef struct F1L3__vector3
-{    dbl_ x;
-     dbl_ y;
-     dbl_ z;
-};        F1L3__vector3_
-dbl_ F1L3__length__vector3_c__dbl_x_(const F1L3__vector3 *vector3)
+typedef struct F1L3__vector3_
+{    dbl_t x;
+     dbl_t y;
+     dbl_t z;
+};        F1L3__vector3_t
+dbl_ F1L3__length__vector3_c__dbl_x_(const F1L3__vector3_t *vector3)
 {    return sqrt
      (    vector3->x * vector3->x,
           vector3->y * vector3->y,
@@ -494,22 +494,22 @@ dbl_ F1L3__length__vector3_c__dbl_x_(const F1L3__vector3 *vector3)
 //      position: vector3_
 //      velocity: vector3_
 // ]
-enum F1L3_tag__update
+typedef enum F1L3_tag__update_
 {    F1L3_tag__update__status,
      F1L3_tag__update__position,
      F1L3_tag__update__velocity,
-};
-typedef struct F1L3__update
+}         F1L3_tag__update_t;
+typedef struct F1L3__update_
 {    union
-     {    F1L3__status_ status;
-          F1L3__vector3_ position;
-          F1L3__vector3_ velocity;
+     {    F1L3__status_t status;
+          F1L3__vector3_t position;
+          F1L3__vector3_t velocity;
      };
 
-     // don't put in `F1L3_tag__update` directly because it
-     // will take up too much space; use a `u8_ ... : 2` instead.
-     u8_ OH_tag : 2;
-}         F1L3__update_;
+     // don't put in `F1L3_tag__update_t` directly because it
+     // will take up too much space; use a `u8_t ... : 2` instead.
+     u8_t OH_tag : 2;
+}         F1L3__update_t;
 ```
 
 we'll do the same for a mask implementation.  notice that enum
@@ -524,20 +524,20 @@ mask_: any_or_none_of_
 ]
 
 // c:
-enum F1L3_tag__mask
+typedef enum F1L3_tag__mask_
 {    F1L3_tag__mask__no_corresponding_data_value = 1,
      F1L3_tag__mask__direction = 2,
-};
-typedef struct F1L3__mask
-{    // Data inside the mask, NO UNION since any data can be used.
-     F1L3__vector3_ direction;
+}         F1L3_tag__mask_t;
+typedef struct F1L3__mask_
+{    // Data inside the mask, NO `union` since any/all data can be initialized.
+     F1L3__vector3_t direction;
 
-     // don't put in `F1L3_tag__mask` directly because it
-     // will take up too much space; use a `u8_ ... : 2` instead.
+     // don't put in `F1L3_tag__mask_t` directly because it
+     // will take up too much space; use a `u8_t ... : 2` instead.
      // we need 2 bits because a mask uses powers of two, and all
      // values from 0 to 3 are valid masks here.
      u8_ OH_tag : 2;
-}         F1L3__mask_;
+}         F1L3__mask_t;
 ```
 
 ## what implementation
@@ -548,7 +548,7 @@ given the tagged union in the previous section.
 // the implementation can be pretty simple.
 switch (update.OH_tag)
 {    case F1L3_tag__update__status:
-     {    F1L3__status_ *status = &update.status;
+     {    F1L3__status_t *status = &update.status;
           if (status->OH_tag == F1L3_tag__status__unknown)
           {    printf("unknown update\n")
           }
@@ -558,7 +558,7 @@ switch (update.OH_tag)
           break;
      }
      case F1L3_tag__update__position:
-     {    F1L3__vector3_ *position = &update.position;
+     {    F1L3__vector3_t *position = &update.position;
           printf("got position update: " "vector3(%f, %f, %f)", position->x, position->y, position->z);
           break;
      }
