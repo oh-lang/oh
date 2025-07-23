@@ -7696,103 +7696,112 @@ TODO: examples with mask types
 TODO: include a `has` operator (like `is`) operator.  discuss for arrays
 and lots.  maybe instead of `container` do `hasable`.
 
-TODO: is there a way to make this `any_of` and use 0 as the `null` value?
+TODO: is there a way to make this `any_of_` and use 0 as the `null` value?
+probably, but this might not be desirable from an add/delete perspective.
+if we delete a value from a mask and it becomes null, that might be confusing
+or break certain functionality.
 
 ```
-food: choose
-[    Carrots
-     Potatoes
-     Tomatoes
+food_: choose_
+[    carrots:
+     potatoes:
+     tomatoes:
 ]
-# this creates a mask with `food Carrots == 1`,
-# `food Potatoes == 2`, and `food Tomatoes == 4`.
-# there is also a default `food None == 0`.
+# this creates a mask with `food carrots == 1`,
+# `food potatoes == 2`, and `food tomatoes == 4`.
+# there is also a default `food none == 0`.
 
-Food: food = Carrots | Tomatoes
-Food has_carrots()   # true
-Food has_potatoes()  # false
-Food has_tomatoes()  # true
-Food is_carrots()    # false, since `Food` is not just `Carrots`.
+food: food_ = carrots | tomatoes
+food has_carrots_()      # true
+food has_potatoes_()     # false
+food has_tomatoes_()     # true
+food is_carrots_()       # false, since `food` is not just `carrots`.
 ```
 
 And here is an example with specified values.
 
 ```
 # the mask is required to specify types that are powers of two:
-non_mutually_exclusive_type: choose
+non_mutually_exclusive_type_: choose_
 [    X: 1
      Y: 2
      Z: 4
      T: 32
 ]
-# `non_mutually_exclusive_type None` is automatically defined as 0.
+# `non_mutually_exclusive_type_ none` is automatically defined as 0.
 
 # has all the same static methods as enum, though perhaps they are a bit surprising:
-non_mutually_exclusive_type count() == 16
-non_mutually_exclusive_type min() == 0
-non_mutually_exclusive_type max() == 39   # = X | Y | Z | T
+non_mutually_exclusive_type_ count_() == 16
+non_mutually_exclusive_type_ min_() == 0
+non_mutually_exclusive_type_ max_() == 39    # = X | Y | Z | T
 
-Options; non_mutually_exclusive_type()
-Options == 0        # True; masks start at 0, or `None`,
-                         # so `Options == None` is also true.
-Options |= X        # TODO: make sure it's ok to implicitly add the mask type here.
-                         #       maybe it's only ok if no `X` is in scope, otherwise
-                         #       you need to make it explicit.
-Options |= non_mutually_exclusive_type Z   # explicit mask type
+options; non_mutually_exclusive_type_
+options == 0        # true; masks start at 0, or `none`,
+                    # so `options == none` is also true.
+options |= x        # TODO: make sure it's ok to implicitly add the mask type here.
+                    #       maybe it's only ok if no `x` is in scope, otherwise
+                    #       you need to make it explicit.
+options |= non_mutually_exclusive_type_ z    # explicit mask type
 
-Options has_x()  # True
-Options has_y()  # False
-Options has_z()  # True
-Options has_t()  # False
+# TODO: `options has x` is probably better but we need to find a way to
+# avoid the implicit mask in case `x` is in scope.
+# zig's `.x` is nice in this case so maybe we can find something similar.
+# maybe `options has _ x`
+options has_x_()    # true
+options has_y_()    # false
+options has_z_()    # true
+options has_t_()    # false
 
-Options = T
-Options is_t()   # True
-Options has_t()  # True
+options = t
+options is_t_()     # true
+options has_t_()    # true
 ```
 
-## interplay with `one_of`
+## interplay with `one_of_`
 
-We can also create a mask with one or more `one_of` fields, e.g.:
+We can also create a mask with one or more `one_of_` fields, e.g.:
 
 ```
-options: choose
-[    one_of[Align_center_x, Align_left, Align_right]
-     one_of[Align_center_y, Align_top, Align_bottom]
+options_: choose_
+[    one_of_[align_center_x:, align_left:, align_right:]
+     one_of_[align_center_y:, align_top:, align_bottom:]
 
-     one_of[Font_very_small, Font_small, Font_normal: 0, Font_large, Font_very_large]
+     one_of_[font_very_small:, font_small:, font_normal: 0, font_large:, font_very_large:]
 ]
 ```
 
-It is a compiler error to assign multiple values from the same `one_of`:
+It is a compiler error to assign multiple values from the same `one_of_`:
 
 ```
-Options; options = Align_center_x | Align_right     # COMPILER ERROR!
+options; options_ = align_center_x | align_right     # COMPILER ERROR!
 ```
 
-Note that internally, an `OR` combination of the `one_of` values may actually be valid;
-it may be another one of the `one_of` values in order to save bits.  Otherwise, each
+TODO: we probably shouldn't do this, at least not at the first pass.
+
+Note that internally, an `OR` combination of the `one_of_` values may actually be valid;
+it may be another one of the `one_of_` values in order to save bits.  Otherwise, each
 new value in the `one_of` would need a new power of 2.  For example, we can represent
-`one_of[Align_center_x, Align_left, Align_right]` with only two powers of two, e.g.,
-`Align_center_x = 4`, `Align_left = 8`, and `Align_right = 12`.  Because of this, there
+`one_of_[align_center_x:, align_left:, align_right:]` with only two powers of two, e.g.,
+`align_center_x = 4`, `align_left = 8`, and `align_right = 12`.  Because of this, there
 is special logic with `|` and `&` for `one_of` values in masks.
 
 ```
-Options2; options = Align_center_x
-Options2 |= Align_right    # will clear out existing Align_center_x/Left/Right first before `OR`ing
-if Options2 & Align_center_x
-     print("this will never trigger even if Align_center_x == 4 and Align_right == 12.")
+options2; options_ = align_center_x
+options2 |= align_right  # will clear out existing align_center_x/Left/Right first before `OR`ing
+if options2 & align_center_x
+     print_("this will never trigger even if align_center_x == 4 and align_right == 12.")
 ```
 
 You can also explicitly tell the mask to avoid assigning a power of two to one of the
-`one_of` values by setting it to zero (e.g., `one_of[..., Value: 0, ... ]`.
-For example, the font size `one_of` earlier could be represented by 3 powers of two, e.g.,
-`Font_very_small = 16`, `Font_small = 32`, `Font_large = 64`, `Font_very_large = 96`.
+`one_of_` values by setting it to zero (e.g., `one_of_[..., value: 0, ... ]`.
+For example, the font size `one_of_` earlier could be represented by 3 powers of two, e.g.,
+`font_very_small = 16`, `font_small = 32`, `font_large = 64`, `font_very_large = 96`.
 Note that we have the best packing if the number of non-zero values is 3 (requiring 2 powers of two),
-7 (requiring 3 powers of two), or, in general, one less than a power of two, i.e., `2^P - 1`,
-requiring `P` powers of two.  This is because we need one value to be the default for each
-`one_of` in the `mask`, which will be all `P` bits set to zero; the remaining `2^P - 1`
-combinations of the `P` bits can be used for the remaining `one_of` values.  A default
-name can thus be chosen for each `one_of`, e.g., `one_of[..., Whatever_name: 0, ...]`.
+7 (requiring 3 powers of two), or, in general, one less than a power of two, i.e., `2^p - 1`,
+requiring `p` powers of two.  This is because we need one value to be the default for each
+`one_of_` in the mask, which will be all `p` bits set to zero; the remaining `2^p - 1`
+combinations of the `p` bits can be used for the remaining `one_of_` values.  A default
+name can thus be chosen for each `one_of_`, e.g., `one_of_[..., whatever_name: 0, ...]`.
 
 ## named value-combinations
 
