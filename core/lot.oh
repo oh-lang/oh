@@ -1,4 +1,36 @@
-lot_[of_, at_: hashable_]: container_[of_, at_]
+lot_[of_, at_: hashable_]: all_of_
+[    #[#
+     ```
+     lot: ["great": 50, "wow": 77]
+     if lot has "great"
+          # this should trigger.
+          print_("great!")
+     if lot has "ok"
+          # this should not trigger.
+          print_("ok!")
+     ```
+     #]#
+     hazable_[at_]
+     #[#
+     ```
+     lot: ["great": 50, "wow": 77]
+     # TODO: is this valid/good syntax here?  probably not.
+     # we're mix-matching input and output arguments a bit;
+     # we provide `at`, `of` should be passed in by `lot`.
+     # maybe `lot has "great" with of:`
+     # or maybe we just have `lot[at]` giving `?: (of:)`
+     # so we'd do `if lot[at] is of:`.
+     # this is probably not a `hazable_`.
+     if lot has (of:, at. "great")
+          # this should trigger.
+          print_("great: ${of}!")
+     if lot has (of:, at. "ok")
+          # this should not trigger.
+          print_("ok: ${of}")
+     ```
+     #]#
+     hazable_[at_, of_]
+]
 {    # returns null if `at` is not in the lot.
      ::[at]: (of?:)
 

@@ -25,7 +25,7 @@ set cpo&vim
 "
 syn keyword ohBuiltinVariable	false true none null unspecified
 syn keyword ohBuiltinVariable	ctx debug m o require
-syn keyword ohBuiltinFunction	is_ m_ o_ renew_
+syn keyword ohBuiltinFunction	has_ is_ m_ o_ renew_
 syn keyword ohBuiltinFunction	count_ each_ test_ to_
 syn keyword ohBuiltinFunction	abs_ ceil_ floor_ max_ min_
 syn keyword ohBuiltinFunction	error_ print_
@@ -36,7 +36,7 @@ syn keyword ohJump	assert_ exit_
 syn keyword ohConditional	elif else if
 syn keyword ohConditional	what when where with
 syn keyword ohRepeat		each while
-syn keyword ohOperator		and is not or xor
+syn keyword ohOperator		and has is not or xor
 syn keyword ohError		er er_
 syn keyword ohOk		ok ok_
 syn keyword ohResult		hm hm_

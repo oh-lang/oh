@@ -6075,6 +6075,8 @@ indexes an element, we can stop iteration.
 
 ## arrays
 
+TODO: switch to `hazable`
+
 An array contains a list of elements in contiguous memory.  You can define
 an array explicitly using the notation `array_name: array_[element_type_]`
 for the type `element_type`.  The default-name of an array does not depend
@@ -6218,6 +6220,8 @@ while `insertion_ordered_lot_` has some extra overhead but is `O(1)` for these o
 like `unordered_lot_`.
 
 ## sets
+
+TODO: switch to `hazable`
 
 A set contains some elements, and makes checking for the existence of an element within
 fast, i.e., O(1).  Like with container `at`s, the set's element type must satisfy certain
@@ -6519,12 +6523,38 @@ example_class_: [value: int_]
           ```
      #]#
      :;.is_(if_block[declaring: (large:;. int_), ~t_]): never_
-          if value > 999
-               if_block then_(declaring: (large` value))
+          if m value > 999
+               if_block then_(declaring: (large` m value))
           else
                if_block else_()
 }
 ```
+
+### has operator
+
+TODO: include a `has` operator (like `is`) operator.  discuss for arrays
+and lots.  maybe instead of `container` do `hasable`.
+
+Similar to the `is` operator, we can define a `has_` method on a class
+and then automatically get a `has` operation like this.
+
+```
+pair_class: [value1: int_, value2: int_]
+{    #[# the standard way to use this method uses syntax sugar:
+          ```
+          if pair_class has 123
+               print_("had a 123 internally")
+          ```
+     #]#
+     :;.has_(int:, if_block[~t_]): never_
+          if m value1 == int || m value2 == int
+               if_block then_()
+          else
+               if_block else_()
+}
+```
+
+TODO: syntax for an `if_block` that declares something.
 
 ## what statements
 
@@ -7693,8 +7723,6 @@ but may contain other values besides `this_value`.
 * Masks can contain data aside from tags.
 
 TODO: examples with mask types
-TODO: include a `has` operator (like `is`) operator.  discuss for arrays
-and lots.  maybe instead of `container` do `hasable`.
 
 TODO: is there a way to make this `any_of_` and use 0 as the `null` value?
 probably, but this might not be desirable from an add/delete perspective.
