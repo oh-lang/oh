@@ -1062,7 +1062,7 @@ array_variable:
      5    # and this gets a comma before it.
 ]
 
-# this is inferred to be a `lot` with a string ID and a `one_of_[int_, str_]` value.
+# this is inferred to be a `lot` with a string ID and a `one_of_[int:, str:]` value.
 lot_variable;
 [    "Some_value": 100
      "Other_value": "hi"
@@ -1283,7 +1283,7 @@ Other types which have a fixed amount of memory:
 * `bool_`: can hold a true or false value
      TODO: do we even want a `bool_`?  maybe require users to define their own,
      especially since `one_of_[stream_on:, stream_off:]` can be much more useful
-     in context of a function call, e.g., `set_(stream_on)` than `set_(stream_on: true)`
+     in context of a function call, e.g., `set_(stream_on:)` than `set_(stream_on: true)`
 * `rune_`: a utf8 character, presumably held within an `i32`
 * `u8_`: unsigned byte (can hold values from 0 to 255, inclusive)
 * `u16_` : unsigned integer which can hold values from 0 to 65535, inclusive
@@ -1303,7 +1303,7 @@ The corresponding generic is `signed_[bits: count]`.  We also define the
 symmetric integers `s8_` to `s512_` using two's complement, but disallowing
 the lowest negative value of the corresponding `i8_` to `i512_`, e.g.,
 -128 for `s8_`.  This allows you to fit in a null type with no extra storage,
-e.g., `one_of_[s8_, null_]` is exactly 8 bits, since it uses -128 for null.
+e.g., `one_of_[s8:, null:]` is exactly 8 bits, since it uses -128 for null.
 (See [nullable classes](#nullable-classes) for more information.)
 Symmetric integers are useful when you want to ensure that `-symmetric`
 is actually the opposite sign of `symmetric`; `-i8_(-128)` is still `i8_(-128)`.
@@ -1349,11 +1349,11 @@ q: a u8_() assert_()                # RUN-TIME ERROR, `a` is not representable a
 b: u8_(a & 255) assert_()           # OK, communicates intent and puts `a` into the correct range.
 ```
 
-Casting to a complex type, e.g., `one_of_[int_, str_](some_value)` will pass through `some_value`
+Casting to a complex type, e.g., `one_of_[int:, str:](some_value)` will pass through `some_value`
 if it is an `int_` or a `str_`, otherwise try `int_(some_value)` if that is allowed, and finally
 `str_(some_value)` if that is allowed.  If none of the above are allowed, the compiler will
 throw an error.  Note that nullable types absorb errors in this way (and become null), so
-`one_of_[int_, null_](some_safe_cast)` will be null if the cast was invalid, or an `int_` if the
+`one_of_[int:, null:](some_safe_cast)` will be null if the cast was invalid, or an `int_` if the
 cast was successful.
 
 To define a conversion from one class to another, you can define a global function
@@ -1369,7 +1369,7 @@ scaled8_:
      @private
      scale: 32_u8
 
-     m_(flt): hm_[ok_: m_, er_: one_of_[negative, too_big]]
+     m_(flt): hm_[ok_: m_, er_: one_of_[negative:, too_big:]]
           scaled_value: round_(flt * scale)
           if scaled_value < 0
                er_(negative)
@@ -1419,13 +1419,13 @@ in the variable, which can be accessed via the `type_case_` version of the
 ```
 # implementation note: `int_` comes first so it gets tried first;
 # `dbl_` will eat up many values that are integers, including `4`.
-x; one_of_[int_, dbl_] = 4
+x; one_of_[int:, dbl:] = 4
 y; x_ = 4.56    # use the type of `x` to define a variable `y`.
 ```
 
 Note that the `type_case_` version of the `variable_case` name does not have
-any information about the instance, so `x` is `one_of_[int_, dbl_]` in the above
-example and `y` is an instance of the same `one_of_[int_, dbl_]` type.  For other
+any information about the instance, so `x` is `one_of_[int:, dbl:]` in the above
+example and `y` is an instance of the same `one_of_[int:, dbl:]` type.  For other
 ways to handle different types within a `one_of_`, [go here](#one_of-types).
 
 Some more examples:
@@ -1512,7 +1512,7 @@ unnest_[hm_[ok_: ~nested_, ~_er_]]: _nested
 
 # null specialization
 # e.g., `unnest_[int_?] == int`.
-unnest_[one_of_[...~nested_, null_]]: one_of_[...nested_]
+unnest_[one_of_[...~nested:, null:]]: one_of_[...nested:]
 ```
 
 Note that if we have a function that returns a type, we must use brackets, e.g.,
@@ -1529,22 +1529,22 @@ Here is some nullable type manipulation:
 ```
 # the `null` type should not be considered nullable because there's
 # nothing that can be unnulled, so ensure there's something not-null in a nullable.
-#   nullable_(one_of_[dbl_, int_, str_]) == False
-#   nullable_(one_of_[dbl_, int_, null_]) == True
-#   nullable_(one_of_[int_, null_]) == True
-#   nullable_(one_of_[null_]) == False
-#   nullable_(null_) == False
+#   nullable_(one_of_[dbl:, int:, str:]) == false
+#   nullable_(one_of_[dbl:, int:, null:]) == true
+#   nullable_(one_of_[int:, null:]) == true
+#   nullable_(one_of_[null:]) == false
+#   nullable_(null_) == false
 nullable_(of_): of_ contains_(not_[null_], null_)
 
 # examples
 #   unnull_[int_] == int_
 #   unnull_[int_?] == int_
-#   unnull_[one_of_[array_[int_], set_[dbl_], null_]] == one_of_[array_[int_], set_[dbl_]]
+#   unnull_[one_of_[array[int_]:, set[dbl_]:, null:]] == one_of_[array[int_]:, set[dbl_]:]
 unnull_[of_]: if nullable_(of_) {unnest_[of_]} else {of_}
 
 # a definition without nullable, using template specialization:
 unnull_[of_]: of_
-unnull_[one_of_[...~nested_, null_]]: one_of_[...nested_]
+unnull_[one_of_[...~nested:, null:]]: one_of_[...nested:]
 ```
 
 # operators and precedence
@@ -1966,17 +1966,17 @@ If you are looking for bitwise `AND`, `OR`, and `XOR`, they are `&`, `|`, and `>
 The operators `and` and `or` act the same as JavaScript `&&` and `||`, as long as the
 left hand side is not nullable.  `xor` is an "exclusive or" operator.
 
-The `or` operation `x or y` has type `one_of_[x_, y_]` (for `x: x_` and `y: y_`).
+The `or` operation `x or y` has type `one_of_[x:, y:]` (for `x: x_` and `y: y_`).
 If `x` evaluates to truthy (i.e., `!!x == true`), then the return value of `x or y` will be `x`.
 Otherwise, the return value will be `y`.  Note in a conditional, e.g., `if x or y`, we'll always
 cast to boolean implicitly (i.e., `if bool_(x or y)` explicitly).
 
-Similarly, the `and` operation `x and y` also has type `one_of_[x_, y_]`.  If `x` is falsey,
+Similarly, the `and` operation `x and y` also has type `one_of_[x:, y:]`.  If `x` is falsey,
 then the return value will be `x`.  If `x` is truthy, the return value will be `y`.
 Again, in a conditional, we'll cast `x and y` to a boolean.
 
 If the LHS of the expression can take a nullable, then there is a slight modification.
-`x or y` will be `one_of_[x_, y_, null_]` and `x and y` will be `one_of_[y_, null_]`.
+`x or y` will be `one_of_[x:, y:, null:]` and `x and y` will be `one_of_[y:, null:]`.
 The result will be `null` if both (either) operands are falsey for `or` (`and`).
 
 ```
@@ -1987,13 +1987,13 @@ nullable_and?: x and y      # nullable_and?: if !!x and !!y {null} else {y}
 ```
 
 This makes things similar to the `xor` operator, but `xor` always requires a nullable LHS.
-The exclusive-or operation `x xor y` has type `one_of_[x_, y_, null_]`, and will return `null`
+The exclusive-or operation `x xor y` has type `one_of_[x:, y:, null:]`, and will return `null`
 if both `x` and `y` are truthy or if they are both falsey.  If just one of the operands
 is truthy, the result will be the truthy operand.  An example implementation:
 
 ```
-# you can define it as nullable via `xor_(~x, ~y): one_of_[x_, y_, null_]` or like this:
-xor_(~x, ~y)?: one_of_[x_, y_]
+# you can define it as nullable via `xor_(~x, ~y): one_of_[x:, y:, null:]` or like this:
+xor_(~x, ~y)?: one_of_[x:, y:]
      x_is_true: bool_(x)     # `x_is_true: !!x` is also ok.
      y_is_true: bool_(y)
      if x_is_true
@@ -2097,15 +2097,16 @@ To make it easy to indicate when a variable can be nullable, we reserve the ques
 symbol, `?`, placed just after the variable name like `x?: int_`.  The default value for
 an optional type is `null`.
 
-TODO: do we want to allow the `one_of_[..., null_]` option?  this breaks the requirement
+TODO: do we want to allow the `one_of_[..., null:]` option?  this breaks the requirement
 to always annotate variables with `x?: ...` if they are null, which i think we want to
-keep/require for comptime considerations.
+keep/require for comptime considerations.  but it would save some keystrokes to avoid
+needing to do `x[require: of_ is not_[null_]]: of_`.
 
 For an optional type with more than one non-null type, we use
-`y?: one_of_[some_type_, another_type_]` or equivalently,
-`y: one_of_[some_type_, another_type_, null_]` (where `null_` comes last).
+`y?: one_of_[some_type:, another_type:]` or equivalently,
+`y: one_of_[some_type:, another_type:, null:]` (where `null:` comes last).
 Note that `null_` should come last for casts to work correctly (e.g.,
-`one_of_[null_, int_](1234)` would cast to null rather than `int_(1234)`).
+`one_of_[null:, int:](1234)` would cast to null rather than `int_(1234)`).
 Normally the first value in a `one_of_` is the default, but if `null_` is an option,
 then null is the default.  
 
@@ -2115,9 +2116,7 @@ prefix the operator with a `?`, e.g., `x?: nullable_result_(...)`.  It is a comp
 if a declared variable is nullable but `?` is not used, since we want the programmer to be
 aware of the fact that the variable could be null, even though the program will take care
 of null checks automatically and safely.  The `?` operator is required for any `one_of_` that
-could take on a `null` value, e.g., `one_of_[null, bread, tomato, mozzarella]`.
-TODO: `one_of_[null, ...]` would collapse to `one_of_[...]` if we strictly consider `null`
-as a missing/non-existent value.
+could take on a `null` value, e.g., `one_of_[bread:, tomato:, mozzarella:, null:]`.
 
 One of the cool features of oh-lang is that we don't require the programmer
 to check for null on a nullable type before using it.  The executable will automatically
@@ -2133,8 +2132,8 @@ some_class_: []{ ::some_method_(): int }
 
 nullable?; some_class_ = null
 
-value?: nullable some_method_() # `value` has type `one_of_[int_, null_]` now,
-                                        # so it needs to be defined with `?`
+value?: nullable some_method_()    # `value` has type `one_of_[int:, null:]` now,
+                                   # so it needs to be defined with `?`
 
 # eventually we want to support things like this, where the compiler
 # can tell if the type is nullable or not:
@@ -2956,7 +2955,7 @@ prefer a more reasonable example.
 
 ```
 # it's preferable to return a more specific value here, like
-# `one_of_[int_, dbl_, string_]`, but `any_` works as well.
+# `one_of_[int:, dbl:, string:]`, but `any_` works as well.
 random_class_[]: any_
      if random_(dbl_) < 0.5
           int_
@@ -2980,7 +2979,7 @@ where we also return a type constructor.  Named types are just
 `type_case_` on both left and right sides (e.g., `class_name_: t_`).
 
 ```
-random_class_[~x_, named_new_: ~y_]: one_of_[x_, y_]
+random_class_[~x_, named_new_: ~y_]: one_of_[x:, y:]
      if random_(dbl_) < 0.5 {x_} else {named_new_}
 
 # will print `int_` or `dbl_` with 50-50 probability
@@ -2997,7 +2996,7 @@ the two arguments inside the function body.
 
 ```
 # COMPILER ERROR.  duplicate identifiers
-my_fun_(x: int_, x: dbl_): one_of_[int_, dbl_]
+my_fun_(x: int_, x: dbl_): one_of_[int:, dbl:]
 ```
 
 However, there are times where it is useful for a function to have two arguments with the same
@@ -3243,7 +3242,7 @@ y?; int = ... # `y` is maybe null, maybe non-null
 
 # the following calls `overloaded_()` if `y` is null, otherwise `overloaded_(y)`:
 z: overloaded_(y?) # also OK, but not idiomatic: `z: overloaded_(y?: y)`
-# `z` has type `one_of_[dbl_, string_]` due to the different return types of the overloads.
+# `z` has type `one_of_[dbl:, string:]` due to the different return types of the overloads.
 ```
 
 The reason behind this behavior is that in oh-lang, an argument list is conceptually an object
@@ -3303,7 +3302,7 @@ x?: if y != null { overloaded_(y) } else { null }
 # if you needed to name this argument, it would be `arg_name: ?y`:
 x?: overloaded_(?y)
 
-# either way, `x` has type `one_of_[string_, null_]`.
+# either way, `x` has type `one_of_[string:, null:]`.
 ```
 
 You can use prefix `?` with multiple arguments; if any argument with prefix `?` is null,
@@ -3866,7 +3865,7 @@ conflict; trying to define both would be a compile error.
 
 Variadic functions are possible in oh-lang using the `arguments_[of_]` class.
 We recommend only one class type, e.g., `arguments_[int_]` for a variable number
-of integers, but you can allow multiple classes via e.g. `arguments_[one_of_[x_, y_, z_]]`
+of integers, but you can allow multiple classes via e.g. `arguments_[one_of_[x:, y:, z:]]`
 for classes `x_`, `y_`, and `z_`.  oh-lang disallows mixing `arguments_` with any
 other arguments.  The `arguments_` class has methods like `::count_()`, `;:[index]: (of)`,
 and `;;[index]!`.  Thus, `arguments_` is effectively a fixed-length array, but you
@@ -4056,7 +4055,7 @@ function and swapping `:` for `;` to create a reassignable function.
 When calling a nullable function, unless the function is explicitly
 checked for non-null, the return type will be nullable.  E.g.,
 `x?: optional_function_(...args)` will have a type of
-`one_of_[return_type_, null_]`.  Nullable functions are checked by
+`one_of_[return_type:, null:]`.  Nullable functions are checked by
 the executable, so the programmer doesn't necessarily have to do it.
 
 A nullable function has `?` before the argument list; a `?` *after* the argument list
@@ -5279,7 +5278,7 @@ To constrain a generic type, use `[type_: constraints_, ...]`.  In this expressi
 `constraints_` is simply another type like `non_null_` or `number_`, or even a combination
 of classes like `all_of_[container_[id_, value_], number_]`.  It may be recommended for more
 complicated type constraints to define the constraints like this:
-`my_complicated_constraint_type_: all_of_[t1_, one_of_[t2_, t3_]]` and declaring the class as
+`my_complicated_constraint_type_: all_of_[t1:, one_of[t2:, t3:]:]` and declaring the class as
 `new_generic_[of_: my_complicated_constraint_type_]`, which might be a more readable way to do
 things if `my_complicated_constraint_type_` is a helpful name.
 TODO: `all_of_` is acting a little bit differently than a child class inheritor here,
@@ -5296,7 +5295,7 @@ that is non-abstract.
 
 Note that we can overload generic types (e.g., `array_[int_]` and `array_[Count: 3, int_]`),
 which is especially helpful for creating your own `hm_` result class based on the general
-type `hm_[er_, ok_]`, like `MY_er_: one_of_[oops, my_bad], hm_[of_]: hm_[ok_: of_, MY_er_]`.
+type `hm_[er_, ok_]`, like `MY_er_: one_of_[oops:, my_bad:], hm_[of_]: hm_[ok_: of_, MY_er_]`.
 Here are some examples:
 
 ```
@@ -5450,7 +5449,7 @@ however, and we probably want something like `generic_[x_, y_]: [x;, y;]` to loo
 like `[x: dbl_, y: str_]`, etc.
 
 There's a slight bit of inconsistency here, but it makes defining generic classes
-much simpler, especially core classes like `hm_[ok_, er_]: one_of_[ok_, er_] {...}`,
+much simpler, especially core classes like `hm_[ok_, er_]: one_of_[ok:, er:] {...}`,
 so we always refer to a good value as `ok` and an error result as `er`, rather
 than whatever the internal values are.
 TODO: actually `one_of_` probably follows different rules to make sure things
@@ -5693,9 +5692,9 @@ Aliases can be used for simple naming conventions, e.g.:
 ```
 options_: one_of
 [    align_inherit_x: 0
-     align_center_x
-     align_left
-     align_right
+     align_center_x:
+     align_left:
+     align_right:
 ]
 {    @alias inherit_align_x: align_inherit_x
 }
@@ -5968,7 +5967,7 @@ and `string?: my_hm` to grab it as a local variable.  This of course only works
 if `ok` is not already nullable, otherwise it is a compile error.
 
 See [the `hm_` definition](https://github.com/oh-lang/oh/blob/main/core/hm.oh)
-for methods built on top of the `one_of_[ok_, er_]` type.
+for methods built on top of the `one_of_[ok:, er:]` type.
 
 ```
 result: if x { ok_(3) } else { er_("oh no") }
@@ -6042,7 +6041,7 @@ what you want, annotate the function with `@can_panic`, otherwise it's a compile
 ## automatically converting errors to null
 
 If a function returns a `hm_` type, e.g., `my_function_(...): hm_[ok_, er_]`,
-then we can automatically convert its return value into a `one_of_[ok_, null_]`, i.e.,
+then we can automatically convert its return value into a `one_of_[ok:, null:]`, i.e.,
 a nullable version of the `ok_` type.  This is helpful for things like type casting;
 instead of `my_int: what int_(my_dbl) {ok. {ok}, er: {-1}}` you can do
 `my_int: int_(my_dbl) ?? -1`.  Although, there is another option that
@@ -6050,7 +6049,7 @@ doesn't use nulls:  `int_(my_dbl) map_(fn_(_er): -1)`, or via
 [lambda functions](#lambda-functions): `int_(my_dbl) map_({$er_, -1})`.
 
 TODO: should this be valid if `ok` is already a nullable type?  e.g.,
-`my_function_(): hm_[ok_: one_of_[int_, null_], er_: str_]`.
+`my_function_(): hm_[ok_: one_of_[int:, null:], er_: str_]`.
 we probably should compile-error-out on casting to `int?: my_function_()` since
 it's not clear whether `int` is null due to an error or due to the return value.
 maybe we allow flattening here anyway.
@@ -6495,7 +6494,7 @@ into more idiomatic things like `if x is another_type: ...`.
 
 ```
 # not idiomatic:
-my_decider_(x: one_of_[type1_, type2_]):
+my_decider_(x: one_of_[type1:, type2:]):
      x is_
      (    a_(type1:):
                print_("x was type1: ", type1)
@@ -6504,7 +6503,7 @@ my_decider_(x: one_of_[type1_, type2_]):
      x is_({print_("x was type2: ", $type2)})
 
 # idiomatic:
-my_decider_(x: one_of_[type1_, type2_]):
+my_decider_(x: one_of_[type1:, type2:]):
      if x is type1:
           print("x was type1: ", type1)
      elif x is type2:
@@ -6553,8 +6552,6 @@ pair_class: [value1: int_, value2: int_]
                if_block else_()
 }
 ```
-
-TODO: syntax for an `if_block` that declares something.
 
 ## what statements
 
@@ -6668,12 +6665,12 @@ or `where` to further restrict the scope of a matching case.
 
 ```
 speed_: one_of_
-[    none
-     slow
-     going_up
-     going_down
-     going_sideways
-     dead
+[    none:
+     slow:
+     going_up:
+     going_down:
+     going_sideways:
+     dead:
 ]
 # here's an example with a `then` that works for all cases.
 # note we are declaring a `then` so we need a `:`
@@ -7299,8 +7296,7 @@ use `um_(immediate: ...)` to make it clear that you want it that way.
 
 ## enumerations
 
-TODO: should we use `all_of_[parent_class, m: [...]]`??
-we maybe should do the same for `one_of_[u32, f32, ...]`?
+TODO: should we use `all_of_[parent_class:, m: [...]]`??  yes.
 TODO: should these be macros like `@one_of(u32, ...)`?  if not, we need to have
 the ability to pass in additional parameters to other templates, e.g.,
 `my_class_[whatever: int_, required_type_, ...optional_types_]`.
@@ -7355,8 +7351,8 @@ crazy: 15
 # `other_enum super = 12`,
 # and `other_enum other_value2 = 15`.
 other_enum_: one_of_
-[    other_value1
-     super
+[    other_value1:
+     super:
      other_value2: crazy
 ]
 ```
@@ -7424,7 +7420,7 @@ print_(weird_ max_())       # prints 9
 ### default values for a `one_of_`
 
 Note that the default value for a `one_of_` is the first value, unless zero is an option
-(and it's not the first value), unless `null_` is an option -- in increasing precedence.
+(and it's not the first value), unless `null` is an option -- in increasing precedence.
 E.g., `one_of_[value_a:, value_b:]` defaults to `value_a`, `one_of_[a: -1, b: 0, c: 1]` 
 defaults to `b`, and `one_of_[option_c:, null:]` defaults to `null`, and
 `one_of_[a: -1, b: 0, c: 1, null:]` also defaults to `null`.  Notice that `[null]`
@@ -7464,6 +7460,7 @@ elif option1 == oops_you_missed_it  # also OK
 
 # instead, consider doing this:
 what option1
+     # TODO: should we namespace via `_ not_a_good_option`?
      not_a_good_option
           print_("oh no")
      best_option_still_coming
@@ -7481,7 +7478,7 @@ that you are looking at the different values for `option_` in the different case
 ## one_of types
 
 TODO: make sure we've done `one_of_[dbl:, ...]` everywhere instead of the old approach
-for types `one_of_[dbl_, ...]`.
+for types `one_of_[dbl:, ...]`.
 TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific instances.
 
 The `one_of_` type is a tagged union, which can easily mix pure enum values
@@ -7494,6 +7491,7 @@ id: one_of_
      int:                          # data type, implicitly tagged to 6
      dbl: 9                        # data type with explicit tag of 9
      named_type: u64_ = 15         # renamed data type with explicit tag of 15
+     str: @next_tag                # this looks like a data type `str` but it's dataless. 
 ]
 ```
 
@@ -7591,7 +7589,7 @@ one_of_[..., ~t_]: []
 
 ### flattening and containing
 
-Note that `one_of_[one_of_[a:, b:], one_of_[c:, d:]]` is not the same as
+Note that `one_of_[one_of[a:, b:]:, one_of[c:, d:]:]` is not the same as
 `one_of_[a:, b:, c:, d:]`.  To get that result, use `flatten_`, e.g.,
 `flatten_[one_of_[a:, b:], one_of_[c:, d:]]` will equal `one_of_[a:, b:, c:, d:]`.
 This is safe to use on other types, so `flatten_[one_of_[c:, d:], e:]`
@@ -7695,6 +7693,9 @@ and we should have a name that fits the verb we use.  i think i like "options"
 but we'll need to go back to the enum section and rename an example if so.
 or we go verbose with `any_or_none_of_` because that's the most concise and descriptive,
 that follows along with `all_of_`, `one_of_`, etc.  but would want to rename `select_` then.
+i think i like `any_of_` actually, if we could use `null` as the `none` value
+or just deal with including a `none` automatically so we don't have to check
+for errors when deleting a tag.
 
 Masks are generalized from enumerations to allow multiple values held simultaneously.
 Each value can also be thought of as a flag or option, which are bitwise OR'd together
@@ -7766,21 +7767,15 @@ non_mutually_exclusive_type_ max_() == 39    # = X | Y | Z | T
 options; non_mutually_exclusive_type_
 options == 0        # true; masks start at 0, or `none`,
                     # so `options == none` is also true.
-options |= x        # TODO: make sure it's ok to implicitly add the mask type here.
-                    #       maybe it's only ok if no `x` is in scope, otherwise
-                    #       you need to make it explicit.
+options |= _ x      # inferred mask type (via `_`)
 options |= non_mutually_exclusive_type_ z    # explicit mask type
 
-# TODO: `options has x` is probably better but we need to find a way to
-# avoid the implicit mask in case `x` is in scope.
-# zig's `.x` is nice in this case so maybe we can find something similar.
-# maybe `options has _ x`
 options has_x_()    # true
 options has_y_()    # false
 options has_z_()    # true
 options has_t_()    # false
 
-options = t
+options = _ t
 options is_t_()     # true
 options has_t_()    # true
 ```
