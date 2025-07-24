@@ -43,7 +43,7 @@ we'll also alphabetize input arguments first and output arguments second.
 * `_p` = writable pointer
 * `_r` = readonly reference
 * `_w` = writable reference
-* `_x` = exit/return value (as "temporary")
+* `_x` = exit/return value, paired with something above.
 
 because function overloads must have unique argument names, named arguments
 are simply the `my_name_t` or `named_p` for arguments like `my_name. int_`
@@ -57,10 +57,10 @@ my_function_(y: dbl_, x; int_): str_
 namespaced_arg_(GREAT_z. flt_): [round: i32_]
 
 // in C
-str_t MYF1L3__my_function__x_p__y_c__str_x_(int_p x, dbl_c y);
+str_t MYF1L3__my_function__x_p__y_c__str_xt(int_p x, dbl_c y);
 // where `int_p` is `int_t *`, and `dbl_c` is `const dbl_t *`);
 // notice the `GREAT_` namespace is on the variable itself but *not* the function signature:
-i32_t MYF1L3__namespaced_arg__z_t__round_x_(flt_t GREAT_z);
+i32_t MYF1L3__namespaced_arg__z_t__round_xt(flt_t GREAT_z);
 ```
 
 we also need to supply a few different function signatures for when
@@ -122,9 +122,9 @@ multiply_(a: -5, b: 20)     # should return -100
 multiply_(a: "A", b: "B")   # should fail at compilation
 
 # in C, specialized after we infer `int_` for `t_`:
-int_t PREFIX__multiply__int_c_a__int_c_b__int_x_(int_c a, int_c b)
+int_t PREFIX__multiply__int_c_a__int_c_b__int_xt(int_c a, int_c b)
 {   // built-in function:
-    return multiply__int_c__int_c__int_x_(a, b);
+    return multiply__int_c__int_c__int_xt(a, b);
 }
 ```
 
@@ -291,29 +291,29 @@ typedef struct OH__hashable_
 
 // in the `c` file, we `#include` every child class header file like `explicitly_hashable.h`,
 // or we can forward declare the things we need here.
-u64_t OH__hash__hashable_c__salt_t__u64_x
+u64_t OH__hash__hashable_c__salt_t__u64_xt
 (    const OH__hashable_t *hashable,
      u64_t salt
 )
-{    return OH__hash__ID_hashable_c__salt_t__u64_x(hashable->OH_ID, &hashable->dynamic, salt);
+{    return OH__hash__ID_hashable_c__salt_t__u64_xt(hashable->OH_ID, &hashable->dynamic, salt);
 }
 
 // TODO: do we need this for multi-inheritance?  e.g., need to make sure the layout
 // will be correct.  i think we need it at least for `@only` variables because we
 // won't store the type ID along with the class in that case (for efficiency).
-u64_t OH__hash__ID_hashable_c__salt_t__u64_x
+u64_t OH__hash__ID_hashable_c__salt_t__u64_xt
 (    u64_t hashable_ID,
      const void *hashable,
      u64_t salt
 )
 {    switch (hashable_ID)
      {    case OH_ID__EXPLICITLY_HASHABLE_OH__explicitly_hashable:
-               return EXPLICITLY_HASHABLE_OH__hash__explicitly_hashable_c__salt_t__u64_x
+               return EXPLICITLY_HASHABLE_OH__hash__explicitly_hashable_c__salt_t__u64_xt
                (    (const EXPLICITLY_HASHABLE_OH__explicitly_hashable_t *)hashable,
                     salt
                );
           case OH_ID__BIG_CHILD_OH__big_child:
-               return BIG_CHILD_OH__hash__big_child_c__salt_t__u64_x
+               return BIG_CHILD_OH__hash__big_child_c__salt_t__u64_xt
                (    (const BIG_CHILD_OH__big_child_t *)hashable,
                     salt
                );
@@ -332,22 +332,22 @@ generic templates with generic methods is disallowed by C++, but we should
 be able to make it happen because we specialize at comptime, not before.
 
 ```
-generic[of]: [Value; of]
-{   ::method(~U): u
-        U_Value: u = (U * Value) ?? panic()
-        U + U_value
+generic_[of_]: [value; of_]
+{   ::method_(~u:): u_
+        u_value: u_ = (u * m value) ?? panic_()
+        u + u_value
 }
-specific[of: number]: all_of[generic[of], m: [Scale; of]]
-{   ;;renew(M Scale. of = 1, Generic Value. of): {}
+specific_[of_: number_]: all_of_[generic[of_]:, m: [scale; of_]]
+{   ;;renew_(m scale. of_ = 1, generic value. of_): {}
 
-    ::method(~U): u
-        Parent_result: Generic::method(U)
-        Scale * Parent_result
+    ::method_(~u:): u_
+        parent_result: generic::method_(u)
+        m scale * parent_result
 }
 
-`Generic` is actually wrapping a `specific[i8]` here:
-Generic[i8]; specific(Value: 10_i8, Scale: 2_i8)
-print(Generic method(0.5)) # should print "11" via `2 * (0.5 + dbl(0.5 * 10))`
+`generic_` is actually wrapping a `specific_[i8_]` here:
+generic[i8_]; specific_[i8_](value. 10_i8, scale. 2_i8)
+print_(generic method_(0.5))  # should print "11" via `2 * (0.5 + dbl_(0.5 * 10))`
 ```
 
 would transpile to this:
@@ -357,80 +357,70 @@ with all situations.
 
 ```
 // defined because of `specific[i8]` needing this as a parent.
-struct oh__generic_of_i8
+typedef struct F1L3__generic_OF_I8_
 {   struct
-    {   oh__i8 Value;
-    }       M;
-};
-// defined because of `Specific method(0.5)` usage needing `Generic::method(0.5)`:
-dbl oh__method__Generic_of_i8__Dbl__return__Dbl
-(   const oh__generic_of_i8 *Generic,
-    double Dbl
+    {   u8_t value;
+    }       m;
+}         F1L3__generic_OF_I8_t;
+// defined because of `specific method_(0.5)` usage needing `generic::method_(0.5)`:
+dbl_t F1L3__method__generic_OF_I8_c__dbl_c__dbl_xt
+(   const OH__generic_OF_I8_t *generic,
+    const dbl_t *dbl
 )
-{   dbl U_value = Dbl * Generic->M.Value;
-    return Dbl + U_value;
+{   dbl u_value = *dbl * generic->m.value;
+    return dbl + u_value;
 }
 
-// defined because of `specific[i8]`
-struct oh__specific_of_i8
+// defined because of `specific_[i8_]`
+struct F1L3__specific_OF_I8_
 {   struct
-    {   oh__i8 Value;
-    }       Generic;
+    {   i8_t value;
+    }       generic;
     struct
-    {   oh__i8 Scale;
-    }       M;
+    {   i8_t scale;
+    }       m;
 };
 
-// defined because of `Specific method(0.5)` usage:
-dbl oh__method__Specific_of_i8__Dbl__return__Dbl
-(   const oh__specific_of_i8 *Specific,
-    double Dbl
+// defined because of `specific method_(0.5)` usage:
+dbl_t F1L3__method__specific_OF_I8_c__dbl_c__dbl_xt
+(   const oh__specific_OF_I8 *Specific,
+    const dbl_t *dbl
 )
-{   dbl Parent_result = oh_method__Generic_of_i8__Dbl__return__Dbl
-    (   // NOTE: in general we need this offset if `specific[i8]` is `all_of[m: [Scale; i8], generic[i8]]`
-        (const oh_generic_of_i8 *)&(Specific->Generic),
-        Dbl
+{   dbl_t parent_result = F1L3__method__generic_OF_I8_c__dbl_c__dbl_xt
+    (   // NOTE: in general we need this offset if `specific_[i8_]` fields
+        // were reordered, e.g., `all_of_[m: [scale; i8_], generic[i8_];]`
+        (const oh_generic_OF_I8_t *)&(specific->generic),
+        dbl
     );
-    return Specific->M.Scale * Parent_result;
+    return specific->m.scale * parent_result;
 }
-
-typedef void *oh__unknown;
-
-struct oh_dynamic__generic_of_i8
-{   usize Type_id;
-    union
-    {   oh__generic_of_i8 Generic_of_i8;
-        oh__specific_of_i8 Specific_of_i8;
-        oh__unknown Unknown;
-    };
-};
 
 // for dynamic dispatch
-// TODO: i think we need to pass around `Type_id` somehow for internal calls,
-// and possibly the full `dynamic` type, because we don't know how to get offsets for everyone.
-dbl oh__method__DYNAMIC_Generic_of_i8__Dbl__return__Dbl
-(   const oh_dynamic__generic_of_i8 *Dynamic__generic_of_i8,
-    double Dbl
+dbl_t F1L3__method__ID_unknown_c__dbl_c__dbl_xt
+(   OH_ID unknown_ID,
+    const void *unknown,
+    const dbl_t *dbl
 )
-{   switch (Dynamic__generic_i8->Type_id)
-    {   case Oh_type_id__generic_of_i8:
-            return oh__method__Generic_of_i8__Dbl__return__Dbl(&Some__generic_i8->Generic_of_i8, Dbl);
-        case Oh_type_id__specific_of_i8:
-            return oh__method__Specific_of_i8__Dbl__return__Dbl(&Some__generic_i8->Specific_of_i8, Dbl);
+{   switch (unknown_ID)
+    {   case OH_ID__generic_OF_I8:
+            return F1L3__method__generic_OF_I8_c__dbl_c__dbl_xt((generic_OF_I8_c)unknown, dbl);
+        case OH_ID__specific_OF_I8:
+            return F1L3__method__specific_OF_I8_c__dbl_c__dbl_xt((specific_OF_I8_c)unknown, dbl);
     }
     // for classes which are JIT:
-    dbl (*method__Dbl__return__Dbl)(const oh__unknown *M, double Dbl)
-        =   oh_look_up__method__Dbl__return__Dbl(Dynamic__generic_of_i8->Type_id);
-    if (method__Dbl__return__Dbl)
-    {   return method__Dbl__return__Dbl(&Dynamic__generic_of_i8->Unknown, Dbl);
+    dbl_t (*F1L3__method__unknown_c__dbl_c__dbl_xt)(const void *unknown, const dbl_t *dbl)
+        =   oh_look_up__method__Dbl__return__Dbl(unknown_ID);
+    if (F1L3__method__unknown_c__dbl_c__dbl_xt)
+    {   return F1L3__method__unknown_c__dbl_c__dbl_xt(unknown, dbl);
     }
     exit(1);
 }
 ```
 
-TODO: we want to include a "lambda" type.  if it fits into the size of `oh_dynamic__generic_of_i8` union,
-we can inline all the lambda methods as pointers there.  if not, we use 
-a pointer to an allocated lambda type.
+TODO: we want to include a "lambda" type.  this just has a list of
+per-instance-defined methods for all of the class's abstract methods (including parents')
+as well as any other instance fields.  it can be defined as needed as a child
+class of the class (see "Waberoo" example in the wishlist).
 
 ## big ints
 
@@ -480,7 +470,7 @@ typedef struct F1L3__vector3_
      dbl_t y;
      dbl_t z;
 };        F1L3__vector3_t
-dbl_ F1L3__length__vector3_c__dbl_x_(const F1L3__vector3_t *vector3)
+dbl_ F1L3__length__vector3_c__dbl_xt(const F1L3__vector3_t *vector3)
 {    return sqrt
      (    vector3->x * vector3->x,
           vector3->y * vector3->y,
@@ -573,8 +563,8 @@ proceed with a match (if any), we check for string equality.  e.g., some pseudo-
 code:
 
 ```
-switch (OH__fast_hash__salt_t__str_c__u64_x_(12345, &considered_string))
-{    case 9876: // precomputed via `OH__fast_hash__salt_t__str_c__u64_x_(12345, &string_case1)`
+switch (OH__fast_hash__salt_t__str_c__u64_xt(12345, &considered_string))
+{    case 9876: // precomputed via `OH__fast_hash__salt_t__str_c__u64_xt(12345, &string_case1)`
      {    if (!OH_eq__chars_c__str_c_("string case 1", &considered_string)
           {    goto OH_location__default;
           }
