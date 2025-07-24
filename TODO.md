@@ -122,7 +122,7 @@ multiply_(a: -5, b: 20)     # should return -100
 multiply_(a: "A", b: "B")   # should fail at compilation
 
 # in C, specialized after we infer `int_` for `t_`:
-int_t PREFIX__multiply__int_c_a__int_c_b__int_xt(int_c a, int_c b)
+int_t PREFIX__multiply__a_c__b_c__int_xt(int_c a, int_c b)
 {   // built-in function:
     return multiply__int_c__int_c__int_xt(a, b);
 }
@@ -154,28 +154,9 @@ dynamic-type variables include a 64 bit field for their type at the start of the
 acting much like a vtable.
 
 because of this split, we'll need to support calling dynamic-type functions with only-type
-information that isn't at the start of the class, e.g., `call_dynamic_(dynamic_class_ *dynamic_class)`
-and `call_only_(type_id_ type_id, only_class_ *only_class)`.  we need this in case `call_only_`
-internally calls another method on the class; TODO: or do we?  can we know automatically here and
-call the correct override?
-
-TODO: storage for dynamic types, can we create wrapper classes with enough memory and
-cast to them (i.e., without allocation)?  need to know the possible memory layouts beforehand,
-i.e., all possible child classes.  since we should know
-all imports ahead of time, however, we could just get the largest child implementation and use that.
-(maybe check if one child uses a lot more memory than other siblings and push to a pointer.)
-for scripts that extend a class, we might fit in as much as we can to the wrapper classes
-memory but then use a pointer to the rest.  it's ok if scripts take a performance hit (pointer dereference).
-
-TODO: a general purpose "part of your memory is here, part of your memory is there" class
-almost sounds like virtual memory with mappings.  that should probably be non-standard/non-core.
-
-TODO: discuss having all instance methods in some special virtual table, e.g., possibly 
-with additional reflection information (for things like `@mutators(my_class_) @each callable;`
-macro code).
-we also may need to have a fallback table for functions that are defined locally.
-or ideally, we just rely on the global functions so we don't have to specify the vtable
-(unless we're overriding things).
+information that isn't at the start of the class, e.g., 
+`call_ID_unknown_p(OH_ID_t OH_ID, OH_UNKNOWN_p unknown)`, where `unknown` is a pointer
+to the start of the data in the class, and `OH_ID` gives you the type ID.
 
 ### type layout
 
