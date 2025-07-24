@@ -7956,47 +7956,47 @@ When the `callee` is descoped, it will deregister itself with the `caller`
 internally, so that the `caller` will no longer call the `callee`.
 
 ```
-callee[of]: []
-{    ;;call(Of@): null
+callee_[of_]: []
+{    ;;call_(of`): null_
 
-     ;;hang_up(): null
+     ;;hang_up_(): null_
           ... # some internal implementation
 }
 
-caller[of]:
-[    # use `of@` to pass in the mutability of `of` from `caller` into `callee`,
-     Callees[ptr[callee[of@]]];
+caller_[of_]:
+[    # using backtick to pass in the mutability of `of_` from `caller_` into `callee_`,
+     callees: array_[ptr_[callee_[of`]]];
 ]
-{    ::run_callbacks(Of@):
-          Callees each Ptr: {Ptr call(Of@)}
+{    ::run_callbacks_(of`):
+          callees each ptr: {ptr call_(`of)}
 }
 
-audio: caller[array[sample], Mutable]
-{    # this `audio` class will call the `call` method on the `callee` class.
+audio_: caller_[array_[sample_];]
+{    # this `audio` class will call the `call_` method on the `callee` class.
      # TODO: actually show some logic for the calling.
 
      # amount of time between samples:
-     Delta_t: flt
+     delta_t: flt_
 
      # number of samples
-     Count; 500
+     count; 500
 }
 
-audio_callee: all_of
-[    m: [Frequency; flt(440), Phase; flt]
-     callee[array[sample];]
+audio_callee: all_of_
+[    m: [frequency; flt_(440), phase; flt_]
+     callee[array_[sample_];]
 ]
-{    ;;call(Array[sample];): for Index: index < count(Array)
-          Array[Index] = sample(Mono: \\math sin(2 * \\math Pi * Phase))
-          Phase += Frequency * Audio Delta_t
+{    ;;call_(array[sample_];): count_(array) each index:
+          array[index] = sample_(mono: \\math sin_(2 * \\math pi * phase))
+          phase += frequency * audio delta_t
 }
 
-some_function(): null
-     Callee; audio_callee
-     Callee Frequency = 880
-     Audio call(Callee;)
-     sleep(Seconds: 10)
-     # `Audio hang_up(Callee;)` automatically happens when `Callee` is descoped.
+some_function_(): null_
+     callee; audio_callee_
+     callee frequency = 880
+     audio call_(callee;)
+     sleep_(seconds: 10)
+     # `audio hang_up_(callee;)` automatically happens when `callee` is descoped.
 ```
 
 # grammar/syntax
