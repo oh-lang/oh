@@ -189,13 +189,13 @@ vector3_: [x: dbl_, y: dbl_, z: dbl_]
 }
 
 // in C:
-typedef struct LINEAR_OH_vector3
+typedef struct LINEAR_OH_vector3_
 {    OH_dbl_ x;
      OH_dbl_ y;
      OH_dbl_ z;
-}         LINEAR_OH_vector3_;
+}         LINEAR_OH_vector3_t;
 
-OH_dbl_ LINEAR_OH__length__Cvector3__Xdbl_(const LINEAR_OH_vector3_ *m)
+OH_dbl_ LINEAR_OH__length__Cvector3__Xdbl_(const LINEAR_OH_vector3_t *m)
 {    return sqrt(m->x * m->x + m->y * m->y + m->z * m->z);
 }
 ```
@@ -207,13 +207,13 @@ we look at class functions (static functions) first, then instance methods next.
 if there is none, it will go through the parent classes in order and look if they define it.
 
 ```
-my_class: all_of[m: [My_data;], parent1, parent2]
-{   ::my_method(): null
+my_class_: all_of_[m: [my_data;], parent1:, parent2:]
+{    ::my_method_(): null_
 }
 
-My_class; my_class
-My_class my_method()    # calls my_class::my_method
-My_class other_method() # looks for parent1::other_method(), then parent2::other_method()
+my_class; my_class_
+my_class my_method_()    # calls my_class_::my_method_
+my_class other_method_() # looks for parent1_::other_method_(), then parent2_::other_method_()
 ```
 
 if we have a dynamic class (e.g., not `@only`), we need to keep track of what child class it is.
@@ -221,43 +221,31 @@ this will require putting a type word after/before it in memory, to provide the 
 e.g., usually applies only to pointers in C++, but in oh-lang we allow child classes up to a certain size locally.
 note we shouldn't need a full type; we could use a smart/small type since we know it descends from the parent.
 
-when creating a class, we give it a positive `Type_id` (probably `u_arch`) only if it
+when creating a class, we give it a positive `type_id_` (probably `u_arch_`) only if it
 *has any fields* (e.g., instance variables or instance functions defined in `[]`).
-otherwise we'll set the `Type_id` to be 0; it's abstract and shouldn't perform any
-of the following logic.  when we notice anyone is inheriting from a non-zero `Type_id`,
-i.e., via an `child_type_: all_of_[parent_type_, m_: child_fields_]`, we add to a list
-keyed on `parent_type_ type_id` (and same for any ancestors of `parent_type`).
-this can be a "short tag" when we know the type is at least `parent_type_` already.
-the short tag should be 8 bits only, but we probably can make this configurable (e.g., for 32 bit arch).
-if we don't mark a non-final instance variable as `@only`, it will take up at least 64 bits of space.
-this is because we'll use 56 bits to store a pointer to a child in the worst case, with 8 bits as the
-short tag afterwards.  if we are storing a variable as `any` type, we'll use the full `u_arch`
-size to store `type_id` then the variable data.
-
-TODO: does this short pointer work logic work for multiple parents?  they'd need to have the same
-offset/value, no?
-
-TODO: we need to disallow `all_of` if `parent1` and `parent2` have any of the same instance fields.
-
-when classes *implicitly* inherit from a parent, e.g., for duck typing, we don't add them to
-the parent's vtable at first...
+otherwise we'll set the `type_id` to be 0; it's abstract and shouldn't perform any
+of the following logic.  with explicit inheritance, e.g., `child_: all_of_[parent:] {...}`,
+we create methods that will look up the type ID to switch to the child overrides as needed.
+when classes *implicitly* inherit from a parent, i.e., via duck typing, e.g., implementing
+`::hash_(~builder): null_` without descending from `hashable_`, we only add the child to
+the parent's vtable if the child is specifically requested as a hashable.
 
 ```
 # `hashable_`'s vtable includes `explicitly_hashable_`:
-explicitly_hashable_: all_of_[hashable_, m_: [str;]]
+explicitly_hashable_: all_of_[hashable:, m: [str;]]
 {   ::hash_(~builder): builder hash_(m str)
 }
 
-x; hashable_, ..., x = explicitly_hashable_("hi")
-print_(hash_(x)) # OK
+x; hashable_ = explicitly_hashable_("hi")
+print_(hash_(x))    # OK, lookup via vtables.
 
 # `hashable_`'s vtable doesn't include `implicitly_hashable_`:
 implicitly_hashable_: [str;]
 {   ::hash_(~builder): builder hash_(m str)
 }
 
-# you can still use `hash_` here:
-y; implicitly_hashable_("hi"J)
+# you can still use `hash_` here, but it's not using vtables:
+y; implicitly_hashable_("hi")
 print_(hash_(y)) # OK
 ```
 
@@ -271,16 +259,16 @@ do_something_[of_: hashable_](~of): null_
 # this triggers adding `implicitly_hashable_` to the `hashable_` vtable.
 do_something_(implicitly_hashable_("asdf"))
 # so would this:
-x; hashable_, ..., x = implicitly_hashable_("hi")
+x; hashable_ = implicitly_hashable_("hi")
 ```
 
-because we want to support duck typing, we don't want to require users to explicitly add the
+because we want to support duck typing, we don't want to force users to explicitly add the
 `hashable_` parent class, so the compiler needs to add it.  it will translate to code like this
 inside `.hash.generated.c/h` files (generated from the library `hash.oh`):
 
 ```
-typedef struct HASH_OH_hashable
-{    OH_type_ OH_type;
+typedef struct OH__hashable_
+{    OH_ID_t OH_ID;
      // `BLOB_SIZE` is at least 1 word long, to support child classes as pointers
      // in case they are large compared to the parent class.  it is something like
      // `min(sizeof(parent_class_) + 2 * sizeof(word_), sizeof(max_child_class_))`.
@@ -294,28 +282,39 @@ typedef struct HASH_OH_hashable
      union
      {    // child classes if they fit within ~2-3 words from the parent class,
           // e.g., this one from `explicitly_hashable.oh`:
-          EXPLICITLY_HASHABLE_OH__explicitly_hashable_ explicitly_hashable;
+          EXPLICITLY_HASHABLE_OH__explicitly_hashable_t explicitly_hashable;
           // child classes if they don't fit into 3 words....
-          BIG_CHILD_OH__big_child_ *big_child;
+          BIG_CHILD_OH__big_child_t *big_child;
      }         dynamic;
      */
-}         HASH_OH_hashable_;
+}         OH__hashable_t;
 
 // in the `c` file, we `#include` every child class header file like `explicitly_hashable.h`,
 // or we can forward declare the things we need here.
-OH_u64_ HASH_OH__hash__Chashable__NTu64__salt__Xu64_
-(    const HASH_OH_hashable_ *hashable,
-     OH_u64_ salt
+u64_t OH__hash__hashable_c__salt_t__u64_x
+(    const OH__hashable_t *hashable,
+     u64_t salt
 )
-{    switch (hashable->OH_type)
-     {    case OH_type__EXPLICITLY_HASHABLE_OH__explicitly_hashable:
-               return EXPLICITLY_HASHABLE_OH__hash__Cexplicitly_hashable__NTu64__salt__Xu64_
-               (    (const EXPLICITLY_HASHABLE_OH__explicitly_hashable_ *)hashable->dynamic.blob,
+{    return OH__hash__ID_hashable_c__salt_t__u64_x(hashable->OH_ID, &hashable->dynamic, salt);
+}
+
+// TODO: do we need this for multi-inheritance?  e.g., need to make sure the layout
+// will be correct.  i think we need it at least for `@only` variables because we
+// won't store the type ID along with the class in that case (for efficiency).
+u64_t OH__hash__ID_hashable_c__salt_t__u64_x
+(    u64_t hashable_ID,
+     const void *hashable,
+     u64_t salt
+)
+{    switch (hashable_ID)
+     {    case OH_ID__EXPLICITLY_HASHABLE_OH__explicitly_hashable:
+               return EXPLICITLY_HASHABLE_OH__hash__explicitly_hashable_c__salt_t__u64_x
+               (    (const EXPLICITLY_HASHABLE_OH__explicitly_hashable_t *)hashable,
                     salt
                );
-          case OH_type__BIG_CHILD_OH__big_child:
-               return BIG_CHILD_OH__hash__Cbig_child__NTu64__salt__Xu64_
-               (    (const BIG_CHILD_OH__big_child_ *)hashable->dynamic.ptr,
+          case OH_ID__BIG_CHILD_OH__big_child:
+               return BIG_CHILD_OH__hash__big_child_c__salt_t__u64_x
+               (    (const BIG_CHILD_OH__big_child_t *)hashable,
                     salt
                );
           ...
@@ -324,7 +323,7 @@ OH_u64_ HASH_OH__hash__Chashable__NTu64__salt__Xu64_
 }
 ```
 
-the `implicitly_hashable` switch-case will only be added if we ask for
+an `implicitly_hashable` switch-case will only be added if we ask for
 the `implicitly_hashable_` class as a `hashable_`.
 
 ### generics
