@@ -8007,7 +8007,7 @@ Note on terminology:
 
 * Definition: declaration along with an assignment of the function or variable.
 
-* `Identifier`: starts with a non-numeric character, can have numerical characters after that.
+* `identifier`: starts with a non-numeric character, can have numerical characters after that.
 
 * `function_case_`/`type_case_`: Identifier which ends with a trailing underscore.
      A leading underscore is allowed to indicate an unused function/type.
@@ -8030,48 +8030,6 @@ If there are any compile errors, the compiler will add some special
 comments to the code that will be removed on next compile, e.g.,
 `#@! ^ there's a syntax problem`
 
-## metaprogramming
-
-TODO: we'd like to provide ways to define custom block functions like `if X {...}`,
-e.g., `whenever Q {...}`.  probably the best way here is to use `Block`, e.g.,
-`if(Bool, Block[~t]): t`.  but it'd be also good to support the `declaring` part
-of `block`, via, e.g., `check Nullable, NonNull: do_something(NonNull)`, where
-we have 
-```
-check(T?` ~t, Blockable[~u, declaring` t])?: u
-     what T
-          T`
-               Blockable block(T`)
-          null: {null}
-```
-without some deep programming, we won't be able to have the option of doing things like
-`return X + Y`, since `return` breaks order of operations.
-We probably can allow it, but restricted to existing operators like `is`.
-But if users want fully custom stuff, they'd need to define their own macros
-that start with `@`.
-
 # implementation
 
-## global functions via class methods
-
-```
-# oh-lang
-my_class: []
-{    ::readonly_method(Int): null
-     ;;mutating_method(Int): null
-}
-
-# C++
-void hm::user::readonly_method(readonly_ref<hm::my_class> My_class, readonly_ref<big_int> Int);
-void hm::user::mutating_method(mutating_ref<hm::my_class> My_class, readonly_ref<big_int> Int);
-```
-
-## types specified locally or remotely
-
-We'll want to support types (a `u64`) being declared remotely or locally.
-E.g., when creating an array of `i64`, we don't want to take up room in the array
-for the same `i64` type on each array element.  Conversely, if the array element type
-has child classes, then we need to keep track of the type on each array element.
-(We need to do this unless the array has an `@only` annotation on the internal type.)
-
-TODO: more discussion
+See [TODO.md](https://github.com/oh-lang/oh/blob/main/TODO.md) for ideas.
