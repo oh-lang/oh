@@ -411,25 +411,6 @@ some options:
 
 ## tagged unions
 
-TODO: we can't do this paragraph without letting methods update `OH_ID` when
-normally we don't want to do this except in specialized situations.  should delete.
-`one_of_` needs some special help.  i'd almost like to optimize when we *know* what
-a type is, versus when we don't (and need the dynamic dispatch `OH_ID`).  if we
-have the `OH_ID` present, we don't need a secondary tag for what the `one_of` is;
-if we have `one_of_[int_, dbl_]`, we only need 2 `OH_ID`s, e.g., `a`: the instance
-is `int_` but it's part of the `one_of_[int_, dbl_]` type, and `b` it's a `dbl` but 
-same qualification.  for completeness, we'll probably have a third `type_id` for
-"it's a `one_of_[int_, dbl_]`, check the local tag", which we may also reuse in a
-type system.  local tags will go at the end of a `union`ed struct and can be less
-than a word in size.  e.g., `one_of[int_, dbl_]` can have a `u1_` tag, something
-with 4 types can have a `u2_` tag, etc.
-
-i'd also like code to be self-aware of whether we're using `type_id` or local tags.
-e.g., if you want to squeeze out more space in your struct when `type_id` is present
-and reduce it for local tags so your entire type fits within a certain number of bytes.
-
-let's maybe converge on a name for them, e.g., "partial types" and "full types".
-
 from the `update` `one_of` and `status` enum from the wishlist section on `what`.
 
 ```
