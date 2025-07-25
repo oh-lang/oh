@@ -117,7 +117,7 @@ call `my_function_(:x)` to specify the readonly reference overload (`x: x`),
 `other_function_(;y)` to specify the writable reference overload (`y; y`), or
 `tmp_function_(.z)` to specify a temporary overload `z. @hide z!`, which also
 stops you from using `z` again in the rest of the block.  Using `tmp_function_(z!)`
-calls the temporary overload and would allow `z` to still be used afterwards,
+also calls the temporary overload and would allow `z` to still be used afterwards,
 but `z` will be [reset to the default](#prefix-and-postfix-exclamation-points).
 Alternatively, you can do `tmp_function_(z o_())` to make a deep copy, and
 this will also automatically call the temporary overload without specifying `.`.
@@ -136,15 +136,17 @@ and always put declarers on the right?  i like the consistency though.
 
 Class methods technically take an argument for `m` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
-writing `the_method_(m:, x: int_): str_`, we can write `::the_method_(x: int_): str_`.
+declaring `the_method_(m:, x: int_): str_`, we can use `::the_method_(x: int_): str_`.
 this parallels `my_class::the_method` in C++, but in oh-lang we can analogously use
 `;;a_mutating_method_` for a method that can mutate `m`, i.e.,
 `a_mutating_method_(m;, x: int_): str_` becomes `;;a_mutating_method_(x: int_): str_`,
 or `..one_temporary_method_()` for a method on a temporary `m`, i.e.,
 `one_temporary_method_(m.)`.  Inside an instance method definition, you can use `m`
-to refer to the class instance, regardless of how it was defined.  You must use
-`m the_variable_name` to refer to a field `the_variable_name` defined on the class
-inside any methods.
+to refer to the class instance, regardless of how it was defined.  Inside methods,
+you must use `m the_variable_name` to refer to a class field `the_variable_name`
+and `m my_method_name_()` to call another method; this is to help with overload
+resolution.  (C++ developers are encouraged to prefix class member variables with
+`m_` because C++ is so nonchalant about name resolution.)  Here is an example class.
 
 ```
 vector3_: [x: dbl_, y: dbl_, z: dbl_]
@@ -155,21 +157,22 @@ vector3_: [x: dbl_, y: dbl_, z: dbl_]
 
 We support nested types without needing a `m_` prefix, and they are available anywhere
 in the class body they are defined.  This is a minor inconsistency with instance fields
-(which always require `m`) but it makes overloads much easier to reason about.  However,
-to prevent confusion, these nested types cannot shadow any global types.
-Here is an example with a generic type, where it would be convenient
+and method calls (which always require `m`) but those make overloads much easier to
+reason about.  However, to prevent confusion, these nested types cannot shadow any global
+types.  Here is an example with a generic type, where it would be convenient
 to refer to another generic subtype if we already have the class.
 
 ```
+# NOTE: we can use type definitions from later in the class body when
+# declaring class member variables (e.g., `lot; lot_`):
 my_generic_[at_, of_]: [lot;]
 {    lot_: @only insertion_ordered_lot_[at_, of_]
      ...
 }
 
-# TODO: we probably don't want anyone to use `lot_`, since we'll make that globally available.
-# ERROR: `lot_` is shadowed inside of `my_generic_`, use import renaming to avoid this.
-#       e.g., `[core_lot_: lot_]: \\core/lot`
-[lot_]: \\core/lot
+# ERROR: `lot_` (without a `[]` spec) is shadowed inside of `my_generic_`:
+# we should rename this type or the type inside `my_generic_`.
+lot_: lot_[at_: int_, of_: str_]
 ```
 
 After fixing the compile error in the example above, we can use `some_type: my_generic_[at_, of_] lot_`
@@ -196,10 +199,10 @@ and `g_` can be used for the current generic class (without the specification) w
 vector3_[of_: number_]: [x; of_, y; of_, z; of_]
 {    # `g_` is used for this generic class without the current specification,
      # in this case, `vector3_`.
-     g_(FIRST_value: ~value, SECOND_value, THIRD_value): g_[value]
-          [x: FIRST_value, y: SECOND_value, z: THIRD_value]
+     g_(value_0. ~value, value_1., value_2.): g_[value]
+          [x: value_0, y: value_1, z: value_2]
 
-     ::dot_(o): of_
+     ::dot_(o:): of_
           m x * o x + m y * o y + m z * o z
 }
 
@@ -903,13 +906,12 @@ which are function-like but may consume the rest of the statement.
 E.g., `return X + 5` will return the value `X + 5` from the enclosing function.
 The `type_case_` versions of these keywords are also all reserved;
 for example, `return_` can be used for the return type of the current function.
-There are some reserved namespaces with side effects like `FIRST_`, `SECOND_`,
-`THIRD_`, `FOURTH_`, `NAMED_`, `AS_`,
-which should be used for their side effects.  For example, `FIRST_` and `SECOND_`
-should be used for binary operations like `+` and `*`.  See [namespaces](#namespaces)
-for more details.
-TODO: i think we can use `_0`, `_1`, etc., instead of `FIRST_`, `SECOND_`.
-let's see if we can make the vim syntax work for that, though.
+There are some reserved namespaces with side effects like `NAMED_`, `AS_`,
+which should be used for their side effects.  Variables that end in numbers
+like `x_0` or `asdf_123` will also have the number considered as a namespace,
+wihch can be used for binary operations like `+` and `*`.
+See [namespaces](#namespaces)
+TODO: let's see if we can make the vim syntax work for ending in a number.
 
 There are some reserved variable names: `m` and `o`, along with their `type_case_`
 variants, and `_` which is reserved for [class imports](#modules).  `m` can only
@@ -1747,8 +1749,8 @@ as long as the variable names don't overlap.
 ### full list of reserved namespaces
 
 * `OH_` - used internally by oh-lang, do not use
-* `FIRST_` - for the first operand in a binary operation (where order matters)
-* `SECOND_` - for the second operand in a binary operation (where order matters)
+* `_0` - for the first operand in a binary operation (where order matters)
+* `_1` - for the second operand in a binary operation (where order matters)
 * `NAMED_` - for arguments that should be explicitly named in [functions](#defining-generic-functions)
 
 TODO: maybe change `NAMED_` to `@as` or `@named`.
@@ -2209,34 +2211,34 @@ since we don't want to make users extend from a base nullable class.
 # nullish or.
 # `nullable ?? x` to return `x` if `nullable` is null,
 # otherwise the non-null value in `nullable`.
-nullish_or_(~FIRST_a?., SECOND_a.): a_
-     what FIRST_a
+nullish_or_(~a_0?., a_1.): a_
+     what a_0
           non_null: {non_null}
-          null {SECOND_a}
+          null {a_1}
 
 # boolean or.
 # `nullable || x` to return `x` if `nullable` is null or falsey,
 # otherwise the non-null truthy value in `nullable`.
-or_(~FIRST_a?., SECOND_a.): a
-     what FIRST_a
+or_(~a_0?., a_1.): a
+     what a_0
           non_null:
                if non_null
                     non_null
                else
-                    SECOND_a
-          null {SECOND_a}
+                    a_1
+          null {a_1}
 ```
 
 We'll support more complicated pattern matching (like in Rust) using
 the `where` operator.  The shorter version of the above `what` statement is:
 
 ```
-or_(~FIRST_a?., SECOND_a.): a
-     what FIRST_a
+or_(~a_0?., a_1.): a
+     what a_0
           NON_NULL_a: where !!NON_NULL_a
                NON_NULL_a
           null
-               SECOND_a
+               a_1
 ```
 
 In this case, you can think of the `what` cases as being evaluated in order,
@@ -3020,10 +3022,10 @@ vector2_: [x; dbl_, y; dbl_]
 {    ;;renew_(m x. dbl_, m y. dbl_): {}
 
      # this is required to create vectors like this: `vector2_(1.0, 2.0)`
-     # since we are explicit about `FIRST_` and `SECOND_` we don't need the
+     # since we are explicit about `_0` and `_1` we don't need the
      # `@order_dependent` annotation.
-     m(FIRST_dbl., SECOND_dbl.): m_
-          m(x. FIRST_dbl, y. SECOND_dbl)
+     m(dbl_0., dbl_1.): m_
+          m(x. dbl_0, y. dbl_1)
 
      @order_independent
      # can also use `o` instead of `vector2` as the argument name for an `o`ther
@@ -3043,8 +3045,8 @@ where `m` is an instance of `vector2_`, so ultimately this function creates a gl
 function with the function signature `dot_(vector2, vector2): dbl`.  Therefore this function
 *must* be annotated as `@order_independent` or `@order_dependent`, to avoid confusion.
 Otherwise it is a compiler error.  Alternatively to using annotations, you can use
-namespaces like `FIRST_` and `SECOND_`.  `m` is assumed to be `FIRST_vector2` in the
-above example, but if you use `o` it will be assumed to be `SECOND_vector2`.
+namespaces like `_0` and `_1`.  `m` is assumed to be `vector2_0` in the
+above example, but if you use `o` it will be assumed to be `vector2_1`.
 
 As mentioned earlier, we can have order dependence in certain established cases, but these
 should be avoided in oh-lang as much as possible, where we prefer unique names.
@@ -3057,7 +3059,7 @@ vector3_: [x; dbl_, y; dbl_, z; dbl_]
 {    ;;renew_(m x. dbl_, m y. dbl_, m z. dbl_): {}
 
      # defined in the class body, we do it like this:
-     ::cross_(o): m_
+     ::cross_(o:): m_
      (    x. m y * o z - m z * o y
           y. m z * o x - m x * o z
           z. m x * o y - m y * o x
@@ -3066,10 +3068,10 @@ vector3_: [x; dbl_, y; dbl_, z; dbl_]
 
 # defined outside the class body, we do it like this:
 # NOTE: both definitions are *not* required, only one.
-cross_(FIRST_vector3, SECOND_vector3): vector3_
-(    x: FIRST_vector3 y * SECOND_vector3 z - FIRST_vector3 z * SECOND_vector3 y
-     y: FIRST_vector3 z * SECOND_vector3 x - FIRST_vector3 x * SECOND_vector3 z
-     z: FIRST_vector3 x * SECOND_vector3 y - FIRST_vector3 y * SECOND_vector3 x
+cross_(vector3_0:, vector3_1:): vector3_
+(    x: vector3_0 y * vector3_1 z - vector3_0 z * vector3_1 y
+     y: vector3_0 z * vector3_1 x - vector3_0 x * vector3_1 z
+     z: vector3_0 x * vector3_1 y - vector3_0 y * vector3_1 x
 )
 ```
 
@@ -4150,7 +4152,7 @@ copy_[dbl_](value: 3)     # will interpret `3` as a double and return `3.0`
 
 TODO: restrictions here, do we need to only have a single argument, so that
 argument names are unique?  it's probably ok if we have an `@order_independent`
-or use `~FIRST_t_` and `~SECOND_u_` to indicate order is ok.
+or use `~t_0` and `~t_1` to indicate order is ok.
 or need to use `NAMED_` on some of them.
 maybe we see if there's an issue when compiling the generics and then complain at compile time.
 
@@ -4612,8 +4614,8 @@ This is useful to overload e.g., the printing of your class instance, via defini
 `print_(m:)` as a method, so that `print_(some_class)` will then call `some_class::print_()`.
 Similarly, you can do `count_(some_class)` if `some_class` has a `some_class::count_()`
 method, which all container classes have.  This also should work for multiple argument methods,
-since `array swap_(FIRST_index., SECOND_index.)` can easily
-become `swap_(array;, FIRST_index., SECOND_index.)`.
+since `array swap_(index_0., index_1.)` can easily
+become `swap_(array;, index_0., index_1.)`.
 TODO: we probably can allow `index_1` and `index_2` to resolve type as `index_`.  we don't want
 to disallow numbers in class names, e.g., `vector3`, so maybe we require using underscores like
 `index_1`, so we can do things like `vector3_2`.  not great, but not awful.
@@ -5290,7 +5292,7 @@ type `hm_[er_, ok_]`, like `MY_er_: one_of_[oops:, my_bad:], hm_[of_]: hm_[ok_: 
 Here are some examples:
 
 ```
-# Note that in oh-lang we could define this as `pair_[FIRST_of_, SECOND_of_]`
+# Note that in oh-lang we could define this as `pair_[of_1_, of_2_]`
 # so we don't need to specify `first_: int_, second_: dbl_`, but for illustration
 # in the following examples we'll make the generic parameters named.
 pair_[first_, second_]: [first;, second;]
@@ -5348,8 +5350,8 @@ an_instance: a_class_[dbl_, n: 3]
 
 Similar to default-named arguments in functions, there are restrictions.
 You are not able to create multiple default-named types in your generic
-signature, e.g., `my_generic_[A_of_, B_of_]`, unless we use `FIRST_` and
-`SECOND_` namespaces, e.g., `my_generic_[FIRST_of_, SECOND_of_]`.  These
+signature, e.g., `my_generic_[A_of_, B_of_]`, unless we use `_0` and
+`_1` namespaces, e.g., `my_generic_[of_0_, of_1_]`.  These
 should only be used in cases where order intuitively matters.
 
 ### generic overloads must use the original class or a descendant
@@ -5611,7 +5613,7 @@ result: writeable_array@
 ]
 # should print [-1, 20, 100, 4001, 30000]
 # note that `sort_()` returns null and is collapses.
-# result == [FIRST_int: 20, SECOND_int: 4001, min: -1]
+# result == [int_0: 20, int_1: 4001, min: -1]
 ```
 
 ### field renaming in sequence builders
