@@ -36,26 +36,24 @@ while functions alone have parentheses `()` with optional arguments inside.
 Because types can act as functions, we don't syntactically distinguish between `type_case_`
 and `function_case_` otherwise.
 
-Another change is that oh-lang uses `:` (or `;`) for declarations and `=` for reassignment,
+Another change is that oh-lang uses `:`, `;`, and `.` for declarations and `=` for reassignment,
 so that declaring a variable and specifying a variable will work the same inside and outside
-function arguments.  For example, declaring a function that takes an integer named `x`,
-`my_function_(x: int_): null_`, and declaring an integer variable named `x` uses the same syntax:
-`x: int_`.  Similarly, calling a function with arguments specified as `my_function_(x: 5)` and
-defining a variable works the same outside of a function: `x: 5`.  There is a slight difference
-because we can declare variables with `.` in function arguments, which indicates a temporary.  E.g.,
-in `(x: int_, y; str_, z. dbl_)`, we declare `x` as a readonly reference, `y` a writable reference,
+function arguments.  For example, declaring a function that takes a readonly integer named `x`,
+`my_function_(x: int_): null_`, and declaring a constant integer variable named `x` uses the same
+syntax:  `x: int_`.  Similarly, calling a function with arguments specified as `my_function_(x: 5)`
+and defining a variable works the same outside of a function: `x: 5`.  In function arguments, e.g.
+`(x: int_, y; str_, z. dbl_)`, we declare `x` as a readonly reference, `y` a writable reference,
 and `z` a temporary, whereas outside of function arguments, `[x: int_, y; str_, z. dbl_]` indicates
-that `x` is readonly (though it can be written in constructors or first assignment),
-that `y` is writable, and `z` is volatile (and writable).
-TODO: i think it makes sense to make `z. dbl_` mean a "temporary" that should be passed
-in as a temporary to the next function that would grab it as a temporary argument,
-via the hidden `@hide z!`-like logic, but effectively Rust-like.
+that `x` is readonly (though it can be written in constructors or first assignment), that `y` is
+writable, and `z` should be passed as a temporary (like most Rust variables).  I.e., it will be
+hidden from scope if passed into a function that takes a temporary, unless you pass in a clone
+(via `::_o()`).
 
 In some languages, e.g., JavaScript, objects are passed by reference and primitives
 are passed by value when calling a function with these arguments.  In oh-lang,
-arguments are passed by reference by default, for consistency.  I.e., on the left
+variables are passed by reference by default, for consistency.  I.e., on the left
 hand side of an expression like `x = 5`, we know that we're using `x` as a reference,
-and we extend that to function calls like `do_something_(x)`.  Note that it's possible
+and we extend that to function calls like `do_something_(x)`.  It is of course possible
 to pass by value as well; see [passing by reference or by value](#pass-by-reference-or-pass-by-value). 
 See [passing by reference gotchas](#passing-by-reference-gotchas) for the edge cases.
 
@@ -69,11 +67,11 @@ arrays use a property (`array.length`) and maps use a different property (`map.s
 oh-lang also prioritizes convenience; class methods can be called like a function with
 the instance as an argument or as a method on the instance, e.g., `the_method_(my_class)`
 or `class the_method_()`.  This extends to functions with definitions like
-`my_two_instance_function_(my_class_a, my_class_b, width: int_, height: int_)` which
+`my_two_instance_function_(my_class_a:, my_class_b:, width: int_, height: int_)` which
 can be called as `(my_class_a, my_class_b) my_two_instance_function_(width: 5, height: 10)`,
 or by calling it as a method on either one of the instances, e.g.,
 `my_class_a my_two_instance_function_(my_class_b, width: 5, height: 10)`, without needing to
-define, e.g., `my_class_b my_two_instance_function_(my_class_a, width: 5, height: 10)` as well.
+define, e.g., `my_class_b::my_two_instance_function_(my_class_a:, width: 5, height: 10)` as well.
 
 For convenience, `array[3] = 5` will work even if `array` is not already at least size 4;
 oh-lang will resize the array if necessary, populating it with default values,
