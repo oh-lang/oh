@@ -100,23 +100,16 @@ with null, since `call_with_nullable_(some_value?: null)` is equivalent to
 ## concision
 
 When defining a function, variable arguments that use the default name for a type can
-elide the type name; e.g., `my_function_(int): str_` will declare a function that takes 
-an instance of `int_`, i.e., `int` expands to `int: int_`.
-See [default-named arguments](#default-name-arguments-in-functions).
-This is also true if [namespaces](#namespaces) are used, e.g., `my_function_(MY_NAMESPACE_int): str_`.
-If a declaration operator (like `;`, `:`, or `.`) is not used, we'll default to creating
-a readonly reference `:` overload but guess at a few weak overloads for `;` and `.` that
-make sense.  These weak overloads can be overridden with explicit `;` and `.` overloads.
-TODO: if we want to go the v-lang `fn(x int_)` route, could we also mostly define functions as
-readonly via `fn_(x int_) int_` (i.e., for `fn_(x: int_): int_`)?  i like how `:` guides the eye, tho.
-If not using a default name, you can get the same weak overloads using e.g., `fn_(x int_)`,
-i.e., not using an explicit `:;.` operator between an argument and the type.
-We can use `:` to explicitly only create the readonly reference overload, e.g.,
-`my_function_(int:): str_` to create a function which takes a readonly integer reference, or
-you can use `my_function_(int;): str_` for a function which can mutate the passed-in integer
-reference or `my_function_(int.): str_` for a function which takes a temporary integer.
+elide the type name; e.g., `my_function_(int:): str_` will declare a function that takes 
+a readonly instance of `int_`, i.e., `int:` expands to `int: int_`.  See
+[default-named arguments](#default-name-arguments-in-functions).  This is also true if
+[namespaces](#namespaces) are used, e.g., `my_function_(MY_NAMESPACE_int:): str_`.
+We use `:` to create the readonly reference overload, e.g., `my_function_(int:): str_`
+to create a function which takes a readonly integer reference, or `my_function_(int;): str_`
+for a function that can mutate the passed-in integer reference or `my_function_(int.): str_`
+for a function which takes a temporary integer.
 This also works for generic classes like `my_generic_[of_]` where `of_` is a template type;
-`my_function_(my_generic_[int_];)` is short for `my_function_(my_generic; my_generic_[int_])`.
+`my_function_(my_generic[int_];)` is short for `my_function_(my_generic; my_generic_[int_])`.
 
 When calling a function, we don't need to use `my_function_(x: x)` if we have a local
 variable named `x` that shadows the function's argument named `x`.  We can just
