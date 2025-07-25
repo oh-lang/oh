@@ -3024,8 +3024,8 @@ vector2_: [x; dbl_, y; dbl_]
      # this is required to create vectors like this: `vector2_(1.0, 2.0)`
      # since we are explicit about `_0` and `_1` we don't need the
      # `@order_dependent` annotation.
-     m(dbl_0., dbl_1.): m_
-          m(x. dbl_0, y. dbl_1)
+     m_(dbl_0., dbl_1.): m_
+          m_(x. dbl_0, y. dbl_1)
 
      @order_independent
      # can also use `o` instead of `vector2` as the argument name for an `o`ther
@@ -3772,7 +3772,7 @@ Note that we're not allowed to cast... or are we?  we want to be able to easily 
 an iterator into a list, for example.
 
 ```
-countdown_(count): all_of_[iterator_[count_], m_: [count]]
+countdown_(count:): all_of_[iterator[count_]:, m: [count]]
 {    ::next_()?: count_
           if m count > 0
                --m count
@@ -4387,10 +4387,10 @@ parent_class_: [name: str_]
 
 # example class definition
 example_class_: all_of_
-[    parent_class_
-     m_:
+[    parent_class:
+     m:
      [    # given the inheritance with `parent_class_`,
-          # child instance variables should be defined in this `m_: [...]` block.
+          # child instance variables should be defined in this `m: [...]` block.
           # if they are public, a public constructor like `example_class_(x;:. int_)`
           # will be created.
           x; int_

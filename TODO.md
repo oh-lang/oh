@@ -155,8 +155,8 @@ acting much like a vtable.
 
 because of this split, we'll need to support calling dynamic-type functions with only-type
 information that isn't at the start of the class, e.g., 
-`call_ID_unknown_p(OH_ID_t OH_ID, OH_UNKNOWN_p unknown)`, where `unknown` is a pointer
-to the start of the data in the class, and `OH_ID` gives you the type ID.
+`call__ID_unknown_p(OH_ID_t unknown_ID, OH_UNKNOWN_p unknown)`, where `unknown` is a pointer
+to the start of the data in the class, and `unknown_ID` gives you the type ID.
 
 ### type layout
 
@@ -176,7 +176,7 @@ typedef struct LINEAR_OH_vector3_
      OH_dbl_ z;
 }         LINEAR_OH_vector3_t;
 
-OH_dbl_ LINEAR_OH__length__Cvector3__Xdbl_(const LINEAR_OH_vector3_t *m)
+dbl_t LINEAR_OH__length__vector3_c__dbl_xt(const LINEAR_OH_vector3_t *m)
 {    return sqrt(m->x * m->x + m->y * m->y + m->z * m->z);
 }
 ```
@@ -202,9 +202,9 @@ this will require putting a type word after/before it in memory, to provide the 
 e.g., usually applies only to pointers in C++, but in oh-lang we allow child classes up to a certain size locally.
 note we shouldn't need a full type; we could use a smart/small type since we know it descends from the parent.
 
-when creating a class, we give it a positive `type_id_` (probably `u_arch_`) only if it
+when creating a class, we give it a positive `OH_ID_` (probably `u_arch_`) only if it
 *has any fields* (e.g., instance variables or instance functions defined in `[]`).
-otherwise we'll set the `type_id` to be 0; it's abstract and shouldn't perform any
+otherwise we'll set the `OH_ID` to be 0; it's abstract and shouldn't perform any
 of the following logic.  with explicit inheritance, e.g., `child_: all_of_[parent:] {...}`,
 we create methods that will look up the type ID to switch to the child overrides as needed.
 when classes *implicitly* inherit from a parent, i.e., via duck typing, e.g., implementing
@@ -411,10 +411,12 @@ some options:
 
 ## tagged unions
 
+TODO: we can't do this paragraph without letting methods update `OH_ID` when
+normally we don't want to do this except in specialized situations.  should delete.
 `one_of_` needs some special help.  i'd almost like to optimize when we *know* what
-a type is, versus when we don't (and need the dynamic dispatch `type_id`).  if we
-have the `type_id` present, we don't need a secondary tag for what the `one_of` is;
-if we have `one_of_[int_, dbl_]`, we only need 2 `type_id`s, e.g., `a`: the instance
+a type is, versus when we don't (and need the dynamic dispatch `OH_ID`).  if we
+have the `OH_ID` present, we don't need a secondary tag for what the `one_of` is;
+if we have `one_of_[int_, dbl_]`, we only need 2 `OH_ID`s, e.g., `a`: the instance
 is `int_` but it's part of the `one_of_[int_, dbl_]` type, and `b` it's a `dbl` but 
 same qualification.  for completeness, we'll probably have a third `type_id` for
 "it's a `one_of_[int_, dbl_]`, check the local tag", which we may also reuse in a
