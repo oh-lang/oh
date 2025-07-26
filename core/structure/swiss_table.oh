@@ -13,10 +13,11 @@ linked_swiss_table_
      count_managed_: managed_
      # if you really want to optimize the size of this struct, we can use
      # some indirection to put `count` in an allocated spot if `on_heap`.
-     count_managed:
-     # these also optimize the size of the struct (if `false`).
+     count_managed: _ locally
+     # these also optimize the size of the struct (if `on_heap`).
+     start_managed_: managed_
+     start_managed: _ locally
      # TODO: switch to `managed_` values.
-     local_start: bool_ = false
      local_end: bool_ = false
      local_first_free: bool_ = false
 ]:
@@ -27,8 +28,8 @@ linked_swiss_table_
           # via hash truncation.
           link_buckets; size_optimized_allocation_[link_bucket_, header_: links_header_]
           # for optimal packing, we put all counts here at the end.
-          count[require: local_count];
-          start[require: local_start]; offset_
+          count[require: count_managed == _ locally];
+          start[require: start_managed == _ locally]; offset_
           end[require: local_end]; offset_
           first_free[require: local_first_free]; offset_
      ]
@@ -100,7 +101,7 @@ linked_swiss_table_
 
      @private
      ;:start_(): (offset_;:) where !!m
-          @if local_start
+          @if start_managed == _ locally
                m start
           @else
                m link_buckets header_(m LINK_BUCKETS_capacity) start
@@ -126,7 +127,7 @@ linked_swiss_table_
 
      @private
      link_buckets_header_:
-     [    start[require: !local_start]; offset_
+     [    start[require: start_managed == _ on_heap]; offset_
           end[require: !local_end]; offset_
           # index into `linked_offsets` that is the first free in the list.
           # essentially will a list of the tombstoned elements.
@@ -164,21 +165,21 @@ linked_swiss_table_
 @private
 metadatum_: u8_
 [    ;;renew_(): null_
-          u8 = 0
+          m u8 = 0
 
      ::empty_(): bool_
-          u8 == 0
+          m u8 == 0
      ::full_(): bool_
-          u8 & 128
+          m u8 & 128
      ::tombstoned_(): bool_
-          u8 == 127
+          m u8 == 127
      # TODO: `matches_(hash)`
 
      ;;clear_(): null_
-          u8 = 0
+          m u8 = 0
      ;;fill_(hash. u64_): [remaining_hash: u64_]
-          u8 = 128 | (hash & 127)
+          m u8 = 128 | (hash & 127)
           remaining_hash: hash >> 7
      ;;tombstone_(): null_
-          u8 = 127
+          m u8 = 127
 ]
