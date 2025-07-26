@@ -1,6 +1,8 @@
-array_[of_, count_: select_count_ = count_arch_]: all_of_
-[    hashable_
-     indexable_sequence_[of_]
+array_[of_, count_: select_count_ = arch_ count_]: all_of_
+[    indexable_sequence_[of_]
+     # we could make this `hashable_` if `of_` is hashable, but we'll
+     # implicitly make it hashable (by defining a `::hash_` method)
+     # and only add to hashable's lookup table as needed.
 ]
 {    index_: signed_[count_]
 
@@ -14,7 +16,7 @@ array_[of_, count_: select_count_ = count_arch_]: all_of_
 
      ;;append_(of.): hm_[null_]
           m capacity_(at_least: m count_() + 1) assert_()
-          m append_(.of, assuming. capacity)
+          m append_(of, assuming. capacity)
 
      # called as `array append_(3, assuming. capacity)`
      ;;append_(of., assuming. one_of_[capacity]): null_
@@ -90,7 +92,7 @@ array_[of_, count_: select_count_ = count_arch_]: all_of_
      ;;erase_(in_bounds.): count_(1)
           debug assert_(in_bounds < m count_())
           range_(in_bounds, m count_() - 1) each DESTINATION_in_bounds:
-               m[DESTINATION_in_bounds] = M[in_bounds: DESTINATION_in_bounds + 1]!
+               m[DESTINATION_in_bounds] = m[in_bounds: DESTINATION_in_bounds + 1]!
           m pop_()
           1
 
@@ -108,23 +110,32 @@ array_[of_, count_: select_count_ = count_arch_]: all_of_
           ```
           array: ["abc", "de", "f", "ghij"]
           print_(array sort_((by): by count_()))  # prints ["f", "de", "abc", "ghij"]
-          print_(array::sort_($by count_()))       # same, but via lambda arguments
+          print_(array sort_({$by count_()}))     # same, but via lambda arguments
           ```
      #]#
-     :;sort_[require: t_ is orderable_](fn_(by: of_): ~t_): respectively_[o_, null_]
-
-     # sorts using a tabulated work array (with an additional cost of
-     # `O(m count_() * bytes_(t_))`).  should be used in case `fn_(by)`
-     # is expensive to compute.
      :;sort_[require: t_ is orderable_]
-     (   fn_(by: of_): ~t_, tabulated. one_of_[tabulated]
-     ):  respectively_[o_, null_]
+     (    fn_(by: of_): ~t_
+     ):        respectively_[o_, null_]
+
+     #[#
+     sorts using a tabulated work array (with an additional cost of
+     `O(m count_() * memory_(t_))`).  should be used in case `fn_(by)`
+     is expensive to compute.  example:
+          ```
+          array: ["abc", "de", "f", "ghij"]
+          # should print ["f", "de", "abc", "ghij"]:
+          print_(array sort_({$tabulated_by count_()}))
+          ```
+     #]#
+     :;sort_[require: t_ is orderable_]
+     (    fn_(tabulated_by: of_): ~t_
+     ):        respectively_[o_, null_]
 
      # sorts with a custom comparator that acts on two elements at a time.
      # without certain transitive properties, the result's order may not make sense.
      :;sort_(fn_(left: of_, right: of_): ordering_): respectively_[o_, null_]
 
-     ::hash_(~builder;): null_
+     ::hash_[require: of_ is hashable_](~builder;): null_
           m each of:
                builder hash_(of)
 

@@ -1,5 +1,8 @@
 memory_: arch_ unsigned_
-{    ::allocate_(): hm_[ptr_[u8_]]
+{    # built in.  returns the number of bytes in a type.
+     m_(~t_): m_
+
+     ::allocate_(): hm_[ptr_[u8_]]
      ::reallocate_(ptr_[u8_];): hm_[null_]
 
      # assumes that the value at `ptr` hasn't been initialized
