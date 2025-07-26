@@ -29,7 +29,7 @@ maybe_local_array_
                # ensure that `efficient_allocation` doesn't increase the size
                # of this struct past `local_bytes`.
                local_bytes
-                    >=   count_bytes_(allocation_[count_with_: special_count_, of_])
+                    >=   count_bytes_(allocation_[count_: special_count_, of_])
                     +    count_bytes_(special_unsigned_)
                # ensure that we can distinguish between local, efficient, and inefficient.
           &&   counts_to_distinguish <= special_unsigned_ max_()
@@ -37,7 +37,7 @@ maybe_local_array_
 [    @private m:
      [    union; c_union_
           [    local_vector; vector_[max_local_count, of_]
-               efficient_allocation; allocation_[count_with_: special_count_, of_]
+               efficient_allocation; allocation_[count_: special_count_, of_]
                non_local_array[require: has_non_local_array]; ptr_[non_local_array_[of_]]
           ]
           special_unsigned;

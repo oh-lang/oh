@@ -1,15 +1,15 @@
-dll_[of_, count_with_: count_arch_]: all_of_
+dll_[of_, count_: arch_ count_]: all_of_
 [    @private m_:
-     [    stack; @only stack_[element_, count_with_]
-          count; count_with_
+     [    stack; @only stack_[element_, count_]
+          count; count_
           used_root; [next; offset_ max_(), previous; offset_ max_()]
           # Free nodes are indexed as a SLL, i.e., only in the forward direction.
           next_free_offset; offset_ max_()
      ]
 ]
-{    offset_: count_with_ unsigned_
+{    offset_: unsigned_[count_]
 
-     ::count_(): count_with_
+     ::count_(): count_
           m count
 
      # returns the offset you can use to refer to this element.
@@ -55,7 +55,7 @@ dll_[of_, count_with_: count_arch_]: all_of_
                m stack[in_bounds: next] previous = offset
 
      @private
-     ;;count_free_(): count_with_
+     ;;count_free_(): count_
           m stack count_() - m count
 
      @private

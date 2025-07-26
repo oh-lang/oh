@@ -1,5 +1,5 @@
 indexable_sequence_[of_: not_[null_]]: container_[of_, at_: index_]
-{    ;;count_[require: of_ is defaultable_](count_with.): null_
+{    ;;count_[require: of_ is defaultable_](count.): null_
 
      # nullable getter; returns null if `index` is outside the bounds of the array.
      ::[index.]: (of?:)

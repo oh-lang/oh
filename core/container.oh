@@ -1,5 +1,5 @@
-container_[of_: not_[null_], at_, count_with_: select_count_ = count_arch_]: []
-{    ::count_(): count_with_
+container_[of_: not_[null_], at_, count_: select_count_ = count_arch_]: []
+{    ::count_(): count_
 
      !!(m:): bool_
           count_(m) > 0
@@ -57,7 +57,7 @@ container_[of_: not_[null_], at_, count_with_: select_count_ = count_arch_]: []
      #        this `@require` is only needed for a non-abstract class.
      ;;pop_(at)?: of_
 
-     # TODO: `::min_()`, `::max_()`, and `::order_(count_with.)` methods.
+     # TODO: `::min_()`, `::max_()`, and `::order_(count.)` methods.
      #        these should just pass through to the iterator, but `[require: of_ is orderable_]`
 
      # TODO: is this the correct way to define the iterator?

@@ -1,16 +1,14 @@
-# TODO: i think we can switch back to `count_with_` -> `count_`.  we can distinguish
-# between the method and the type `count_` because we require `m count_()` for the method.
-array_[of_, count_with_: select_count_ = count_arch_]: all_of_
+array_[of_, count_: select_count_ = count_arch_]: all_of_
 [    hashable_
      indexable_sequence_[of_]
 ]
-{    index_: signed_[count_with_]
+{    index_: signed_[count_]
 
-     # sets this array's capacity to exactly `count_with`, or the minimum
-     # capacity for this array if it is larger than `count_with`.
-     # prefer `array capacity_(at_least. count_with)` because it will grow the array
+     # sets this array's capacity to exactly `count`, or the minimum
+     # capacity for this array if it is larger than `count`.
+     # prefer `array capacity_(at_least. count)` because it will grow the array
      # in an amortized way if you are increasing the capacity over time.
-     ;;capacity_(count_with.): hm_[null_]
+     ;;capacity_(count.): hm_[null_]
 
      :;[in_bounds.]: (of:;)
 
@@ -21,13 +19,13 @@ array_[of_, count_with_: select_count_ = count_arch_]: all_of_
      # called as `array append_(3, assuming. capacity)`
      ;;append_(of., assuming. one_of_[capacity]): null_
 
-     ::count_(): count_with_
+     ::count_(): count_
 
-     ;;count_[require: of_ is defaultable_](NEW_count_with.): hm_[null_]
+     ;;count_[require: of_ is defaultable_](NEW_count.): hm_[null_]
           OLD_count: m count_()
-          if NEW_count_with == OLD_count
+          if NEW_count == OLD_count
                return ok_()
-          elif NEW_count_with > OLD_count
+          elif NEW_count > OLD_count
                capacity_(at_least_: NEW_count) assert_()
                while m count_() < NEW_count
                     append_(of_(), assuming. capacity)
@@ -36,9 +34,9 @@ array_[of_, count_with_: select_count_ = count_arch_]: all_of_
                while m count_() > NEW_count
                     UNUSED_of: m pop_()
 
-     ::capacity_(): count_with_
+     ::capacity_(): count_
 
-     ;;capacity_(at_least. count_with_): hm_[null_]
+     ;;capacity_(at_least. count_): hm_[null_]
           current_capacity: m capacity_()
           if at_least <= current_capacity
                return ok_()
@@ -83,13 +81,13 @@ array_[of_, count_with_: select_count_ = count_arch_]: all_of_
           result
 
      # returns the number of elements erased
-     ;;erase_(index.): count_with_
+     ;;erase_(index.): count_
           if m in_bounds_(index) is ok.
                m erase_(ok)
           else
                0
 
-     ;;erase_(in_bounds.): count_with_(1)
+     ;;erase_(in_bounds.): count_(1)
           debug assert_(in_bounds < m count_())
           range_(in_bounds, m count_() - 1) each DESTINATION_in_bounds:
                m[DESTINATION_in_bounds] = M[in_bounds: DESTINATION_in_bounds + 1]!
@@ -131,8 +129,8 @@ array_[of_, count_with_: select_count_ = count_arch_]: all_of_
                builder hash_(of)
 
      maybe_local_[local_bytes_]:
-               maybe_local_array_[of_, local_bytes_, locality_: count_with_]
-     non_local_: non_local_array_[of_, count_with_]
+               maybe_local_array_[of_, local_bytes_, locality_: count_]
+     non_local_: non_local_array_[of_, count_]
 
      @alias heap_: non_local_
      @alias heap_or_local_: maybe_local_

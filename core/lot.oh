@@ -23,7 +23,7 @@ lot_[of_, at_: hashable_]: all_of_
      ;;[at]: (of;)
           m[at] hm assert_()
 
-     ::count_(): count_with_
+     ::count_(): count_
 
      # ejects the (possibly null) value at `at` and returns it.
      # a subsequent, immediate call to `::[at]` returns null.
