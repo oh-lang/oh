@@ -7315,10 +7315,6 @@ tag plus the largest element in the `one_of_`; possibly more to achieve alignmen
 Here is an example enum with some values that aren't specified.  Even though
 the values aren't specified, they are deterministically chosen.
 
-TODO: to be consistent, if we're "defining" something, we should use `:`.
-should we use `one_of[First_value_defaults_to_zero:, Second_value_increments:, ...]`?
-depends on if we want to require it always with function arguments and with brackets.
-
 ```
 my_enum_: one_of_
 [    first_value_defaults_to_zero:
@@ -7368,7 +7364,7 @@ test: bool_ = false  # or `test: bool_ false`
 
 if test == true     # OK
      print_("test is true :(")
-if test is_false_()   # also OK
+if test is_false_() # also OK
      print_("test is false!")
 
 # get the count (number of enumerated values) of the enum:

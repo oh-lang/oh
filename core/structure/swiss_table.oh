@@ -13,13 +13,15 @@ linked_swiss_table_
      count_managed_: managed_
      # if you really want to optimize the size of this struct, we can use
      # some indirection to put `count` in an allocated spot if `on_heap`.
+     # usage: `linked_swiss_table_[count_managed_ locally, ...]` or `[count_managed: _ locally, ...]`
      count_managed: _ locally
      # these also optimize the size of the struct (if `on_heap`).
      start_managed_: managed_
      start_managed: _ locally
-     # TODO: switch to `managed_` values.
-     local_end: bool_ = false
-     local_first_free: bool_ = false
+     end_managed_: managed_
+     end_managed: _ on_heap
+     first_free_managed_: managed_
+     first_free_managed: _ on_heap
 ]:
 [    @private m:
      [    elements; size_optimized_allocation_[element_, header_: element_header_]
@@ -30,12 +32,12 @@ linked_swiss_table_
           # for optimal packing, we put all counts here at the end.
           count[require: count_managed == _ locally];
           start[require: start_managed == _ locally]; offset_
-          end[require: local_end]; offset_
-          first_free[require: local_first_free]; offset_
+          end[require: end_managed == _ locally]; offset_
+          first_free[require: first_free_managed == _ locally]; offset_
      ]
 ]
 {    ::count_(): count_
-          @if local_count
+          @if count_managed == _ locally
                m count
           @else
                # TODO: this might be cleaner:
@@ -108,30 +110,30 @@ linked_swiss_table_
 
      @private
      ;:end_(): (offset_;:) where !!m
-          @if local_end
+          @if end_managed == _ locally
                m end
           @else
                m link_buckets header_(m LINK_BUCKETS_capacity) end
 
      @private
      ;:first_free_(): (offset_;:) where !!m
-          @if local_first_free
+          @if first_free_managed == _ locally
                m first_free
           @else
                m link_buckets header_(m LINK_BUCKETS_capacity) first_free
 
      @private
      element_header_:
-     [    count[require: !local_count];
+     [    count[require: count_managed == _ on_heap];
      ]
 
      @private
      link_buckets_header_:
      [    start[require: start_managed == _ on_heap]; offset_
-          end[require: !local_end]; offset_
+          end[require: end_managed == _ on_heap]; offset_
           # index into `linked_offsets` that is the first free in the list.
-          # essentially will a list of the tombstoned elements.
-          first_free[require: !local_first_free]; offset_
+          # essentially will be a SLL of the tombstoned elements.
+          first_free[require: first_free_managed == _ on_heap]; offset_
      ]
 
      @private
