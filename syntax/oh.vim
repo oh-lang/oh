@@ -2,7 +2,7 @@
 " Add to `vimXX/filetype.vim`: `au BufNewFile,BufRead *.oh	setf oh`
 " Add this file to the `vimXX/syntax/` directory.
 " Language:	oh
-" Last Change:	2025 Jun 19
+" Last Change:	2025 July 30
 " Credits:	Zvezdan Petkovic <zpetkovic@acm.org>
 "		Neil Schemenauer <nas@python.ca>
 "		Dmitry Vasiliev
@@ -42,30 +42,26 @@ syn keyword ohOk		ok ok_
 syn keyword ohResult		hm hm_
 syn keyword ohAsync		decide_ um um_
 syn keyword ohTodo		FIXME NOTE NOTES TODO XXX contained
+syn match	ohBuiltinType	"\~"
 syn match	ohReadonly	":"
 syn match	ohWritable	";"
 syn match	ohTemporary	"\."
 syn match	ohNullSymbol	"?"
 syn match	ohLambdaStarter	"\$"
-" TODO: add ~ as Type and ` as declarer.
-" TODO: maybe try inverting `: ` for `x: whatever_()`
 " Namespace syntax errors
-syn match	ohSyntaxError	"\<\u\+\>"
-" TODO: these don't get captured, they overridden by Namespace
-syn match	ohSyntaxError	"\<_\u\+\>"
-syn match	ohSyntaxError	"\<\u\+_\>"
+" TODO: ASDF_D doesn't get captured for some reason.
+syn match	ohSyntaxError	"\<[A-Z_]\+\>"
 
 syn region	ohInclude matchgroup=ohInclude start="\\\\" end="[ \n]" skip="\\ "
 syn region	ohInclude matchgroup=ohInclude start="\\/" end="[ \n]" skip="\\ "
-syn match	ohUnusedVariable	"\<_[^ ()\[\]^`{|}!-@\\]\+\>"
-syn match	ohUnusedFunction	"\<_[^ ()\[\]^`{|}!-@\\]*_"
-syn match	ohMacro		"@[^ ()\[\]{}]*\>"
+syn match	ohUnused	"\<_[^ ()\[\]^`{|}!-@\\~]\+\>"
+syn match	ohMacro		"@[^ ()\[\]{}@]*\>"
 syn match	ohNamespace	"\u\+_"
-syn match	ohNamespace	"_\u\+\>"
+syn match	ohNamespace	"_\u[A-Z_]*\>"
 syn match	ohNamespace	"\zs\<\u\+\ze[^A-Z_ ]"
 syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
 syn match	ohFunction	"\<_\>"
-syn match	ohFunction	"[^_ ()\[\]^`{|}!-@\\][^ ()\[\]^`{|}!-/:-@\\]*_\>" contains=ohNamespace
+syn match	ohFunction	"[^_ ()\[\]^`{|}!-@\\~][^ ()\[\]^`{|}!-/:-@\\~]*_\>" contains=ohNamespace
 
 syn region ohBraced matchgroup=ohBraces
       \ start=+{+ end="}"
@@ -158,8 +154,7 @@ hi def link ohBuiltinVariable		Title
 hi def link ohBuiltinFunction		Question
 hi def link ohBuiltinType		Question
 hi def link ohFunction		Function
-hi def link ohUnusedVariable	Comment
-hi def link ohUnusedFunction	Include
+hi def link ohUnused	Comment
 hi def link ohCompilerErrorComment		Error
 hi def link ohCompilerComment		PreProc
 hi def link ohEndOfLineComment		Comment

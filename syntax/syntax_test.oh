@@ -1,6 +1,11 @@
 _unused_variable, _unused_this_is, _unused
 _unused_function_, _un_used_function_, _unused_,
 
+fn_(~t:): never_
+fn_(str;): ~t_
+
+infer[~]: whatever_()
+
 # this is a one-letter function, named `_`:
 _(x: int): null_
 
@@ -42,7 +47,12 @@ this line should be commented out
 # ok but weird namespaces
     ASDFi jASDF ASDFfn_ funcASDF_ qwASDFerty
 # idomatic namespaces
-    ASDF_i j_ASDF ASDF_fn_ func_ASDF_ this_ASDF_variable some_ASDF_function_
+    ASDF_i j_ASDF ASDF_fn_ func_ASDF_
+    this_ASDF_variable some_ASDF_function_
+    ASDF_ASDF_asdf asdf_ASDF_ASDF as_ASDF_ASDF_df
+    fun_OK_DOKEY_ f_OK_DOKEY_un_ OK_DOKEY_fun_
+# with unused.
+     _ASDF_unused
 ```
 #]#
 
