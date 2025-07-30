@@ -7,7 +7,7 @@ linked_swiss_table_
      # what's stored in a element at `at` in the table.
      # can be null if we're a `set_`.
      of_
-     bucket_count: count_ = 16
+     slots_per_bucket: count_ = 16
      # type used for counting elements in this table.
      count_: select_count_ = arch_ count_
      count_managed_: managed_
@@ -25,9 +25,9 @@ linked_swiss_table_
 ]:
 [    @private m:
      [    elements; size_optimized_allocation_[element_, header_: element_header_]
-          # data for the doubly-linked list.  we don't use a normal DLL
-          # because we don't grow this like a stack, we index into it
-          # via hash truncation.
+          # data for the doubly-linked list.  we don't use a normal DLL because
+          # we don't grow this like a stack, we index into it via hash truncation.
+          # INVARIANT: each `link_bucket metadata` is always initialized.
           link_buckets; size_optimized_allocation_[link_bucket_, header_: links_header_]
           # for optimal packing, we put all counts here at the end.
           count[require: count_managed == _ locally];
@@ -47,14 +47,12 @@ linked_swiss_table_
                m elements header_() map_({$ok count}, {$_er, 0})
 
      ;;remaining_capacity_(): count_
-          m LINK_BUCKETS_capacity * bucket_count - m count_()
+          m link_buckets capacity_() * slots_per_bucket - m count_()
 
      # returns an error if there's already an element inside the table
      # with the given `at`.  can also return an error if we are out of memory.
      # see also `replace_`.
      ;;append_(at., of[require: of_ is not_[null_]].): hm_[null_]
-
-     @alias ;;insert_(at., of.): m append_(at, of)
 
      # returns the element `of` that was at `at`, or an error if there wasn't
      # already an element inside the table with the given `at`.
@@ -64,9 +62,6 @@ linked_swiss_table_
      # returns an error if there's not already an element inside the table
      # with the given `at`, otherwise the element's `of`.
      ;;remove_(at:): hm_[of_]
-
-     @private
-     ::locate_(for_replacing: at_): one_of_[ELEMENT_offset, LINK_offset
 
      # returns the number of elements deleted, should be 0 or 1.
      ;;delete_(at:): count_
@@ -91,6 +86,17 @@ linked_swiss_table_
      # but `map at_(3) = 7` may throw due to running out of memory.
      ::at_[require: of_ is not_[null_]](at.): hm_[(of?:)]
 
+     @private
+     ::locate_(at:): hm_[one_of_[element_offset: offset_, link_offset: offset_]]
+          bucket_count: m link_buckets capacity_()
+          slot_count: slots_per_bucket * bucket_count
+          full_hash: fast_hash_(at)
+          [metadatum:, remaining_hash:] = metadatum_ extract_(full_hash)
+          offset; full_hash % slot_count
+          slot_count each _unused_bounds_check:
+               # TODO
+          er_ out_of_memory
+
      # shuffles the iteration order of this table
      ;;shuffle_(): null_
 
@@ -101,26 +107,29 @@ linked_swiss_table_
      # TODO: should this perform a rehash?  probably?
      ;;defrag_(): null_
 
+     capacity_: count_
+     offset_: count_ offset_
+
      @private
      ;:start_(): (offset_;:) where !!m
           @if start_managed == _ locally
                m start
           @else
-               m link_buckets header_(m LINK_BUCKETS_capacity) start
+               m link_buckets header_(m link_buckets capacity_()) start
 
      @private
      ;:end_(): (offset_;:) where !!m
           @if end_managed == _ locally
                m end
           @else
-               m link_buckets header_(m LINK_BUCKETS_capacity) end
+               m link_buckets header_(m link_buckets capacity_()) end
 
      @private
      ;:first_free_(): (offset_;:) where !!m
           @if first_free_managed == _ locally
                m first_free
           @else
-               m link_buckets header_(m LINK_BUCKETS_capacity) first_free
+               m link_buckets header_(m link_buckets capacity_()) first_free
 
      @private
      element_header_:
@@ -144,14 +153,13 @@ linked_swiss_table_
 
      @private
      linked_offset_:
-     [    partial_hash; count_ unsigned_
+     [    partial_hash;
           offset; offset_
           next; offset_
           previous; offset_
      ]
-
-     capacity_: count_
-     offset_: count_ offset_
+     @private
+     partial_hash_: count_ unsigned_
 
      @private
      size_optimized_allocation_[of_, header_]: allocation_
@@ -166,22 +174,30 @@ linked_swiss_table_
 
 @private
 metadatum_: u8_
-[    ;;renew_(): null_
+{    ;;renew_(): null_
           m u8 = 0
 
-     ::empty_(): bool_
+     extract_(full_hash. u64_): [metadatum:, remaining_hash:]
+          m;
+          remaining_hash: m fill_(full_hash)
+          [m, remaining_hash]
+
+     ::cleared_(): bool_
           m u8 == 0
-     ::full_(): bool_
-          m u8 & 128
+     ::filled_(): bool_
+          m u8 & present
      ::tombstoned_(): bool_
-          m u8 == 127
+          m u8 == tombstone
      # TODO: `matches_(hash)`
 
      ;;clear_(): null_
           m u8 = 0
-     ;;fill_(hash. u64_): [remaining_hash: u64_]
-          m u8 = 128 | (hash & 127)
-          remaining_hash: hash >> 7
+     ;;fill_(full_hash. u64_): [remaining_hash: u64_]
+          m u8 = present | (full_hash & 127)
+          remaining_hash: full_hash >> 7
      ;;tombstone_(): null_
-          m u8 = 127
-]
+          m u8 = tombstone
+
+     present: u8_ = 128
+     tombstone: u8_ = 127
+}

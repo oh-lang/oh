@@ -18,6 +18,13 @@ or `my_var_x`.  oh-lang doesn't recommend distinguishing
 between constant identifiers and non-constant identifiers with casing.
 In fact, any capital letters in an identifier create a [namespace](#namespace)
 which can be used to disambiguate variables with the same name.
+TODO: do we want to go all the way and require types in the variable name,
+with namespaces to distinguish variable intent?  e.g., `USED_FOR_THIS_int`.
+we could even make it easier that after declaration, you can use `used_for_this_int`.
+but originally we didn't want namespaces to be part of the variable, e.g., for shadowing,
+you'd still call it as `int: 123` even if the function argument was `USED_FOR_THIS_int:`.
+is there another way we'd want to do this, e.g., `shadow int:`?  namespaces for typing
+seems more useful in general than shadowing.
 
 TODO: do we use SFO to allow defining types like `x: int`?
 
