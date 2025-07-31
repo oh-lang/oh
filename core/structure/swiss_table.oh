@@ -58,6 +58,11 @@ linked_swiss_table_
      # already an element inside the table with the given `at`.
      # see also `append_` and `remove_`.
      ;;replace_[require: of_ is not_[null_]](at:, of.): hm_[of_]
+          what m locate_(at)
+               _ no_room, _link_offset.
+                    er_ no_such_element
+               element_offset.
+                    of <-> m elements_[element_offset] of
 
      # returns an error if there's not already an element inside the table
      # with the given `at`, otherwise the element's `of`.
@@ -87,7 +92,7 @@ linked_swiss_table_
      ::at_[require: of_ is not_[null_]](at.): hm_[(of?:)]
 
      @private
-     ::locate_(at:): hm_[one_of_[element_offset: offset_, link_offset: offset_]]
+     ::locate_(at:): one_of_[element_offset: offset_, link_offset: offset_, no_room:]
           full_hash: fast_hash_(at)
           [metadatum:, remaining_hash:] = metadatum_ extract_(full_hash)
           partial_hash: remaining_hash truncate_()
@@ -98,6 +103,7 @@ linked_swiss_table_
           best_tombstoned_offset?; offset_
           slot_count each _unused_bounds_check:
                offset_metadatum: m metadatum_(offset)
+               # TODO: this part can be sped up with SIMD, if available.
                if offset_metadatum cleared_()
                     return [link_offset: best_tombstoned_offset ?? offset]
                elif offset_metadatum filled_()
@@ -114,7 +120,7 @@ linked_swiss_table_
                     if best_tombstoned_offset == null
                          best_tombstoned_offset = offset
                ++offset
-          er_ out_of_memory
+          _ no_room
 
      # shuffles the iteration order of this table
      ;;shuffle_(): null_
