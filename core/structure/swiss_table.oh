@@ -88,13 +88,32 @@ linked_swiss_table_
 
      @private
      ::locate_(at:): hm_[one_of_[element_offset: offset_, link_offset: offset_]]
-          bucket_count: m link_buckets capacity_()
-          slot_count: slots_per_bucket * bucket_count
           full_hash: fast_hash_(at)
           [metadatum:, remaining_hash:] = metadatum_ extract_(full_hash)
+          partial_hash: remaining_hash truncate_()
+
+          bucket_count: m link_buckets capacity_()
+          slot_count: slots_per_bucket * bucket_count
           offset; full_hash % slot_count
+          best_tombstoned_offset?; offset_
           slot_count each _unused_bounds_check:
-               # TODO
+               offset_metadatum: m metadatum_(offset)
+               if offset_metadatum cleared_()
+                    return [link_offset: best_tombstoned_offset ?? offset]
+               elif offset_metadatum filled_()
+                    if offset_metadatum == metadatum
+                         # there's a good chance we're already a hit.
+                         dll_element: m dll_element_(offset)
+                         if dll_element partial_hash == partial_hash
+                              # there's a very good chance we're already a hit.
+                              element_offset: dll_element offset
+                              if m elements[element_offset] at == at
+                                   return [element_offset]
+               else
+                    debug assert_(offset_metadatum tombstoned_())
+                    if best_tombstoned_offset == null
+                         best_tombstoned_offset = offset
+               ++offset
           er_ out_of_memory
 
      # shuffles the iteration order of this table
@@ -140,20 +159,27 @@ linked_swiss_table_
      link_buckets_header_:
      [    start[require: start_managed == _ on_heap]; offset_
           end[require: end_managed == _ on_heap]; offset_
-          # index into `linked_offsets` that is the first free in the list.
+          # index into `dll` that is the first free in the list.
           # essentially will be a SLL of the tombstoned elements.
           first_free[require: first_free_managed == _ on_heap]; offset_
      ]
 
      @private
      link_bucket_:
-     [    metadata; vector_[bucket_count, metadatum_]
-          linked_offsets; buffer_[bucket_count, linked_offset_]
+     [    metadata; vector_[slots_per_bucket, metadatum_]
+          # the `dll_element`s can have links to other buckets.
+          dll; buffer_[slots_per_bucket, dll_element_]
      ]
 
+     @private element_: [at:, of[require: of_ is not_[null_]];]
+
      @private
-     linked_offset_:
+     dll_element_:
      [    partial_hash;
+          # offsets are not based on buckets; to get the bucket index
+          # you use `offset // slots_per_bucket`, and the index within
+          # the bucket via `offset %% slots_per_bucket`.
+          # similarly for `next` and `previous`.
           offset; offset_
           next; offset_
           previous; offset_
@@ -168,8 +194,6 @@ linked_swiss_table_
           capacity_managed_ on_heap
           header_
      ]
-
-     @private element_: [at:, of[require: of_ is not_[null_]];]
 }
 
 @private
@@ -188,7 +212,6 @@ metadatum_: u8_
           m u8 & present
      ::tombstoned_(): bool_
           m u8 == tombstone
-     # TODO: `matches_(hash)`
 
      ;;clear_(): null_
           m u8 = 0
