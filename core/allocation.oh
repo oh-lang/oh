@@ -7,7 +7,7 @@ allocation_
      header_: any_ = null_
      # determines the maximum size of the allocation, and
      # makes indexing this allocation potentially more efficient.
-     count_: select_count_
+     capacity_: select_count_
      # use an alias so we can do, e.g., `allocation_[capacity_managed_ on_heap]`
      # to specify `capacity_managed` (see next field).
      capacity_managed_: managed_
@@ -39,22 +39,40 @@ allocation_
      ;;capacity_(new. capacity_, old. capacity_): hm_[null_]
           required_bytes: memory_ = assert_
           (    new * of_ memory_() + full_header_bytes
-               er: out_of_memory
+               er_ out_of_memory
           )
           if old == 0
-               ptr[u8_]: required_bytes allocate_() assert_(er: out_of_memory)
+               ptr[u8_]: required_bytes allocate_() assert_(er_ out_of_memory)
                m full_head_(ptr)
           else
                ptr[u8_]; m full_head_()
-               required_bytes reallocate_(;ptr) assert_(er: out_of_memory)
+               required_bytes reallocate_(;ptr) assert_(er_ out_of_memory)
                m full_head_(ptr)
 
      # make sure that this element is already initialized;
      # this `allocation` does not keep track of which elements are initialized.
      # this will return an error if `offset` is out of bounds.
+     # TODO: the `hm` doesn't seem to be in the right spot since `offset` is lazily evaluated.
      ;:at_(offset.): hm_[(of;:)]
+          refer_
+          (    m
+               at. offset
+               {assert_($at < m capacity_()), to_($o of_ptr + $at)}
+          )
+
+     # TODO: i think we need to put `;:` before the type here:
+     # but that kinda looks gross.  maybe revert the "call with :; before" idea.
+     ;:at_(offset.): ptr_[;:of_]
+          if m of_ptr == null
+               return null
+          m of_ptr + offset
+
+     # make sure that this element is already initialized;
+     # this `allocation` does not keep track of which elements are initialized.
+     # this will return an error if `offset` is out of bounds.
+     ;;swap_(offset., of;): hm_[null_]
           assert_(offset < m capacity_())
-          to_(m of_ptr + offset)
+          (m of_ptr + offset) resolve_({$PTR_of <-> of})
 
      # make sure that this element is NOT already initialized;
      # this `allocation` does not keep track of which elements are initialized.
@@ -131,8 +149,7 @@ allocation_
      # TODO: update based on size of `of_`
      small_capacity: 4
 
-     capacity_: count_
-     offset_: offset_[count_]
+     offset_: offset_[capacity_]
 
      @if header_ is not_[null_] or capacity_managed == on_heap
           @private full_header_:

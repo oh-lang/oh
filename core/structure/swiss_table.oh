@@ -22,6 +22,9 @@ linked_swiss_table_
      end_managed: _ on_heap
      first_free_managed_: managed_
      first_free_managed: _ on_heap
+     # maximum number of attempts to place a new element.
+     # if more than this, will trigger growing the table (rehash).
+     max_attempts: count_ = 5
 ]:
 [    @private m:
      [    elements; size_optimized_allocation_[element_, header_: element_header_]
@@ -50,19 +53,57 @@ linked_swiss_table_
           m link_buckets capacity_() * slots_per_bucket - m count_()
 
      # returns an error if there's already an element inside the table
-     # with the given `at`.  can also return an error if we are out of memory.
+     # with the given `at`.  can also return an error if we are out of memory,
+     # but will try to expand the table if possible.
      # see also `replace_`.
      ;;append_(at., of[require: of_ is not_[null_]].): hm_[null_]
+     {    what m locate_(at)
+               element_offset.
+                    er_ at_already_present
+               _ no_room
+                    m grow_()
+                    retry
+               tombstone_location.
+                    if tombstone_location attempts > max_attempts
+                         m grow_()
+                         retry
+                    m append_[was_tombstoned: true](tombstone_location, at, of[require: of_ is not_[null_]])
+               link_location.
+                    if link_location attempts > max_attempts
+                         m grow_()
+                         retry
+                    m append_[was_tombstoned: false](link_location, at, of[require: of_ is not_[null_]])
+     }
 
-     # returns the element `of` that was at `at`, or an error if there wasn't
+     @private
+     ;;append_[was_tombstoned: bool_](link_location., at., of[require: of_ is not_[null_]].): hm_[null_]
+     {    link_offset: link_location offset
+          (dll_element;) = m dll_element_(link_offset)
+          debug assert_(!!m link_buckets)
+          @if was_tombstoned
+               m first_free_() = dll_element next
+          previous_last: m end_()
+          m end_() = link_offset
+          dll_element previous = previous_last
+          dll_element next = offset_ max
+          if !previous_last is_valid_index_()
+               m start_() = link_offset
+
+          element_offset: dll_element offset
+          ptr[element_]: m elements at_(element_offset)
+          # TODO: let's try to use `require: of_` and coerce `null_` to a falsy.
+          ptr initialize_([at, of[require: of_ is not_[null_]])
+     }
+
+     # swaps the `of` that was at `at`, or an error if there wasn't
      # already an element inside the table with the given `at`.
      # see also `append_` and `remove_`.
-     ;;replace_[require: of_ is not_[null_]](at:, of.): hm_[of_]
+     ;;swap_[require: of_ is not_[null_]](at:, of;): hm_[null_]
           what m locate_(at)
-               _ no_room, _link_offset.
-                    er_ no_such_element
                element_offset.
-                    of <-> m elements_[element_offset] of
+                    m elements swap_(element_offset, of)
+               else
+                    er_ no_such_at
 
      # returns an error if there's not already an element inside the table
      # with the given `at`, otherwise the element's `of`.
@@ -92,20 +133,32 @@ linked_swiss_table_
      ::at_[require: of_ is not_[null_]](at.): hm_[(of?:)]
 
      @private
-     ::locate_(at:): one_of_[element_offset: offset_, link_offset: offset_, no_room:]
-          full_hash: fast_hash_(at)
+     ::locate_(at:): one_of_
+     [    element_offset: offset_
+          # `at` is not present in the table, but should go here if you want to add it.
+          # it's a new location, i.e., on a cleared metadata.
+          link_location:
+          # `at` is not present in the table, but should go here if you want to add it.
+          # it's at a tombstoned metadata location.
+          tombstone_location:
+          no_room: null_
+     ]
+     {    full_hash: fast_hash_(at)
           [metadatum:, remaining_hash:] = metadatum_ extract_(full_hash)
           partial_hash: remaining_hash truncate_()
 
           bucket_count: m link_buckets capacity_()
           slot_count: slots_per_bucket * bucket_count
           offset; full_hash % slot_count
-          best_tombstoned_offset?; offset_
-          slot_count each _unused_bounds_check:
+          best_tombstone?; tombstone_location_
+          slot_count each attempts: count_
                offset_metadatum: m metadatum_(offset)
                # TODO: this part can be sped up with SIMD, if available.
                if offset_metadatum cleared_()
-                    return [link_offset: best_tombstoned_offset ?? offset]
+                    if best_tombstone is tombstone_location:
+                         return [tombstone_location]
+                    else
+                         return [link_location: [offset, attempts]]
                elif offset_metadatum filled_()
                     if offset_metadatum == metadatum
                          # there's a good chance we're already a hit.
@@ -117,10 +170,16 @@ linked_swiss_table_
                                    return [element_offset]
                else
                     debug assert_(offset_metadatum tombstoned_())
-                    if best_tombstoned_offset == null
-                         best_tombstoned_offset = offset
+                    if best_tombstone == null
+                         best_tombstone = [offset, attempts]
                ++offset
           _ no_room
+     }
+
+     @private
+     link_location_: [offset;, attempts: count_]
+     @private
+     tombstone_offset_: link_location_
 
      # shuffles the iteration order of this table
      ;;shuffle_(): null_
@@ -136,25 +195,28 @@ linked_swiss_table_
      offset_: count_ offset_
 
      @private
-     ;:start_(): (offset_;:) where !!m
-          @if start_managed == _ locally
-               m start
-          @else
-               m link_buckets header_(m link_buckets capacity_()) start
+     ;:start_[require: start_managed == _ locally](): (offset_;:)
+          m start
 
      @private
-     ;:end_(): (offset_;:) where !!m
-          @if end_managed == _ locally
-               m end
-          @else
-               m link_buckets header_(m link_buckets capacity_()) end
+     ;:start_[require: start_managed == _ on_heap](): (offset_;:) where !!m link_buckets
+          m link_buckets header_() start
 
      @private
-     ;:first_free_(): (offset_;:) where !!m
-          @if first_free_managed == _ locally
-               m first_free
-          @else
-               m link_buckets header_(m link_buckets capacity_()) first_free
+     ;:end_[require: end_managed == _ locally](): (offset_;:)
+          m end
+
+     @private
+     ;:end_[require: end_managed == _ on_heap](): (offset_;:) where !!m link_buckets
+          m link_buckets header_() end
+
+     @private
+     ;:first_free_[require: first_free_managed == _ locally](): (offset_;:)
+          m first_free
+
+     @private
+     ;:first_free_[require: first_free_managed == _ on_heap](): (offset_;:) where !!m link_buckets
+          m link_buckets header_() first_free
 
      @private
      element_header_:

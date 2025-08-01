@@ -1,0 +1,10 @@
+offset_[of_: select_unsigned_]: of_
+{    ::is_valid_index_(): bool_
+          m < count_[of_] max
+}
+
+@test "is_valid_index"
+     @test "u8_"
+          t_: offset_[u8_]
+          assert_(t_(127) is_valid_index_())
+          assert_(!t_(128) is_valid_index_())

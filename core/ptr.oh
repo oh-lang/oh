@@ -1,0 +1,11 @@
+ptr_[of_]:
+[    @private m: [offset; arch offset_]
+]
+{    ;:resolve_(fn_(of;:): ~t_): t_
+
+     # TODO: + and - operations
+
+     ;;initialize_(of.): null_
+
+     ;;deinitialize_(): null_
+}
