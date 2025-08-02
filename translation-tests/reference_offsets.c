@@ -8,11 +8,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define IMPL(fn, attr, impl) fn attr;
+#define IMPL(fn, attr, impl) fn attr; // declare
 STACK(flt, u32)
 STACK(stack_flt, u8)
 #undef IMPL
-#define IMPL(fn, attr, impl) fn impl
+#define IMPL(fn, attr, impl) fn impl // define
 STACK(flt, u32)
 STACK(stack_flt, u8)
 #undef IMPL

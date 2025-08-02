@@ -142,7 +142,14 @@ with some DAG logic for where things should be defined.
 
 we'll plan to create a C macro for each generic; generic parameters will be things that
 need to be `#define`d before invoking the macro.  generic parameters with defaults can
-be determined in the macro via `#ifndef ..., #define DEFAULT asdf #endif`.
+be determined in the macro via `#ifndef ..., #define DEFAULT asdf #endif`.  XXX actually
+you can't define macros inside a macro, we'll just need to pass all parameters as arguments.
+XXX because we can't use macros inside a macro, e.g., `#ifdef X, some_conditional_function, #endif`,
+we actually just need to create a macro for each unique `[require: ...]` statement;
+alternatively, we just generate the entire C code in one pass.  the latter would
+be annoying from a bootstrapping perspective, however, since i'd have to write the C code by hand
+for each specification of the generic.  but all the permutations of requires in `swiss_table.oh`
+will be a nightmare.  it'd be better to generate the code a different way, e.g., via a script.
 
 ## classes
 
