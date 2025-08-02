@@ -140,6 +140,10 @@ but this is ok or even expected because oh-lang does things at comptime.
 alternatively, as an even rougher first pass, we could put everything into one big `.c` file,
 with some DAG logic for where things should be defined.
 
+we'll plan to create a C macro for each generic; generic parameters will be things that
+need to be `#define`d before invoking the macro.  generic parameters with defaults can
+be determined in the macro via `#ifndef ..., #define DEFAULT asdf #endif`.
+
 ## classes
 
 ### dynamic vs. only typing
