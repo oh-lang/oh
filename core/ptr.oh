@@ -8,4 +8,8 @@ ptr_[of_]:
      ;;initialize_(of.): null_
 
      ;;deinitialize_(): null_
+
+     ;;swap_(of;): null_
+
+     ;;remove_(): of_
 }
