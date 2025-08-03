@@ -194,12 +194,12 @@ IMPL \
     /* 
 } end REFER */
 
-#define IMPL(fn, attr, impl) fn attr;
+#define IMPL(fn, attr, impl) IMPL_DECLARE(fn, attr, impl)
 REFER
 #undef IMPL
 
 #ifdef SINGLE_IMPORT
-#define IMPL(fn, attr, impl) fn impl
+#define IMPL(fn, attr, impl) IMPL_DEFINE(fn, attr, impl)
 REFER
 #undef IMPL
 #endif

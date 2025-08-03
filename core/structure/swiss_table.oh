@@ -25,9 +25,12 @@ linked_swiss_table_
      # maximum number of attempts to place a new element.
      # if more than this, will trigger growing the table (rehash).
      max_attempts: count_ = 5
+     expected_load_factor: dbl_ = 0.87
 ]:
 [    @private m:
-     [    elements; size_optimized_allocation_[element_, header_: element_header_]
+     [    # we don't use a stack for this because we want the `count` to be stored
+          # compactly (either later in this struct or in a header).
+          elements; size_optimized_allocation_[element_, header_: element_header_]
           # data for the doubly-linked list.  we don't use a normal DLL because
           # we don't grow this like a stack, we index into it via hash truncation.
           # INVARIANT: each `link_bucket metadata` is always initialized.
@@ -49,15 +52,37 @@ linked_swiss_table_
                # and the corresponding stuff for `hm_` as well.
                m elements header_() map_({$ok count}, {$_er, 0})
 
-     ;;remaining_capacity_(): count_
-          m link_buckets capacity_() * slots_per_bucket - m count_()
+     # this is used specifically for the `elements` capacity, i.e., how large
+     # the stack of elements can get without requiring a reallocation.
+     ::capacity_(): capacity_
+
+     # reserves capacity for the exact number of elements that we expect in this
+     # hash table.  if less than the current number of elements, we will remove some.
+     # prefer `;;capacity_(at_least.)` if the table is expected to grow over time.
+     # if `update_slot_capacity` is true, we'll adjust the number of slots based on
+     # `expected_load_factor`, i.e., rehash the table, but that is probably what you want.
+     ;;capacity_(NEW_capacity., update_slot_capacity: true): hm_[null_]
+
+     # reserves capacity for `>= at_least` elements that in this hash table.
+     # we will use something like `max_(at_least, 2 * m capacity_())` to ensure
+     # we grow in an amortized way over time.
+     # this may cause a rehash of the hash table if `update_slot_capacity` is true. 
+     ;;capacity_(at_least. capacity_, update_slot_capacity: true): hm_[null_]
+
+     ::slot_count_(): capacity_
+          m link_buckets capacity_() * slots_per_bucket
+
+     ::open_slot_count_(): capacity_
+          m slot_count_() - m count_()
 
      # returns an error if there's already an element inside the table
      # with the given `at`.  can also return an error if we are out of memory,
      # but will try to expand the table if possible.
      # see also `replace_`.
      ;;append_(at., of[require: of_ is not_[null_]].): hm_[null_]
-     {    what m locate_(at)
+     {    if m remaining_capacity_() == 0
+               m grow_()
+          what m locate_(at)
                element_offset.
                     er_ at_already_present
                _ no_room
@@ -89,7 +114,10 @@ linked_swiss_table_
           if !previous_last is_valid_index_()
                m start_() = link_offset
 
-          element_offset: dll_element offset
+          element_offset: @if was_tombstone
+               dll_element offset
+          @else
+               m count_()
           ptr[element_]: m elements at_(element_offset)
           # TODO: let's try to use `require: of_` and coerce `null_` to a falsy.
           ptr initialize_([at, of[require: of_ is not_[null_]])
@@ -101,16 +129,27 @@ linked_swiss_table_
      ;;swap_[require: of_ is not_[null_]](at:, of;): hm_[null_]
           what m locate_(at)
                element_offset.
-                    m elements swap_(element_offset, of)
+                    m elements at_(element_offset) swap_(of)
                else
                     er_ no_such_at
 
      # returns an error if there's not already an element inside the table
      # with the given `at`, otherwise the element's `of`.
      ;;remove_(at:): hm_[of_]
+          what m locate_(at)
+               element_offset.
+                    m elements at_(element_offset) remove_()
+               else
+                    er_ no_such_at
 
      # returns the number of elements deleted, should be 0 or 1.
      ;;delete_(at:): count_
+          what m locate_(at)
+               element_offset.
+                    m elements at_(element_offset) deinitialize_()
+                    1
+               else
+                    0
 
      # deletes any elements which match the given `all`.
      # returns the number of elements deleted.

@@ -23,6 +23,9 @@ typedef uint16_t u16_t;
 typedef uint32_t u32_t;
 typedef uint64_t u64_t;
 
+#define IMPL_DECLARE(fn, attr, impl) fn attr;
+#define IMPL_DEFINE(fn, attr, impl) fn impl
+
 #define TYPES(t) \
 typedef t##_t *t##_p; \
 typedef const t##_t *t##_c;
@@ -117,13 +120,14 @@ PRIMITIVE_PERFECT_EQUALITY(u8) \
 } end COMMON */
 
 // header file:
-#define IMPL(fn, attr, impl) fn attr;
+#define IMPL(fn, attr, impl) IMPL_DECLARE(fn, attr, impl)
 COMMON
 #undef IMPL
 
 // header + implementation file:
 #ifdef SINGLE_IMPORT
-#define IMPL(fn, attr, impl) fn impl
+#define IMPL(fn, attr, impl) IMPL_DEFINE(fn, attr, impl)
 COMMON
 #undef IMPL
+
 #endif

@@ -32,8 +32,8 @@ allocation_
      # ensure you free any elements that were initialized
      # if the new capacity is smaller than the old capacity.
      # this data structure does not keep track of which elements are initialized.
-     ;;capacity_(new. capacity_): hm_[null_]
-          m capacity_(new, old. m capacity_())
+     ;;capacity_(capacity.): hm_[null_]
+          m capacity_(new. capacity, old. m capacity_())
 
      @private
      ;;capacity_(new. capacity_, old. capacity_): hm_[null_]
@@ -53,47 +53,39 @@ allocation_
      # this `allocation` does not keep track of which elements are initialized.
      # this will return an error if `offset` is out of bounds.
      # TODO: the `hm` doesn't seem to be in the right spot since `offset` is lazily evaluated.
+     #[#
      ;:at_(offset.): hm_[(of;:)]
           refer_
           (    m
                at. offset
                {assert_($at < m capacity_()), to_($o of_ptr + $at)}
           )
+     #]#
 
+     # if doing things that require the pointer to be initialized,
+     # make sure that this element is already initialized;
+     # this `allocation` does not keep track of which elements are initialized.
+     # this will return an error if `offset` is out of bounds and we can't resize to encompass `offset`.
      # TODO: i think we need to put `;:` before the type here:
      # but that kinda looks gross.  maybe revert the "call with :; before" idea.
-     ;:at_(offset.): ptr_[;:of_]
+     ;;at_(offset.): hm_[ptr_[;of_]]
+          if offset >= m capacity_()
+               m capacity_(offset + 1) assert_()
           if m of_ptr == null
-               return null
-          m of_ptr + offset
+               null
+          else
+               m of_ptr + offset
 
+     # if doing things that require the pointer to be initialized,
      # make sure that this element is already initialized;
      # this `allocation` does not keep track of which elements are initialized.
      # this will return an error if `offset` is out of bounds.
-     ;;swap_(offset., of;): hm_[null_]
-          assert_(offset < m capacity_())
-          (m of_ptr + offset) resolve_({$PTR_of <-> of})
-
-     # make sure that this element is NOT already initialized;
-     # this `allocation` does not keep track of which elements are initialized.
-     ;;initialize_(offset., of.): hm_[null_]
-          assert_(offset < m capacity_())
-          ptr_offset: ptr_[of_] = m of_ptr + offset
-          memory_ initialize_(of, ptr_offset)
-
-     # make sure that this element is already initialized;
-     # this `allocation` does not keep track of which elements are initialized.
-     ;;deinitialize_(offset.): hm_[null_]
-          assert_(offset < m capacity_())
-          ptr_offset: ptr_[of_] = m of_ptr + offset
-          memory_ deinitialize_(ptr_offset)
-
-     # make sure that this element is already initialized;
-     # this `allocation` does not keep track of which elements are initialized.
-     ;;remove_(offset.): hm_[of_]
-          assert_(offset < m capacity_())
-          ptr_offset: ptr_[of_] = m of_ptr + offset
-          memory_ remove_(ptr_offset)
+     ::at_(offset.): hm_[ptr_[of_]]
+          assert_(offset < m capacity_(), er_ out_of_bounds)
+          if m of_ptr == null
+               null
+          else
+               m of_ptr + offset
 
      # TODO: non-local_capacity versions of the above, call them.
      ::header_[require: header_ is not_[null_]](): hm_[(header:)]
