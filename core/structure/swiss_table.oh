@@ -24,7 +24,7 @@ linked_swiss_table_
      first_free_managed: _ on_heap
      # maximum number of attempts to place a new element.
      # if more than this, will trigger growing the table (rehash).
-     max_attempts: count_ = 5
+     max_attempts: count_ = 2 * slots_per_bucket
      expected_load_factor: dbl_ = 0.87
 ]:
 [    @private m:
@@ -37,9 +37,9 @@ linked_swiss_table_
           link_buckets; size_optimized_allocation_[link_bucket_, header_: links_header_]
           # for optimal packing, we put all counts here at the end.
           count[require: count_managed == _ locally];
-          start[require: start_managed == _ locally]; offset_
-          end[require: end_managed == _ locally]; offset_
-          first_free[require: first_free_managed == _ locally]; offset_
+          start[require: start_managed == _ locally]; dll_offset_
+          end[require: end_managed == _ locally]; dll_offset_
+          first_free[require: first_free_managed == _ locally]; dll_offset_
      ]
 ]
 {    ::count_(): count_
@@ -68,6 +68,7 @@ linked_swiss_table_
      # we grow in an amortized way over time.
      # this may cause a rehash of the hash table if `update_slot_capacity` is true. 
      ;;capacity_(at_least. capacity_, update_slot_capacity: true): hm_[null_]
+          m capacity_(max_(at_least, 2 * m capacity_() ?? capacity_ max))
 
      ::slot_count_(): capacity_
           m link_buckets capacity_() * slots_per_bucket
@@ -102,17 +103,17 @@ linked_swiss_table_
 
      @private
      ;;append_[was_tombstoned: bool_](link_location., at., of[require: of_ is not_[null_]].): hm_[null_]
-     {    link_offset: link_location offset
-          (dll_element;) = m dll_element_(link_offset)
+     {    dll_offset: link_location offset
+          (dll_element;) = m dll_element_(dll_offset)
           debug assert_(!!m link_buckets)
           @if was_tombstoned
                m first_free_() = dll_element next
           previous_last: m end_()
-          m end_() = link_offset
+          m end_() = dll_offset
           dll_element previous = previous_last
-          dll_element next = offset_ max
+          dll_element next = dll_offset_ max
           if !previous_last is_valid_index_()
-               m start_() = link_offset
+               m start_() = dll_offset
 
           element_offset: @if was_tombstone
                dll_element offset
@@ -171,9 +172,22 @@ linked_swiss_table_
      # but `map at_(3) = 7` may throw due to running out of memory.
      ::at_[require: of_ is not_[null_]](at.): hm_[(of?:)]
 
+     # TODO: `;;` doesn't make sense when `of_` is `null_`.  we should split them out.
+     ;:each_(do_(at:, of[require: of_];:): loop_[~t_]:)?: t_
+          dll_offset; m start_()
+          while dll_offset is_valid_index_()
+               (dll_element;:) = m dll_element_(dll_offset)
+               (element;:) = m elements at_(dll_element offset)
+               # TODO: annotating nullable variables with `?` is a pain here:
+               # if `t_` is `null_` then `break` would be null.  should we free
+               # up `?` for other purposes, or not require it for variable declarations?
+               if do_(element at, element of[require: of_]) is break.
+                    return break
+               dll_offset = dll_element next
+
      @private
      ::locate_(at:): one_of_
-     [    element_offset: offset_
+     [    element_offset:
           # `at` is not present in the table, but should go here if you want to add it.
           # it's a new location, i.e., on a cleared metadata.
           link_location:
@@ -231,15 +245,25 @@ linked_swiss_table_
      ;;defrag_(): null_
 
      capacity_: count_
-     offset_: count_ offset_
+     # we want to totally distinguish `dll_offset_` and `element_offset_`
+     # to avoid using one for the other accidentally.
+     dll_offset_: @distinct count_ offset_
+     element_offset_: @distinct count_ offset_
 
      @private
-     ;:start_[require: start_managed == _ locally](): (offset_;:)
+     ;:start_[require: start_managed == _ locally](): (dll_offset_;:)
           m start
 
      @private
-     ;:start_[require: start_managed == _ on_heap](): (offset_;:) where !!m link_buckets
+     ;:start_[require: start_managed == _ on_heap](): (dll_offset_;:) where !!m link_buckets
           m link_buckets header_() start
+
+     @private
+     ::start_[require: start_managed == _ on_heap](): dll_offset_
+          if m link_buckets
+               m link_buckets header_() start
+          else
+               dll_offset_ max
 
      @private
      ;:end_[require: end_managed == _ locally](): (offset_;:)
@@ -264,11 +288,11 @@ linked_swiss_table_
 
      @private
      link_buckets_header_:
-     [    start[require: start_managed == _ on_heap]; offset_
-          end[require: end_managed == _ on_heap]; offset_
+     [    start[require: start_managed == _ on_heap]; dll_offset_
+          end[require: end_managed == _ on_heap]; dll_offset_
           # index into `dll` that is the first free in the list.
           # essentially will be a SLL of the tombstoned elements.
-          first_free[require: first_free_managed == _ on_heap]; offset_
+          first_free[require: first_free_managed == _ on_heap]; dll_offset_
      ]
 
      @private
@@ -287,9 +311,9 @@ linked_swiss_table_
           # you use `offset // slots_per_bucket`, and the index within
           # the bucket via `offset %% slots_per_bucket`.
           # similarly for `next` and `previous`.
-          offset; offset_
-          next; offset_
-          previous; offset_
+          offset; element_offset_
+          next; dll_offset_
+          previous; dll_offset_
      ]
      @private
      partial_hash_: count_ unsigned_
