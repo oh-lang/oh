@@ -55,13 +55,19 @@ linked_swiss_table_
      # this is used specifically for the `elements` capacity, i.e., how large
      # the stack of elements can get without requiring a reallocation.
      ::capacity_(): capacity_
+          m elements capacity_()
 
      # reserves capacity for the exact number of elements that we expect in this
-     # hash table.  if less than the current number of elements, we will remove some.
-     # prefer `;;capacity_(at_least.)` if the table is expected to grow over time.
-     # if `update_slot_capacity` is true, we'll adjust the number of slots based on
-     # `expected_load_factor`, i.e., rehash the table, but that is probably what you want.
-     ;;capacity_(NEW_capacity., update_slot_capacity: true): hm_[null_]
+     # hash table.  if the capacity for the elements allocation is already greater
+     # than the requested capacity, this will defrag the table.  (see `defrag_`).
+     # if `update_slot_capacity` is true, we'll adjust the number of slots based
+     # on `expected_load_factor`, i.e., rehash the table, but that is probably
+     # what you want.  prefer `;;capacity_(at_least.)` if the table is expected to
+     # grow over time.
+     ;;capacity_(capacity., update_slot_capacity: true): hm_[null_]
+          if capacity <= m capacity_()
+               return m defrag_()
+          # TODO
 
      # reserves capacity for `>= at_least` elements that in this hash table.
      # we will use something like `max_(at_least, 2 * m capacity_())` to ensure
@@ -152,6 +158,8 @@ linked_swiss_table_
                else
                     0
 
+     # TODO: these `delete` operations should probably be given in
+     #    terms of an iterator that can delete.
      # deletes any elements which match the given `all`.
      # returns the number of elements deleted.
      ;;delete_[require: of_ is not_[null_]](all: of_): count_

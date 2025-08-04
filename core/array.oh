@@ -1,4 +1,4 @@
-array_[of_, count_: select_count_ = arch_ count_]: all_of_
+array_[of_, capacity_: select_count_ = arch count_]: all_of_
 [    indexable_sequence_[of_]
      # we could make this `hashable_` if `of_` is hashable, but we'll
      # implicitly make it hashable (by defining a `::hash_` method)
@@ -6,11 +6,11 @@ array_[of_, count_: select_count_ = arch_ count_]: all_of_
 ]
 {    index_: signed_[count_]
 
-     # sets this array's capacity to exactly `count`, or the minimum
-     # capacity for this array if it is larger than `count`.
+     # sets this array's capacity to exactly `max_(m count_(), capacity)`;
+     # i.e., no elements would get deleted by this operation.
      # prefer `array capacity_(at_least. count)` because it will grow the array
      # in an amortized way if you are increasing the capacity over time.
-     ;;capacity_(count.): hm_[null_]
+     ;;capacity_(capacity.): hm_[null_]
 
      :;[in_bounds.]: (of:;)
 
@@ -147,6 +147,7 @@ array_[of_, count_: select_count_ = arch_ count_]: all_of_
      @alias heap_or_local_: maybe_local_
 
      er_: CONTAINER_er_
+     count_: capacity_
 }
 
 # for simplicity, rounds to multiples of 8 bytes.
