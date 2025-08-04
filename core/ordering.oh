@@ -3,3 +3,23 @@ ordering_: one_of_
      left_before_right:
      right_before_left:
 ]
+
+is_bigger_: one_of_[left:, equal:, right:]
+{    m_(~t_0:, t_1): m_
+          if t_0 > t_1
+               _ left
+          elif t_1 > t_0
+               _ right
+          else
+               _ equal
+}
+
+is_smaller_: one_of_[left:, equal:, right:]
+{    m_(~t_0:, t_1): m_
+          if t_0 < t_1
+               _ left
+          elif t_1 < t_0
+               _ right
+          else
+               _ equal
+}

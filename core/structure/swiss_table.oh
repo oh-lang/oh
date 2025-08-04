@@ -8,8 +8,12 @@ linked_swiss_table_
      # can be null if we're a `set_`.
      of_
      slots_per_bucket: count_ = 16
-     # type used for counting elements in this table.
-     count_: select_count_ = arch_ count_
+     # type used for the capacity (e.g., max number) of elements in this table.
+     # NOTE: this is also used for slot capacity, which reduces the
+     # number of elements that we can hold via `expected_load_factor`.
+     # TODO: consider using a different capacity for slots.  this would
+     # probably be most useful if we allowed bit-counts like `u10`.
+     capacity_: select_count_ = arch_ count_
      count_managed_: managed_
      # if you really want to optimize the size of this struct, we can use
      # some indirection to put `count` in an allocated spot if `on_heap`.
@@ -20,8 +24,8 @@ linked_swiss_table_
      start_managed: _ locally
      end_managed_: managed_
      end_managed: _ on_heap
-     first_free_managed_: managed_
-     first_free_managed: _ on_heap
+     first_tombstone_managed_: managed_
+     first_tombstone_managed: _ on_heap
      # maximum number of attempts to place a new element.
      # if more than this, will trigger growing the table (rehash).
      max_attempts: count_ = 2 * slots_per_bucket
@@ -39,7 +43,7 @@ linked_swiss_table_
           count[require: count_managed == _ locally];
           start[require: start_managed == _ locally]; dll_offset_
           end[require: end_managed == _ locally]; dll_offset_
-          first_free[require: first_free_managed == _ locally]; dll_offset_
+          first_tombstone[require: first_tombstone_managed == _ locally]; dll_offset_
      ]
 ]
 {    ::count_(): count_
@@ -57,17 +61,25 @@ linked_swiss_table_
      ::capacity_(): capacity_
           m elements capacity_()
 
-     # reserves capacity for the exact number of elements that we expect in this
-     # hash table.  if the capacity for the elements allocation is already greater
-     # than the requested capacity, this will defrag the table.  (see `defrag_`).
-     # if `update_slot_capacity` is true, we'll adjust the number of slots based
-     # on `expected_load_factor`, i.e., rehash the table, but that is probably
-     # what you want.  prefer `;;capacity_(at_least.)` if the table is expected to
-     # grow over time.
+     #[#
+     reserves capacity for the exact number of elements that we expect in this
+     hash table.  if the capacity for the elements allocation is already greater
+     than the requested capacity, we'll defrag the table (see `;;defrag_`).  if
+     the requested capacity is larger than the current capacity and `update_slot_capacity`
+     is true, we'll adjust the number of slots based on `expected_load_factor`,
+     i.e., rehash the table, but that is probably what you want.
+     prefer `;;capacity_(at_least.)` if the table is expected to grow over time.
+     #]#
      ;;capacity_(capacity., update_slot_capacity: true): hm_[null_]
-          if capacity <= m capacity_()
-               return m defrag_()
-          # TODO
+          what is_bigger_(capacity, m capacity_())
+               _ left
+                    m increase_capacity_(capacity) assert_()
+                    if update_slot_capacity
+                         m rehash_(rehash from_element_capacity)
+               _ right
+                    m defrag_(update_slot_capacity)
+               _ equal
+                    {}
 
      # reserves capacity for `>= at_least` elements that in this hash table.
      # we will use something like `max_(at_least, 2 * m capacity_())` to ensure
@@ -113,7 +125,7 @@ linked_swiss_table_
           (dll_element;) = m dll_element_(dll_offset)
           debug assert_(!!m link_buckets)
           @if was_tombstoned
-               m first_free_() = dll_element next
+               m first_tombstone_() = dll_element next
           previous_last: m end_()
           m end_() = dll_offset
           dll_element previous = previous_last
@@ -248,14 +260,46 @@ linked_swiss_table_
      # optimizes this table so that all elements are laid out in order
      # and the linked list goes from left to right contiguously.
      # this is not really necessary to do unless elements have been deleted,
-     # or the table has been shuffled/sorted.
-     # TODO: should this perform a rehash?  probably?
-     ;;defrag_(): null_
+     # or the table has been shuffled/sorted.  this performs a rehash
+     # if `update_slot_count` is true.
+     ;;defrag_(update_slot_count: true): null_
+          if update_slot_count
+               m rehash_(_ from_element_capacity)
 
-     capacity_: count_
+     count_: capacity_
+
+     @private
+     ;;rehash_(rehash. one_of_[from_element_capacity:]): hm_[null_]
+          desired_slot_count: count_ = what rehash
+               _ from_element_capacity
+                    _ closest_(dbl_ closest_(m elements capacity_()) / expected_load_factor)
+
+          bucket_count; count_ = desired_slot_count // slots_per_bucket
+          if desired_slot_count %% slots_per_bucket and bucket_count < _ max
+               ++bucket_count
+
+          NEW_elements; m elements_
+          NEW_link_buckets; m link_buckets_
+
+          # TODO: we're kinda combining two different things here, should we always
+          # defrag when we rehash?  if so, then we should just have one.
+          # it seems like when we increase the size of the table, we should rehash
+          # and avoid keeping tombstones, but that would mean updating elements as well.
+          # i don't currently see a clean way to just rehash the link buckets.
+          # we'd have to add back tombstones which seems silly.
+          NEW_elements capacity_(...???)
+
+          m elements = NEW_elements
+          m link_buckets = NEW_link_buckets
+          m start_() = # TODO
+          m end_() = # TODO
+          m first_tombstone_() = dll_offset_ max # no tombstoned elements
+
      # we want to totally distinguish `dll_offset_` and `element_offset_`
      # to avoid using one for the other accidentally.
+     @private
      dll_offset_: @distinct count_ offset_
+     @private
      element_offset_: @distinct count_ offset_
 
      @private
@@ -282,12 +326,12 @@ linked_swiss_table_
           m link_buckets header_() end
 
      @private
-     ;:first_free_[require: first_free_managed == _ locally](): (offset_;:)
-          m first_free
+     ;:first_tombstone_[require: first_tombstone_managed == _ locally](): (offset_;:)
+          m first_tombstone
 
      @private
-     ;:first_free_[require: first_free_managed == _ on_heap](): (offset_;:) where !!m link_buckets
-          m link_buckets header_() first_free
+     ;:first_tombstone_[require: first_tombstone_managed == _ on_heap](): (offset_;:) where !!m link_buckets
+          m link_buckets header_() first_tombstone
 
      @private
      element_header_:
@@ -300,7 +344,7 @@ linked_swiss_table_
           end[require: end_managed == _ on_heap]; dll_offset_
           # index into `dll` that is the first free in the list.
           # essentially will be a SLL of the tombstoned elements.
-          first_free[require: first_free_managed == _ on_heap]; dll_offset_
+          first_tombstone[require: first_tombstone_managed == _ on_heap]; dll_offset_
      ]
 
      @private
