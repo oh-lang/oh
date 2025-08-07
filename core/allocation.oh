@@ -17,14 +17,15 @@ allocation_
 ]:
 [    @private m:
      [    of_ptr[of_];
-          capacity[require: capacity_managed == locally];
+          capacity[require: capacity_managed == _ locally];
      ]
 ]
 {    ::capacity_(): capacity_
-          @if local_capacity
+          @if capacity_managed == _ locally
                m capacity
           @else
-               m full_head_() capacity
+               # TODO: add full_header method
+               m full_header_() map_({$ok capacity}, {$_er, 0})
 
      ::!(): bool_
           m of_ptr == null
@@ -87,12 +88,16 @@ allocation_
           else
                m of_ptr + offset
 
+     ;:at_(in_bounds. offset_): ptr_[of_]
+          debug assert_(in_bounds < m capacity_())
+          m of_ptr + offset
+
      # TODO: non-local_capacity versions of the above, call them.
      ::header_[require: header_ is not_[null_]](): hm_[(header:)]
           if m
                ok_(m header_())
           else
-               er_(unallocated)
+               er_ unallocated
 
      ;;header_[require: header_ is not_[null_]](): hm_[(header;)]
           if !m

@@ -13,6 +13,7 @@ linked_swiss_table_
      # number of elements that we can hold via `expected_load_factor`.
      # TODO: consider using a different capacity for slots.  this would
      # probably be most useful if we allowed bit-counts like `u10`.
+     # alternatively we just use `offset_` for slots, which is about 2x the `count_` max.
      capacity_: select_count_ = arch_ count_
      count_managed_: managed_
      # if you really want to optimize the size of this struct, we can use
@@ -34,11 +35,13 @@ linked_swiss_table_
 [    @private m:
      [    # we don't use a stack for this because we want the `count` to be stored
           # compactly (either later in this struct or in a header).
-          elements; size_optimized_allocation_[element_, header_: element_header_]
+          # we also allow some elements to get tombstoned, so some of the elements
+          # may be in an invalid state.
+          elements; elements_
           # data for the doubly-linked list.  we don't use a normal DLL because
           # we don't grow this like a stack, we index into it via hash truncation.
           # INVARIANT: each `link_bucket metadata` is always initialized.
-          link_buckets; size_optimized_allocation_[link_bucket_, header_: links_header_]
+          link_buckets; link_buckets_
           # for optimal packing, we put all counts here at the end.
           count[require: count_managed == _ locally];
           start[require: start_managed == _ locally]; dll_offset_
@@ -65,17 +68,14 @@ linked_swiss_table_
      reserves capacity for the exact number of elements that we expect in this
      hash table.  if the capacity for the elements allocation is already greater
      than the requested capacity, we'll defrag the table (see `;;defrag_`).  if
-     the requested capacity is larger than the current capacity and `update_slot_capacity`
-     is true, we'll adjust the number of slots based on `expected_load_factor`,
-     i.e., rehash the table, but that is probably what you want.
+     the requested capacity is larger than the current capacity, we'll increase
+     the size of the table and perform a rehash.
      prefer `;;capacity_(at_least.)` if the table is expected to grow over time.
      #]#
      ;;capacity_(capacity., update_slot_capacity: true): hm_[null_]
           what is_bigger_(capacity, m capacity_())
                _ left
-                    m increase_capacity_(capacity) assert_()
-                    if update_slot_capacity
-                         m rehash_(rehash from_element_capacity)
+                    m rehash_(capacity) assert_()
                _ right
                     m defrag_(update_slot_capacity)
                _ equal
@@ -86,7 +86,7 @@ linked_swiss_table_
      # we grow in an amortized way over time.
      # this may cause a rehash of the hash table if `update_slot_capacity` is true. 
      ;;capacity_(at_least. capacity_, update_slot_capacity: true): hm_[null_]
-          m capacity_(max_(at_least, 2 * m capacity_() ?? capacity_ max))
+          m rehash_(max_(at_least, 2 * m capacity_() ?? capacity_ max))
 
      ::slot_count_(): capacity_
           m link_buckets capacity_() * slots_per_bucket
@@ -220,12 +220,9 @@ linked_swiss_table_
           [metadatum:, remaining_hash:] = metadatum_ extract_(full_hash)
           partial_hash: remaining_hash truncate_()
 
-          bucket_count: m link_buckets capacity_()
-          slot_count: slots_per_bucket * bucket_count
-          offset; full_hash % slot_count
           best_tombstone?; tombstone_location_
           slot_count each attempts: count_
-               offset_metadatum: m metadatum_(offset)
+               offset_metadatum: m link_buckets metadatum_(offset)
                # TODO: this part can be sped up with SIMD, if available.
                if offset_metadatum cleared_()
                     if best_tombstone is tombstone_location:
@@ -235,7 +232,7 @@ linked_swiss_table_
                elif offset_metadatum filled_()
                     if offset_metadatum == metadatum
                          # there's a good chance we're already a hit.
-                         dll_element: m dll_element_(offset)
+                         dll_element: m link_buckets dll_element_(offset)
                          if dll_element partial_hash == partial_hash
                               # there's a very good chance we're already a hit.
                               element_offset: dll_element offset
@@ -247,6 +244,25 @@ linked_swiss_table_
                          best_tombstone = [offset, attempts]
                ++offset
           _ no_room
+     }
+
+     @private
+     add_(link_buckets;, at:): hm_[link_location_]
+     {    full_hash: fast_hash_(at)
+          [metadatum:, remaining_hash:] = metadatum_ extract_(full_hash)
+          partial_hash: remaining_hash truncate_()
+
+          bucket_count: link_buckets capacity_()
+          slot_count: slots_per_bucket * bucket_count
+          offset; full_hash % slot_count
+          slot_count each attempts: count_
+               offset_metadatum: m metadatum_(offset)
+               # TODO: this part can be sped up with SIMD, if available.
+               if !offset_metadatum filled_()
+                    debug assert_(offset_metadatum cleared_(), er. "we should have no tombstones here")
+                    return [link_location: [offset, attempts]]
+               ++offset
+          er_ out_of_memory
      }
 
      @private
@@ -264,35 +280,79 @@ linked_swiss_table_
      # if `update_slot_count` is true.
      ;;defrag_(update_slot_count: true): null_
           if update_slot_count
-               m rehash_(_ from_element_capacity)
+               m rehash_()
 
      count_: capacity_
 
      @private
-     ;;rehash_(rehash. one_of_[from_element_capacity:]): hm_[null_]
-          desired_slot_count: count_ = what rehash
-               _ from_element_capacity
-                    _ closest_(dbl_ closest_(m elements capacity_()) / expected_load_factor)
+     ;;rehash_(NEW_capacity.): hm_[null_]
+          debug assert_(m count_()) <= NEW_capacity
+          if NEW_capacity == 0
+               @unlikely
+               m renew_()
+               return
 
-          bucket_count; count_ = desired_slot_count // slots_per_bucket
-          if desired_slot_count %% slots_per_bucket and bucket_count < _ max
-               ++bucket_count
+          desired_slot_count: count_ closest_(dbl_ closest_(NEW_capacity) / expected_load_factor)
 
-          NEW_elements; m elements_
-          NEW_link_buckets; m link_buckets_
+          NEW_bucket_count; count_ = desired_slot_count // slots_per_bucket
+          if desired_slot_count %% slots_per_bucket and NEW_bucket_count < _ max
+               ++NEW_bucket_count
 
-          # TODO: we're kinda combining two different things here, should we always
-          # defrag when we rehash?  if so, then we should just have one.
-          # it seems like when we increase the size of the table, we should rehash
-          # and avoid keeping tombstones, but that would mean updating elements as well.
-          # i don't currently see a clean way to just rehash the link buckets.
-          # we'd have to add back tombstones which seems silly.
-          NEW_elements capacity_(...???)
+          debug assert_(NEW_bucket_count) >= m link_buckets capacity_()
+          NEW_link_buckets; link_buckets_
+          NEW_link_buckets capacity_(NEW_bucket_count) assert_()
+          # we need to initialize metadata properly.
+          NEW_bucket_count each in_bounds. index_
+               NEW_link_buckets at_(in_bounds) metadata_field_() zero_()
+
+          if m first_tombstone_() is_valid_index_()
+               m rehash_with_tombstones_(NEW_capacity, .NEW_link_buckets)
+          else
+               m rehash_without_tombstones_(NEW_capacity, .NEW_link_buckets)
+
+     @private
+     ;;rehash_with_tombstones_(NEW_capacity., NEW_link_buckets.): hm_[null_]
+          # if we have deleted some elements, it's nicer to renew the
+          # `elements` array than to iterate through the tombstones and add them back
+          # into the `link_buckets`.
+          # TODO: make this be an option, we certainly could do that, but there
+          # are some design choices...
+          NEW_elements; elements_
+
+          debug assert_(NEW_capacity) >= m elements capacity_()
+          NEW_elements capacity_(NEW_capacity) assert_()
+
+          dll_offset; m start_()
+          NEW_element_offset; 0
+          while true
+               dll_element: m dll_element_(dll_offset)
+               ptr[element_]: NEW_elements at_(NEW_element_offset)
+               ptr copy_(from. m elements at_(dll_element offset))
+               # we could do something like this but `m elements` is getting reset soon:
+               # `debug only_({ m elements at_(dll_element offset) zero_() })`
+
+               # TODO: there's a small chance that we put `at` in a bad spot,
+               # i.e., with `attempts > max_attempts`.  do we want to allow expanding
+               # `NEW_link_buckets` if so?  we'll have to rehash just the buckets and this
+               # method does a little of everything, i.e., updating elements and buckets.
+               # maybe we push through and organize everything (defrag) but then retry
+               # the buckets as enlarged.
+               NEW_dll_offset: add_(ptr resolve_() at, NEW_link_buckets)
+
+               if ++NEW_element_offset == 1
+                    # this was the first element.
+                    START_dll_offset = NEW_dll_offset
+
+               if dll_element next is_valid_index_()
+                    dll_offset = dll_element next
+               else
+                    END_dll_offset = NEW_dll_offset
+                    break
 
           m elements = NEW_elements
           m link_buckets = NEW_link_buckets
-          m start_() = # TODO
-          m end_() = # TODO
+          m start_() = START_dll_offset
+          m end_() = END_dll_offset
           m first_tombstone_() = dll_offset_ max # no tombstoned elements
 
      # we want to totally distinguish `dll_offset_` and `element_offset_`
@@ -305,11 +365,9 @@ linked_swiss_table_
      @private
      ;:start_[require: start_managed == _ locally](): (dll_offset_;:)
           m start
-
      @private
      ;:start_[require: start_managed == _ on_heap](): (dll_offset_;:) where !!m link_buckets
           m link_buckets header_() start
-
      @private
      ::start_[require: start_managed == _ on_heap](): dll_offset_
           if m link_buckets
@@ -320,7 +378,6 @@ linked_swiss_table_
      @private
      ;:end_[require: end_managed == _ locally](): (offset_;:)
           m end
-
      @private
      ;:end_[require: end_managed == _ on_heap](): (offset_;:) where !!m link_buckets
           m link_buckets header_() end
@@ -328,16 +385,47 @@ linked_swiss_table_
      @private
      ;:first_tombstone_[require: first_tombstone_managed == _ locally](): (offset_;:)
           m first_tombstone
-
      @private
      ;:first_tombstone_[require: first_tombstone_managed == _ on_heap](): (offset_;:) where !!m link_buckets
           m link_buckets header_() first_tombstone
+     @private
+     ::first_tombstone_[require: first_tombstone_managed == _ on_heap](): dll_offset_
+          if m link_buckets
+               m link_buckets header_() first_tombstone
+          else
+               dll_offset_ max
 
+     @private elements_: size_optimized_allocation_[element_, header_: element_header_]
+     @private element_: [at:, of[require: of_ is not_[null_]];]
      @private
      element_header_:
      [    count[require: count_managed == _ on_heap];
      ]
 
+     @private
+     link_buckets_: size_optimized_allocation_[link_bucket_, header_: links_header_]
+     # TODO: do we want to make offsets work differently so we're not always // by slots per bucket?
+     #    e.g., we could get the bucket offset by reduction, than randomizing the offset within the bucket.
+     #    that might be nice to try with SIMD but not without.
+     {    ::metadatum_(offset.): metadatum_
+               slot_count: m capacity_() * slots_per_bucket
+               if slot_count == 0
+                    @unlikely
+                    return metadatum_ present
+               offset %%= slot_count
+               bucket_inner_offset. offset %% slots_per_bucket
+               which_bucket. offset // slots_per_bucket
+               # TODO: i think i like `metadata at_(bucket_inner_offset)` instead of `metadata[bucket_inner_offset]`.
+               m at_(which_bucket) resolve_() metadata[bucket_inner_offset]
+
+          ::dll_element_(offset.): dll_element_
+               slot_count: m capacity_() * slots_per_bucket
+               debug assert_(slot_count > 0)
+               offset %%= slot_count
+               bucket_inner_offset. offset %% slots_per_bucket
+               which_bucket. offset // slots_per_bucket
+               m at_(which_bucket) resolve_() dll[bucket_inner_offset]
+     }
      @private
      link_buckets_header_:
      [    start[require: start_managed == _ on_heap]; dll_offset_
@@ -346,16 +434,12 @@ linked_swiss_table_
           # essentially will be a SLL of the tombstoned elements.
           first_tombstone[require: first_tombstone_managed == _ on_heap]; dll_offset_
      ]
-
      @private
      link_bucket_:
      [    metadata; vector_[slots_per_bucket, metadatum_]
           # the `dll_element`s can have links to other buckets.
           dll; buffer_[slots_per_bucket, dll_element_]
      ]
-
-     @private element_: [at:, of[require: of_ is not_[null_]];]
-
      @private
      dll_element_:
      [    partial_hash;

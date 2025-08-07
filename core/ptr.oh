@@ -1,15 +1,34 @@
 ptr_[of_]:
 [    @private m: [offset; arch offset_]
 ]
-{    ;:resolve_(fn_(of;:): ~t_): t_
+{    # copies are "free".  not an actual copy of the value, just a copy of the pointer to it.
+     ::o_(): m_
+
+     ::resolve_(fn_(of;): ~t_): t_
+     ::resolve_(fn_(of:): ~t_): t_
+
+     ::resolve_(): (of;)
+     ::resolve_(): (of:)
 
      # TODO: + and - operations
 
-     ;;initialize_(of.): null_
+     ::initialize_(of.): null_
 
-     ;;deinitialize_(): null_
+     ::deinitialize_(): null_
 
-     ;;swap_(of;): null_
+     ::swap_(of;): null_
 
-     ;;remove_(): of_
+     # does a shallow copy of the value at `from` onto this (`m`) pointer's value.
+     # DOES NOT DO `m::deinitialize_()` on this pointer, so make sure to do that if necessary.
+     ::copy_(from. m_): null_
+
+     ::remove_(): of_
+
+     # initializes the memory to zero
+     ::zero_(): null_
+
+     # TODO: clean way to do this for instance functions; they'd look like `my_fn__field_()`
+     # but that looks a bit off.
+     @fields(of_) @each (field_type_:, field_name:)
+          ;:@concat(field_name, "_field_")(): ptr_[field_type_]
 }
