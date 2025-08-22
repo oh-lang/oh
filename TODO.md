@@ -43,7 +43,7 @@ we'll also alphabetize input arguments first and output arguments second.
 * `_p` = writable pointer
 * `_r` = readonly reference
 * `_w` = writable reference
-* `_x` = exit/return value, paired with something above.
+* `x` = exit/return value, used after something above, e.g., `_tx`.
 
 because function overloads must have unique argument names, named arguments
 are simply the `my_name_t` or `named_p` for arguments like `my_name. int_`
@@ -57,10 +57,10 @@ my_function_(y: dbl_, x; int_): str_
 namespaced_arg_(GREAT_z. flt_): [round: i32_]
 
 // in C
-str_t MYF1L3__my_function__x_p__y_c__str_xt(int_p x, dbl_c y);
+str_t MYF1L3__my_function__x_p__y_c__str_tx(int_p x, dbl_c y);
 // where `int_p` is `int_t *`, and `dbl_c` is `const dbl_t *`);
 // notice the `GREAT_` namespace is on the variable itself but *not* the function signature:
-i32_t MYF1L3__namespaced_arg__z_t__round_xt(flt_t GREAT_z);
+i32_t MYF1L3__namespaced_arg__z_t__round_tx(flt_t GREAT_z);
 ```
 
 we also need to supply a few different function signatures for when
@@ -122,9 +122,9 @@ multiply_(a: -5, b: 20)     # should return -100
 multiply_(a: "A", b: "B")   # should fail at compilation
 
 # in C, specialized after we infer `int_` for `t_`:
-int_t PREFIX__multiply__a_c__b_c__int_xt(int_c a, int_c b)
+int_t PREFIX__multiply__a_c__b_c__int_tx(int_c a, int_c b)
 {   // built-in function:
-    return multiply__int_c__int_c__int_xt(a, b);
+    return multiply__int_c__int_c__int_tx(a, b);
 }
 ```
 
@@ -150,6 +150,46 @@ alternatively, we just generate the entire C code in one pass.  the latter would
 be annoying from a bootstrapping perspective, however, since i'd have to write the C code by hand
 for each specification of the generic.  but all the permutations of requires in `swiss_table.oh`
 will be a nightmare.  it'd be better to generate the code a different way, e.g., via a script.
+
+actually, we can do something similar, but instead of invoking a macro, we need to include
+a header file multiple times.  so we'd do something like this:
+
+```
+# vector2.oh
+vector2_[of_]: [x; of_, y; of_]
+{   ::length_[require: sqrt_(of)](): of_
+        sqrt_(m x^2 + m y^2)
+}
+
+// vector2.h
+#ifndef F1L3__OF_T
+#error "define F1L3__OF_T as the capitalized element type (e.g., `int_t` -> `INT_T`) before importing " __FILE__
+#endif
+#ifndef F1L3__of_t
+#error "define F1L3__of_t as the element type (e.g., `dbl_t`) before importing " __FILE__
+#endif
+OH_HI
+(,  typedef struct F1L3__vector2_OF_ ## F1L3__OF_T ## _t_
+    {   F1L3__of_t x;
+        F1L3__of_t y;
+    }       F1L3__vector2_OF_ ## F1L3__OF_T ## _t;
+    OH_TYPES(F1L3__vector2_OF_ ## F1L3__OF_T)
+,)
+
+#ifdef F1L3__SQRT_OF_
+OH_HI
+(   OF_T F1L3__length__vector2_OF_ ## F1L3__OF_T ## __ ## F1L3__of_t ## x_(F1L3__vector2_OF_ ## F1L3__OF_T ## _c m),,
+    {   return F1L3__SQRT_OF_(m->x * m->x + m->y * m->y);
+    }
+)
+#endif
+```
+
+TODO: usage from a file `main.oh`
+
+we need to namespace the generic types (e.g., `F1L3__of_t`) in case `vector2.oh`
+imports another generic file and populates it with some generics based on its `of_`,
+but which may be different, e.g., `unsigned_[of_]`.
 
 ## classes
 
@@ -187,7 +227,7 @@ typedef struct LINEAR_OH_vector3_
      OH_dbl_ z;
 }         LINEAR_OH_vector3_t;
 
-dbl_t LINEAR_OH__length__vector3_c__dbl_xt(const LINEAR_OH_vector3_t *m)
+dbl_t LINEAR_OH__length__vector3_c__dbl_tx(const LINEAR_OH_vector3_t *m)
 {    return sqrt(m->x * m->x + m->y * m->y + m->z * m->z);
 }
 ```
@@ -283,29 +323,29 @@ typedef struct OH__hashable_
 
 // in the `c` file, we `#include` every child class header file like `explicitly_hashable.h`,
 // or we can forward declare the things we need here.
-u64_t OH__hash__hashable_c__salt_t__u64_xt
+u64_t OH__hash__hashable_c__salt_t__u64_tx
 (    const OH__hashable_t *hashable,
      u64_t salt
 )
-{    return OH__hash__ID_hashable_c__salt_t__u64_xt(hashable->OH_ID, &hashable->dynamic, salt);
+{    return OH__hash__ID_hashable_c__salt_t__u64_tx(hashable->OH_ID, &hashable->dynamic, salt);
 }
 
 // TODO: do we need this for multi-inheritance?  e.g., need to make sure the layout
 // will be correct.  i think we need it at least for `@only` variables because we
 // won't store the type ID along with the class in that case (for efficiency).
-u64_t OH__hash__ID_hashable_c__salt_t__u64_xt
+u64_t OH__hash__ID_hashable_c__salt_t__u64_tx
 (    u64_t hashable_ID,
      const void *hashable,
      u64_t salt
 )
 {    switch (hashable_ID)
      {    case OH_ID__EXPLICITLY_HASHABLE_OH__explicitly_hashable:
-               return EXPLICITLY_HASHABLE_OH__hash__explicitly_hashable_c__salt_t__u64_xt
+               return EXPLICITLY_HASHABLE_OH__hash__explicitly_hashable_c__salt_t__u64_tx
                (    (const EXPLICITLY_HASHABLE_OH__explicitly_hashable_t *)hashable,
                     salt
                );
           case OH_ID__BIG_CHILD_OH__big_child:
-               return BIG_CHILD_OH__hash__big_child_c__salt_t__u64_xt
+               return BIG_CHILD_OH__hash__big_child_c__salt_t__u64_tx
                (    (const BIG_CHILD_OH__big_child_t *)hashable,
                     salt
                );
@@ -355,7 +395,7 @@ typedef struct F1L3__generic_OF_I8_
     }       m;
 }         F1L3__generic_OF_I8_t;
 // defined because of `specific method_(0.5)` usage needing `generic::method_(0.5)`:
-dbl_t F1L3__method__generic_OF_I8_c__dbl_c__dbl_xt
+dbl_t F1L3__method__generic_OF_I8_c__dbl_c__dbl_tx
 (   const OH__generic_OF_I8_t *generic,
     const dbl_t *dbl
 )
@@ -374,11 +414,11 @@ struct F1L3__specific_OF_I8_
 };
 
 // defined because of `specific method_(0.5)` usage:
-dbl_t F1L3__method__specific_OF_I8_c__dbl_c__dbl_xt
+dbl_t F1L3__method__specific_OF_I8_c__dbl_c__dbl_tx
 (   const oh__specific_OF_I8 *Specific,
     const dbl_t *dbl
 )
-{   dbl_t parent_result = F1L3__method__generic_OF_I8_c__dbl_c__dbl_xt
+{   dbl_t parent_result = F1L3__method__generic_OF_I8_c__dbl_c__dbl_tx
     (   // NOTE: in general we need this offset if `specific_[i8_]` fields
         // were reordered, e.g., `all_of_[m: [scale; i8_], generic[i8_];]`
         (const oh_generic_OF_I8_t *)&(specific->generic),
@@ -388,22 +428,22 @@ dbl_t F1L3__method__specific_OF_I8_c__dbl_c__dbl_xt
 }
 
 // for dynamic dispatch
-dbl_t F1L3__method__ID_unknown_c__dbl_c__dbl_xt
+dbl_t F1L3__method__ID_unknown_c__dbl_c__dbl_tx
 (   OH_ID unknown_ID,
     const void *unknown,
     const dbl_t *dbl
 )
 {   switch (unknown_ID)
     {   case OH_ID__generic_OF_I8:
-            return F1L3__method__generic_OF_I8_c__dbl_c__dbl_xt((generic_OF_I8_c)unknown, dbl);
+            return F1L3__method__generic_OF_I8_c__dbl_c__dbl_tx((generic_OF_I8_c)unknown, dbl);
         case OH_ID__specific_OF_I8:
-            return F1L3__method__specific_OF_I8_c__dbl_c__dbl_xt((specific_OF_I8_c)unknown, dbl);
+            return F1L3__method__specific_OF_I8_c__dbl_c__dbl_tx((specific_OF_I8_c)unknown, dbl);
     }
     // for classes which are JIT:
-    dbl_t (*F1L3__method__unknown_c__dbl_c__dbl_xt)(const void *unknown, const dbl_t *dbl)
+    dbl_t (*F1L3__method__unknown_c__dbl_c__dbl_tx)(const void *unknown, const dbl_t *dbl)
         =   oh_look_up__method__Dbl__return__Dbl(unknown_ID);
-    if (F1L3__method__unknown_c__dbl_c__dbl_xt)
-    {   return F1L3__method__unknown_c__dbl_c__dbl_xt(unknown, dbl);
+    if (F1L3__method__unknown_c__dbl_c__dbl_tx)
+    {   return F1L3__method__unknown_c__dbl_c__dbl_tx(unknown, dbl);
     }
     exit(1);
 }
@@ -445,7 +485,7 @@ typedef struct F1L3__vector3_
      dbl_t y;
      dbl_t z;
 };        F1L3__vector3_t
-dbl_ F1L3__length__vector3_c__dbl_xt(const F1L3__vector3_t *vector3)
+dbl_ F1L3__length__vector3_c__dbl_tx(const F1L3__vector3_t *vector3)
 {    return sqrt
      (    vector3->x * vector3->x,
           vector3->y * vector3->y,
@@ -538,8 +578,8 @@ proceed with a match (if any), we check for string equality.  e.g., some pseudo-
 code:
 
 ```
-switch (OH__fast_hash__salt_t__str_c__u64_xt(12345, &considered_string))
-{    case 9876: // precomputed via `OH__fast_hash__salt_t__str_c__u64_xt(12345, &string_case1)`
+switch (OH__fast_hash__salt_t__str_c__u64_tx(12345, &considered_string))
+{    case 9876: // precomputed via `OH__fast_hash__salt_t__str_c__u64_tx(12345, &string_case1)`
      {    if (!OH_eq__chars_c__str_c_("string case 1", &considered_string)
           {    goto OH_location__default;
           }

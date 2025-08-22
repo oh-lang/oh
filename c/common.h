@@ -23,9 +23,11 @@ typedef uint16_t u16_t;
 typedef uint32_t u32_t;
 typedef uint64_t u64_t;
 
+// TODO: rename IMPL -> OH_HI everywhere.  HI = "header" "implementation"
 #define IMPL_DECLARE(fn, attr, impl) fn attr;
 #define IMPL_DEFINE(fn, attr, impl) fn impl
 
+// TODO: rename to OH_TYPES
 #define TYPES(t) \
 typedef t##_t *t##_p; \
 typedef const t##_t *t##_c;
