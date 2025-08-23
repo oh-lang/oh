@@ -24,6 +24,7 @@ typedef uint32_t u32_t;
 typedef uint64_t u64_t;
 
 // TODO: rename IMPL -> OH_HI everywhere.  HI = "header" "implementation"
+// TODO: rename `DECLARE` -> `HEADER` and `DEFINE` -> `IMPL`.
 #define IMPL_DECLARE(fn, attr, impl) fn attr;
 #define IMPL_DEFINE(fn, attr, impl) fn impl
 

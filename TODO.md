@@ -157,11 +157,11 @@ a header file multiple times.  so we'd do something like this:
 ```
 # vector2.oh
 vector2_[of_]: [x; of_, y; of_]
-{   ::length_[require: sqrt_(of)](): of_
+{   ::length_[require: sqrt_(of.): of_](): of_
         sqrt_(m x^2 + m y^2)
 }
 
-// vector2.h
+// .vector2.generated.hi
 #ifndef F1L3__OF_T
 #error "define F1L3__OF_T as the capitalized element type (e.g., `int_t` -> `INT_T`) before importing " __FILE__
 #endif
@@ -176,16 +176,65 @@ OH_HI
     OH_TYPES(F1L3__vector2_OF_ ## F1L3__OF_T)
 ,)
 
-#ifdef F1L3__SQRT_OF_
+#ifdef F1L3__sqrt__of_t__of_tx_
 OH_HI
 (   OF_T F1L3__length__vector2_OF_ ## F1L3__OF_T ## __ ## F1L3__of_t ## x_(F1L3__vector2_OF_ ## F1L3__OF_T ## _c m),,
-    {   return F1L3__SQRT_OF_(m->x * m->x + m->y * m->y);
+    {   return F1L3__sqrt__of_t__of_tx_(m->x * m->x + m->y * m->y);
     }
 )
 #endif
 ```
 
-TODO: usage from a file `main.oh`
+```
+# main.oh, next to vector2.oh
+print_(vector2d_(x. +1.2, y. +3.4) x)
+print_(vector2f_(x. +6.5, y. -8.7) y)
+
+vector2d_: \/vector2 _[f64_]
+vector2f_: \/vector2 _[f32_]
+```
+
+```
+//
+// .main.generated.c
+#include ".vector2.generated.h"
+int main()
+{   F1L3__vector2_OF_F64_T_t random_identifier1 = { .x = +1.2, .y = +3.4 };
+    F1L3__vector2_OF_F32_T_t random_identifier2 = { .x = +6.5, .y = -8.7 };
+    printf("%f\n", random_identifier1.x);
+    printf("%f\n", random_identifier2.y);
+    return 0;
+}
+
+//
+// .vector2.generated.h
+#include <math.h>
+
+// `main.oh`'s usage of `vector2_[f64_]` and `vector2_[f32_]` results in these blocks:
+#define OH_HI(fn, attr, impl) OH_HI_HEADER(fn, attr, impl)
+#define F1L3__OF_T F64_T
+#define F1L3__of_t f64_t
+#define F1L3__sqrt__of_t__of_tx_ sqrt
+#include ".vector2.generated.hi"
+#undef F1L3__sqrt__of_t__of_tx_
+#undef F1L3__of_t
+#undef F1L3__OF_T
+#undef OH_HI
+
+#define OH_HI(fn, attr, impl) OH_HI_HEADER(fn, attr, impl)
+#define F1L3__OF_T F32_T
+#define F1L3__of_t f32_t
+#define F1L3__sqrt__of_t__of_tx_ sqrtf
+#include ".vector2.generated.hi"
+#undef F1L3__sqrt__of_t__of_tx_
+#undef F1L3__of_t
+#undef F1L3__OF_T
+#undef OH_HI
+
+// `.vector2.generated.c` is similar to `.vector2.generated.h` above...
+// but using `#define OH_HI(fn, attr, impl) OH_HI_IMPL(fn, attr, impl)`
+// and importing `#include "vector2.h"` instead of `#include <math.h>`.
+```
 
 we need to namespace the generic types (e.g., `F1L3__of_t`) in case `vector2.oh`
 imports another generic file and populates it with some generics based on its `of_`,
