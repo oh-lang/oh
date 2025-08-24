@@ -43,7 +43,7 @@ typedef union word_
     size_t ptr;
     struct refer_ *refer;
 }       word_t;
-TYPES(word)
+OH_TYPES(word)
 
 /*
 NOTE: we probably don't need to do runtime tagging for `refer_t`;
@@ -69,11 +69,11 @@ typedef struct refer_
     size_t maybe_descope_offset;
     word_t offset;
 }       refer_t;
-TYPES(refer)
+OH_TYPES(refer)
 
 #define OWNED_POINTER(d) /*
 { */ \
-IMPL \
+OH_HI \
 (   refer_t owned__##d##_x_(d##_t data, descope_f descope_),, \
     {   d##_p owned_pointer = malloc(sizeof(d##_t)); \
         size_t reference = (size_t)refer__ignore_start_return_offset_; \
@@ -85,18 +85,18 @@ IMPL \
             .offset = (word_t){ .ptr = (size_t)owned_pointer }, \
         }; \
     } \
-) \
+); \
 /*
 } end OWNED_POINTER */
 
 #define REFER /*
 { */ \
-IMPL \
+OH_HI \
 (   void *refer__ignore_start_return_offset_(void *start, void *offset), ALIGN, \
     {   return offset; \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   void *refer__resolve_(refer_p refer),, \
     {   const size_t seven = 7; \
         void *offset = refer__resolve_offset_(refer->maybe_descope_offset, &refer->offset); \
@@ -106,8 +106,8 @@ IMPL \
         void *start = refer__resolve_start_(start_tag, &refer->start); \
         return reference_(start, offset); \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   void *refer__resolve_start_(uint32_t tag, word_p word),, \
     {   switch (tag) \
         {   case REFER_TAG_POINTER: \
@@ -124,8 +124,8 @@ IMPL \
                 return NULL; \
         } \
     } \
-)   \
-IMPL \
+); \
+OH_HI \
 (   void *refer__resolve_offset_(size_t maybe_descope_offset, word_p word),, \
     {   switch (maybe_descope_offset) \
         {   case REFER_TAG_POINTER: \
@@ -148,8 +148,8 @@ IMPL \
                 return (void *)word->ptr; \
         } \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   /* enscopes a NULL reference, i.e., resolving it will return NULL. */ \
     void refer_p__enscope_(refer_p refer),, \
     {   refer->tagged_reference = REFER_TAG_POINTER; \
@@ -157,8 +157,8 @@ IMPL \
         refer->maybe_descope_offset = REFER_TAG_POINTER; \
         refer->offset.ptr = 0; \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   void refer_p__descope_(refer_p refer),, \
     {   switch (refer->maybe_descope_offset) \
         {   case REFER_TAG_POINTER: /* an unowned pointer */ \
@@ -189,17 +189,17 @@ IMPL \
         } \
         /* don't free `refer` itself, that might be stack-allocated. */ \
     } \
-) \
+); \
     /* TODO: print_ and equal_ methods. */ \
     /* 
 } end REFER */
 
-#define IMPL(fn, attr, impl) IMPL_DECLARE(fn, attr, impl)
+#define OH_HI(fn, attr, impl) OH_HI_HEADER(fn, attr, impl)
 REFER
-#undef IMPL
+#undef OH_HI
 
 #ifdef SINGLE_IMPORT
-#define IMPL(fn, attr, impl) IMPL_DEFINE(fn, attr, impl)
+#define OH_HI(fn, attr, impl) OH_HI_IMPL(fn, attr, impl)
 REFER
-#undef IMPL
+#undef OH_HI
 #endif

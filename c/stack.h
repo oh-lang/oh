@@ -4,15 +4,15 @@
 
 #define STACK(T, C) /*
 { */ \
-IMPL \
+OH_HI \
 (,  typedef struct stack_##T##_ \
     {   T##_p data; \
         C##_t capacity; \
         C##_t count; \
     }       stack_##T##_t \
-,) \
-IMPL(,TYPES(stack_##T),) \
-IMPL \
+,); \
+OH_HI(,OH_TYPES(stack_##T),); \
+OH_HI \
 (   void stack_##T##_p__descope_(stack_##T##_p stack),, \
     {   while (stack->count > 0) \
         {   C##_t index = --stack->count; \
@@ -20,16 +20,16 @@ IMPL \
         } \
         free(stack->data); \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   void stack_##T##_p__enscope_(stack_##T##_p stack),, \
     {   stack->data = NULL; \
         stack->capacity = 0; \
         stack->count = 0; \
     } \
-) \
+); \
 /* TODO: add a `stack_capacity` overload that calls this overload and exits on failure. */ \
-IMPL \
+OH_HI \
 (   success_t stack_##T##_p__capacity_t__success_rt_(stack_##T##_p stack, C##_t capacity),, \
     {   while (stack->count > capacity) \
         {   T##_t element = stack_##T##_p__pop_(stack); \
@@ -55,8 +55,8 @@ IMPL \
         stack->capacity = capacity; \
         return 1; \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   success_t stack_##T##_p__append_default_(stack_##T##_p stack),, \
     {   if (stack->count == stack->capacity) \
         {   C##_t desired_capacity = stack->capacity * 2; \
@@ -72,16 +72,16 @@ IMPL \
         } \
         T##_p__enscope_(&stack->data[stack->count++]); \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   T##_t stack_##T##_p__pop_(stack_##T##_p stack),, \
     {   if (stack->count == 0) \
         {   fprintf(stderr, "no elements in stack\n"); exit(1); \
         } \
         return stack->data[--stack->count]; \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   bool_t stack_##T##_c__equal_(stack_##T##_c a, stack_##T##_c b),, \
     {   if (a->count != b->count) \
         {   return false; \
@@ -93,8 +93,8 @@ IMPL \
         } \
         return true; \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   void stack_##T##_c__print_(FILE *f, stack_##T##_c stack),, \
     {   fprintf(f, "["); \
         for (C##_t index = 0; index < stack->count; ++index) \
@@ -103,8 +103,8 @@ IMPL \
         } \
         fprintf(f, "]"); \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   T##_p stack_##T##_p__offset_p_(stack_##T##_p stack, C##_p offset), ALIGN, \
     {   if (*offset == UINT32_MAX) \
         {   fprintf(stderr, "invalid offset: %d", UINT32_MAX); \
@@ -115,8 +115,8 @@ IMPL \
         } \
         return &stack->data[*offset]; \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   void refer_##T##_p__enscope_from_stack_(refer_p refer, stack_##T##_p stack, C##_t offset),, \
     {   reference_f reference_ = (reference_f)stack_##T##_p__offset_p_; \
         DEBUG_ASSERT((size_t)reference_ % 8 == 0); \
@@ -129,8 +129,8 @@ IMPL \
             } \
         ); \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   void refer_##T##_p__enscope_from_refer_stack_(refer_p refer, refer_t refer_stack, C##_t offset),, \
     /*
     TODO: if we add a `refer_p refer_stack` overload and `refer_stack` is an owned pointer,
@@ -149,8 +149,8 @@ IMPL \
             } \
         ); \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   T##_p T##_p__from__refer_p_stack_(refer_p stack),, \
     {   return (T##_p)refer__resolve_(stack); \
     } \

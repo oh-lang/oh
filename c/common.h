@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 // TODO: switch to [[nodiscard]] with C23:
 // enum [[nodiscard]] success_t { ... };
@@ -23,43 +24,58 @@ typedef uint16_t u16_t;
 typedef uint32_t u32_t;
 typedef uint64_t u64_t;
 
-// TODO: rename IMPL -> OH_HI everywhere.  HI = "header" "implementation"
-// TODO: rename `DECLARE` -> `HEADER` and `DEFINE` -> `IMPL`.
-#define IMPL_DECLARE(fn, attr, impl) fn attr;
-#define IMPL_DEFINE(fn, attr, impl) fn impl
+#define OH_HI_HEADER(fn, attr, impl) fn attr
+#define OH_HI_IMPL(fn, attr, impl) fn impl
 
-// TODO: rename to OH_TYPES
-#define TYPES(t) \
+#define OH_TYPES(t) \
 typedef t##_t *t##_p; \
 typedef const t##_t *t##_c;
 
 #define PRIMITIVE_TYPE(t, zero, fmt) \
-IMPL(,TYPES(t),) \
-IMPL \
+OH_HI(,OH_TYPES(t),); \
+OH_HI \
 (   void t##_p__enscope_(t##_p number),, \
     {   *number = zero; \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   void t##_p__descope_(t##_p number),, \
     {   /* nothing to do */ \
     } \
-) \
-IMPL \
+); \
+OH_HI \
 (   void t##_c__print_(FILE *f, t##_c number),, \
     {   fprintf(f, fmt, *number); \
     } \
-) \
+)
 
 #define PRIMITIVE_PERFECT_EQUALITY(t) \
-IMPL \
+OH_HI \
 (   bool_t t##_c__equal_(t##_c a, t##_c b),, \
     {   return *a == *b ? true : false; \
     } \
-) \
+)
+
+#define PRIMITIVE_APPROXIMATE_EQUALITY(t, ABS, MIN, EPSILON) \
+OH_HI \
+(   bool_t t##_c__equal_(t##_c a, t##_c b),, \
+    {   if ((*a != *a) && (*b != *b)) \
+        {   /* we're breaking IEEE standard here but nan is NaN. */ \
+            return true; \
+        } \
+        t##_t abs_delta = ABS(*a - *b); \
+        t##_t abs_min = MIN(ABS(*a), ABS(*b)); \
+        if (abs_min > 0.0) { \
+            return (abs_delta / abs_min < EPSILON) ? true : false; \
+        } \
+        /* if zero, then require absoluteness */ \
+        return *a == *b ? true : false; \
+    } \
+)
 
 #define ALIGN __attribute__((aligned(8)))
 
+// TODO: redo as `print_ ## T ## _c_`
 #define PRINT(f, T, x) \
 {   T##_c__print_(f, (x)); \
     fprintf(f, "\n"); \
@@ -94,43 +110,32 @@ IMPL \
 
 #define COMMON /*
 { */ \
-PRIMITIVE_TYPE(flt, 0.0, "%f") \
-IMPL \
-(   bool_t flt_c__equal_(flt_c a, flt_c b),, \
-    {   if ((*a != *a) && (*b != *b)) \
-        {   /* we're breaking IEEE standard here but nan is NaN. */ \
-            return true; \
-        } \
-        float abs_delta = fabs(*a - *b); \
-        float abs_min = fmin(fabs(*a), fabs(*b)); \
-        if (abs_min > 0.0) { \
-            return (abs_delta / abs_min < 1e-5) ? true : false; \
-        } \
-        /* if zero, then require absoluteness */ \
-        return *a == *b ? true : false; \
-    } \
-) \
-PRIMITIVE_TYPE(dbl, 0.0, "%lf") \
-PRIMITIVE_TYPE(u64, 0, "%ld") \
-PRIMITIVE_PERFECT_EQUALITY(u64) \
-PRIMITIVE_TYPE(u32, 0, "%d") \
-PRIMITIVE_PERFECT_EQUALITY(u32) \
-PRIMITIVE_TYPE(u16, 0, "%d") \
-PRIMITIVE_PERFECT_EQUALITY(u16) \
-PRIMITIVE_TYPE(u8, 0, "%d") \
-PRIMITIVE_PERFECT_EQUALITY(u8) \
+PRIMITIVE_TYPE(flt, 0.0, "%f"); \
+PRIMITIVE_APPROXIMATE_EQUALITY(flt, fabs, fmin, 1e-5); \
+PRIMITIVE_TYPE(dbl, 0.0, "%lf"); \
+OH_HI(dbl_t dmin(dbl_t a, dbl_t b),, { return a < b ? a : b; }); \
+OH_HI(dbl_t dmax(dbl_t a, dbl_t b),, { return a > b ? a : b; }); \
+PRIMITIVE_APPROXIMATE_EQUALITY(dbl, abs, dmin, 1e-7); \
+PRIMITIVE_TYPE(u64, 0, "%ld"); \
+PRIMITIVE_PERFECT_EQUALITY(u64); \
+PRIMITIVE_TYPE(u32, 0, "%d"); \
+PRIMITIVE_PERFECT_EQUALITY(u32); \
+PRIMITIVE_TYPE(u16, 0, "%d"); \
+PRIMITIVE_PERFECT_EQUALITY(u16); \
+PRIMITIVE_TYPE(u8, 0, "%d"); \
+PRIMITIVE_PERFECT_EQUALITY(u8); \
 /*
 } end COMMON */
 
 // header file:
-#define IMPL(fn, attr, impl) IMPL_DECLARE(fn, attr, impl)
+#define OH_HI(fn, attr, impl) OH_HI_HEADER(fn, attr, impl)
 COMMON
-#undef IMPL
+#undef OH_HI
 
 // header + implementation file:
 #ifdef SINGLE_IMPORT
-#define IMPL(fn, attr, impl) IMPL_DEFINE(fn, attr, impl)
+#define OH_HI(fn, attr, impl) OH_HI_IMPL(fn, attr, impl)
 COMMON
-#undef IMPL
+#undef OH_HI
 
 #endif

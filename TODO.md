@@ -57,10 +57,10 @@ my_function_(y: dbl_, x; int_): str_
 namespaced_arg_(GREAT_z. flt_): [round: i32_]
 
 // in C
-str_t MYF1L3__my_function__x_p__y_c__str_tx(int_p x, dbl_c y);
+str_t MYF1L3__my_function__x_p__y_c__str_tx_(int_p x, dbl_c y);
 // where `int_p` is `int_t *`, and `dbl_c` is `const dbl_t *`);
 // notice the `GREAT_` namespace is on the variable itself but *not* the function signature:
-i32_t MYF1L3__namespaced_arg__z_t__round_tx(flt_t GREAT_z);
+i32_t MYF1L3__namespaced_arg__z_t__round_tx_(flt_t GREAT_z);
 ```
 
 we also need to supply a few different function signatures for when
@@ -73,29 +73,11 @@ module naming requirements (e.g., `MYF1L3__my_function...`):
 solution:
 * generate a random prefix.  can look to the .generated file, if present, to maintain the prefix.
 * users *can* move the .generated files around with moved files, but it's not required.
+    if they don't, the prefix will get regenerated.  files that import from the new location
+    will get the new prefix because they'll regenerate as well.
 * we can add some metadata to files:
-     * from_code_root/my_file.oh file: `#@filetag Am!4Ko%4l` where we can recover the original file path
-          from "Am!4Ko%4l", so that we can determine which generated file to move.
-     * the tag should not be human readable so that people don't think to update it when moving files around.
-     * we'll put the tag at the end of the file so it's less annoying.
      * from_code_root/.my_file.generated.h: `//prefix(UKAFR)` where `UKAFR` is randomly generated and
           added to all exported variables/functions.  (just A-Z to make it look like a namespace.)
-
-i think we're making things a bit too complicated/premature optimization for the file-tag bit:
-* .generated files should not take long to generate, and even when someone moves a file,
-they shouldn't expect things to be perfectly optimized.  it'd be nice not to pollute the
-`oh` files with metadata.
-
-we could just add the file prefix to the .oh file itself, e.g., `#@file_prefix(UKAFR)`
-HOWEVER there are some downsides when copying.  if you copy file `a.oh` to `b.oh` and don't
-remove the `#@file_prefix`, should oh-lang try to use the same prefix for both?  there could
-be errors/collisions that are hard for the developer to debug.  one alternative would be
-to use `#@file_tag %$AsdfJ` followed by `#@file_prefix(UKAFR)`.  if the file gets copied,
-we can tell based on the file tag, and then change the file prefix for the file that doesn't match.
-i think having easy access to `file_prefix` might be a headache for new developers, however.
-maybe expect one of `#@file_tag` or `#@file_prefix` in the oh-lang file (the latter for
-advanced developers, we'd never put it there), but use the original idea (indirection,
-use `@file_tag` in the `.oh` file and `//prefix(UKAFR)` in the .generated file)
 
 ### lambda functions
 

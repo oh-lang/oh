@@ -8,14 +8,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define IMPL(fn, attr, impl) IMPL_DECLARE(fn, attr, impl)
-STACK(flt, u32)
-STACK(stack_flt, u8)
-#undef IMPL
-#define IMPL(fn, attr, impl) IMPL_DEFINE(fn, attr, impl)
-STACK(flt, u32)
-STACK(stack_flt, u8)
-#undef IMPL
+#define OH_HI(fn, attr, impl) OH_HI_HEADER(fn, attr, impl)
+STACK(flt, u32);
+STACK(stack_flt, u8);
+#undef OH_HI
+#define OH_HI(fn, attr, impl) OH_HI_IMPL(fn, attr, impl)
+STACK(flt, u32);
+STACK(stack_flt, u8);
+#undef OH_HI
 
 void add_values_(stack_stack_flt_p stack_stack)
 {   u8_t offset = 1;

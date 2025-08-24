@@ -1,7 +1,7 @@
 #include "common.h"
 
 #ifndef SINGLE_IMPORT
-#define IMPL(fn, attr, impl) fn impl
+#define OH_HI(fn, attr, impl) OH_HI_IMPL(fn, attr, impl)
 COMMON
-#undef IMPL
+#undef OH_HI
 #endif
