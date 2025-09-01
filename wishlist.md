@@ -24,9 +24,11 @@ we could even make it easier that after declaration, you can use `used_for_this_
 but originally we didn't want namespaces to be part of the variable, e.g., for shadowing,
 you'd still call it as `int: 123` even if the function argument was `USED_FOR_THIS_int:`.
 is there another way we'd want to do this, e.g., `shadow int:`?  namespaces for typing
-seems more useful in general than shadowing.
+seems more useful in general than shadowing.  but i don't love it because functions
+would be something like `HELLO_fn` or even worse, to distinguish in/out arguments.
 
 TODO: do we use SFO to allow defining types like `x: int`?
+probably not, we want `x: int` to do the right thing if `int` is an `int_` in scope.
 
 Why snake case: long names are hard to parse with Pascal case, and we want to support descriptive
 names.  Code is read more than it is written, so we don't need to optimize underscores out
@@ -140,6 +142,9 @@ with an existing variable, and on the right when declaring a variable or argumen
 I.e., `;x` expands to `x; x`, while `x;` expands to `x; x_`.
 TODO: i'm forgetting to do this and don't always like it.  can we make due without it
 and always put declarers on the right?  i like the consistency though.
+but you'd need to do this in generics as well, in case you're asking for a `\`` generic.
+e.g., `my_class_[of_]: [of\`]` would be `my_class_[;dbl_]` for a class that can
+modify the double and `my_class_[:dbl_]` for readonly.
 
 Class methods technically take an argument for `m` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
@@ -214,8 +219,6 @@ vector3_[of_: number_]: [x; of_, y; of_, z; of_]
 }
 
 dot_(vector3_(1, 2, 3), vector3_(-6, 5, 4)) == 1 * -6 + 2 * 5 + 3 * 4
-
-TODO: make sure we add `m` back to all fields.
 ```
 
 Class getters/setters *do not use* `::get_x_(): dbl_` or `;;set_x_(dbl.): null_`, but rather
@@ -249,6 +252,8 @@ imported types in [modules](#modules), e.g., `vector2_: \/my/implementation/vect
 We also can use it when defining default-named variables to refer to the variable's
 type, e.g., for static/class functions like `oh_info: _ caller_()` which is equivalent
 to `oh_info: oh_info_ caller_()`.
+TODO: static constructors are frowned upon due to named arguments, not sure this is
+the best example.
 
 ## coolness
 
@@ -343,8 +348,8 @@ Otherwise `a + b` will panic on overflow and terminate the program.  The alterna
 is to handle the error explicitly: `hm: a + b` then something like this:
 `what hm {ok: {print_(ok)}, er: {print_("got error: ${er})}}`.
 
-TODO: do we want primitive types to NOT panic on overflow, but wrapper types
-like `count` and `index` to panic?
+For primitive types (like `dbl_` and `i32_`), we don't throw on overflow or underflow.
+But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
 
 # general syntax
 
@@ -533,8 +538,20 @@ strips any trailing whitespace on the left operand and any leading whitespace
 on the right operand to ensure things like `'123\n \n' & '\n456'` are still just `'123 456'`.
 This makes it the perfect operator for string concatenation across lines where we want
 to ensure a space between words on one line and the next.
-TODO: it could also be used as a postfix or prefix operator, e.g., `&'   hi'` is 'hi'
-and `'hey\n  '&` is 'hey'.  not sure this is better than `'   hi' strip_()` though.
+TODO: `&|` should probably not include newlines then, just a space.  maybe use a different
+operator than `&` here, e.g., `+|`.
+
+```
+no_newlines:
+        &|hi
+        &|there
+# equivalent to `no_newlines: "hi there"
+
+with_newlines:
+        +|hi
+        +|there
+# equivalent to `with_newlines: "hi\nthere\n"
+```
 
 ## defining arrays
 
