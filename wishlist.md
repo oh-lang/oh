@@ -460,6 +460,7 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
 * operators that diverge from some common languages:
      * `**` and `^` for exponentiation
      * `&|` at the start of each text slice to create a multiline string.
+     * `+|` at the start of each text slice to create a multiline string with newlines.
      * `<>` for bit flips on integer types (instead of `~`)
      * `><` for bitwise xor on integer types (instead of `^`)
 * see [operator overloading](#operator-overloading) for how to overload operators.
@@ -502,22 +503,39 @@ name: "Barnabus"
 # using interpolation in a string:
 greeting: "hello, ${name}!"
 
-# declaring a multiline string
+# declaring a multiline string with spaces added between lines
+long_text:
+        &|This is an example of a long sentence which
+        &|deserves to be split across "lines".  Spaces will be
+        &|added as necessary between lines.
+# this is the same as:
+# `long_text: "This is an example of a long sentence which deserves to be split across \"lines\".  Spaces will be added as necessary between lines."
+
+# declaring a multiline string with newlines:
 important_items:
-          &|Fridge
-          &|Pancakes and syrup
-          &|Cheese
+          +|Fridge
+          +|Pancakes and syrup
+          +|Cheese
 # this is the same as `important_items: "Fridge\nPancakes and syrup\nCheese\n"`
 
-# a single-line multiline string still includes a newline at the end.
-just_one_line: &|This is a 'line' "you know"
+# a single-line ampersanded string can be used to avoid lots of escapes:
+avoid_escapes: &|This is a 'line' "you know"
+# this is equivalent to `avoid_escapes: "This is a 'line' \"you know\""
+
+# a single-line plussed string will include a newline at the end.
+just_one_line: +|This is a 'line' "you know"
 # this is equivalent to `just_one_line: "This is a 'line' \"you know\"\n"
 
 # declaring a multiline string with interpolation
 multiline_interpolation:
-          &|Special delivery for ${name}:
-          &|You will receive ${important_items} and more.
+          +|Special delivery for ${name}:
+          +|You will receive ${important_items} and more.
 # becomes "Special delivery for Barnabus\nYou will receive Fridge\nPancakes and syrup\nCheese\n and more."
+
+# if you want to avoid string interpolation, e.g., because you need to include a literal "${" in your string,
+# you only need to escape one of the two characters.  e.g., `$a` is never interpolated as the value of `a`.
+print_("ok \${we want this literally as} $\[whatever] $ok")
+# literally prints "ok ${we want this literally as} $[whatever] $ok"
 
 # interpolation over multiple file lines.
 # WARNING: this does not comply with Horstmann indenting,
@@ -527,6 +545,9 @@ evil_long_line: "this is going to be a long discussion, ${
 # INSTEAD, use string concatenation, which automatically adds a space if necessary:
 good_long_line: "this is going to be a long discussion,"
      &   "${name}, can you confirm your availability?"
+best_long_line:
+        &|this is going to be a long discussion,
+        &|${name}, can you confirm your availability?
 
 # you can also nest interpolation logic, although this isn't recommended:
 nested_interpolation: "hello, ${if condition {name} else {'World${"!" * 5}'}}!"
@@ -538,20 +559,6 @@ strips any trailing whitespace on the left operand and any leading whitespace
 on the right operand to ensure things like `'123\n \n' & '\n456'` are still just `'123 456'`.
 This makes it the perfect operator for string concatenation across lines where we want
 to ensure a space between words on one line and the next.
-TODO: `&|` should probably not include newlines then, just a space.  maybe use a different
-operator than `&` here, e.g., `+|`.
-
-```
-no_newlines:
-        &|hi
-        &|there
-# equivalent to `no_newlines: "hi there"
-
-with_newlines:
-        +|hi
-        +|there
-# equivalent to `with_newlines: "hi\nthere\n"
-```
 
 ## defining arrays
 
