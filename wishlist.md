@@ -918,11 +918,13 @@ Variable names like `x` and `max_array_count` do not include a trailing undersco
 Any capitalized letters belong to a [namespace](#namespaces).
 
 There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
-`what`, `in`, `each`, `for`, `while`, `pass`, `where`, `when`,
+`break`, `continue`, `what`, `in`, `each`, `for`, `while`, `pass`, `where`, `when`,
 which are function-like but may consume the rest of the statement.
-E.g., `return X + 5` will return the value `X + 5` from the enclosing function.
+E.g., `return: x + 5` will return the value `x + 5` from the enclosing function.
 The `type_case_` versions of these keywords are also all reserved;
-for example, `return_` can be used for the return type of the current function.
+for example, `return_` can be used for the return type of the current function
+or it can be used as a function to actually return a value, e.g., `return_(x+5)`
+(i.e., but only if the value is not captured; `y: return_(x + 5)` would be a type cast).
 There are some reserved namespaces with side effects like `NAMED_`, `AS_`,
 which should be used for their side effects.  Variables that end in numbers
 like `x_0` or `asdf_123` will also have the number considered as a namespace,
@@ -1172,11 +1174,12 @@ defining_a_function_with_multiline_return_values_
 (    argument0: int_
      argument1: str_
 ): [value0: int_, value1: str_]
-     do_something_(argument0)
      # this needs to `return` or `pass` since it looks like an indented block
      # otherwise, which would attach to the previous line like
      # `do_something_(argument0)[value0: ...]`
-     return
+     # or you can add an end-of-line comment between the two lines.
+     do_something_(argument0)
+     return:
      [    value0: argument0 + 3
           value1: argument1 + str_(argument0)
      ]
@@ -1193,13 +1196,8 @@ defining_another_function_that_returns_a_generic_
 ]
      do_something_(argument0)
      print_("got arguments ${argument0}, ${argument1}")
-     return ...
+     return: ...
 ```
-
-TODO: we could use `return_(whatever)` or `return: whatever` to make things
-consistent with the fact that `return` is function-like.  it would be nice
-to figure out a way around the weird return/pass issue above, but that
-might require always using `return`.
 
 Putting it all together in one big example:
 
@@ -1825,7 +1823,7 @@ does not change the instance but returns a sorted copy of the array (`::sort(): 
 # there are better ways to get a median, but just to showcase member access:
 get_median_slow_(array_[int_]): hm_[ok_: int_, er_: string_]
      if array count_() == 0
-          return er_("no elements in array, can't get median.")
+          return: er_("no elements in array, can't get median.")
      # make a copy of the array, but no longer allow access to it (via `@hide`):
      SORTED_array: @hide array sort_()   # same as `array::sort_()` since `array` is readonly.
      ok(SORTED_array[SORTED_array count_() // 2])
@@ -1833,7 +1831,7 @@ get_median_slow_(array_[int_]): hm_[ok_: int_, er_: string_]
 # sorts the array and returns the median.
 get_median_slow_(array[int_];): hm_[ok_: int_, er_: string_]
      if array count_() == 0
-          return er_("no elements in array, can't get median.")
+          return: er_("no elements in array, can't get median.")
      array sort_()   # same as `array;;sort_()` since `array` is writable.
      ok_(array[array count_() // 2])
 ```
@@ -2431,10 +2429,10 @@ excite_(times: int_): str_
 
 # You can define a multi-statement function in one line like this,
 # but this is not normally recommended.
-oh_(really; dbl_): dbl_ { really *= 2.5, return 50 + really }
+oh_(really; dbl_): dbl_ { really *= 2.5, return: 50 + really }
 ```
 
-Note that we disallow the inverted syntax of `function_name_: return_type_(...Args)`
+Note that we disallow the inverted syntax of `function_name_: return_type_(...args)`
 because this looks like declaring a type (e.g., no parentheses on the left hand side)
 and the right hand side looks like how we call a function and get an instance (not a type).
 See [returning a type](#returning-a-type) for how we'd return a type from a function.
@@ -2768,7 +2766,7 @@ you're creating an*o*ther instance.
 
 ```
 value_(): int_
-     return 1234 + 5
+     return: 1234 + 5
 
 what_is_this_(value: int_): null_
      print_(value)
@@ -2788,7 +2786,7 @@ takes_default_(value_())    # OK.  we try `value: value_()`
                             # and then the type of `value_()` next
 
 other_function_(not_value: int_): string_
-     return "!" * not_value
+     return: "!" * not_value
 
 other_function_(value_())               # ERROR! no overload for `value` or for `int`.
 other_function_(not_value: value_())    # OK
@@ -2820,7 +2818,7 @@ the default overload for a function that we pass in as `greet_`.
 detect_(greet_(int): string_): int_
      100 each CHECK_int:
           if greet_(CHECK_int) == "hello, world!"
-               return CHECK_int
+               return: CHECK_int
      return -1
 
 # if your function is named the same as the function argument...
@@ -2834,7 +2832,7 @@ detect_(greet_(int): greet_(int) string)
 # if your function is not named the same, you can do argument renaming;
 # internally this does not create a new function:
 say_hi_(int): string_
-     return "hello, world" + "!" * int
+     return: "hello, world" + "!" * int
 detect_(greet_(int): string_ = say_hi_) # returns 1
 
 # you can also create a function named correctly inline -- the function
@@ -2913,7 +2911,7 @@ which infers the types based on instances of the type.
 ```
 # generic function taking an instance of `x_` and returning one.
 do_something_(~x): x_
-     return x * 2
+     return: x * 2
 
 do_something_(123)    # returns 246
 do_something_(0.75)   # returns 1.5
@@ -2931,7 +2929,7 @@ the type of something.  We can use `of_` as a type name to get default naming.
 # `whatever_constraints_` can be something like `number_`,
 # or you can elide it if you want no constraints.
 do_something_(of_: whatever_constraints_): of_
-     return of_(123)
+     return: of_(123)
 
 print_(do_something_(dbl_)) # returns 123.0
 print_(do_something_(u8_))  # returns u8(123)
@@ -2940,7 +2938,7 @@ print_(do_something_(u8_))  # returns u8(123)
 Or we could do this as a a generic type, like this:
 ```
 do_something_(~x_): x_
-     return x_(123)
+     return: x_(123)
 
 print_(do_something_(dbl_)) # returns 123.0
 print_(do_something_(u8_))  # returns u8(123)
@@ -3283,8 +3281,8 @@ x?; null
 print_(some_function_(x?))  # can do `x?: x`, but that's not idiomatic.
 
 # when argument is a new nullable expression:
-some_function_(x?: some_nullish_function_())    # REQUIRED since `some_nullish_function_` can return null
-some_function_(x: some_nullish_function_())     # ERROR! `some_nullish_function_` is nullable, need `X?:`.
+some_function_(x?: some_nullish_function_()) # good
+some_function_(x: some_nullish_function_())  # ERROR! `some_nullish_function_` is nullable
 
 # where some_nullish_function might look like this:
 some_nullish_function_()?: int_
@@ -3323,15 +3321,16 @@ x?: overloaded_(?y)
 You can use prefix `?` with multiple arguments; if any argument with prefix `?` is null,
 then the function will not be called.
 
-This can also be used with the `return` function to only return if the value is not null.
+This can also be used with the `return` keyword to only return if the value is not null.
 
 ```
 do_something_(x?: int_): int_
-     y?: ?x * 3    # `y` is null or `x*3` if `X` is not null.
-     return ?y       # only returns if `y` is not null
+     y?: ?x * 3     # `y` is null or `x*3` if `x` is not null.
+     return_(?y)    # only returns if `y` is not null
+     # `return: ?y` is equivalent.
      #( do some other stuff )#
      ...
-     return 3
+     return_(3)
 ```
 
 ### nullable output arguments
@@ -3356,7 +3355,7 @@ my_overload_(y: str_): [x: int_]
 
 # case 3, nullable output (not compatible with case 1):
 my_overload_(y: str_): [x?: int_]
-     # this is essentially an implementation of `x?: int_(y), return [x]`
+     # this is essentially an implementation of `x?: int_(y), return: [x]`
      what int_(y)
           ok: $[x: ok]
           er: $[]
@@ -4164,10 +4163,10 @@ copy_[of_](value: of_): of_
 
 # because the type is not inferred, you always need to specify it in brackets.
 # you can use `of_: the_type_` but this is not idiomatic:
-copy_[of_: int_](value: 3)  # will return the integer `3`
+copy_[of_: int_](value: 3)    # will return the integer `3`
 
 # because it is default named, you can just put in the type without a field name.
-copy_[dbl_](value: 3)     # will interpret `3` as a double and return `3.0`
+copy_[dbl_](value: 3)         # will interpret `3` as a double and return `3.0`
 ```
 
 ### default-named generic arguments
@@ -4210,8 +4209,8 @@ logger_[of_: some_constraint_](of.): of_
      of
 
 # need to explicitly add the type since it's never inferred.
-logger_[int_](3)  # returns the integer `3`
-logger_[dbl_](3)  # will return `3.0`
+logger_[int_](3)    # returns the integer `3`
+logger_[dbl_](3)    # will return `3.0`
 ```
 
 If you want people to pass in the argument with the field name explicit,
@@ -4523,7 +4522,7 @@ example_class_(z: dbl_): hm_[ok_: example_class_, er_: str_]
 # but it can read (but not write) global variables (or other files):
 example_class_ some_static_function_(): int_
      y_string: read_(file: "y.txt")
-     return int_(?y_string) ?? 7
+     int_(?y_string) ?? 7
 
 # a method which can mutate the class instance:
 # this could also be defined as `example_class_ another_method_(m;, plus_k: int_): null_`.
@@ -5055,10 +5054,10 @@ flow8_: [i8;]
 
      ;;+=(o): null_
           if m i8 == -128
-               return
+               return_()
           if o i8 == -128
                m i8 = -128
-               return
+               return_()
           i16. m i8 + o i8
           m i8 = i8_(i16) map_({$_er, -128})
 
@@ -5433,7 +5432,7 @@ a_specification_: some_generic_[...tuple_type_]
 Here is an example of returning a tuple type.
 
 ```
-tuple_[dbl]: [precision_, vector2: any_]
+tuple_[dbl]: [precision_, vector2_: any_]
      if abs_(dbl) < 128.0
           [precision_: flt_, vector2_: [x: flt_, y: flt_]]
      else
@@ -5970,7 +5969,7 @@ be an error string.  If your function never fails, but the interface requires us
 To make it easy to handle errors being returned from other functions, oh-lang uses
 the `assert_` method on a result class.  E.g., `ok: my_hm assert_()` which will convert
 the `my_hm` result into the `ok` value or it will return the `er_` error in `my_hm` from
-the current function block, e.g., `ok: what my_hm { ok: {ok}, er: {return er} }`.
+the current function block, e.g., `ok: what my_hm { ok: {ok}, er: {return: er} }`.
 It is something of a macro like `?` in Rust.  Note that `assert_` doesn't panic,
 and it *always runs*, not just in debug mode.  See [its section](#assert) for more details.
 
@@ -6339,8 +6338,8 @@ array_[of_]: []
      ;:each_(fn_(of;:): loop_): bool_
           m count_() each index:
                if fn_(m[index];:) is_break_()
-                    return true
-          return false
+                    return: true
+          false
 }
 ```
 
@@ -6349,6 +6348,7 @@ array_[of_]: []
 We have a few standard control statements or flow control keywords in oh-lang.
 
 TODO -- `return`
+TODO: more discussion about how `return` works vs. putting a RHS statement on a line.
 TODO -- description, plus `if/else/elif` section
 
 Conditional statements including `if`, `elif`, `else`, as well as `what`,
@@ -6459,8 +6459,6 @@ y: if condition {do_something_()} else {calculate_side_effects_(...), default_va
 Note that ternary logic short-circuits operations, so that calling the function
 `do_something_()` only occurs if `condition` is true.  Also, only the last line
 of a block can become the RHS value for a statement like this.
-
-TODO: more discussion about how `return` works vs. putting a RHS statement on a line.
 
 Of course you can get two values out of a conditional expression, e.g., via destructuring:
 
@@ -6940,14 +6938,14 @@ Like `return`, `break` can pass a value back.
 # result needs to be nullable in case the iteration doesn't break anything.
 result?: range_(123) each int:
      if int == 120
-          break int
+          break: int
 
 # you can use an `else` which will fire if the iterator doesn't have
 # any values *or* if the iteration never hit a `break` command.
 # in this case, `result` can be non-null.
 result: range_(123) each int:
      if int == 137
-          break int
+          break_(int)    # also equivalent: `break: int`
 else
      44
 ```
@@ -7035,7 +7033,7 @@ array_[of_]: []
 {    ...
      ::print_(): null_
           if m count_() == 0
-               return print_("[]")
+               return: print_("[]")
           print_("[")
           with print_ indent_()
                m each of:
@@ -7169,7 +7167,7 @@ to one that is not defined explicitly with `block`.
 
 ```
 # the `never_` return type means that this function can't use `return`, either
-# explicitly via `return ...` or implicitly by leaving a value as the last
+# explicitly via `return: ...` or implicitly by leaving a value as the last
 # evaluated statement (which can occur if you don't use `block exit_(...)`
 # or `block loop_(...)` on the last line of the function block).
 # i.e., you must use `block exit_(...)` to return a value from this function.
