@@ -705,7 +705,6 @@ and uses inference to get the return type (for the default `do_this_(args)` func
 # case (A): defining a function that returns a lambda function
 make_counter_(counter; int_): do_(): int_
      do_(): ++counter
-# TODO: equivalent? `make_counter_(counter; int_): do_(): ++counter`
 counter; 123
 counter_(): int = make_counter_(;counter)
 print_(counter_())    # 124
@@ -823,49 +822,36 @@ my_class_: [x; int_]
 
      # methods which keep the class readonly use a `::` prefix
      ::do_something_(y: int): int_
-          x * y
+          m x * y
 
      # methods which mutate the class use a `;;` prefix
      ;;update_(y: int_): null_
-          # because there's an implicit `m;` here, it'll look for
-          # ;;do_something_(y) first, but resolve to `::do_something_(y)`:
-          x = do_something_(y)
+          m x = m do_something_(y)
 }
 ```
 
-Inside a class body, we don't need to use `m` to scope instance variables/functions
-or `m_` to scope class variables/functions, because we always produce a
-compile error if we notice any variables/functions that would shadow
-global variables/functions.  Import renaming is recommended to solve
-this issue.
-TODO: is everything ok for keywords like `each` and `is` which can also be methods?
-i think so because we would use LHS expressions for anything that would conflict,
-so we wouldn't resolve to `m`, we'd use the LHS.
+Inside a class body, we use `m` to scope instance variables/functions
+but we don't need to use `m_` to scope class variables/functions.
 
 Inheritance of a concrete parent class and implementing an abstract class
 work the same way, by specifying the parent class/interface in an `all_of_`
 expression alongside any child instance variables, which should be tucked
-inside an `m_` field.  Despite requiring the `m_` field in the `all_of_`,
-we don't need to specifically look up fields in the child via `m field_name`;
-we can still just use `field_name` since `m` fields are automatically
-brought into scope for any methods.
-TODO: make sure that's desired; it kinda makes sense to only enscope
-it as `m` if we have an `all_of_[m_: [field_name: ...]]`.
+inside an `m` field.
 TODO: i think i like `reset` more than `renew`.  we don't use `new` anywhere
 except for `new_[...]` which might make sense to update now.
 
 ```
 parent1_: [p1: str]
 {    ::do_p1_(): null_
-          print_("doing p1 ${p1}")
+          print_("doing p1 ${m p1}")
 }
 
 parent2_: [p2: str]
 {    ::do_p2_(): null_
-          print_("doing p2 ${p2}")
+          print_("doing p2 ${m p2}")
 }
 
-child3_: all_of_[parent1_, parent2_, m_: [c3: int_]]
+child3_: all_of_[parent1, parent2, m: [c3: int_]]
 {    # this passes p1 to parent1 and c3 to child3 implicitly,
      # and p2 to parent2 explicitly.
      ;;renew_(parent1 p1. str_, p2. str_, m c3. int_): null_
@@ -883,9 +869,9 @@ child3_: all_of_[parent1_, parent2_, m_: [c3: int_]]
 ```
 
 For those aware of storage layout, order matters when using `all_of_`;
-the struct will be started with fields in `a_` for `all_of_[a_, b_, c_]`
-and finish with fields in `c_`; the child fields do not need to be first
-(or last); they can be added as `a_`, `b_`, or `c_`, of course as `m_: [...]`.
+the struct will be started with fields in `a` for `all_of_[a, b, c]`
+and finish with fields in `c`; the child fields do not need to be first
+(or last); they can be added as `a`, `b`, or `c`, of course as `m: [...]`.
 Generally it's recommended to add child fields last.
 
 ### defining generic classes
@@ -910,8 +896,8 @@ WOW_generic("hi")           # shorthand for `WOW_generic: generic_("hi")`, infer
 
 # not default named:
 entry_[at_: hashable_, of_: number_]: [at, value; of_]
-{    ::add_(of): null_
-          value += of
+{    ;;add_(of): null_
+          m value += of
 }
 
 entry[at_: str_, int_](at: "cookies", value: 123)   # shorthand for `entry: entry_[at_: str_, of_: int_](...)`
@@ -1185,7 +1171,7 @@ defining_a_function_with_multiline_return_values_
 defining_a_function_with_multiline_return_values_
 (    argument0: int_
      argument1: str_
-):  [value0: int_, value1: str_]
+): [value0: int_, value1: str_]
      do_something_(argument0)
      # this needs to `return` or `pass` since it looks like an indented block
      # otherwise, which would attach to the previous line like
@@ -1201,7 +1187,7 @@ defining_a_function_with_multiline_return_values_
 defining_another_function_that_returns_a_generic_
 (    argument0: str_
      argument1: int_
-):  some_generic_type_
+): some_generic_type_
 [    type0_: int_
      type1_: str_
 ]
@@ -1209,6 +1195,11 @@ defining_another_function_that_returns_a_generic_
      print_("got arguments ${argument0}, ${argument1}")
      return ...
 ```
+
+TODO: we could use `return_(whatever)` or `return: whatever` to make things
+consistent with the fact that `return` is function-like.  it would be nice
+to figure out a way around the weird return/pass issue above, but that
+might require always using `return`.
 
 Putting it all together in one big example:
 
