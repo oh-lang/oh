@@ -157,8 +157,10 @@ or `..one_temporary_method_()` for a method on a temporary `m`, i.e.,
 to refer to the class instance, regardless of how it was defined.  Inside methods,
 you must use `m the_variable_name` to refer to a class field `the_variable_name`
 and `m my_method_name_()` to call another method; this is to help with overload
-resolution.  (C++ developers are encouraged to prefix class member variables with
-`m_` because C++ is so nonchalant about name resolution.)  Here is an example class.
+resolution and so that static variables/methods can be easily distinguished.
+(C++ developers are encouraged to prefix class member variables with
+`m_` because C++ is too permissive here with name resolution.)
+Here is an example class.
 
 ```
 vector3_: [x: dbl_, y: dbl_, z: dbl_]

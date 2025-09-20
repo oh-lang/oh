@@ -52,8 +52,6 @@ and `named; whatever_`.  default-named arguments like `int:` become `int_c`.
 ```
 # in oh-lang, in file `my_file.oh`:
 my_function_(y: dbl_, x; int_): str_
-# TODO: probably can't export a namespaced identifier like `NAMESPACED_fn_`
-# maybe that's one way to make something private.
 namespaced_arg_(GREAT_z. flt_): [round: i32_]
 
 // in C
@@ -325,6 +323,9 @@ do_something_(implicitly_hashable_("asdf"))
 x; hashable_ = implicitly_hashable_("hi")
 ```
 
+TODO: if `do_something_` has a non-hashable overload, we need to decide how that plays out.
+maybe we always check for duck typing, so implicitly hashable still gets put into the hashable bucket.
+
 because we want to support duck typing, we don't want to force users to explicitly add the
 `hashable_` parent class, so the compiler needs to add it.  it will translate to code like this
 inside `.hash.generated.c/h` files (generated from the library `hash.oh`):
@@ -361,9 +362,8 @@ u64_t OH__hash__hashable_c__salt_t__u64_tx
 {    return OH__hash__ID_hashable_c__salt_t__u64_tx(hashable->OH_ID, &hashable->dynamic, salt);
 }
 
-// TODO: do we need this for multi-inheritance?  e.g., need to make sure the layout
-// will be correct.  i think we need it at least for `@only` variables because we
-// won't store the type ID along with the class in that case (for efficiency).
+// we need this function for `@only` variables because we don't store the type ID
+// along with the class in that case (for memory efficiency).
 u64_t OH__hash__ID_hashable_c__salt_t__u64_tx
 (    u64_t hashable_ID,
      const void *hashable,
@@ -414,20 +414,17 @@ print_(generic method_(0.5))  # should print "11" via `2 * (0.5 + dbl_(0.5 * 10)
 ```
 
 would transpile to this:
-TODO: how much do we want to wrap with getters/property-setters?
-probably need reference functions (not getters/setters) to comply
-with all situations.
 
 ```
-// defined because of `specific[i8]` needing this as a parent.
-typedef struct F1L3__generic_OF_I8_
+// defined because of `specific_[i8_]` needing this as a parent.
+typedef struct F1L3__generic_OF_I8_T_
 {   struct
     {   u8_t value;
     }       m;
-}         F1L3__generic_OF_I8_t;
+}         F1L3__generic_OF_I8_T_t;
 // defined because of `specific method_(0.5)` usage needing `generic::method_(0.5)`:
-dbl_t F1L3__method__generic_OF_I8_c__dbl_c__dbl_tx
-(   const OH__generic_OF_I8_t *generic,
+dbl_t F1L3__method__generic_OF_I8_T_c__dbl_c__dbl_tx
+(   const OH__generic_OF_I8_T_t *generic,
     const dbl_t *dbl
 )
 {   dbl u_value = *dbl * generic->m.value;
@@ -435,7 +432,7 @@ dbl_t F1L3__method__generic_OF_I8_c__dbl_c__dbl_tx
 }
 
 // defined because of `specific_[i8_]`
-struct F1L3__specific_OF_I8_
+struct F1L3__specific_OF_I8_T_
 {   struct
     {   i8_t value;
     }       generic;
@@ -445,14 +442,14 @@ struct F1L3__specific_OF_I8_
 };
 
 // defined because of `specific method_(0.5)` usage:
-dbl_t F1L3__method__specific_OF_I8_c__dbl_c__dbl_tx
-(   const oh__specific_OF_I8 *Specific,
+dbl_t F1L3__method__specific_OF_I8_T_c__dbl_c__dbl_tx
+(   const oh__specific_OF_I8_T_t *Specific,
     const dbl_t *dbl
 )
-{   dbl_t parent_result = F1L3__method__generic_OF_I8_c__dbl_c__dbl_tx
+{   dbl_t parent_result = F1L3__method__generic_OF_I8_T_c__dbl_c__dbl_tx
     (   // NOTE: in general we need this offset if `specific_[i8_]` fields
         // were reordered, e.g., `all_of_[m: [scale; i8_], generic[i8_];]`
-        (const oh_generic_OF_I8_t *)&(specific->generic),
+        (const oh_generic_OF_I8_T_t *)&(specific->generic),
         dbl
     );
     return specific->m.scale * parent_result;
@@ -465,10 +462,10 @@ dbl_t F1L3__method__ID_unknown_c__dbl_c__dbl_tx
     const dbl_t *dbl
 )
 {   switch (unknown_ID)
-    {   case OH_ID__generic_OF_I8:
-            return F1L3__method__generic_OF_I8_c__dbl_c__dbl_tx((generic_OF_I8_c)unknown, dbl);
-        case OH_ID__specific_OF_I8:
-            return F1L3__method__specific_OF_I8_c__dbl_c__dbl_tx((specific_OF_I8_c)unknown, dbl);
+    {   case OH_ID__generic_OF_I8_T:
+            return F1L3__method__generic_OF_I8_T_c__dbl_c__dbl_tx((generic_OF_I8_T_c)unknown, dbl);
+        case OH_ID__specific_OF_I8_T:
+            return F1L3__method__specific_OF_I8_T_c__dbl_c__dbl_tx((specific_OF_I8_T_c)unknown, dbl);
     }
     // for classes which are JIT:
     dbl_t (*F1L3__method__unknown_c__dbl_c__dbl_tx)(const void *unknown, const dbl_t *dbl)
