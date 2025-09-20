@@ -21,6 +21,9 @@ set shiftwidth=0
 let s:cpo_save = &cpo
 set cpo&vim
 
+" TODO: let's see if we can make the vim syntax work for ending in a number;
+" i.e., it should become a namespace
+
 " Keep keywords in alphabetical order inside groups.
 "
 syn keyword ohBuiltinVariable	false true none null unspecified
@@ -34,7 +37,7 @@ syn keyword ohStatement		break continue fall_through
 syn keyword ohStatement		pass return
 syn keyword ohJump	assert_ exit_
 syn keyword ohConditional	elif else if
-syn keyword ohConditional	what when where with
+syn keyword ohConditional	also what when where with
 syn keyword ohRepeat		each while
 syn keyword ohOperator		and has is not or xor
 syn keyword ohError		er er_

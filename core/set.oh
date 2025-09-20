@@ -1,5 +1,6 @@
 # TODO: is there a way we can make container dynamics better here for `unnest_`?
 # e.g., can we make it a `container_[at_: of_, of_: (of:)]` as well?
+# or maybe `container_[at_: (of:), of_]` would be better?
 # TODO: probably want to stop inheriting from container. `:;[at:]: (of?:;)`
 # doesn't make sense as a function signature anymore.
 # TODO: maybe can we do `of_: disallowed_` so that we remove function signatures that don't make sense?
@@ -27,7 +28,7 @@ set_[of_: hashable_, count_: select_count_ = arch_ count_]: all_of_
 
      # returns true iff the element was in the set.
      # will remove it if so.
-     ;;remove_(of:): hm_[bool_]
+     ;;remove_(of:): hm_[of_]
 }
 
 er_: one_of_

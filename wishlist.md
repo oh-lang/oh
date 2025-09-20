@@ -917,20 +917,20 @@ type (or class) names, since types can work like functions (e.g., `int_(number_s
 Variable names like `x` and `max_array_count` do not include a trailing underscore.
 Any capitalized letters belong to a [namespace](#namespaces).
 
-There are a few reserved keywords, like `if`, `elif`, `else`, `with`, `return`,
+There are a few reserved keywords, like `also`, `if`, `elif`, `else`, `with`, `return`,
 `break`, `continue`, `what`, `in`, `each`, `for`, `while`, `pass`, `where`, `when`,
+`is`, `has`,
 which are function-like but may consume the rest of the statement.
-E.g., `return: x + 5` will return the value `x + 5` from the enclosing function.
+`return` is a bit special in that it is used like a variable but will return
+from the enclosing function;  e.g., `return: x + 5` will return the value `x + 5`.
 The `type_case_` versions of these keywords are also all reserved;
 for example, `return_` can be used for the return type of the current function
-or it can be used as a function to actually return a value, e.g., `return_(x+5)`
+or it can be used as a function to actually return a value, e.g., `return_(x + 5)`
 (i.e., but only if the value is not captured; `y: return_(x + 5)` would be a type cast).
 There are some reserved namespaces with side effects like `NAMED_`, `AS_`,
-which should be used for their side effects.  Variables that end in numbers
-like `x_0` or `asdf_123` will also have the number considered as a namespace,
-wihch can be used for binary operations like `+` and `*`.
-See [namespaces](#namespaces)
-TODO: let's see if we can make the vim syntax work for ending in a number.
+which should be used for their side effects.  Variables that end in numbers like
+`x_0` or `asdf_123` will also have the number considered as a namespace, which
+can be used for binary operations like `+` and `*`.  See [namespaces](#namespaces).
 
 There are some reserved variable names: `m` and `o`, along with their `type_case_`
 variants, and `_` which is reserved for [class imports](#modules).  `m` can only
@@ -1489,7 +1489,11 @@ nest_[m_, new_[of_]: ~n_]: disallowed_
 # container specialization.
 # e.g., `array_[int_] nest_[{um_[$of_]}] == array_[um_[int_]]`,
 # or you can do `nest_[m_: array_[int_], {um_[$of_]}]` for the same effect.
-nest_[c_: container_, m_: ~c_[of_: ~nested_, ~at_], new_[of_]: ~n_]: c_[of_: new_[nested_], at_]
+nest_
+[    c_: container_
+     m_: ~c_[of_: ~nested_, ~at_]
+     new_[of_]: ~n_
+]: c_[of_: new_[nested_], at_]
 
 # object specialization.
 # e.g., `[x: int_, y: str_] nest_[{hm_[ok_: $of_, er_: some_er_]}]`
@@ -1656,7 +1660,6 @@ List of existing macros.
 * `@what`
 * `@while`, `@each`
 * `@return` - probably isn't necessary but reserved anyway.
-
 
 ## namespaces
 
@@ -6234,8 +6237,6 @@ like `unordered_lot_`.
 
 ## sets
 
-TODO: switch to `hazable`
-
 A set contains some elements, and makes checking for the existence of an element within
 fast, i.e., O(1).  Like with container `at`s, the set's element type must satisfy certain
 properties (i.e., hashable, e.g., integer/string-like).  The syntax to define a set is
@@ -6333,14 +6334,44 @@ TODO: is this true, can we really infer?
 
 ```
 array_[of_]: []
-{    # TODO: technically this should be a `block`, right?
-     # look at `if_block` example below.
+{    # TODO: decide between blockable and function approach:
+     # function approach doesn't contain any block information (e.g., what was `break`ed)
      ;:each_(fn_(of;:): loop_): bool_
           m count_() each index:
                if fn_(m[index];:) is_break_()
                     return: true
           false
+
+     .;:each_(each_blockable[declaring: (of.;:), ~t_]): t_
+          m count_() each index:
+               each_blockable then_(.;:m[index])
+          each_blockable else_()
 }
+
+x: [1, 2, 3, 4] each int.
+     if int > 3
+          print_("choosing ${int}")
+          break: "${int}"
+     else
+          print_("ignoring ${int}")
+else
+     print_("found no good matches")
+     ""
+
+# becomes something like
+each_blockable[declaring: (int.), int_]: _
+(    then_(int.)?: str_
+          if int > 3
+               print_("choosing ${int}")
+               return: "${int}"
+          else
+               print_("ignoring ${int}")
+          # TODO: i don't like checking for null here;
+          # null might be a valid return type, we need some block-like logic.
+     else_():
+          print_("found no good matches")
+          ""
+)
 ```
 
 # standard flow constructs / flow control
@@ -6438,7 +6469,25 @@ else
 HOWEVER we do need to handle the case if something like `if x {print_("asdf")}`
 followed by another `if y {print_("asdf2")}`, which with `when` `when` would only
 execute the second statement if `!x`, whereas the first one ignores the value of `x`.
+maybe something like `also`.
 
+```
+if x
+     print("x was truthy")
+if y
+     print("y was truthy")
+
+# would become
+when x
+     print("x was truthy")
+also
+when y
+     print("y was truthy")
+```
+
+not sure i love this solution as `when` doesn't have a `elif` feel to me.
+`when` could be a replacement for `if` but probably not `elif`.  but i do
+like `also` being explicit...
 
 ```
 x: if condition

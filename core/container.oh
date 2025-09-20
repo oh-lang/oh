@@ -44,7 +44,7 @@ container_[of_: not_[null_], at_, count_: select_count_ = count_arch_]: []
      # this will add a default `of` if `at` is
      # not already in the container.
      # mooting this element will not remove the element from the array, because
-     # mooting a non-nullable element
+     # mooting a non-nullable element will just reset it to default.
      ;;[at.]: (of;)
 
      # returns the element at `at` or null if not present,
@@ -61,8 +61,9 @@ container_[of_: not_[null_], at_, count_: select_count_ = count_arch_]: []
      #        these should just pass through to the iterator, but `[require: of_ is orderable_]`
 
      # TODO: is this the correct way to define the iterator?
-     #        we probably need a "preblock" since we'll run the block
-     #        using something like `preblock_(defining_: ...)`
+     #         we probably need a "preblock" since we'll run the block
+     #         using something like `preblock_(defining_: ...)`
+     #         or maybe `blockable_`
      :;each_(block[defining_:; of_, ~t_]:)?: t_
 
      :;each_(block[defining_: (at::, of:;), ~t_]:)?: t_
