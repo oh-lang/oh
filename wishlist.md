@@ -18,17 +18,6 @@ or `my_var_x`.  oh-lang doesn't recommend distinguishing
 between constant identifiers and non-constant identifiers with casing.
 In fact, any capital letters in an identifier create a [namespace](#namespace)
 which can be used to disambiguate variables with the same name.
-TODO: do we want to go all the way and require types in the variable name,
-with namespaces to distinguish variable intent?  e.g., `USED_FOR_THIS_int`.
-we could even make it easier that after declaration, you can use `used_for_this_int`.
-but originally we didn't want namespaces to be part of the variable, e.g., for shadowing,
-you'd still call it as `int: 123` even if the function argument was `USED_FOR_THIS_int:`.
-is there another way we'd want to do this, e.g., `shadow int:`?  namespaces for typing
-seems more useful in general than shadowing.  but i don't love it because functions
-would be something like `HELLO_fn` or even worse, to distinguish in/out arguments.
-
-TODO: do we use SFO to allow defining types like `x: int`?
-probably not, we want `x: int` to do the right thing if `int` is an `int_` in scope.
 
 Why snake case: long names are hard to parse with Pascal case, and we want to support descriptive
 names.  Code is read more than it is written, so we don't need to optimize underscores out
@@ -253,9 +242,8 @@ Another way we are concise about things is using `_` to help refer to things lik
 imported types in [modules](#modules), e.g., `vector2_: \/my/implementation/vector2 _`.
 We also can use it when defining default-named variables to refer to the variable's
 type, e.g., for static/class functions like `oh_info: _ caller_()` which is equivalent
-to `oh_info: oh_info_ caller_()`.
-TODO: static constructors are frowned upon due to named arguments, not sure this is
-the best example.
+to `oh_info: oh_info_ caller_()` or `my_type: _(abc. 123)` to initialize `my_type`
+to `my_type(abc. 123)`.
 
 ## coolness
 
@@ -839,8 +827,6 @@ Inheritance of a concrete parent class and implementing an abstract class
 work the same way, by specifying the parent class/interface in an `all_of_`
 expression alongside any child instance variables, which should be tucked
 inside an `m` field.
-TODO: i think i like `reset` more than `renew`.  we don't use `new` anywhere
-except for `new_[...]` which might make sense to update now.
 
 ```
 parent1_: [p1: str]
@@ -955,9 +941,9 @@ non-trailing-underscored name.
 ```
 # when defining, we use a leading underscore to indicate the variable is unused.
 my_function_(_argument_which_we_will_need_later: int_): null_
-     print_("TODO")
+     print_("do something eventually with the arg")
 
-# when calling:
+# when calling, omit the leading underscore:
 my_function_(argument_which_we_will_need_later: 3)
 ```
 
@@ -1296,9 +1282,6 @@ Other types which have a fixed amount of memory:
 * `flt_`: single-precision floating-point number, AKA `f32_`
 * `dbl_`: double-precision floating-point number, AKA `f64_`
 * `bool_`: can hold a true or false value
-     TODO: do we even want a `bool_`?  maybe require users to define their own,
-     especially since `one_of_[stream_on:, stream_off:]` can be much more useful
-     in context of a function call, e.g., `set_(stream_on:)` than `set_(stream_on: true)`
 * `rune_`: a utf8 character, presumably held within an `i32`
 * `u8_`: unsigned byte (can hold values from 0 to 255, inclusive)
 * `u16_` : unsigned integer which can hold values from 0 to 65535, inclusive
@@ -8004,59 +7987,6 @@ is descoped.
 wow_(INPUT_fn_(): string_): fn_(): int_
      fn_(): int_
           INPUT_fn() bytes_() count_()
-```
-
-## handling system callbacks
-
-We want to allow a `caller`/`callee` contract which enables methods defined
-on one class instance to be called by another class instance, without being
-in the same nested scope.  The `caller` which will call the callback needs
-to be defined before the `callee`, e.g., as a singleton or other instance.
-When the `callee` is descoped, it will deregister itself with the `caller`
-internally, so that the `caller` will no longer call the `callee`.
-
-```
-callee_[of_]: []
-{    ;;call_(of`): null_
-
-     ;;hang_up_(): null_
-          ... # some internal implementation
-}
-
-caller_[of_]:
-[    # using backtick to pass in the mutability of `of_` from `caller_` into `callee_`,
-     callees: array_[ptr_[callee_[of`]]];
-]
-{    ::run_callbacks_(of`):
-          callees each ptr: {ptr call_(`of)}
-}
-
-audio_: caller_[array_[sample_];]
-{    # this `audio` class will call the `call_` method on the `callee` class.
-     # TODO: actually show some logic for the calling.
-
-     # amount of time between samples:
-     delta_t: flt_
-
-     # number of samples
-     count; 500
-}
-
-audio_callee: all_of_
-[    m: [frequency; flt_(440), phase; flt_]
-     callee[array_[sample_];]
-]
-{    ;;call_(array[sample_];): count_(array) each index:
-          array[index] = sample_(mono: \\math sin_(2 * \\math pi * phase))
-          phase += frequency * audio delta_t
-}
-
-some_function_(): null_
-     callee; audio_callee_
-     callee frequency = 880
-     audio call_(callee;)
-     sleep_(seconds: 10)
-     # `audio hang_up_(callee;)` automatically happens when `callee` is descoped.
 ```
 
 # grammar/syntax
