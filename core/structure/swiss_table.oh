@@ -15,17 +15,13 @@ linked_swiss_table_
      # probably be most useful if we allowed bit-counts like `u10`.
      # alternatively we just use `offset_` for slots, which is about 2x the `count_` max.
      capacity_: select_count_ = arch_ count_
-     count_managed_: managed_
      # if you really want to optimize the size of this struct, we can use
      # some indirection to put `count` in an allocated spot if `on_heap`.
      # usage: `linked_swiss_table_[count_managed_ locally, ...]` or `[count_managed: _ locally, ...]`
      count_managed: _ locally
      # these also optimize the size of the struct (if `on_heap`).
-     start_managed_: managed_
      start_managed: _ locally
-     end_managed_: managed_
      end_managed: _ on_heap
-     first_tombstone_managed_: managed_
      first_tombstone_managed: _ on_heap
      # maximum number of attempts to place a new element.
      # if more than this, will trigger growing the table (rehash).
@@ -282,8 +278,6 @@ linked_swiss_table_
           if update_slot_count
                m rehash_()
 
-     count_: capacity_
-
      @private
      ;;rehash_(NEW_capacity.): hm_[null_]
           debug assert_(m count_()) <= NEW_capacity
@@ -404,9 +398,6 @@ linked_swiss_table_
 
      @private
      link_buckets_: size_optimized_allocation_[link_bucket_, header_: links_header_]
-     # TODO: do we want to make offsets work differently so we're not always // by slots per bucket?
-     #    e.g., we could get the bucket offset by reduction, than randomizing the offset within the bucket.
-     #    that might be nice to try with SIMD but not without.
      {    ::metadatum_(offset.): metadatum_
                slot_count: m capacity_() * slots_per_bucket
                if slot_count == 0
@@ -461,6 +452,13 @@ linked_swiss_table_
           capacity_managed_ on_heap
           header_
      ]
+
+     count_: capacity_
+
+     count_managed_: managed_
+     start_managed_: managed_
+     end_managed_: managed_
+     first_tombstone_managed_: managed_
 }
 
 @private
