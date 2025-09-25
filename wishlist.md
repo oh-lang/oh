@@ -7344,6 +7344,7 @@ use `um_(immediate: ...)` to make it clear that you want it that way.
 
 ## enumerations
 
+TODO: discuss `tag_()` in this context as well.
 TODO: should we use `all_of_[parent_class:, m: [...]]`??  yes.
 TODO: should these be macros like `@one_of(u32, ...)`?  if not, we need to have
 the ability to pass in additional parameters to other templates, e.g.,
@@ -7521,8 +7522,9 @@ that you are looking at the different values for `option_` in the different case
 
 ## one_of types
 
+TODO: discuss `tag_()` in this context as well.
 TODO: make sure we've done `one_of_[dbl:, ...]` everywhere instead of the old approach
-for types `one_of_[dbl:, ...]`.
+for types `one_of_[dbl_:, ...]`.
 TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific instances.
 
 The `one_of_` type is a tagged union, which can easily mix pure enum values
@@ -7535,7 +7537,6 @@ id: one_of_
      int:                          # data type, implicitly tagged to 6
      dbl: 9                        # data type with explicit tag of 9
      named_type: u64_ = 15         # renamed data type with explicit tag of 15
-     str: @next_tag                # this looks like a data type `str` but it's dataless. 
 ]
 ```
 
@@ -7734,19 +7735,21 @@ specified at compile time as exactly one of the subtypes since it is a meta-type
 
 Masks are generalized from enumerations to allow multiple values held simultaneously.
 Each value can also be thought of as a flag or option, which are bitwise OR'd together
-(i.e., `|`) for the variable instance.  Under the hood, these are unsigned integer types.
-Trying to assign a negative tag will throw a compiler error.
-Unlike enums which hold only `one_of_` the fields at a time, masks hold "any or none of",
-which is a bit too verbose; we use `any_of_[a:, b:, c:]` to declare a mask which can
-be `a`, `b`, `c`, or some combination of all three.  If there are no values present,
-we use `null` for this case, so the variable must be defined as nullable for this
-situation.
+(i.e., `|`) for the variable instance.  Under the hood, these use unsigned integer types.
+Trying to assign a negative tag will throw a compiler error.  Unlike enums which only hold
+`one_of_` the fields at a time, masks hold "any of", so we use `any_of_[a:, b:, c:]`
+to declare a mask which can be `a`, `b`, `c`, or some (non-empty) combination of all three.
+If there are no values present, we use `null` to represent the value, so the variable must
+be defined as nullable for this situation.
 
 The reason why we overload `null` here is that if we want to define an options bag
-for a function, e.g., `options_: any_of_[carrot_kg: f32_, banana_count: u32_]`
-and `do_something_(options:)`, we want `do_something_()` to be a separate overload
-which means having passed in no options.  Both overloads can be declared using
-a nullable `options_` for the argument, i.e., `do_something_(options?:)`.
+for a function, e.g., `search_options_: any_of_[name: str_, id: u64_]` for
+`search_(search_options:): t_`, we want `search_()` to be a separate overload
+which means having passed in no options, which isn't declared implicitly.
+Both overloads can be declared simultaneously (and explicitly) using a nullable
+`search_options_` for the argument, i.e., `search_(search_options?:): t_`, but
+if you require at least one field to be defined, you have the option of only
+defining the non-null overload `search_(search_options:): t_`.
 
 oh-lang masks share similar features with enums.
 
@@ -7769,14 +7772,12 @@ where `some_type_` and `other_type_` are defined elsewhere.  In this case,
 you can use `is` and `has` operators to narrow the type like this:
 `if the_mask is some_type;` or `if the_mask has other_type;`.
 
-TODO: is there a way to make this `any_of_` and use 0 as the `null` value?
-probably, but this might not be desirable from an add/delete perspective.
-if we delete a value from a mask and it becomes null, that might be confusing
-or break certain functionality.  unless we are strict about requiring nulls
-everywhere like `food?; _ carrots, food ><= _ carrots`.
-
 * Unlike an enum, if a mask variable is modifiable, it likely needs to be
 declared as nullable, because removing a value from the mask can make it empty.
+
+### `any_of_` with default tags
+
+Here is an example with default-assigned tags, which showcases the nullable issue.
 
 ```
 food_: any_of_
@@ -7784,9 +7785,17 @@ food_: any_of_
      potatoes:
      tomatoes:
 ]
-# this creates a mask with `food carrots == 1`,
-# `food potatoes == 2`, and `food tomatoes == 4`.
-# there is also a default `food none == 0`.
+
+food_ carrots == tag_(1)
+food_ potatoes == tag_(2)
+food_ tomatoes == tag_(4)
+# note `food_ carrots_` is the `null_` type since there is no tagged data,
+# and similarly for `food_ potatoes_` and `food_ tomatoes_`.
+
+# has all the same static methods as enum:
+food_ count_() == 7
+food_ min_() == 1
+food_ max_() == 7   # = _ carrots | _ potatoes | _ tomatoes
 
 food: _ carrots | _ tomatoes
 food has_carrots_()      # true
@@ -7794,33 +7803,39 @@ food has_potatoes_()     # false
 food has_tomatoes_()     # true
 food is_carrots_()       # false, since `food` is not just `carrots`.
 
+# COMPILE ERROR: mutable `food_` instance should be nullable, i.e., `other_food?; ...`
 other_food; food_ potatoes
-# COMPILE ERROR:
 other_food ><= _ potatoes     # toggle potatoes
-# NOTE: now `other_food` is null;
+# NOTE: now `other_food` is null; so
 # `other_food` needs to be defined as `other_food?;`.
 ```
 
-And here is an example with specified values.
+### `any_of_` with explicit tags
 
 ```
-# the mask is required to specify types that are powers of two:
+# if specified, the mask should have tags that are powers of two:
 non_mutually_exclusive_type_: any_of_
-[    X: 1
-     Y: 2
-     Z: 4
-     T: 32
+[    x: 1
+     y: 2
+     z: 4
+     t: 32     # cannot use 8 or 16 because reason Q
 ]
-# `non_mutually_exclusive_type_ none` is automatically defined as 0.
 
-# has all the same static methods as enum, though perhaps they are a bit surprising:
-non_mutually_exclusive_type_ count_() == 16
-non_mutually_exclusive_type_ min_() == 0
-non_mutually_exclusive_type_ max_() == 39    # = X | Y | Z | T
+non_mutually_exclusive_type_ x == tag_(1)
+non_mutually_exclusive_type_ y == tag_(2)
+non_mutually_exclusive_type_ z == tag_(4)
+non_mutually_exclusive_type_ t == tag_(32)
+# note `non_mutually_exclusive_type_ x_` is the `null_` type
+# since there is no tagged data, and similarly for `_ y_`, `_ z_`, and `_ t_`.
 
-options; non_mutually_exclusive_type_
-options == 0        # true; masks start at 0, or `none`,
-                    # so `options == none` is also true.
+# has all the same static methods as enum:
+non_mutually_exclusive_type_ count_() == 15
+non_mutually_exclusive_type_ min_() == 1
+non_mutually_exclusive_type_ max_() == 39    # = _ x | _ y | _ z | _ t
+
+options?; non_mutually_exclusive_type_
+options == tag_(0)  # true; masks start at 0.
+options == null     # also true; `null`.
 options |= _ x      # inferred mask type (via `_`)
 options |= non_mutually_exclusive_type_ z    # explicit mask type
 
@@ -7828,11 +7843,68 @@ options has_x_()    # true
 options has_y_()    # false
 options has_z_()    # true
 options has_t_()    # false
+options == tag_(5)  # true, `_ x` is `tag_(1)` and `_ z` is `tag_(4)`.
 
 options = _ t
 options is_t_()     # true
 options has_t_()    # true
 ```
+
+### `any_of_` with data
+
+```
+search_options_: any_of_[name: str_, id: u64_]
+
+# to be consistent with masks without data,
+# the field will give you the tag number,
+# but if you want the type use the `_` postfix.
+search_options_ name == tag_(1)
+search_options_ name_ == str_
+search_options_ id == tag_(2)
+search_options_ id_ == u64_
+
+search_(search_options:): null_
+     if search_options is name:
+          # only triggers if `search_options` is exactly/only `name`
+          print_("searching for $(name)...")
+     elif search_options is id:
+          # only triggers if `search_options` is exactly/only `id`
+          print_("searching for $(id)...")
+     else
+          # both `id` and `name` can be defined
+          name: search_options name_() assert_()
+          id: search_options id_() assert_()
+          print_("searching for $(name, id)...")
+```
+
+### `any_of_` with explicitly tagged data
+
+```
+explicitly_tagged_: any_of_
+[    name: str_ = 4      # cannot use 1 or 2 for reason I
+     str: 16             # cannot use 8 for reason J
+     next: u64_          # implicit tag, will use next available.
+     wow: 64             # explicit tag, no data type
+]
+
+explicitly_tagged_ name == tag_(4)
+explicitly_tagged_ name_ == str_
+explicitly_tagged_ str == tag_(16)
+explicitly_tagged_ str_ == str_
+explicitly_tagged_ next == tag_(32)
+explicitly_tagged_ next_ == u64_
+explicitly_tagged_ wow == tag_(64)
+explicitly_tagged_ wow_ == null_
+```
+
+TODO: i don't love the implicit `tag_` logic here, because `name: str_ = 4` looks
+wrong from a type perspective; `tagged_: any_of_[name: str_ @tag(1), ...]` might
+be an alternative, or `any_of_[1: [name: str_]]`.
+TODO: for non-explicit types, `imp_: any_of_[one: 1, two: 2, four: 4]`, i might
+reasonably expect that `imp_ one_` is the "1" type, so `imp_ one_(some_thing)`
+will be `ok_(tag_(1))` if `some_thing` is convertible to 1, otherwise a representation error.
+however concision also plays a role, and it's not often that you'll want to cast
+to the tag number or fail; you can always do `some_thing == imp_ one`.
 
 ## interplay with `one_of_`
 
