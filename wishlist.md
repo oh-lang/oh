@@ -243,7 +243,8 @@ imported types in [modules](#modules), e.g., `vector2_: \/my/implementation/vect
 We also can use it when defining default-named variables to refer to the variable's
 type, e.g., for static/class functions like `oh_info: _ caller_()` which is equivalent
 to `oh_info: oh_info_ caller_()` or `my_type: _(abc. 123)` to initialize `my_type`
-to `my_type(abc. 123)`.
+to `my_type(abc. 123)`.  This also works for defining an enum like `my_enum: _ cool`
+where `my_enum_: one_of_[cool:, neat:, sweet:]`.
 
 ## coolness
 
@@ -7355,7 +7356,7 @@ The syntax is `type_case_: one_of_` followed by a list of named values
 (each a `variable_name: type_case_` definition, with default type names possible
 to abbreviate `u32:` as `u32: u32_`).  Enumerations
 are mutually exclusive -- no two values may be held simultaneously.  See
-masks (`choose_`) for a similar class type that allows multiple options at once.
+masks [`any_of_`](#masks) for a similar class type that allows multiple options at once.
 
 Enums are by default the smallest standard integral type that holds all values,
 but they can be signed types (in contrast to masks which are unsigned).
@@ -7731,27 +7732,26 @@ specified at compile time as exactly one of the subtypes since it is a meta-type
 
 ## masks
 
-TODO: is there a better word than `choose_` here?  we keep using the name `mask`
-and we should have a name that fits the verb we use.  i think i like "options"
-but we'll need to go back to the enum section and rename an example if so.
-or we go verbose with `any_or_none_of_` because that's the most concise and descriptive,
-that follows along with `all_of_`, `one_of_`, etc.  but would want to rename `select_` then.
-i think i like `any_of_` actually, if we could use `null` as the `none` value
-or just deal with including a `none` automatically so we don't have to check
-for errors when deleting a tag.
-
 Masks are generalized from enumerations to allow multiple values held simultaneously.
 Each value can also be thought of as a flag or option, which are bitwise OR'd together
 (i.e., `|`) for the variable instance.  Under the hood, these are unsigned integer types.
 Trying to assign a negative tag will throw a compiler error.
-Unlike enums which hold only `one_of_` the fields at a time, masks hold `any_or_none_of_`
-which is a bit too verbose; we use `choose_[a:, b:, c:]` to declare a mask which can
-be `a`, `b`, `c`, some combination of all three, or no values at all.
+Unlike enums which hold only `one_of_` the fields at a time, masks hold "any or none of",
+which is a bit too verbose; we use `any_of_[a:, b:, c:]` to declare a mask which can
+be `a`, `b`, `c`, or some combination of all three.  If there are no values present,
+we use `null` for this case, so the variable must be defined as nullable for this
+situation.
+
+The reason why we overload `null` here is that if we want to define an options bag
+for a function, e.g., `options_: any_of_[carrot_kg: f32_, banana_count: u32_]`
+and `do_something_(options:)`, we want `do_something_()` to be a separate overload
+which means having passed in no options.  Both overloads can be declared using
+a nullable `options_` for the argument, i.e., `do_something_(options?:)`.
 
 oh-lang masks share similar features with enums.
 
 * You can specify the integer type that backs the mask tag, but in this case
-it must be an unsigned type, e.g., `u32_ choose_[...]`.  Note that by default, the tag
+it must be an unsigned type, e.g., `u32_ any_of_[...]`.  Note that by default, the tag
 is exactly as many bits as it needs to be to fit the desired options, rounded up to
 the nearest standard unsigned type (`u8_`, `u16_`, `u32_`, `u64_`, `u128_`, etc.).
 We will add a warning if the user is getting into the `u128_+` territory.
@@ -7764,17 +7764,22 @@ which is true if the mask is exactly equal to `this_value` **and nothing else**.
 You can use `has_this_value_()` to see if it contains `this_value`,
 but may contain other values besides `this_value`.
 
-* Masks can contain data aside from tags.
-
-TODO: examples with mask types
+* Masks can contain data aside from tags.  E.g., `the_mask_: any_of_[some_type:, other_type:]`
+where `some_type_` and `other_type_` are defined elsewhere.  In this case,
+you can use `is` and `has` operators to narrow the type like this:
+`if the_mask is some_type;` or `if the_mask has other_type;`.
 
 TODO: is there a way to make this `any_of_` and use 0 as the `null` value?
 probably, but this might not be desirable from an add/delete perspective.
 if we delete a value from a mask and it becomes null, that might be confusing
-or break certain functionality.
+or break certain functionality.  unless we are strict about requiring nulls
+everywhere like `food?; _ carrots, food ><= _ carrots`.
+
+* Unlike an enum, if a mask variable is modifiable, it likely needs to be
+declared as nullable, because removing a value from the mask can make it empty.
 
 ```
-food_: choose_
+food_: any_of_
 [    carrots:
      potatoes:
      tomatoes:
@@ -7783,18 +7788,24 @@ food_: choose_
 # `food potatoes == 2`, and `food tomatoes == 4`.
 # there is also a default `food none == 0`.
 
-food: food_ = carrots | tomatoes
+food: _ carrots | _ tomatoes
 food has_carrots_()      # true
 food has_potatoes_()     # false
 food has_tomatoes_()     # true
 food is_carrots_()       # false, since `food` is not just `carrots`.
+
+other_food; food_ potatoes
+# COMPILE ERROR:
+other_food ><= _ potatoes     # toggle potatoes
+# NOTE: now `other_food` is null;
+# `other_food` needs to be defined as `other_food?;`.
 ```
 
 And here is an example with specified values.
 
 ```
 # the mask is required to specify types that are powers of two:
-non_mutually_exclusive_type_: choose_
+non_mutually_exclusive_type_: any_of_
 [    X: 1
      Y: 2
      Z: 4
@@ -7828,7 +7839,7 @@ options has_t_()    # true
 We can also create a mask with one or more `one_of_` fields, e.g.:
 
 ```
-options_: choose_
+options_: any_of_
 [    one_of_[align_center_x:, align_left:, align_right:]
      one_of_[align_center_y:, align_top:, align_bottom:]
 
@@ -7874,7 +7885,7 @@ name can thus be chosen for each `one_of_`, e.g., `one_of_[..., whatever_name: 0
 You can add some named combinations by extending a mask like this.
 
 ```
-my_mask_: choose_[x:, y:]
+my_mask_: any_of_[x:, y:]
 {    x_and_y: x | y
 }
 
