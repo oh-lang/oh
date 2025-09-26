@@ -7431,10 +7431,13 @@ print_("starting at ${bool_ min_()} and going to ${bool_ max_()}")
 
 Because of this, it is a bit confusing to create an enum that has `count` as an
 enumerated value name, but it is not illegal, since we can still distinguish between the
-enumerated value (`enum_name_ count`) and total number of enumerated values (`enum_name_ count_()`).
-Similarly for `min`/`max`.
+enumerated value (`enum_name_ count`) and total number of enumerated values
+(`enum_name_ count_()`).  Similarly for `min`/`max`.
+TODO: Actually this does get confusing since we can have data types in a `one_of_`,
+and `the_enum_ count_(123)` with `the_enum_: one_of_[count:, ...]`.
+we might need to do something like `one_of_ count_(the_enum_)`.
 
-Also note that the `count_()` method will return the total number of
+Also note that the `count_()` class function will return the total number of
 enumerations, not the number +1 after the last enum value.  This can be confusing
 in case you use non-standard enumerations (i.e., with values less than 0):
 
@@ -7473,6 +7476,13 @@ collapses to `[]` based on how containers work; this is why we need to force a d
 in `one_of_` (like `:`) by using `one_of_[null:]`.  Null is always the absence of a value
 and should never be considered present (unless declared).
 
+Nulls are highly encouraged to come last in a `one_of_`, because they will match any input,
+so casting like this: `one_of_[null:, int:](1234)` would actually become `null` rather than
+the expected value `1234`, since casts are attempted in order of the `one_of_` types.
+
+TODO: like with `any_of_`, maybe don't let `null` be explicitly added to a `one_of_`.
+that way we can always just use `?` to define the nullable version.
+
 ### testing enums with lots of values
 
 Note that if you are checking many values, a `what` statement may be more useful
@@ -7505,12 +7515,11 @@ elif option1 == oops_you_missed_it  # also OK
 
 # instead, consider doing this:
 what option1
-     # TODO: should we namespace via `_ not_a_good_option`?
-     not_a_good_option
+     _ not_a_good_option
           print_("oh no")
-     best_option_still_coming
+     _ best_option_still_coming
           print_("was the best actually...")
-     unselected
+     _ unselected
           fall_through
      else
           print_("that was boring")
@@ -7518,9 +7527,9 @@ what option1
 
 Note that we don't have to do `option_ not_a_good_option` (and similarly for other options)
 along with the cases.  The compiler knows that since `option1` is of type `option_`,
-that you are looking at the different values for `option_` in the different cases.
+so we can use `_` to namespace correctly as `option_`.
 
-## one_of types
+## `one_of_` types
 
 TODO: discuss `tag_()` in this context as well.
 TODO: make sure we've done `one_of_[dbl:, ...]` everywhere instead of the old approach
@@ -7537,12 +7546,10 @@ id: one_of_
      int:                          # data type, implicitly tagged to 6
      dbl: 9                        # data type with explicit tag of 9
      named_type: u64_ = 15         # renamed data type with explicit tag of 15
+     str: 19                       # data type (`str_`) with explicit tag of 19
+     fragrance: u32_               # data type with implicit tag of 20
 ]
 ```
-
-Nulls are highly encouraged to come last in a `one_of_`, because they will match any input,
-so casting like this: `one_of_[null:, int:](1234)` would actually become `null` rather than
-the expected value `1234`, since casts are attempted in order of the `one_of_` types.
 
 Take this example `one_of_`.
 
@@ -7550,31 +7557,33 @@ Take this example `one_of_`.
 tree_: one_of_
 [    leaf: [value; int_]
      branch:
-     [    left; memory_ heap_[tree_]
-          right; memory_ heap_[tree_]
+     [    left; heap_[tree_]
+          right; heap_[tree_]
      ]
 ]
 ```
 
-When checking a `tree_` type for its internal structure, you can use `is_leaf()` or `is_branch()`
-if you just need a boolean, but if you need to manipulate one of the internal types, you should
-use `::is_(fn_(internal_type:): null_): bool_` or `;;is_(fn_(internal_type;): null_): bool_`
-if you need to modify it, where `internal_type_` is either `leaf_` or `branch_` in this case.
+When checking a `tree_` type for its internal structure, you can use `is_leaf_()`
+or `is_branch_()` if you just need a boolean, but if you need to manipulate
+one of the internal types, you should use `::is_(fn_(internal_type:): null_): bool_`
+or `;;is_(fn_(internal_type;): null_): bool_` if you need to modify it,
+where `internal_type_` is either `leaf_` or `branch_` in this case.
 For example:
 
 ```
 tree; tree_ = if some_condition
-     leaf_(value: 3)
+     _ leaf_(value: 3)
 else
-     branch_(left: leaf_(value: 1), right: leaf_(value: 5))
+     branch_(left: _ leaf_(value: 1), right: _ leaf_(value: 5))
 
 if tree is_leaf_()
      # no type narrowing, not ideal.
-     print(tree)
+     print_(tree)
 
 # narrowing to a `leaf_` type that is readonly, while retaining a reference
 # to the original `tree` variable.  the nested function only executes if
 # `tree` is internally of type `leaf_`:
+# TODO: how can we infer `leaf:` as `tree_ leaf_` type here?
 tree is_(fn_(leaf:): print_(leaf))  # for short, `tree is_({print_($leaf)})`
 
 # narrowing to a `branch_` type that is writable.  `tree` was writable, so `branch` can be.
@@ -7905,6 +7914,11 @@ reasonably expect that `imp_ one_` is the "1" type, so `imp_ one_(some_thing)`
 will be `ok_(tag_(1))` if `some_thing` is convertible to 1, otherwise a representation error.
 however concision also plays a role, and it's not often that you'll want to cast
 to the tag number or fail; you can always do `some_thing == imp_ one`.
+it'll be more likely that we want to do `imp_ one_("whatever data")`,
+which creates an `imp_` instance that is tagged to `one` with data "whatever data".
+maybe we'd prefer very literally `tagged_: any_of_[name: 1, name_: str_, ...]`??
+or `tagged_: any_of_[name: 1 @data(str_), ...]`
+or `tagged_: any_of_[name: @tag(1, str_), ...]`.
 
 ## interplay with `one_of_`
 
