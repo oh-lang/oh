@@ -1302,7 +1302,7 @@ The corresponding generic is `signed_[bits: count]`.  We also define the
 symmetric integers `s8_` to `s512_` using two's complement, but disallowing
 the lowest negative value of the corresponding `i8_` to `i512_`, e.g.,
 -128 for `s8_`.  This allows you to fit in a null type with no extra storage,
-e.g., `one_of_[s8:, null:]` is exactly 8 bits, since it uses -128 for null.
+e.g., `s8_?` is exactly 8 bits, since it uses -128 for null.
 (See [nullable classes](#nullable-classes) for more information.)
 Symmetric integers are useful when you want to ensure that `-symmetric`
 is actually the opposite sign of `symmetric`; `-i8_(-128)` is still `i8_(-128)`.
@@ -1352,7 +1352,7 @@ Casting to a complex type, e.g., `one_of_[int:, str:](some_value)` will pass thr
 if it is an `int_` or a `str_`, otherwise try `int_(some_value)` if that is allowed, and finally
 `str_(some_value)` if that is allowed.  If none of the above are allowed, the compiler will
 throw an error.  Note that nullable types absorb errors in this way (and become null), so
-`one_of_[int:, null:](some_safe_cast)` will be null if the cast was invalid, or an `int_` if the
+`result?: int_(some_safe_cast)` will be null if the cast was invalid, or an `int_` if the
 cast was successful.
 
 To define a conversion from one class to another, you can define a global function
@@ -1515,7 +1515,7 @@ unnest_[hm_[ok_: ~nested_, ~_er_]]: _nested
 
 # null specialization
 # e.g., `unnest_[int_?] == int`.
-unnest_[one_of_[...~nested:, null:]]: one_of_[...nested:]
+unnest_[~nested_?]: nested_
 ```
 
 Note that if we have a function that returns a type, we must use brackets, e.g.,
@@ -1533,21 +1533,19 @@ Here is some nullable type manipulation:
 # the `null` type should not be considered nullable because there's
 # nothing that can be unnulled, so ensure there's something not-null in a nullable.
 #   nullable_(one_of_[dbl:, int:, str:]) == false
-#   nullable_(one_of_[dbl:, int:, null:]) == true
-#   nullable_(one_of_[int:, null:]) == true
-#   nullable_(one_of_[null:]) == false
+#   nullable_(one_of_[dbl:, int:]?) == true
 #   nullable_(null_) == false
 nullable_(of_): of_ contains_(not_[null_], null_)
 
 # examples
 #   unnull_[int_] == int_
 #   unnull_[int_?] == int_
-#   unnull_[one_of_[array[int_]:, set[dbl_]:, null:]] == one_of_[array[int_]:, set[dbl_]:]
+#   unnull_[one_of_[array[int_]:, set[dbl_]:]?] == one_of_[array[int_]:, set[dbl_]:]
 unnull_[of_]: if nullable_(of_) {unnest_[of_]} else {of_}
 
 # a definition without nullable, using template specialization:
 unnull_[of_]: of_
-unnull_[one_of_[...~nested:, null:]]: one_of_[...nested:]
+unnull_[~nested_?]: nested_
 ```
 
 # operators and precedence
@@ -1978,7 +1976,7 @@ then the return value will be `x`.  If `x` is truthy, the return value will be `
 Again, in a conditional, we'll cast `x and y` to a boolean.
 
 If the LHS of the expression can take a nullable, then there is a slight modification.
-`x or y` will be `one_of_[x:, y:, null:]` and `x and y` will be `one_of_[y:, null:]`.
+`x or y` will be `one_of_[x:, y:]?` and `x and y` will be `y_?`.
 The result will be `null` if both (either) operands are falsey for `or` (`and`).
 
 ```
@@ -1989,12 +1987,11 @@ nullable_and?: x and y      # nullable_and?: if !!x and !!y {null} else {y}
 ```
 
 This makes things similar to the `xor` operator, but `xor` always requires a nullable LHS.
-The exclusive-or operation `x xor y` has type `one_of_[x:, y:, null:]`, and will return `null`
+The exclusive-or operation `x xor y` has type `one_of_[x:, y:]?`, and will return `null`
 if both `x` and `y` are truthy or if they are both falsey.  If just one of the operands
 is truthy, the result will be the truthy operand.  An example implementation:
 
 ```
-# you can define it as nullable via `xor_(~x, ~y): one_of_[x:, y:, null:]` or like this:
 xor_(~x, ~y)?: one_of_[x:, y:]
      x_is_true: bool_(x)     # `x_is_true: !!x` is also ok.
      y_is_true: bool_(y)
@@ -2134,7 +2131,7 @@ some_class_: []{ ::some_method_(): int }
 
 nullable?; some_class_ = null
 
-value?: nullable some_method_()    # `value` has type `one_of_[int:, null:]` now,
+value?: nullable some_method_()    # `value` has type `int_?` now,
                                    # so it needs to be defined with `?`
 
 # eventually we want to support things like this, where the compiler
@@ -2228,7 +2225,7 @@ nullish_or_(~a_0?., a_1.): a_
 # boolean or.
 # `nullable || x` to return `x` if `nullable` is null or falsey,
 # otherwise the non-null truthy value in `nullable`.
-or_(~a_0?., a_1.): a
+or_(~a_0?., a_1.): a_
      what a_0
           non_null:
                if non_null
@@ -2242,7 +2239,7 @@ We'll support more complicated pattern matching (like in Rust) using
 the `where` operator.  The shorter version of the above `what` statement is:
 
 ```
-or_(~a_0?., a_1.): a
+or_(~a_0?., a_1.): a_
      what a_0
           NON_NULL_a: where !!NON_NULL_a
                NON_NULL_a
@@ -3304,7 +3301,7 @@ x?: if y != null { overloaded_(y) } else { null }
 # if you needed to name this argument, it would be `arg_name: ?y`:
 x?: overloaded_(?y)
 
-# either way, `x` has type `one_of_[string:, null:]`.
+# either way, `x` has type `string_?`.
 ```
 
 You can use prefix `?` with multiple arguments; if any argument with prefix `?` is null,
@@ -4057,9 +4054,9 @@ after the function name but before the argument list.  E.g.,
 function and swapping `:` for `;` to create a reassignable function.
 When calling a nullable function, unless the function is explicitly
 checked for non-null, the return type will be nullable.  E.g.,
-`x?: optional_function_(...args)` will have a type of
-`one_of_[return_type:, null:]`.  Nullable functions are checked by
-the executable, so the programmer doesn't necessarily have to do it.
+`x?: optional_function_(...args)` will have a type of `return_type_?`.
+Nullable functions are checked by the executable, so the programmer
+doesn't necessarily have to do it.
 
 A nullable function has `?` before the argument list; a `?` *after* the argument list
 means that the return type is nullable.  The possible combinations are therefore the following:
@@ -6044,7 +6041,7 @@ what you want, annotate the function with `@can_panic`, otherwise it's a compile
 ## automatically converting errors to null
 
 If a function returns a `hm_` type, e.g., `my_function_(...): hm_[ok_, er_]`,
-then we can automatically convert its return value into a `one_of_[ok:, null:]`, i.e.,
+then we can automatically convert its return value into a `ok_?`, i.e.,
 a nullable version of the `ok_` type.  This is helpful for things like type casting;
 instead of `my_int: what int_(my_dbl) {ok. {ok}, er: {-1}}` you can do
 `my_int: int_(my_dbl) ?? -1`.  Although, there is another option that
@@ -6052,7 +6049,7 @@ doesn't use nulls:  `int_(my_dbl) map_(fn_(_er): -1)`, or via
 [lambda functions](#lambda-functions): `int_(my_dbl) map_({$er_, -1})`.
 
 TODO: should this be valid if `ok` is already a nullable type?  e.g.,
-`my_function_(): hm_[ok_: one_of_[int:, null:], er_: str_]`.
+`my_function_(): hm_[ok_: int_?, er_: str_]`.
 we probably should compile-error-out on casting to `int?: my_function_()` since
 it's not clear whether `int` is null due to an error or due to the return value.
 maybe we allow flattening here anyway.
@@ -7488,20 +7485,10 @@ print_(weird_ max_())       # prints 9
 ### default values for a `one_of_`
 
 Note that the default value for a `one_of_` is the first value, unless zero is an option
-(and it's not the first value), unless `null` is an option -- in increasing precedence.
-E.g., `one_of_[value_a:, value_b:]` defaults to `value_a`, `one_of_[a: -1, b: 0, c: 1]` 
-defaults to `b`, and `one_of_[option_c:, null:]` defaults to `null`, and
-`one_of_[a: -1, b: 0, c: 1, null:]` also defaults to `null`.  Notice that `[null]`
-collapses to `[]` based on how containers work; this is why we need to force a declaration
-in `one_of_` (like `:`) by using `one_of_[null:]`.  Null is always the absence of a value
-and should never be considered present (unless declared).
-
-Nulls are highly encouraged to come last in a `one_of_`, because they will match any input,
-so casting like this: `one_of_[null:, int:](1234)` would actually become `null` rather than
-the expected value `1234`, since casts are attempted in order of the `one_of_` types.
-
-TODO: like with `any_of_`, maybe don't let `null` be explicitly added to a `one_of_`.
-that way we can always just use `?` to define the nullable version.
+(and it's not the first value).  Note that `null` does not belong in a `one_of_`, but
+will automatically be space-optimized for if you leave enough tags in your enum and
+you request a nullish type, e.g., `one_of_[a:, ...]?`.  The reason we don't allow
+`null`s in a `one_of_` is to align with [`any_of_` logic](#masks).
 
 ### testing enums with lots of values
 
