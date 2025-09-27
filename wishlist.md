@@ -7994,52 +7994,6 @@ what would `|` look like for strings?
 or we could just make `&` and `|` take the first value if present (and the second value is
 present for `&` or regardless of the second value for `|`).
 
-## interplay with `one_of_`
-
-We can also create a mask with one or more `one_of_` fields, e.g.:
-
-```
-options_: any_of_
-[    one_of_[align_center_x:, align_left:, align_right:]
-     one_of_[align_center_y:, align_top:, align_bottom:]
-
-     one_of_[font_very_small:, font_small:, font_normal: 0, font_large:, font_very_large:]
-]
-```
-
-It is a compiler error to assign multiple values from the same `one_of_`:
-
-```
-options; options_ = align_center_x | align_right     # COMPILER ERROR!
-```
-
-TODO: we probably shouldn't do this, at least not at the first pass.
-
-Note that internally, an `OR` combination of the `one_of_` values may actually be valid;
-it may be another one of the `one_of_` values in order to save bits.  Otherwise, each
-new value in the `one_of` would need a new power of 2.  For example, we can represent
-`one_of_[align_center_x:, align_left:, align_right:]` with only two powers of two, e.g.,
-`align_center_x = 4`, `align_left = 8`, and `align_right = 12`.  Because of this, there
-is special logic with `|` and `&` for `one_of` values in masks.
-
-```
-options2; options_ = align_center_x
-options2 |= align_right  # will clear out existing align_center_x/Left/Right first before `OR`ing
-if options2 & align_center_x
-     print_("this will never trigger even if align_center_x == 4 and align_right == 12.")
-```
-
-You can also explicitly tell the mask to avoid assigning a power of two to one of the
-`one_of_` values by setting it to zero (e.g., `one_of_[..., value: 0, ... ]`.
-For example, the font size `one_of_` earlier could be represented by 3 powers of two, e.g.,
-`font_very_small = 16`, `font_small = 32`, `font_large = 64`, `font_very_large = 96`.
-Note that we have the best packing if the number of non-zero values is 3 (requiring 2 powers of two),
-7 (requiring 3 powers of two), or, in general, one less than a power of two, i.e., `2^p - 1`,
-requiring `p` powers of two.  This is because we need one value to be the default for each
-`one_of_` in the mask, which will be all `p` bits set to zero; the remaining `2^p - 1`
-combinations of the `p` bits can be used for the remaining `one_of_` values.  A default
-name can thus be chosen for each `one_of_`, e.g., `one_of_[..., whatever_name: 0, ...]`.
-
 ## named value-combinations
 
 You can add some named combinations by extending a mask like this.
