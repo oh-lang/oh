@@ -7539,10 +7539,6 @@ so we can use `_` to namespace correctly as `option_`.
 
 ### `one_of_` with data
 
-TODO: make sure we've done `one_of_[dbl:, ...]` everywhere instead of the old approach
-for types `one_of_[dbl_:, ...]`.
-TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific instances.
-
 The `one_of_` type is a tagged union, which can easily mix simple enum values
 (with no accompanying data) with tagged data types.
 
@@ -7746,6 +7742,56 @@ function with a `one_of` argument, in this example for a `one_of_` named
 
 TODO: ensure that we can use `call` or similar to create our own version
 of a `one_of` with metaprogramming or whatever.
+
+### `one_of_` with specific instances
+
+You can restrict inputs to an allowed subset of e.g., integers using
+`one_of_` with the specific inputs.
+
+```
+# by default this will use the smallest integer (or even unsigned integer) type
+# that will fit all values; in this case, a `u4_`.
+# TODO: should this be a `u3_` because we have more than 4 but fewer than 8 values?
+small_odd_: one_of_[1, 3, 5, 7, 9]
+
+x: small_odd_ = 3  # OK
+
+# tags work a bit differently because we don't have named fields, but we
+# can use `@symbol(...)` to get the field name:
+small_odd_ @symbol(1) == tag_(0)
+small_odd_ @symbol(3) == tag_(1)
+small_odd_ @symbol(5) == tag_(2)
+# etc.
+# and you can get the type like this:
+small_odd_ @symbol(1_) == tag_[one_of_: small_odd_, 0, 1, field: "1"]
+small_odd_ @symbol(3_) == tag_[one_of_: small_odd_, 1, 3, field: "3"]
+small_odd_ @symbol(5_) == tag_[one_of_: small_odd_, 2, 5, field: "5"]
+# etc.
+```
+
+Here is an example with specific string instances.
+
+```
+valid_color_: one_of_["gray", "black", "white"]
+
+get_(valid_color:): str_
+     what valid_color
+          "gray"
+               "#757575"
+          "black"
+               "#000000"
+          "white"
+               "#ffffff"
+
+assert_(get_("black")) == "#000000"
+
+valid_color_ @symbol("gray") == tag(0)
+valid_color_ @symbol("gray"_) == tag_[one_of_: valid_color_, 0, "gray", field: "gray"]
+valid_color_ @symbol("black") == tag(1)
+valid_color_ @symbol("black"_) == tag_[one_of_: valid_color_, 1, "black", field: "black"]
+valid_color_ @symbol("white") == tag(2)
+valid_color_ @symbol("white"_) == tag_[one_of_: valid_color_, 2, "white", field: "white"]
+```
 
 ## select
 
