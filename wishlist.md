@@ -7436,6 +7436,10 @@ enumerated value (`enum_name_ count`) and total number of enumerated values
 TODO: Actually this does get confusing since we can have data types in a `one_of_`,
 and `the_enum_ count_(123)` with `the_enum_: one_of_[count:, ...]`.
 we might need to do something like `one_of_ count_(the_enum_)`.
+OR we use something like `count_[the_enum_]()`.  but that should correspond
+to `the_enum_ count_()`.  so maybe `count_[one_of_: the_enum_]()`.
+this does make it a bit confusing for generics: should `count_(the_enum_)`
+(which is the same as `the_enum_ count_()`) be the same as `count_[the_enum_]()`?
 
 Also note that the `count_()` class function will return the total number of
 enumerations, not the number +1 after the last enum value.  This can be confusing
@@ -7852,7 +7856,7 @@ options has_x_()    # true
 options has_y_()    # false
 options has_z_()    # true
 options has_t_()    # false
-options == tag_(5)  # true, `_ x` is `tag_(1)` and `_ z` is `tag_(4)`.
+options tag_() == tag_(5)     # true, `_ x` is `tag_(1)` and `_ z` is `tag_(4)`.
 
 options = _ t
 options is_t_()     # true
@@ -7868,9 +7872,9 @@ search_options_: any_of_[name: str_, id: u64_]
 # the field will give you the tag number,
 # but if you want the type use the `_` postfix.
 search_options_ name == tag_(1)
-search_options_ name_ == str_
+search_options_ name_ == tag_[any_of_: search_options_, 1, str_, field: "name"]
 search_options_ id == tag_(2)
-search_options_ id_ == u64_
+search_options_ id_ == tag_[any_of_: search_options_, 2, u64_, field: "id"]
 
 search_(search_options:): null_
      if search_options is name:
@@ -7884,6 +7888,9 @@ search_(search_options:): null_
           name: search_options name_() assert_()
           id: search_options id_() assert_()
           print_("searching for $(name, id)...")
+
+# TODO: if we only have one overload, can we simplify to `search_(_ name_("cool dude"))`?
+search_(search_options_ name_("cool dude"))  # prints "searching for (name: cool dude)"
 ```
 
 ### `any_of_` with explicitly tagged data
@@ -7897,28 +7904,44 @@ explicitly_tagged_: any_of_
 ]
 
 explicitly_tagged_ name == tag_(4)
-explicitly_tagged_ name_ == str_
+explicitly_tagged_ name_ == tag_[any_of_: explicitly_tagged_, 4, str_, field: "name"]
 explicitly_tagged_ str == tag_(16)
-explicitly_tagged_ str_ == str_
+explicitly_tagged_ str_ == tag_[any_of_: explicitly_tagged_, 16, str_, field: "str"]
 explicitly_tagged_ next == tag_(32)
-explicitly_tagged_ next_ == u64_
+# TODO: should we use `field: @"next"` to indicate `@"next"` is a symbol/field in the code?
+explicitly_tagged_ next_ == tag_[any_of_: explicitly_tagged_, 32, u64_, field: "next"]
 explicitly_tagged_ wow == tag_(64)
-explicitly_tagged_ wow_ == null_
+explicitly_tagged_ wow_ == tag_[any_of_: explicitly_tagged, 64, null_, field: "wow"]
+
+explicitly_tagged; _ next_(1234)
+explicitly_tagged == explicitly_tagged_ next_(1234)    # true
+explicitly_tagged = _ name_("whatever")
+if explicitly_tagged is name:
+     print_("got name: ${name}")   # prints "got name: whatever"
+
+explicitly_tagged |= _ wow
+explicitly_tagged |= _ str_("cool")
+# TODO: do we need to do `if explicitly_tagged is name: _ name_`?
+#    or something like `if explicitly_tagged is _ name:`?
+#    i like the latter as long as `explicitly_tagged is _ name:` expands to `explicitly_tagged is name: _ name_`
+#    i think for consistency we need this because `name_` is not in scope here and we don't want to assume scope:
+if explicitly_tagged is name:
+     print_("should not print, no longer exlusively `name`")
+if explicitly_tagged has name:
+     print_("contains $(name)")    # prints "contains (name: whatever)"
+if explicitly_tagged has str:
+     print_("contains $(str)")     # prints "contains (str: cool)"
+if explicitly_tagged has _ wow
+     print_("also contains wow factor")      # should print
+
+explicitly_tagged tag_() == tag_(_ name | _ str | _ wow)    # true
 ```
 
-TODO: i don't love the implicit `tag_` logic here, because `name: str_ = 4` looks
-wrong from a type perspective; `tagged_: any_of_[name: str_ @tag(1), ...]` might
-be an alternative, or `any_of_[1: [name: str_]]`.
-TODO: for non-explicit types, `imp_: any_of_[one: 1, two: 2, four: 4]`, i might
-reasonably expect that `imp_ one_` is the "1" type, so `imp_ one_(some_thing)`
-will be `ok_(tag_(1))` if `some_thing` is convertible to 1, otherwise a representation error.
-however concision also plays a role, and it's not often that you'll want to cast
-to the tag number or fail; you can always do `some_thing == imp_ one`.
-it'll be more likely that we want to do `imp_ one_("whatever data")`,
-which creates an `imp_` instance that is tagged to `one` with data "whatever data".
-maybe we'd prefer very literally `tagged_: any_of_[name: 1, name_: str_, ...]`??
-or `tagged_: any_of_[name: 1 @data(str_), ...]`
-or `tagged_: any_of_[name: @tag(1, str_), ...]`.
+TODO: what do we do with `explicitly_tagged_ name_("asdf") & explicitly_tagged_ name_("jkl;")`?
+do we combine to `explicitly_tagged_ name_("asdf jkl;")` using the `&` operator for the name strings?
+`_ next_(4 + 8) & _ next_(8 + 16)` could be `_ next_(8)` based on `&` for ints.
+`_ next_(4 + 8) | _ next_(8 + 16)` could be `_ next_(4 + 8 + 16)` based on `|` for ints.
+what would `|` look like for strings?
 
 ## interplay with `one_of_`
 
