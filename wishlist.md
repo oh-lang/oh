@@ -7545,24 +7545,41 @@ so we can use `_` to namespace correctly as `option_`.
 
 ## `one_of_` types
 
-TODO: discuss `tag_()` in this context as well.
 TODO: make sure we've done `one_of_[dbl:, ...]` everywhere instead of the old approach
 for types `one_of_[dbl_:, ...]`.
 TODO: discuss things like `one_of[1, 2, 5, 7]` in case you want only specific instances.
 
-The `one_of_` type is a tagged union, which can easily mix pure enum values
+The `one_of_` type is a tagged union, which can easily mix simple enum values
 (with no accompanying data) with tagged data types.
 
 ```
-id: one_of_
-[    unknown:                      # defaults to tag 0
-     another_pure_enum_value: 5    # value with explicit tag
+id_: one_of_
+[    unknown:                      # defaults to tag 0, no subtype data
+     another_pure_enum_value: 5    # enum with explicit tag
      int:                          # data type, implicitly tagged to 6
      dbl: 9                        # data type with explicit tag of 9
      named_type: u64_ = 15         # renamed data type with explicit tag of 15
      str: 19                       # data type (`str_`) with explicit tag of 19
      fragrance: u32_               # data type with implicit tag of 20
 ]
+
+id_ unknown == tag_(0)
+id_ unknown_ == tag_[one_of_: id_, 0, null_, field: "unknown"]
+id_ another_pure_enum_value == tag_(5)
+id_ another_pure_enum_value_ == tag_[one_of_: id_, 5, null_, field: "another_pure_enum_value"]
+id_ int == tag_(6)
+id_ int_ == tag_[one_of_: id_, 6, int_, field: "int"]
+id_ dbl == tag_(9)
+id_ dbl_ == tag_[one_of_: id_, 9, dbl_, field: "dbl"]
+id_ named_type == tag_(15)
+id_ named_type_ == tag_[one_of_: id_, 15, u64_, field: "named_type"]
+id_ str == tag_(19)
+id_ str_ == tag_[one_of_: id_, 19, str_, field: "str"]
+id_ fragrance == tag_(20)
+id_ fragrance_ == tag_[one_of_: id_, 20, u32_, field: "fragrance"]
+
+# you can use the tag type to create an instance of `id_`:
+my_id; id_ fragrance_(1234)   # `my_id` is of type `id_`
 ```
 
 Take this example `one_of_`.
@@ -7597,7 +7614,7 @@ if tree is_leaf_()
 # narrowing to a `leaf_` type that is readonly, while retaining a reference
 # to the original `tree` variable.  the nested function only executes if
 # `tree` is internally of type `leaf_`:
-# TODO: how can we infer `leaf:` as `tree_ leaf_` type here?
+# TODO: how can we infer `leaf:` as `tree_ leaf_` type here?  might need to be `_ leaf:`
 tree is_(fn_(leaf:): print_(leaf))  # for short, `tree is_({print_($leaf)})`
 
 # narrowing to a `branch_` type that is writable.  `tree` was writable, so `branch` can be.
