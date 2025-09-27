@@ -1425,7 +1425,7 @@ y; x_ = 4.56    # use the type of `x` to define a variable `y`.
 Note that the `type_case_` version of the `variable_case` name does not have
 any information about the instance, so `x` is `one_of_[int:, dbl:]` in the above
 example and `y` is an instance of the same `one_of_[int:, dbl:]` type.  For other
-ways to handle different types within a `one_of_`, [go here](#one_of-types).
+ways to handle different types within a `one_of_`, [go here](#one_of_-with-data).
 
 Some more examples:
 
@@ -7345,6 +7345,10 @@ use `um_(immediate: ...)` to make it clear that you want it that way.
 ## enumerations
 
 We can create a new type that exhaustively declares multiple subtypes that it could be.
+Enumerations consist of mutually exclusive options -- no two values may be held
+simultaneously.  See masks [`any_of_`](#masks) for a similar class type that allows
+multiple options at once.
+
 The syntax is `type_case_: one_of_` followed by a list of `tag`s, i.e., named fields
 with an optional subtype (defaults to `null_`) and optional tag number (defaults to
 next available tag number after the previous tag).  The common case, i.e., enumerations,
@@ -7354,9 +7358,7 @@ to abbreviate `u32:` as `u32: u32_`.  You can also explicitly assign the tag num
 e.g., `variable_name: 5` to use 5 as the tag number for `variable_name` (which won't
 include any subtype data unless `variable_name_` is in scope as a type), or
 `data_name: data_type_ = 6` to use 6 as the tag number for the field `data_name` that
-holds subtype `data_type_`).  Enumerations are mutually exclusive -- no two values
-may be held simultaneously.  See masks [`any_of_`](#masks) for a similar class type
-that allows multiple options at once.
+holds subtype `data_type_`).
 
 Enums use tag number types that are by default the smallest standard integral type that
 holds all values, and can be signed types (in contrast to masks which are only unsigned).
@@ -7383,10 +7385,14 @@ assert_(my_enum_ third_value_is_specified) == 123
 assert_(my_enum_ fourth_value_increments) == 124
 
 # behind the scenes, tags have a bit of reflection going on:
-my_enum_ first_value_defaults_to_zero_ == tag_[one_of_: my_enum_, 0, null_, field: "first_value_defaults_to_zero"]
-my_enum_ second_value_increments_ == tag_[one_of_: my_enum_, 1, null_, field: "second_value_increments"]
-my_enum_ third_value_is_specified_ == tag_[one_of_: my_enum_, 123, null_, field: "third_value_is_specified"]
-my_enum_ fourth_value_increments_ == tag_[one_of_: my_enum_, 124, null_, field: "fourth_value_increments"]
+my_enum_ first_value_defaults_to_zero_
+     ==   tag_[one_of_: my_enum_, 0, null_, field: "first_value_defaults_to_zero"]
+my_enum_ second_value_increments_
+     ==   tag_[one_of_: my_enum_, 1, null_, field: "second_value_increments"]
+my_enum_ third_value_is_specified_
+     ==   tag_[one_of_: my_enum_, 123, null_, field: "third_value_is_specified"]
+my_enum_ fourth_value_increments_
+     ==   tag_[one_of_: my_enum_, 124, null_, field: "fourth_value_increments"]
 ```
 
 You can even pass in existing variable(s) to the enum, although they should be
@@ -7543,7 +7549,7 @@ Note that we don't have to do `option_ not_a_good_option` (and similarly for oth
 along with the cases.  The compiler knows that since `option1` is of type `option_`,
 so we can use `_` to namespace correctly as `option_`.
 
-## `one_of_` types
+### `one_of_` with data
 
 TODO: make sure we've done `one_of_[dbl:, ...]` everywhere instead of the old approach
 for types `one_of_[dbl_:, ...]`.
@@ -7580,9 +7586,23 @@ id_ fragrance_ == tag_[one_of_: id_, 20, u32_, field: "fragrance"]
 
 # you can use the tag type to create an instance of `id_`:
 my_id; id_ fragrance_(1234)   # `my_id` is of type `id_`
+# ... some other operations
+# this will be `null` if `my_id` is not an instance of `id_ fragrance`:
+fragrance?: u32_ = my_id fragrance_()
+# this will be `null` if `my_id` is not an instance of `id_ str`:
+str?: my_id str_()
 ```
 
-Take this example `one_of_`.
+As seen in the example above, you can try to grab a copy of whatever data
+is in the `one_of_` by using `variable_name field_name_()`; it will return
+null if `field_name` is not populated.  Note that these methods are not
+created for simple enum fields, since they would always return null even if
+that enum tag was active.  Instead, use `is_enum_value_()` to check if the
+field `enum_value` is present.
+
+### `one_of_` with nested data
+
+Consider this example `one_of_`.
 
 ```
 tree_: one_of_
@@ -7652,11 +7672,12 @@ what tree
           branch left some_operation_()
 ```
 
-If you want to make a copy, you can do so via type casting: `new_leaf?; leaf_ = tree`
-or `my_branch?; branch_ = tree`; these
-variables will be null if the `tree` is not of that type, but they will also be
-a copy and any changes to the new variables will not be reflected in `tree`.
-TODO: discuss how copies should generally have handle OOM errors.
+If you want to make a copy, use: `new_leaf?; tree leaf_()` or
+`my_branch?; tree branch_()`; these variables will be null if the `tree`
+is not of that type, but they will also be a copy and any changes to the
+new variables will not be reflected in `tree`.  If you expect to see
+OOM errors and want to avoid panicking, use the result overload via e.g.
+`new_leaf?: tree leaf_() assert_()`.
 
 ```
 one_of_[..., ~t_]: []
@@ -7970,6 +7991,8 @@ do we combine to `explicitly_tagged_ name_("asdf jkl;")` using the `&` operator 
 `_ next_(4 + 8) | _ next_(8 + 16)` could be `_ next_(4 + 8 + 16)` based on `|` for ints.
 what would `|` look like for strings?
 `><` doesn't really have any problems.
+or we could just make `&` and `|` take the first value if present (and the second value is
+present for `&` or regardless of the second value for `|`).
 
 ## interplay with `one_of_`
 
