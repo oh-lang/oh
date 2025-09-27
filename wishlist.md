@@ -7344,29 +7344,28 @@ use `um_(immediate: ...)` to make it clear that you want it that way.
 
 ## enumerations
 
-TODO: discuss `tag_()` in this context as well.
-TODO: should we use `all_of_[parent_class:, m: [...]]`??  yes.
-TODO: should these be macros like `@one_of(u32, ...)`?  if not, we need to have
-the ability to pass in additional parameters to other templates, e.g.,
-`my_class_[whatever: int_, required_type_, ...optional_types_]`.
-as much as possible, we don't want to hide language features behind a garden wall.
+We can create a new type that exhaustively declares multiple subtypes that it could be.
+The syntax is `type_case_: one_of_` followed by a list of `tag`s, i.e., named fields
+with an optional subtype (defaults to `null_`) and optional tag number (defaults to
+next available tag number after the previous tag).  The common case, i.e., enumerations,
+only include a `variable_case:` declaration.  But you can add subtypes for data the
+named field holds,  e.g., `variable_name: type_case_`, with default type names possible
+to abbreviate `u32:` as `u32: u32_`.  You can also explicitly assign the tag numbers,
+e.g., `variable_name: 5` to use 5 as the tag number for `variable_name` (which won't
+include any subtype data unless `variable_name_` is in scope as a type), or
+`data_name: data_type_ = 6` to use 6 as the tag number for the field `data_name` that
+holds subtype `data_type_`).  Enumerations are mutually exclusive -- no two values
+may be held simultaneously.  See masks [`any_of_`](#masks) for a similar class type
+that allows multiple options at once.
 
-We can create a new type that exhaustively declares all possible values it can take.
-The syntax is `type_case_: one_of_` followed by a list of named values
-(each an `variable_case:` declaration), with optional values they take, or subtypes
-(each a `variable_name: type_case_` definition, with default type names possible
-to abbreviate `u32:` as `u32: u32_`).  Enumerations
-are mutually exclusive -- no two values may be held simultaneously.  See
-masks [`any_of_`](#masks) for a similar class type that allows multiple options at once.
-
-Enums are by default the smallest standard integral type that holds all values,
-but they can be signed types (in contrast to masks which are unsigned).
-If desired, you can specify the underlying enum type using `i8_ one_of_[...]` instead
+Enums use tag number types that are by default the smallest standard integral type that
+holds all values, and can be signed types (in contrast to masks which are only unsigned).
+If desired, you can specify the underlying tag number type using `i8_ one_of_[...]` instead
 of `one_of_[...]`, but this will be a compile error if the type is not big enough to
 handle all options.  It will not be a compile warning if the `one_of_` includes types
-inside (e.g., `i8_ one_of_[u32:, f32:]`); we'll assume you want the tag to be an `i8_`.
-However, it should be clear that the full type will be at least the size of the
-tag plus the largest element in the `one_of_`; possibly more to achieve alignment.
+inside (e.g., `i8_ one_of_[u32:, f32:]`); we'll assume you want the tag number type to be
+an `i8_`.  However, it should be obvious that the full type will be at least the size of the
+tag number plus the largest element in the `one_of_`; possibly more to achieve alignment.
 
 Here is an example enum with some values that aren't specified.  Even though
 the values aren't specified, they are deterministically chosen.
@@ -7378,10 +7377,16 @@ my_enum_: one_of_
      third_value_is_specified: 123
      fourth_value_increments:
 ]
-assert_(my_enum first_value_defaults_to_zero) == 0
-assert_(my_enum second_value_increments) == 1
-assert_(my_enum third_value_is_specified) == 123
-assert_(my_enum fourth_value_increments) == 124
+assert_(my_enum_ first_value_defaults_to_zero) == 0
+assert_(my_enum_ second_value_increments) == 1
+assert_(my_enum_ third_value_is_specified) == 123
+assert_(my_enum_ fourth_value_increments) == 124
+
+# behind the scenes, tags have a bit of reflection going on:
+my_enum_ first_value_defaults_to_zero_ == tag_[one_of_: my_enum_, 0, null_, field: "first_value_defaults_to_zero"]
+my_enum_ second_value_increments_ == tag_[one_of_: my_enum_, 1, null_, field: "second_value_increments"]
+my_enum_ third_value_is_specified_ == tag_[one_of_: my_enum_, 123, null_, field: "third_value_is_specified"]
+my_enum_ fourth_value_increments_ == tag_[one_of_: my_enum_, 124, null_, field: "fourth_value_increments"]
 ```
 
 You can even pass in existing variable(s) to the enum, although they should be
@@ -7392,9 +7397,9 @@ determine what the name of the enum value is.
 super: 12
 crazy: 15
 # the following will define
-# `other_enum other_value1 = 0`,
-# `other_enum super = 12`,
-# and `other_enum other_value2 = 15`.
+# `other_enum_ other_value1 = 0`,
+# `other_enum_ super = 12`,
+# and `other_enum_ other_value2 = 15`.
 other_enum_: one_of_
 [    other_value1:
      super:
@@ -7406,6 +7411,9 @@ Here is an example enum with just specified values, all inline:
 
 ```
 # fits in a `u1_`.
+# TODO: add syntax for globalizing values in an enum so you don't need to do
+# `bool_ false` when you ask for that value.  e.g., `@global false: 0, @global true: 1`
+# or maybe `whatever_: one_of_[...], @enscope_all(whatever_)`
 bool_: one_of_[false: 0, true: 1]
 ```
 
@@ -7440,6 +7448,8 @@ OR we use something like `count_[the_enum_]()`.  but that should correspond
 to `the_enum_ count_()`.  so maybe `count_[one_of_: the_enum_]()`.
 this does make it a bit confusing for generics: should `count_(the_enum_)`
 (which is the same as `the_enum_ count_()`) be the same as `count_[the_enum_]()`?
+or maybe we do something like `the_enum_ tags_() count_()` (and similarly for `min_`/`max_`).
+maybe reserve `tags` and `tag` for enums and masks.
 
 Also note that the `count_()` class function will return the total number of
 enumerations, not the number +1 after the last enum value.  This can be confusing
@@ -7513,7 +7523,7 @@ option1: option_ content_with_life
 # avoid doing this if you are checking many possibilities:
 if option1 is_not_a_good_option_()  # OK
      print_("oh no")
-elif option1 == oops_you_missed_it  # also OK
+elif option1 == _ oops_you_missed_it  # also OK
      print_("whoops")
 ...
 
@@ -7934,7 +7944,7 @@ if explicitly_tagged has str:
 if explicitly_tagged has _ wow
      print_("also contains wow factor")      # should print
 
-explicitly_tagged tag_() == tag_(_ name | _ str | _ wow)    # true
+explicitly_tagged tag_() == _ name | _ str | _ wow     # true
 ```
 
 TODO: what do we do with `explicitly_tagged_ name_("asdf") & explicitly_tagged_ name_("jkl;")`?
@@ -7942,6 +7952,7 @@ do we combine to `explicitly_tagged_ name_("asdf jkl;")` using the `&` operator 
 `_ next_(4 + 8) & _ next_(8 + 16)` could be `_ next_(8)` based on `&` for ints.
 `_ next_(4 + 8) | _ next_(8 + 16)` could be `_ next_(4 + 8 + 16)` based on `|` for ints.
 what would `|` look like for strings?
+`><` doesn't really have any problems.
 
 ## interplay with `one_of_`
 
