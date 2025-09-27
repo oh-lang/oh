@@ -7488,7 +7488,8 @@ Note that the default value for a `one_of_` is the first value, unless zero is a
 (and it's not the first value).  Note that `null` does not belong in a `one_of_`, but
 will automatically be space-optimized for if you leave enough tags in your enum and
 you request a nullish type, e.g., `one_of_[a:, ...]?`.  The reason we don't allow
-`null`s in a `one_of_` is to align with [`any_of_` logic](#masks).
+`null`s in a `one_of_` is to align with [`any_of_` logic](#masks).  If a `one_of_`
+instance is nullable, e.g., `x?: one_of_[a:, b:]`, then `null` is the default value.
 
 ### testing enums with lots of values
 
