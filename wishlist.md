@@ -253,7 +253,7 @@ look cooler than their `dromedaryCase` and `PascalCase` counterparts.
 We don't require a different function name for each method to convert a result class
 into a new one, e.g., to transform the `ok_` result or the `er_` error.  In oh-lang, we
 allow overloading, so converting a result from one type to another, or extracting a
-default value for an error, all use an overloaded `map` method, so there's no mental
+default value for an error, all use an overloaded `map_` method, so there's no mental
 overhead here.  Since overloads are not possible in Rust, there is an abundance of methods, e.g.,
 [`Result::map_*` documentation](https://doc.rust-lang.org/std/result/enum.Result.html#method.map),
 which can require constantly poring over documentation just to find the right one.  
@@ -264,7 +264,7 @@ we don't need two different keywords to `extend` or `implement` a class or inter
 In fact, we don't use keywords at all; to just add methods (or class functions/variables),
 we use this syntax, `child_class_: parent_class_ { ::extra_methods_(): int_, ... }`,
 and to add instance variables to the child class we use this notation:
-`child_class_: all_of_[parent_class_, m_: [child_x: int_, child_y: str_]] { ... methods }`.
+`child_class_: all_of_[parent_class:, m: [child_x: int_, child_y: str_]] { ... methods }`.
 
 oh-lang handles generics/templates in a way more similar to zig or python rather than C++ or Rust.
 When compiled without any usage, templates are only tested for syntax/grammar correctness.
@@ -1468,7 +1468,7 @@ an overload, as that would be the equivalent of shadowing.
 
 Plain-old-data objects can be thought of as merging all fields in this way:
 TODO: i think this needs to be separate from `tag`s, but see if we can combine
-`field` and `tag` ideas.
+`field` and `tag` ideas.  or maybe use `TAG_` to indicate this is a built-in.
 TODO: `$field` should create a `fn_(field)` not a `new_[field]` by default;
 can we figure out how to make it typey?  `{$...}_` maybe?
 or maybe `$` should be for `()` arguments and something else for `[]` arguments?
@@ -4913,8 +4913,8 @@ TODO: parent class with getter defined, child class with copy defined.
 
 You can define parent-child class relationships with the following syntax.
 For one parent, `child_class_: parent_class_name_ {#( child methods )#}`.  Multiple
-inheritance is allowed as well, via `all_of_[parent1_, parent2_] {#( child methods )#}`.
-If you want to add child instance fields, use e.g., `all_of_[parent_, m_: [field1: int_, ...]]`
+inheritance is allowed as well, via `all_of_[parent1:, parent2:] {#( child methods )#}`.
+If you want to add child instance fields, use e.g., `all_of_[parent:, m: [field1: int_, ...]]`
 to add a big-integer `field1` to the child class.  With a slight overload of notation,
 We can access the current class instance using `m`, and `m_` will be the current instance's
 type.  Thus, `m_` is the parent class if the instance is a parent type, or a subclass
@@ -4975,7 +4975,7 @@ snake escape_()  # prints "Fred slithers away!!"
 To define extra instance variables for a child class, you'll use this notation:
 
 ```
-cat_: all_of_[animal_, m_: [fur_balls: int_]]
+cat_: all_of_[animal:, m: [fur_balls: int_]]
 {    # here we define a `renew_` method, so the parent `renew_` methods
      # become hidden to users of this child class:
      ;;renew_(): null
@@ -5010,7 +5010,7 @@ constructor like this `;;renew_(parent_argument:): parent renew_(:parent_argumen
 you can make it simpler like this instead:
 
 ```
-horse_: all_of_[animal_, m_: [owner: str_]]
+horse_: all_of_[animal:, m: [owner: str_]]
 {    # this passes `name` to the `animal_` constructor and sets `owner` on self:
      ;;renew_(animal name: str_, m owner: str_, neigh_times: int_ = 0)
           neigh_times each int_:
@@ -5127,7 +5127,7 @@ or specifying `@only i64`.  classes that are `final` would not need to be marked
 ```
 # extra field which will get sliced off when converting from
 # `mythological_cat_` to `@only cat_`:
-mythological_cat_: all_of_[cat_, m_: [lives; 9]]
+mythological_cat_: all_of_[cat:, m: [lives; 9]]
 
 cat; @only cat_
 mythological_cat; mythological_cat_(lives; 7)
@@ -5280,7 +5280,7 @@ generic; generic_[str_]
 generic value = "3"
 print_(generic method_(2_i32))  # prints "35" via `2_i32 + i32_(2_i32 * "3")`
 
-specific_[of_: number_]: all_of_[generic_[of_], m_: [scale; of_]]
+specific_[of_: number_]: all_of_[generic[of_]:, m: [scale; of_]]
 {    ;;renew_(m scale. of_ = 1, generic value.): {}
 
      ::method_(~u): u_
@@ -5299,7 +5299,7 @@ field name is already a type name in the current scope.  For example:
 NAMESPACE_at_: int_
 value_: [x: flt_, y: flt_]
 my_lot; lot_[NAMESPACE_at_, value_]
-# Equivalent to `my_lot; lot_[at_: NAMESPACE_at_, value_]`.
+# Equivalent to `my_lot; lot_[at_: NAMESPACE_at_, value_: value_]`.
 ```
 
 ### generic type constraints
