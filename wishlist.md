@@ -1466,15 +1466,34 @@ an overload, as that would be the equivalent of shadowing.
 
 ## type manipulation
 
-Plain-old-data objects can be thought of as merging all fields
-in this way:
+Plain-old-data objects can be thought of as merging all fields in this way:
+TODO: i think this needs to be separate from `tag`s, but see if we can combine
+`field` and `tag` ideas.
+TODO: `$field` should create a `fn_(field)` not a `new_[field]` by default;
+can we figure out how to make it typey?  `{$...}_` maybe?
+or maybe `$` should be for `()` arguments and something else for `[]` arguments?
+or maybe we could unify `()` and `[]` by returning `fn_(): int_` for
+an `int_` type and `fn_(): int` for an int instance.  this may solve some
+problems but add new ones.  it is nice to do `array_[of_](...)` to make
+it clear that `of_` is the generic parameter, but `array_(of_, ...)` is
+probably not super less clear.
+
 ```
-object_ == merge_[object_ fields_(), {[$field name: $field value_]}]
+object_
+    ==  merge_[object_ fields_(), {$field}]
+    ==  merge_[object_ fields_(), {field_($field name, $field value_)}]
 ```
 
-TODO: good ways to do keys and values for an object type (e.g., like TypeScript).
-see if there's a better way to do it, e.g., `object_ valued_[{um_[$value_]}]`, so
-it's easy to see that all field names are the same, just values that change.
+There are some nice ways to manipulate object types, like converting all
+field values of an object into some other type:
+
+```
+object_ valued_[new_[value_]: new_value_]
+    ==  merge_[object_ fields_(), {field_($field name, new_[$field value_])}]
+```
+
+For example, `object_ valued_[{um_[$value_]}]` is a way to convert `object_`
+data into futures.
 
 Here are some examples of changing the nested fields on an object
 or a container, e.g., to convert an array or object to one containing futures.
