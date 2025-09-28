@@ -237,14 +237,7 @@ often there are overloads (without an `hm_` result being returned) which just pa
 at runtime in case of an error.  oh-lang does make it easy to chain results using
 [`assert_`](#assert), and we'll probably reserve an operator like `?!` to do this.
 
-TODO: add a section about `_`.
-Another way we are concise about things is using `_` to help refer to things like
-imported types in [modules](#modules), e.g., `vector2_: \/my/implementation/vector2 _`.
-We also can use it when defining default-named variables to refer to the variable's
-type, e.g., for static/class functions like `oh_info: _ caller_()` which is equivalent
-to `oh_info: oh_info_ caller_()` or `my_type: _(abc. 123)` to initialize `my_type`
-to `my_type(abc. 123)`.  This also works for defining an enum like `my_enum: _ cool`
-where `my_enum_: one_of_[cool:, neat:, sweet:]`.
+Another way we aim to be concise is by using the `_` as an [inferred type](#_-type).
 
 ## coolness
 
@@ -922,7 +915,7 @@ which should be used for their side effects.  Variables that end in numbers like
 can be used for binary operations like `+` and `*`.  See [namespaces](#namespaces).
 
 There are some reserved variable names: `m` and `o`, along with their `type_case_`
-variants, and `_` which is reserved for [class imports](#modules).  `m` can only
+variants, and `_` which is reserved as an [inferred type](#_-type).  `m` can only
 be used as a reference to the current class instance, and `o` which
 can only be used as a reference to an *o*ther instance of the same type;
 `o` must be explicitly added as an argument, though, in contrast to `m` which can be implicit.
@@ -947,6 +940,24 @@ my_function_(_argument_which_we_will_need_later: int_): null_
 # when calling, omit the leading underscore:
 my_function_(argument_which_we_will_need_later: 3)
 ```
+
+### `_` type
+
+By itself, `_` means to infer the type, usually from the left-hand-side of
+an equation.  This is useful for [class imports](#modules), [enums](#enumerations),
+and [masks](#masks), among other things.  Some examples:
+
+For imports/modules we have, e.g., `\/my/implementation/vector2 _` being equivalent
+to `vector2_` (`_` is combined with the base file name `vector2` to get `vector2_`).
+For enums like `my_enum_: one_of_[cool:, neat:, sweet:]`, we can define them like
+this: `my_enum: _ cool`, where `_` infers the type of `my_enum` on the LHS.
+This works similarly for masks like `my_mask_: any_of_[world:, npc:, player:]`;
+`my_mask: _ world | _ npc` will set `my_mask` to `my_mask_ world | my_mask_ npc`.
+
+We also can use `_` when defining default-named variables to refer to the variable's
+type, e.g., for static/class functions like `oh_info: _ caller_()` which is equivalent
+to `oh_info: oh_info_ caller_()` or `my_type: _(abc. 123)` to initialize `my_type`
+to `my_type(abc. 123)`.  
 
 ## blocks
 
