@@ -1471,12 +1471,6 @@ TODO: i think this needs to be separate from `tag`s, but see if we can combine
 `field` and `tag` ideas.  or maybe use `TAG_` to indicate this is a built-in.
 TODO: `$field` should create a `fn_(field)` not a `new_[field]` by default;
 can we figure out how to make it typey?  `{$...}_` maybe?
-or maybe `$` should be for `()` arguments and something else for `[]` arguments?
-or maybe we could unify `()` and `[]` by returning `fn_(): int_` for
-an `int_` type and `fn_(): int` for an int instance.  this may solve some
-problems but add new ones.  it is nice to do `array_[of_](...)` to make
-it clear that `of_` is the generic parameter, but `array_(of_, ...)` is
-probably not super less clear.
 
 ```
 object_
@@ -2967,53 +2961,11 @@ e.g., `type_fn_[args...]: the_type_`.  This is because we do not need
 to support functions that return instances *or* constructors, and it becomes clearer
 that we're dealing with a type if we use `[]`.  The alternative would be to use
 `fn_(int): int` to return an `int_` instance and `fn_(int): int_` to return the
-`int_` constructor, but again we never need to mix and match.  The bracket syntax is
-related to [template classes](#generictemplate-classes) and
+`int_` constructor, but again we never need to mix and match.  It's also clear that
+we use comptime constants in generics like `[count: count_]`, which would require
+a macro if we switched to `()`, e.g., `array_(@comptime count: count_)`.
+The bracket syntax is related to [template classes](#generictemplate-classes) and
 [overloading generic types](#overloading-generic-types).
-TODO: maybe this is ok.  it might even be less confusing than using different
-brackets for types.  but i do really like `array_[int_]` rather than `array_(int_)`;
-so it makes generics easier to think about, especially when combined with functions.
-HOWEVER, i think it's probably best to keep it the way it is unless we want to force
-all functions to be multiline (either by `{}` or by indenting), because
-`fn_(): null` would look like we're already returning a value.
-
-TODO: this should probably be disallowed.  the compiler needs to be able
-to reason about the type in a `x_[...]` function.  come up with deterministic examples.
-actually, this is probably ok if we're casting to `any_`.  not really great, though,
-prefer a more reasonable example.
-
-```
-# it's preferable to return a more specific value here, like
-# `one_of_[int:, dbl:, string:]`, but `any_` works as well.
-random_class_[]: any_
-     if random_(dbl_) < 0.5
-          int_
-     elif random_(dbl_) < 0.5
-          dbl_
-     else
-          string_
-
-x: random_class_[] = 123
-match x
-     int:
-          print("x is an int_: ${int}")
-     dbl:
-          print("x is a dbl_: ${dbl}")
-     string:
-          print("x is a string_: ${string}")
-```
-
-We can also pass in named types as arguments.  Here is an example
-where we also return a type constructor.  Named types are just
-`type_case_` on both left and right sides (e.g., `class_name_: t_`).
-
-```
-random_class_[~x_, named_new_: ~y_]: one_of_[x:, y:]
-     if random_(dbl_) < 0.5 {x_} else {named_new_}
-
-# will print `int_` or `dbl_` with 50-50 probability
-print_(random_class_[int_, named_new_: dbl_])
-```
 
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
 
