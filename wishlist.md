@@ -29,8 +29,6 @@ It also makes internationalization not dependent on unicode parsing; we can imme
 determine whether something is a function if it has a trailing `_`.
 For the remainder of this document, we'll use `variable_case`,
 `type_case_`, and `function_case_`, although the latter two are indistinguishable without context.
-In context, functions and types are followed by optional generics (in `[]` brackets),
-while functions alone have parentheses `()` with optional arguments inside.
 Because types can act as functions, we don't syntactically distinguish between `type_case_`
 and `function_case_` otherwise.
 
@@ -106,8 +104,8 @@ We use `:` to create the readonly reference overload, e.g., `my_function_(int:):
 to create a function which takes a readonly integer reference, or `my_function_(int;): str_`
 for a function that can mutate the passed-in integer reference or `my_function_(int.): str_`
 for a function which takes a temporary integer.
-This also works for generic classes like `my_generic_[of_]` where `of_` is a template type;
-`my_function_(my_generic[int_];)` is short for `my_function_(my_generic; my_generic_[int_])`.
+This also works for generic classes like `my_generic_(of_) _` where `of_` is a template type;
+`my_function_(my_generic(int_);)` is short for `my_function_(my_generic; my_generic_(int_) _)`.
 
 When calling a function, we don't need to use `my_function_(x: x)` if we have a local
 variable named `x` that shadows the function's argument named `x`.  We can just
@@ -132,8 +130,8 @@ I.e., `;x` expands to `x; x`, while `x;` expands to `x; x_`.
 TODO: i'm forgetting to do this and don't always like it.  can we make due without it
 and always put declarers on the right?  i like the consistency though.
 but you'd need to do this in generics as well, in case you're asking for a `\`` generic.
-e.g., `my_class_[of_]: [of\`]` would be `my_class_[;dbl_]` for a class that can
-modify the double and `my_class_[:dbl_]` for readonly.
+e.g., `my_class_(of_): [of\`]` would be `my_class_(;dbl_)` for a class that can
+modify the double and `my_class_(:dbl_)` for readonly.
 
 Class methods technically take an argument for `m` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
@@ -168,17 +166,18 @@ to refer to another generic subtype if we already have the class.
 ```
 # NOTE: we can use type definitions from later in the class body when
 # declaring class member variables (e.g., `lot; lot_`):
-my_generic_[at_, of_]: [lot;]
-{    lot_: @only insertion_ordered_lot_[at_, of_]
+my_generic_(at_, of_): [lot;] _
+{    lot_: @only insertion_ordered_lot_(at_, of_)
      ...
 }
 
-# ERROR: `lot_` (without a `[]` spec) is shadowed inside of `my_generic_`:
+# ERROR: `lot_` (without a spec) is shadowed inside of `my_generic_`:
 # we should rename this type or the type inside `my_generic_`.
-lot_: lot_[at_: int_, of_: str_]
+lot_: lot_(at_: int_, of_: str_)
 ```
 
-After fixing the compile error in the example above, we can use `some_type: my_generic_[at_, of_] lot_`
+TODO: do we need `my_generic_(at_, of_) _ lot_` ???
+After fixing the compile error in the example above, we can use `some_type: my_generic_(at_, of_) lot_`
 to refer to the nested type, but can we also use `some_type: lot_[m_: my_generic_[at_, of_]]`.
 We don't override `lot_[my_generic_[at_, of_]]` because a single type might be an override of `lot_[of_]`;
 this isn't the case for `lot_` specifically but for other types like `array_` there are definitely overloads.
@@ -1474,8 +1473,8 @@ can we figure out how to make it typey?  `{$...}_` maybe?
 
 ```
 object_
-    ==  merge_[object_ fields_(), {$field}]
-    ==  merge_[object_ fields_(), {field_($field name, $field value_)}]
+    ==  merge_(object_ fields_(), {$field})
+    ==  merge_(object_ fields_(), {field_($field name, $field value_)})
 ```
 
 There are some nice ways to manipulate object types, like converting all
@@ -2956,18 +2955,12 @@ print_(do_something_(u8_))  # returns u8(123)
 
 ### returning a type
 
-We use a different syntax for functions that return types; namely `()` becomes `[]`,
-e.g., `type_fn_[args...]: the_type_`.  This is because we do not need
-to support functions that return instances *or* constructors, and it becomes clearer
-that we're dealing with a type if we use `[]`.  The alternative would be to use
-`fn_(int): int` to return an `int_` instance and `fn_(int): int_` to return the
-`int_` constructor, but again we never need to mix and match.  It's also clear that
-we use comptime constants in generics like `[count: count_]`, which would require
-a macro if we switched to `()`, e.g., `array_(@comptime count: count_)`.
-The bracket syntax is related to [template classes](#generictemplate-classes) and
-[overloading generic types](#overloading-generic-types).
+Functions that return types should be compile-time known to allow for inference,
+but this is not going to be a strict requirement going forward.
 
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
+
+TODO: more expansion here.
 
 ### unique argument names
 
@@ -5126,7 +5119,7 @@ TODO: discuss how `null_` can be used as a type in most places.
 But note that if you have a generic function defined like this,
 we are already assuming some constraints:
 ```
-my_generic_[of_](y: of_, z: of_): of_
+my_generic_(y: ~of_, z: of_): of_
      x: y * z
      x
 ```
@@ -5185,7 +5178,7 @@ TODO: this is going to be a bit difficult to get right with vim syntax;
 can we use `~` instead with a space afterwards?
 
 ```
-mutable_types_[x_, y_, z_]:
+mutable_types_(x_, y_, z_):
 [    # these fields are always readonly:
      r_x: x_
      r_y: y_
@@ -5206,7 +5199,7 @@ mutable_types_[x_, y_, z_]:
 
 # the following specification will make `v_x` and `v_z` writeable
 # and `v_y` readonly:
-my_specification: mutable_types_[x_; int_, y_: string_, z_; dbl_]
+my_specification_: mutable_types_(x_; int_, y_: string_, z_; dbl_)
 ```
 
 We use a new syntax here because it would be confusing
@@ -5223,24 +5216,30 @@ If desired, we can switch to `generic_[a_]: [a\`]` to make the specification cor
 You can also have virtual generic methods on generic classes, which is not allowed by C++.
 
 ```
-generic_[of_]: [value; of_]
-{    ::method_(~u): u_
+# should this be `generic_(of_): [value; of_]_` or `generic_(of_)_: [value; of_]`?
+generic_(of_): [value; of_]
+{    ::method_(~u.): u_
           u + u_(u * m value) ?? panic_()
 }
 
-generic; generic_[str_]
+# create a typedef:
+specified_generic_: generic_(int_)
+specified_generic; _(value. 5)
+
+generic; generic_(str_)
 generic value = "3"
 print_(generic method_(2_i32))  # prints "35" via `2_i32 + i32_(2_i32 * "3")`
 
-specific_[of_: number_]: all_of_[generic[of_]:, m: [scale; of_]]
+specific_(of_: number_): all_of_(generic(of_):, m: [scale; of_])
 {    ;;renew_(m scale. of_ = 1, generic value.): {}
 
-     ::method_(~u): u_
-          parent_result: generic method_(U)
+     ::method_(~u.): u_
+          parent_result: generic method_(u)
           scale * parent_result
 }
 
-specific(value. 10_i8, scale. 2_i8)
+# define a `specific`, same as `specific: specific_(value. 10_i8, scale. 2_i8)`
+specific(value. 10_i8, scale. 2_i8):
 print_(specific method_(0.5))   # should print "11.0" via `2 * (0.5 + dbl(0.5 * 10))`
 ```
 
@@ -5250,18 +5249,18 @@ field name is already a type name in the current scope.  For example:
 ```
 NAMESPACE_at_: int_
 value_: [x: flt_, y: flt_]
-my_lot; lot_[NAMESPACE_at_, value_]
-# Equivalent to `my_lot; lot_[at_: NAMESPACE_at_, value_: value_]`.
+my_lot; lot_(NAMESPACE_at_, value_)
+# Equivalent to `my_lot; lot_(at_: NAMESPACE_at_, value_: value_)`.
 ```
 
 ### generic type constraints
 
-To constrain a generic type, use `[type_: constraints_, ...]`.  In this expression,
+To constrain a generic type, use `type_: constraints_`.  In this expression,
 `constraints_` is simply another type like `non_null_` or `number_`, or even a combination
-of classes like `all_of_[container_[id_, value_], number_]`.  It may be recommended for more
+of classes like `all_of_(container_(id_, value_), number_)`.  It may be recommended for more
 complicated type constraints to define the constraints like this:
-`my_complicated_constraint_type_: all_of_[t1:, one_of[t2:, t3:]:]` and declaring the class as
-`new_generic_[of_: my_complicated_constraint_type_]`, which might be a more readable way to do
+`my_complicated_constraint_type_: all_of_(t1:, one_of(t2:, t3:):)` and declaring the class as
+`new_generic_(of_: my_complicated_constraint_type_)`, which might be a more readable way to do
 things if `my_complicated_constraint_type_` is a helpful name.
 TODO: `all_of_` is acting a little bit differently than a child class inheritor here,
 do we need to distinguish between the two?  e.g., the child class usage of `all_of_`
@@ -5270,37 +5269,41 @@ will be ordered, but `all_of_` here in a type constraint should not require a ce
 ### generic type defaults
 
 Type defaults follow the same pattern as type constraints but the default types are
-not abstract.  So we use `[type_: default_type_, ...]` where `default_type_` is a class
-that is non-abstract.
+not abstract (i.e., has all declared methods already defined).  So we use
+`type_: default_type_` where `default_type_` is a class that is non-abstract.
 
 ### overloading generic types
 
-Note that we can overload generic types (e.g., `array_[int_]` and `array_[Count: 3, int_]`),
+Note that we can overload generic types (e.g., `array_(int_)` and `array_(count: 3, int_)`),
 which is especially helpful for creating your own `hm_` result class based on the general
-type `hm_[er_, ok_]`, like `MY_er_: one_of_[oops:, my_bad:], hm_[of_]: hm_[ok_: of_, MY_er_]`.
+type `hm_(er_, ok_)`, like `MY_er_: one_of_(oops:, my_bad:), hm_(of_): hm_(ok_: of_, MY_er_)`.
 Here are some examples:
 
 ```
-# Note that in oh-lang we could define this as `pair_[of_1_, of_2_]`
+# Note that in oh-lang we could define this as `pair_(of_1_, of_2_)`
 # so we don't need to specify `first_: int_, second_: dbl_`, but for illustration
 # in the following examples we'll make the generic parameters named.
-pair_[first_, second_]: [first;, second;]
-pair_[of_]: pair_[first_: of_, second_: of_]
+pair_(first_, second_): [first;, second;]_
+pair_(of_): pair_(first_: of_, second_: of_)
 
-# examples using `pair_[of_]`: ======
+# examples using `pair_(of_)`: ======
 # an array of pairs:
-pair_array: array_[pair_[int_]]([[first. 1, second. 2], [first. 3, second. 4]])
+pair_array: array_(pair_(int_))([[first. 1, second. 2], [first. 3, second. 4]])
 # a pair of arrays:
-pair_of_arrays: pair_[array_[int_]]([first. [1, 2], second. [3, 4]])
+# TODO: the trick here is how do we know we're not passing in a default `array_(int_)` here,
+# e.g., `[]` of the `int_` type, into `pair_`?  do we need to do `_: array_(int_)`?  
+# or maybe something like `pair_(array_(int_) _)` so we know we get the `_` overload.
+# this is what `[]` was nice for.
+pair_of_arrays: pair_(array_(int_) _)([first. [1, 2], second. [3, 4]])
 
-# examples using `pair_[first_, second_]`: ======
+# examples using `pair_(first_, second_)`: ======
 # an array of pairs:
-pair_array: array_[pair_[first_: int_, second_: dbl_]]
+pair_array: array_(pair_(first_: int_, second_: dbl_))
 (    [first. 1, second. 2.3]
      [first. 100, second. 0.5]
 )
 # a lot of pairs:
-pair_lot: lot_[at_: str_, pair_[first_: int_, second_: dbl_]]
+pair_lot: lot_(at_: str_, pair_(first_: int_, second_: dbl_))
 (    "hi there". [first. 1, second. 2.3]
 )
 ```
@@ -5314,7 +5317,9 @@ are useful for generics with a single type requirement, and can be
 used for overloads, e.g.:
 
 ```
-a_class_[x_, y_, n: count_]: array_[[x_, y_], count: n]
+# TODO: this actually isn't what we want, generics via `()` won't work for const variables
+# unless we add a macro like `@comptime n: count_`
+a_class_(x_, y_, n: count_): array_([x_, y_], count: n)
 
 a_class_[of_]: a_class_[x_: of_, y_: of_, n: 100]
 ```
