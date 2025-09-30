@@ -1046,6 +1046,9 @@ my_function_(int): [x: int_, y: int_]
 # but note that we need `return` to avoid parsing as `do_something_(int)[x: ...]`.
 my_function_(int): [x: int_, y: int_]
      do_something_(int)
+     # TODO: maybe we forbid `fn_(...)[...]` to avoid this issue.
+     #    we could require `fn_(...) whatever[...]` if `fn_` returns an indexable
+     #    `whatever` instance or `fn_(...) _ [...]` if `fn_` returns a type
      return
      [    x: 5 - int
           y: 5 + int
@@ -1159,11 +1162,9 @@ if some_function_call_
 defining_a_function_with_multiline_arguments_
 (    times: int_
      greeting: string_
-     name: string_("World")  # argument with a default
-):      string_             # indent here is optional/aesthetic
-     # "return" is optional for the last line of the block,
-     # unless you're returning a multiline array/object.
-     "${greeting}, ${name}! " * times
+     name: string_("World")   # argument with a default
+):      string                # indent here is optional/aesthetic
+     string: "${greeting}, ${name}! " * times
 
 defining_a_function_with_multiline_return_values_
 (    argument0: int_
@@ -5141,14 +5142,34 @@ only after you supply the specific type you want, this can be caught at
 compile time and only if you're requesting an invalid type.
 
 Creating a generic class is a lot like creating a function with compile-time
-known arguments.  Here is a simple wrapper class example, which extends some type
-`of_` (which is the [default name for a generic type](#default-named-generic-types))
-with a method `::triple_(): of_`.
+known arguments.  You put the types and/or class constants into the arguments
+like `(types_, ...)`, e.g., `my_multi_generic_class_(type1_, type2_): [...]`
+for multiple generics or `my_single_generic_class_(of_): [...]` for a single
+type `of_` (which is the [default name for a generic type](#default-named-generic-types)).
+Generics can be *specified* using `my_single_generic_class_(int_)` (for an
+`of_`-declared type) and `my_multi_generic_class_(type1_: str_, type2_: dbl_)`.
+Note that any static/class methods defined on the class can usually be accessed
+like this: `my_single_generic_class_(int_) my_class_function_(...)` or
+`my_multi_generic_class_(type1_: int_, type2_: str_) other_class_function_()`.
+This is not recommended, but because they are functions, if you define an overload
+with the same name *before* the class definition, e.g.,
+`my_single_generic_class_(of_): of_ max_()`, you may need to request the class
+overload by appending the field `_`, e.g.
+`my_single_generic_class_(int_) _ my_class_function_(...)`.
+TODO: how common will this be?
+
+Here is a simple wrapper class example, which extends some type `of_` 
+with a method `::triple_(): of`.
 
 ```
+# TODO: can we always distinguish between defining a generic class and defining a function?
+# `generic_class_(of_): of_` without a class block might look like declaring a function
 generic_class_(of_): of_
-     ::triple_(): of_
-          m * 3
+     ::triple_(): of
+          # TODO: i don't love defining functions with `of` instead of `of_`
+          # because it makes me feel like i need to use the name
+          # (e.g., `WARN_UNUSED_NAME`)
+          of: m * 3
 
 specific_class_: generic_class_(dbl_)
 specific_class: 1.5
@@ -5164,24 +5185,14 @@ byte; generic_class_(u8_) = 7
 print_(byte triple_())        # prints 21
 ```
 
-TODO:
-, you put the expression `[types_...]` after the
-class identifier, or we recommend `[of_]` for a single template type, where
-For example, we use `my_single_generic_class_[of_]: [...]` for a single generic
-or `my_multi_generic_class_[type1_, type2_]: [...]` for multiple generics.
-To actually specify the types for the generic class, we use the syntax
-`my_single_generic_class_[int_]` (for an `of_`-defined generic class) or
-`my_multi_generic_class_[type1_: int_, type2_: str_]` (for a multi-type generic).
-Note that any static/class methods defined on the class can be accessed
-like this: `my_single_generic_class_[int_] my_class_function_(...)` or
-`my_multi_generic_class_[type1_: int_, type2_: str_] other_class_function_()`.
+Here is a more complicated example.
 
 ```
-generic_class_[id_, value_]: [id;, value;]
+generic_class_(id_, value_): [id;, value;]
 {    # this gives a method to construct the instance and infer types.
      # `g_` is like `m_` but without the template specialization, so
      # `g_` is `generic_class_` in this class body.
-     g_(id. ~t_, value. ~u_): g_[id_: t_, value_: u_]
+     g_(id. ~t_, value. ~u_): g_(id_: t_, value_: u_)
           [id, value]
 }
 
