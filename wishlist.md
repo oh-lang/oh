@@ -166,7 +166,7 @@ to refer to another generic subtype if we already have the class.
 ```
 # NOTE: we can use type definitions from later in the class body when
 # declaring class member variables (e.g., `lot; lot_`):
-my_generic_(at_, of_): [lot;]
+my_generic_(at_, of_): [lot;] _
 {    lot_: @only insertion_ordered_lot_(at_, of_)
      ...
 }
@@ -176,20 +176,19 @@ my_generic_(at_, of_): [lot;]
 lot_: lot_(at_: int_, of_: str_)
 ```
 
-TODO: do we need `my_generic_(at_, of_) _ lot_` ??
-After fixing the compile error in the example above, we can use
-`some_type: my_generic_(at_, of_) lot_` to refer to the nested type, but we can also
-use `some_type: lot_(m_: my_generic_(at_, of_))`.  We don't override
-`lot_(my_generic_(at_, of_))` because a single type might be an override of `lot_(of_)`;
-this isn't the case for `lot_` specifically but for other types like `array_` there
-are definitely overloads.  See [type manipulation](#type-manipulation) for more details.
+TODO: do we need `my_generic_(at_, of_) _ lot_` ???
+After fixing the compile error in the example above, we can use `some_type: my_generic_(at_, of_) lot_`
+to refer to the nested type, but can we also use `some_type: lot_[m_: my_generic_[at_, of_]]`.
+We don't override `lot_[my_generic_[at_, of_]]` because a single type might be an override of `lot_[of_]`;
+this isn't the case for `lot_` specifically but for other types like `array_` there are definitely overloads.
+See [type manipulation](#type-manipulation) for more details.
 
 Note this is actually ok, because we can distinguish overloads based on arguments.
 
 ```
 vector2_: [x: dbl_, y: dbl_]
-{    ::atan_(): dbl_
-          atan_(m x, m y)     # also ok: `\\math atan_(m x, m y)` could avoid the import
+{    ::atan_(): dbl
+          atan_(m x, m y)      # also ok: `\\math atan_(m x, m y)` could avoid the import below.
 }
 [atan_(x: dbl_, y: dbl_): dbl_]: \\math
 ```
@@ -199,20 +198,14 @@ and `g_` can be used for the current generic class (without the specification) w
 `m_` always refers to the current class type (including the specification if generic).
 
 ```
-vector3_(of_: number_): [x; of_, y; of_, z; of_]
+vector3_[of_: number_]: [x; of_, y; of_, z; of_]
 {    # `g_` is used for this generic class without the current specification,
      # in this case, `vector3_`.
-     g_(value_0. ~value, value_1., value_2.): g_(value_)
+     g_(value_0. ~value, value_1., value_2.): g_[value]
           [x: value_0, y: value_1, z: value_2]
 
      ::dot_(o:): of_
           m x * o x + m y * o y + m z * o z
-
-     ::cross_(o:): g_
-     (    x. m y * o z - m z * o y
-          y. m z * o x - m x * o z
-          z. m x * o y - m y * o x
-     )
 }
 
 dot_(vector3_(1, 2, 3), vector3_(-6, 5, 4)) == 1 * -6 + 2 * 5 + 3 * 4
@@ -232,9 +225,9 @@ E.g., `;:the_method_(x;: str_): m check_(;:x)` where `check_` has distinct overl
 See [const templates](#const-templates) for more details.
 
 oh-lang uses result-passing instead of exception-throwing in order to make it clear
-when errors can occur.  The `hm_(ok_, er_)` class handles this, with `ok_` being the
+when errors can occur.  The `hm_[ok_, er_]` class handles this, with `ok_` being the
 type of a valid result, and `er_` being the type of an error result.  You can specify
-the types via `hm_(ok_: int_, er_: str_)` for `ok_` being `int_` and `er_` being a `str_`.
+the types via `hm_[ok_: int_, er_: str_]` for `ok_` being `int_` and `er_` being a `str_`.
 If the `ok_` and `er_` types are distinct, you don't need to wrap a return value in
 `ok_(valid_result)` and `er_(error_result)`; you can just return `valid_result` or `error_result`.
 See [the `hm` section](#hm) for more details.  It is a compile error to not handle
@@ -270,7 +263,7 @@ we don't need two different keywords to `extend` or `implement` a class or inter
 In fact, we don't use keywords at all; to just add methods (or class functions/variables),
 we use this syntax, `child_class_: parent_class_ { ::extra_methods_(): int_, ... }`,
 and to add instance variables to the child class we use this notation:
-`child_class_: all_of_(parent_class:, m: [child_x: int_, child_y: str_]) { ... methods }`.
+`child_class_: all_of_[parent_class:, m: [child_x: int_, child_y: str_]] { ... methods }`.
 
 oh-lang handles generics/templates in a way more similar to zig or python rather than C++ or Rust.
 When compiled without any usage, templates are only tested for syntax/grammar correctness.
@@ -280,14 +273,13 @@ specified types.  Any errors are still compile-time errors, but you get to have 
 of duck typing without needing to specify your type constraints fully.
 
 ```
-my_generic_(a: ~of_, b: of_): of_
+my_generic_[of_](a: ~of_, b: of_): of_
      # this clearly requires `of_` to implement `*`
      # but we didn't need to specify `[of_: number_]` or similar in the generic template.
      a * b
 
 print_(my_generic_(a: 3, b: 4))                 # OK
-# COMPILE ERROR: no definition for `array_[int_] * array_[int_]`:
-print_(my_generic_(a: [1, 2, 3], b: [4, 5]))    # COMPILE ERROR
+print_(my_generic_(a: [1, 2, 3], b: [4, 5]))    # COMPILE ERROR: no definition for `array_[int_] * array_[int_]`
 ```
 
 Similarly, duck typing means that if you define an appropriate `::hash` function on your class,
@@ -2958,7 +2950,7 @@ do_something_(~x_): x_
      return: x_(123)
 
 print_(do_something_(dbl_)) # returns 123.0
-print_(do_something_(u8_))  # returns u8_(123)
+print_(do_something_(u8_))  # returns u8(123)
 ```
 
 ### returning a type
@@ -2978,7 +2970,7 @@ the two arguments inside the function body.
 
 ```
 # COMPILER ERROR.  duplicate identifiers
-my_fun_(x: int_, x: dbl_): one_of_(int:, dbl:)
+my_fun_(x: int_, x: dbl_): one_of_[int:, dbl:]
 ```
 
 However, there are times where it is useful for a function to have two arguments with the same
@@ -3016,10 +3008,10 @@ vector2_: [x; dbl_, y; dbl_]
      m_(dbl_0., dbl_1.): m_
           m_(x. dbl_0, y. dbl_1)
 
+     @order_independent
      # can also use `o` instead of `vector2` as the argument name for an `o`ther
      # of the same type as `m`, and then you can omit the `@order_independent`
      # (or `@order_dependent`) annotation.
-     @order_independent
      ::dot_(vector2): dbl_
           m x * vector2 x + m y * vector2 y
 }
@@ -4278,8 +4270,6 @@ yeah i think i like `fn_(@@int:)`, `fn_(~@@t:)`, and `fn_(~t:`).
 
 ### require
 
-TODO: this should just be `@if ... {...}`.  discuss `@if` as not really indenting things.
-
 `require` is a special generic field that allows you to include a function,
 method, or variable only if it meets some compile-time constraints.  It is
 effectively a keyword within a generic specification, so it can't be used
@@ -4310,31 +4300,29 @@ my_class_[of_, n: count_, require: n > 0]:
 }
 ```
 
+TODO: should we make this an annotation instead?  `@require(of is orderable)`??
+in C++, these sorts of things are templates, but that can be kinda confusing.
+but it does allow you to do things like this, where you introduce new types
+on the fly and can require them to be a certain way:
+`::do_[additional_type_, require: additional_type_ is foo_](~additional_type:): int_`
+so if possible, i think i'd prefer to keep it as a template.
+the alternative is to do `@if of_ is hashable_ { ::hash_(~builder): ... }`.
+
 # classes
 
-A class is defined with a `type_case_` identifier, a type or object `[...]`
+A class is defined with a `type_case_` identifier, an object `[...]`
 defining instance variables and instance functions (i.e., variables and
 functions that are defined *per-instance* and take up memory), and an
-optional indented block (optionally in `{}`) that includes methods and functions
-that are shared across all instances: class methods (just *methods* for short)
-that operate on an instance and class functions (i.e., static methods in C++/Java)
-that don't require an instance.  Class definitions must be constant/non-reassignable,
-so they are declared using the `:` symbol.
+optional indented block (optionally in `{}`) that includes methods and functions that are
+shared across all instances: class instance methods (just *methods* for short)
+and class functions (i.e., static methods in C++/Java) that don't require an instance.
+Class definitions must be constant/non-reassignable, so they are declared using
+the `:` symbol.
 
 When defining methods or functions of all kinds, note that you can use `m`/`m_`
 to refer to the current class instance/type.  E.g.,
 
 ```
-# this class is defined without explicit fields, just as a class that extends `str_`.
-no_fields_: str_
-{    ::exclaim_(): str_
-          # `m` is the `str` instance
-          m + "!"
-}
-# since `no_fields_` is in scope, `no_fields` will be typed as `no_fields_`:
-no_fields: "hi"
-print_(no_fields exclaim_())  # prints "hi!"
-
 # classes can enclose their body in `{}`, which is recommended for long class definitions.
 # for short classes, it's ok to leave braces out.
 my_class_: [variable_x: int_]
@@ -5140,33 +5128,9 @@ be defined via `x?: y * z`.  But because oh-lang does template specialization
 only after you supply the specific type you want, this can be caught at
 compile time and only if you're requesting an invalid type.
 
-Creating a generic class is a lot like creating a function with compile-time
-known arguments.  Here is a simple wrapper class example, which extends some type
-`of_` (which is the [default name for a generic type](#default-named-generic-types))
-with a method `::triple_(): of_`.
-
-```
-generic_class_(of_): of_
-     ::triple_(): of_
-          m * 3
-
-specific_class_: generic_class_(dbl_)
-specific_class: 1.5
-print_(specific_class triple_())   # prints 4.5
-
-# will infer `of_` as `int_` since 12 is an `int_` type;
-# this creates an instance since `another_class` is `variable_case`:
-another_class: generic_class_(12)
-print_(another_class triple_())    # prints 36
-
-# explicit specification on the fly:
-byte; generic_class_(u8_) = 7
-print_(byte triple_())        # prints 21
-```
-
-TODO:
-, you put the expression `[types_...]` after the
+To create a generic class, you put the expression `[types_...]` after the
 class identifier, or we recommend `[of_]` for a single template type, where
+`of_` is the [default name for a generic type](#default-named-generic-types).
 For example, we use `my_single_generic_class_[of_]: [...]` for a single generic
 or `my_multi_generic_class_[type1_, type2_]: [...]` for multiple generics.
 To actually specify the types for the generic class, we use the syntax
