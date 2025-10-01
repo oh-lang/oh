@@ -171,26 +171,6 @@ my_generic_(at_, of_): [lot;]
      ...
 }
 
-my_generic_{at_:, of_:}: [lot;]
-{    lot_: @only insertion_ordered_lot_(at_, of_)
-     ...
-}
-my_generic
-     at_:
-     of_:
-:
-[    lot;
-]
-my_generic
-{    at_:
-     of_:
-}
-:
-[    lot;
-]
-{    ::method_(): null_
-}
-
 # ERROR: `lot_` (without a spec) is shadowed inside of `my_generic_`:
 # we should rename this type or the type inside `my_generic_`.
 lot_: lot_(at_: int_, of_: str_)
@@ -1502,8 +1482,8 @@ can we figure out how to make it typey?  `{$...}_` maybe?
 
 ```
 object_
-    ==  merge_{object_ fields_(), {$field}}
-    ==  merge_{object_ fields_(), {field_($field name, $field value_)}}
+    ==  merge_(object_ fields_(), {$field})
+    ==  merge_(object_ fields_(), {field_($field name, $field value_)})
 ```
 
 There are some nice ways to manipulate object types, like converting all
@@ -5183,10 +5163,7 @@ with a method `::triple_(): of`.
 
 ```
 # TODO: can we always distinguish between defining a generic class and defining a function?
-# `generic_class_(of_): of_` without a class block might look like declaring a function.
-# but there's a similar issue with returning a tuple, e.g.,
-# `my_function_(args...): [x: int_, y: dbl_]`; the compiler needs to infer if `[x, y]` is a type or instance
-# we could add a keyword `generic_class_(of_): class of_`.
+# `generic_class_(of_): of_` without a class block might look like declaring a function
 generic_class_(of_): of_
      ::triple_(): of
           # TODO: i don't love defining functions with `of` instead of `of_`
