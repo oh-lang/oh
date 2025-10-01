@@ -1039,6 +1039,9 @@ my_function_(int): [x: int_, y: int_]
 # but note that we need `return` to avoid parsing as `do_something_(int)[x: ...]`.
 my_function_(int): [x: int_, y: int_]
      do_something_(int)
+     # TODO: maybe we forbid `fn_(...)[...]` to avoid this issue.
+     #    we could require `fn_(...) whatever[...]` if `fn_` returns an indexable `whatever`
+     #    alternatively we could require `array at_(3)` instead of `array[3]`.
      return
      [    x: 5 - int
           y: 5 + int
@@ -2942,7 +2945,7 @@ do_something_(of_: whatever_constraints_): of_
      return: of_(123)
 
 print_(do_something_(dbl_)) # returns 123.0
-print_(do_something_(u8_))  # returns u8(123)
+print_(do_something_(u8_))  # returns u8_(123)
 ```
 
 Or we could do this as a a generic type, like this:
@@ -5275,7 +5278,7 @@ that is non-abstract.
 
 ### overloading generic types
 
-Note that we can overload generic types (e.g., `array_[int_]` and `array_[Count: 3, int_]`),
+Note that we can overload generic types (e.g., `array_[int_]` and `array_[count: 3, int_]`),
 which is especially helpful for creating your own `hm_` result class based on the general
 type `hm_[er_, ok_]`, like `MY_er_: one_of_[oops:, my_bad:], hm_[of_]: hm_[ok_: of_, MY_er_]`.
 Here are some examples:
