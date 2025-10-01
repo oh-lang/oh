@@ -427,15 +427,17 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
                `array: if some_condition $[1, 2, 3] else $[4, 5]`
           * `$(...)` as shorthand for a new block defining `(...)`, e.g., a reference object:
                `result: if x > y $(max: x, min: y) else $(min: x, max: y)`
-          * `${...}` is almost always equivalent to `{...}`, except inside of string interpolation,
+          * `${...}` is almost always equivalent to `{...}`, except inside a string,
                so we'll likely alias `${...}` to `{...}` outside of strings.
+               TODO: maybe it's useful for eliding () in a lambda, like `my_array map_${2 * $int  + 1}`.
+               it might make it more clear to do `$${...}` and `${...}` to indicate where variables are attaching.
      * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
           * `my_array map_({$int * 2 + 1})` will iterate over e.g., `my_array: [1, 2, 3, 4]`
                as `[3, 5, 7, 9]`.  The `$` variables attach to the nearest brace/indent as
                function arguments, variables with `$$` would attach to the second nearest brace/indent, etc.
 * all arguments are specified by name so order doesn't matter, although you can have default-named arguments
   for the given type which will grab an argument with that type (e.g., `int` for an `int_` type).
-     * `(x: dbl_, int)` can be called with `(1234, x: 5.67)` or even `(y, x: 5.67)` if `y` is an `int_`
+     * `(x: dbl_, int:)` can be called with `(1234, x: 5.67)` or even `(y, x: 5.67)` if `y` is an `int_`
 * variables that are already named after the correct argument can be used without `:`
      * `(x: dbl_, y: int_)` can be called with `(x, y)` if `x` and `y` are already defined in the scope,
           i.e., eliding duplicate entries like `(x: x, y: y)`.
@@ -1476,9 +1478,12 @@ TODO: `$field` should create a `fn_(field)` not a `new_[field]` by default;
 can we figure out how to make it typey?  `{$...}_` maybe?
 
 ```
+# tautologies
+# TODO: `fields_` should be compile-time constant (so shouldn't be `fields_()`)
+#    but `fields_[]` would return a type rather than an iterator over types
 object_
-    ==  merge_[object_ fields_(), {$field}]
-    ==  merge_[object_ fields_(), {field_($field name, $field value_)}]
+    ==  merge_[object_ fields_[], {$field}]
+    ==  merge_[object_ fields_[], {field_($field name, $field value_)}]
 ```
 
 There are some nice ways to manipulate object types, like converting all
@@ -2971,6 +2976,23 @@ The bracket syntax is related to [template classes](#generictemplate-classes) an
 [overloading generic types](#overloading-generic-types).
 
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
+
+TODO: whether we return a type or an instance probably shouldn't depend on `[]`
+or `()`; `[]` currently gives "concrete" arguments by default and `()` gives
+referenceable arguments by default.
+
+it seems like we should be able to overload `fn_` for a `[]` argument list or a `()` argument list,
+and that we should be able to return a type or a non-type either way.  but we should have a way
+of indicating when a function is compile-time constant, so we can do `object_ fields_()`.
+
+current:
+* `[]` is for generics (e.g., `whatever_[of_: number_](~of.): of_`),
+     array/object creation (`[x: 3.4, y: "hello"]`), array/lot indexing (`array[3]`),
+     and other type function manipulation, e.g., `object_ valued_[new_[value_]: um_[value_]]`
+* `()` is for references
+
+proposed option 1:
+* `[]` is for array/object creation (`[x: 3.4, y: "hello"]`) and array/lot indexing (`array[3]`)
 
 ### unique argument names
 
