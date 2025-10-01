@@ -1475,7 +1475,8 @@ Plain-old-data objects can be thought of as merging all fields in this way:
 TODO: i think this needs to be separate from `tag`s, but see if we can combine
 `field` and `tag` ideas.  or maybe use `TAG_` to indicate this is a built-in.
 TODO: `$field` should create a `fn_(field)` not a `new_[field]` by default;
-can we figure out how to make it typey?  `{$...}_` maybe?
+can we figure out how to make it typey?  `{$...}_` maybe?  or can we just
+do `$field_` and infer `new_[field_]: field_`?
 
 ```
 # tautologies
@@ -2993,6 +2994,14 @@ current:
 
 proposed option 1:
 * `[]` is for array/object creation (`[x: 3.4, y: "hello"]`) and array/lot indexing (`array[3]`)
+* `()` is for all functions, including instance functions `whatever_(int:): str`
+     and type functions `whatever_(of_:): some_type_`
+
+proposed option 2:
+* `{}` is for generics (e.g., `whatever_{of_: number_}(~of.): of_`), blocks `if x {print_("ok")}`
+* `[]` is for array/object creation (`[x: 3.4, y: "hello"]`), array/lot indexing (`array[3]`),
+* `()` is for references
+* `[]` or `()` can be used for functions, e.g., `object_ valued_[new_[value_]: um_[value_]]`
 
 ### unique argument names
 
