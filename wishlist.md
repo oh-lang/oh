@@ -2979,29 +2979,98 @@ The bracket syntax is related to [template classes](#generictemplate-classes) an
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
 
 TODO: whether we return a type or an instance probably shouldn't depend on `[]`
-or `()`; `[]` currently gives "concrete" arguments by default and `()` gives
+or `()`; `[]` currently gives copied arguments by default and `()` gives
 referenceable arguments by default.
 
 it seems like we should be able to overload `fn_` for a `[]` argument list or a `()` argument list,
 and that we should be able to return a type or a non-type either way.  but we should have a way
 of indicating when a function is compile-time constant, so we can do `object_ fields_()`.
+we're already doing this implicitly with enums, e.g., `abc_: one_of_[a:, b:, c:]`, then
+`abc_ count_()`.  but again we'll need to do some built-in like `COUNT_(abc_)` in case
+we have something like `w_: one_of_[count:, ...]`.  we should also investigate how to
+overload `[]` for array indexing, because theoretically we can have `array[1, 2, 3]`.
 
 current:
 * `[]` is for generics (e.g., `whatever_[of_: number_](~of.): of_`),
      array/object creation (`[x: 3.4, y: "hello"]`), array/lot indexing (`array[3]`),
      and other type function manipulation, e.g., `object_ valued_[new_[value_]: um_[value_]]`
 * `()` is for references
+* pro: it's disambiugous when returning a type or an instance (e.g., `new_[value_]` vs. `fn_(value)`).
 
 proposed option 1:
 * `[]` is for array/object creation (`[x: 3.4, y: "hello"]`) and array/lot indexing (`array[3]`)
 * `()` is for all functions, including instance functions `whatever_(int:): str`
      and type functions `whatever_(of_:): some_type_`
+* pro: `generic_(a_, b_): [...] { ::method_(...): ... }` looks very nice with `()[]{}` sequence.
+* con: `generic_(a_, b_): [...]` looks like it's returning something, not defining a class
+     (maybe need a `class` keyword).
+     TODO: could we do `generic_: (a_, b_)[...] { ::method_(...): ... }` instead?
+     i prefer the earlier syntax though because we use `generic_(a_, b_)` to do typedefs, etc.
+* con: it's hard to know if `do_something_(): generic_(...)` is returning a type or an instance
+     without looking at `generic_(...)`'s default declaration.
+* con: functions like `get_value(): int_` look like they're returning an `int_` type.
+     while `get_value(): int` could be used to return an `int` instance, it puts `int` into
+     scope and makes it look like you should use it (`WARN_NO_UNUSED_VARIABLE`)
 
 proposed option 2:
 * `{}` is for generics (e.g., `whatever_{of_: number_}(~of.): of_`), blocks `if x {print_("ok")}`
 * `[]` is for array/object creation (`[x: 3.4, y: "hello"]`), array/lot indexing (`array[3]`),
 * `()` is for references
-* `[]` or `()` can be used for functions, e.g., `object_ valued_[new_[value_]: um_[value_]]`
+* `[]` or `()` can be used for functions, e.g., `nop_[0]` could be `nop_ o` for `nop_: one_of_{n: -1, o: 0, p: +1}`.
+* pro: `[]` doesn't get super overloaded
+* con: `if my_nullable_fn_ { do_something_() }` actually tries to generic the `{ do_something_() }`.
+     however, i'm not a big fan of `my_nullable_fn_` in the first place; but `my_nullable_fn_ != null` 
+     could be a workaround.
+* con: `{}` usually only enscopes things within the block, anything inside of the generic
+     block gets enscoped into the rest of the class definition
+* con: due to `{}` syntax, we can replace with a block, but this looks a bit odd:
+```
+# generic functions
+# defining more idiomatic:
+generic_fn_
+{    of_: number_
+}
+(    of.
+): of_
+     print_(of)
+     of *= 2
+     of
+# defining less idiomatic:
+generic_fn_
+     of_: number_
+(    of.
+): of_
+     print_(of)
+     of *= 2
+     of
+
+# calling more idiomatic:
+generic_fn_{int_}(123)
+# calling less idiomatic:
+generic_fn_
+     int_
+(    123
+)
+
+# generic classes
+# defining more idiomatic
+generic_class_
+{    a_
+     b_
+}:   [a;, b;]
+{    ::do_something_(): one_of_[a:, b:]
+          m a || m b
+}
+# defining less idiomatic:
+generic_class_
+     a_
+     b_
+:    [a;, b;]
+{    ::do_something_(): one_of_[a:, b:]
+          m a || m b
+}
+```
+but this is actually growing on me a bit, either way.
 
 ### unique argument names
 
@@ -4073,6 +4142,17 @@ checked for non-null, the return type will be nullable.  E.g.,
 `x?: optional_function_(...args)` will have a type of `return_type_?`.
 Nullable functions are checked by the executable, so the programmer
 doesn't necessarily have to do it.
+
+TODO: i'm not a big fan of nullable functions, due to syntax reasons they look
+super messy and difficult to set to null.  if people want a nullable function
+we should just recommend that they wrap it in a nullable class, e.g.,
+```
+escape_handler_: [do_something_(my_class;): null_]
+my_class_: [escape_handler?;, ...]
+{    ;;escape_(): null_
+          m escape_handler do_something_(m)
+}
+```
 
 A nullable function has `?` before the argument list; a `?` *after* the argument list
 means that the return type is nullable.  The possible combinations are therefore the following:
