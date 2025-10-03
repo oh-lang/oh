@@ -386,30 +386,30 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
           and return them in a reference object with fields `x` and `y`, i.e., `(x: a x_(), y: a y)`.
           This allows `x` and `y` to be references.  This can be useful e.g., when `a` is an expression
           that you don't want to add a local variable for, e.g., `my_long_computation_()@ (x_(), Y)`.
-* `[]` are for types, containers (including objects, arrays, and lots), and generics
+* `[]` are for types and containers (including objects, arrays, and lots)
      * `[x: dbl_, y: dbl_]` to declare a plain-old-data class with two double-precision fields, `x` and `y`
      * `[x: 1.2, y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `x` and `y`
      * `"My String interpolation is $[x, y]"` to add `[*value-of-x*, *value-of-y*]` to the string.
-     * `some_class_[n: number_, of_]: some_other_class_[count: n, at_: int_, of_]` to define a class type
-          `some_class` being related to `some_other_class`, e.g., `some_class_[n: 3, str_]` would be
-          `some_other_class_[count: 3, at_: int, of_: str_]`.
-     * For generic/template classes, e.g., classes like `array_[count, of_]` for a fixed array of size
-          `count` with elements of type `of_`, or `lot_[int_, at_: str_]` to create a map/dictionary
-          of strings mapped to integers.  See [generic/template classes](#generictemplate-classes).
-     * For generic/template functions with type constraints, e.g., `my_function_[of_: non_null_](x: of_, y: int_): of_`
-          where `of_` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
      * `[greeting: str_, times: int_] = destructure_me_()` to do destructuring of a return value
           see [destructuring](#destructuring).
      * `a@ [x_(), y]` to call `a x_()` then `a y` with [sequence building](#sequence-building)
           and return them in an object with fields `x` and `y`, i.e., `[x: a x_(), y: a y]`.
           You can also consider them as ordered, e.g.,
           `results: a@ [x_(), y], print_("${results[0]}, ${results[1]})`.
-* `{}` for blocks and sequence building
+* `{}` for blocks and generics
      * `{...}` to effectively indent `...`, e.g., `if condition {do_thing_()} else {do_other_thing_(), 5}`
           * Used for defining a multi-statement function inline, e.g., `fn_(): {do_this_(), do_that_()}`.
                (Note that you can avoid `{}` if the block is one statement, like `fn_(): do_this_()`.)
           * Note that braces `{}` are optional if you actually go to the next line and indent,
                but they are recommended for long blocks.
+     * `some_class_{n: number_, of_:}: some_other_class_{count: n, at_: int_, of_}` to define a class type
+          `some_class` being related to `some_other_class_`, e.g., `some_class_{n: 3, str_}` would be
+          `some_other_class_{count: 3, at_: int, of_: str_}`.
+     * For generic/template classes, e.g., classes like `array_{count, of_}` for a fixed array of size
+          `count` with elements of type `of_`, or `lot_{int_, at_: str_}` to create a map/dictionary
+          of strings mapped to integers.  See [generic/template classes](#generictemplate-classes).
+     * For generic/template functions with type constraints, e.g., `my_function_{of_: non_null_}(x: of_, y: int_): of_`
+          where `of_` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
      * `a@ {x_(), y}` with [sequence building](#sequence-building), 
           calling `a x_()` and `a y`, returning `a` if it's a temporary otherwise `a y`
      * `"My String Interpolation is ${missing_(), x}"` to add `x` to the string.
@@ -420,27 +420,23 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
           [generic/template functions](#generictemplate-functions).
      * `my_result; array_{~} = do_stuff_()` is essentially equivalent to `my_result; do_stuff_() array`, i.e.,
           asking for the first array return-type overload.  This infers an inner type via `{~}` but doesn't name it.
-     * `named_inner; array_[~infer_this_] = do_stuff_()` asks for the first array return-type overload,
+     * `named_inner; array_{~infer_this_} = do_stuff_()` asks for the first array return-type overload,
           and defines the inner type so it can be used later in the same block, e.g.,
           `first_value; infer_this_ = named_inner[0]`.
           Any `type_case_` identifier can be used for `infer_this_`.
 * `$` for inline block and lambda arguments
      * [inline blocks](#block-parentheses-and-commas) include:
-          * `$[...]` as shorthand for a new block defining `[...]`, e.g., for a return value:
+          * `$[...]` as shorthand for `{[...]}`, e.g., creating a block for a return value:
                `array: if some_condition $[1, 2, 3] else $[4, 5]`
-          * `$(...)` as shorthand for a new block defining `(...)`, e.g., a reference object:
+          * `$(...)` as shorthand for `{(...)}`, e.g., creating a block for a reference object:
                `result: if x > y $(max: x, min: y) else $(min: x, max: y)`
-          * `${...}` is almost always equivalent to `{...}`, except inside a string,
-               so we'll likely alias `${...}` to `{...}` outside of strings.
-               TODO: maybe it's useful for eliding () in a lambda, like `my_array map_${2 * $int  + 1}`.
-               it might make it more clear to do `$${...}` and `${...}` to indicate where variables are attaching.
-               following the pattern above, `$[...]` is equivalent to `{[...]}`, so
-               `${...}` would be equivalent to `{{...}}`.  not sure that's great but maybe could be
-               used for generics.
+          * `${...}` is shorthand for a `(fn_(): {...})`, which can be used to create
+               [lambda function](#lambda-functions), e.g., `my_array map_${2 * $int + 1}` to define
+               `my_array map_(fn_(int:): 2 * int + 1)`.
      * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
-          * `my_array map_({$int * 2 + 1})` will iterate over e.g., `my_array: [1, 2, 3, 4]`
-               as `[3, 5, 7, 9]`.  The `$` variables attach to the nearest brace/indent as
-               function arguments, variables with `$$` would attach to the second nearest brace/indent, etc.
+          * `my_array map_${$int * 2 + 1}` will iterate over e.g., `my_array: [1, 2, 3, 4]`
+               as `[3, 5, 7, 9]`.  The `$` variables attach to the enclosing `${}` as
+               function arguments, variables with `$$` would attach to the enclosing `$${}`, etc. 
 * all arguments are specified by name so order doesn't matter, although you can have default-named arguments
   for the given type which will grab an argument with that type (e.g., `int` for an `int_` type).
      * `(x: dbl_, int:)` can be called with `(1234, x: 5.67)` or even `(y, x: 5.67)` if `y` is an `int_`
