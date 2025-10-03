@@ -414,7 +414,8 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
           Note that only the last element in the `${}` is added, but `missing_()` will still be evaluated.
 * `~` to infer or generalize a type
      * `my_generic_function_(value: ~u_): u_` to declare a function that takes a generic type `u_`
-          and returns it.  For more details, see [generic/template functions](#generictemplate-functions).
+          and returns an instance of that type.  For more details, see
+          [generic/template functions](#generictemplate-functions).
      * `my_result; array_[~] = do_stuff_()` is essentially equivalent to `my_result; do_stuff_() array`, i.e.,
           asking for the first array return-type overload.  This infers an inner type via `[~]` but doesn't name it.
      * `named_inner; array_[~infer_this_] = do_stuff_()` asks for the first array return-type overload,
@@ -431,6 +432,9 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
                so we'll likely alias `${...}` to `{...}` outside of strings.
                TODO: maybe it's useful for eliding () in a lambda, like `my_array map_${2 * $int  + 1}`.
                it might make it more clear to do `$${...}` and `${...}` to indicate where variables are attaching.
+               following the pattern above, `$[...]` is equivalent to `{[...]}`, so
+               `${...}` would be equivalent to `{{...}}`.  not sure that's great but maybe could be
+               used for generics.
      * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
           * `my_array map_({$int * 2 + 1})` will iterate over e.g., `my_array: [1, 2, 3, 4]`
                as `[3, 5, 7, 9]`.  The `$` variables attach to the nearest brace/indent as
@@ -450,6 +454,9 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
      * `<>` for bit flips on integer types (instead of `~`)
      * `><` for bitwise xor on integer types (instead of `^`)
 * see [operator overloading](#operator-overloading) for how to overload operators.
+
+TODO: we probably need a `@comptime` annotation for functions that can be called at compile time.
+or maybe we make them fully `UPPER_CASE_` to make it clear.  but i'm not as big of a fan of that...
 
 ## defining variables
 
@@ -3025,6 +3032,23 @@ proposed option 2:
      block gets enscoped into the rest of the class definition
 * con: due to `{}` syntax, we can replace with a block, but this looks a bit odd:
 ```
+# equivalent declarations:
+array; array_{int_} = [1, 2, 3]
+array{int_}; [1, 2, 3]
+array
+     int_
+;         [1, 2, 3]
+# more equivalence:
+array; array_{int_}(1, 2, 3)
+array{int_}(1, 2, 3);
+# TODO: does this work with lexer??
+array
+     int_
+(    1
+     2
+     3
+);
+
 # generic functions
 # defining more idiomatic:
 generic_fn_
@@ -3071,6 +3095,7 @@ generic_class_
 }
 ```
 but this is actually growing on me a bit, either way.
++++
 
 ### unique argument names
 
