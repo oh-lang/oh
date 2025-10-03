@@ -29,8 +29,8 @@ It also makes internationalization not dependent on unicode parsing; we can imme
 determine whether something is a function if it has a trailing `_`.
 For the remainder of this document, we'll use `variable_case`,
 `type_case_`, and `function_case_`, although the latter two are indistinguishable without context.
-In context, functions and types are followed by optional generics (in `[]` brackets),
-while functions alone have parentheses `()` with optional arguments inside.
+In context, functions and types are followed by optional generics (in `{}` braces),
+while functions alone have parentheses `()` or brackets `[]` with optional arguments inside.
 Because types can act as functions, we don't syntactically distinguish between `type_case_`
 and `function_case_` otherwise.
 
@@ -71,7 +71,7 @@ or by calling it as a method on either one of the instances, e.g.,
 `my_class_a my_two_instance_function_(my_class_b, width: 5, height: 10)`, without needing to
 define, e.g., `my_class_b::my_two_instance_function_(my_class_a:, width: 5, height: 10)` as well.
 
-For convenience, `array[3] = 5` will work even if `array` is not already at least size 4;
+For convenience, `array{3} = 5` will work even if `array` is not already at least size 4;
 oh-lang will resize the array if necessary, populating it with default values,
 until finally setting the fourth element to 5.  This is also to be consistent with
 other container types, e.g., lots (oh-lang's version of a map/dictionary), since `lot["At"] = 50`
@@ -106,8 +106,8 @@ We use `:` to create the readonly reference overload, e.g., `my_function_(int:):
 to create a function which takes a readonly integer reference, or `my_function_(int;): str_`
 for a function that can mutate the passed-in integer reference or `my_function_(int.): str_`
 for a function which takes a temporary integer.
-This also works for generic classes like `my_generic_[of_]` where `of_` is a template type;
-`my_function_(my_generic[int_];)` is short for `my_function_(my_generic; my_generic_[int_])`.
+This also works for generic classes like `my_generic_{of_:}` where `of_` is a template type;
+`my_function_(my_generic{int_};)` is short for `my_function_(my_generic; my_generic_{int_})`.
 
 When calling a function, we don't need to use `my_function_(x: x)` if we have a local
 variable named `x` that shadows the function's argument named `x`.  We can just
@@ -132,8 +132,8 @@ I.e., `;x` expands to `x; x`, while `x;` expands to `x; x_`.
 TODO: i'm forgetting to do this and don't always like it.  can we make due without it
 and always put declarers on the right?  i like the consistency though.
 but you'd need to do this in generics as well, in case you're asking for a `\`` generic.
-e.g., `my_class_[of_]: [of\`]` would be `my_class_[;dbl_]` for a class that can
-modify the double and `my_class_[:dbl_]` for readonly.
+e.g., `my_class_{of_:}: [of\`]` would be `my_class_{;dbl_}` for a class that can
+modify the double and `my_class_{:dbl_}` for readonly.
 
 Class methods technically take an argument for `m` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
@@ -168,19 +168,19 @@ to refer to another generic subtype if we already have the class.
 ```
 # NOTE: we can use type definitions from later in the class body when
 # declaring class member variables (e.g., `lot; lot_`):
-my_generic_[at_, of_]: [lot;]
-{    lot_: @only insertion_ordered_lot_[at_, of_]
+my_generic_{at_:, of_:}: [lot;]
+{    lot_: @only insertion_ordered_lot_{at_, of_}
      ...
 }
 
-# ERROR: `lot_` (without a `[]` spec) is shadowed inside of `my_generic_`:
+# ERROR: `lot_` (without a `{}` spec) is shadowed inside of `my_generic_`:
 # we should rename this type or the type inside `my_generic_`.
-lot_: lot_[at_: int_, of_: str_]
+lot_: lot_{at_: int_, of_: str_}
 ```
 
-After fixing the compile error in the example above, we can use `some_type: my_generic_[at_, of_] lot_`
-to refer to the nested type, but can we also use `some_type: lot_[m_: my_generic_[at_, of_]]`.
-We don't override `lot_[my_generic_[at_, of_]]` because a single type might be an override of `lot_[of_]`;
+After fixing the compile error in the example above, we can use `some_type: my_generic_{at_, of_} lot_`
+to refer to the nested type, but can we also use `some_type: lot_{m_: my_generic_{at_, of_}}`.
+We don't override `lot_{my_generic_{at_, of_}}` because a single type might be an override of `lot_{of_}`;
 this isn't the case for `lot_` specifically but for other types like `array_` there are definitely overloads.
 See [type manipulation](#type-manipulation) for more details.
 
@@ -199,10 +199,10 @@ and `g_` can be used for the current generic class (without the specification) w
 `m_` always refers to the current class type (including the specification if generic).
 
 ```
-vector3_[of_: number_]: [x; of_, y; of_, z; of_]
+vector3_{of_: number_}: [x; of_, y; of_, z; of_]
 {    # `g_` is used for this generic class without the current specification,
      # in this case, `vector3_`.
-     g_(value_0. ~value, value_1., value_2.): g_[value]
+     g_(value_0. ~value, value_1., value_2.): g_{value_}
           [x: value_0, y: value_1, z: value_2]
 
      ::dot_(o:): of_
@@ -226,9 +226,9 @@ E.g., `;:the_method_(x;: str_): m check_(;:x)` where `check_` has distinct overl
 See [const templates](#const-templates) for more details.
 
 oh-lang uses result-passing instead of exception-throwing in order to make it clear
-when errors can occur.  The `hm_[ok_, er_]` class handles this, with `ok_` being the
+when errors can occur.  The `hm_{ok_, er_}` class handles this, with `ok_` being the
 type of a valid result, and `er_` being the type of an error result.  You can specify
-the types via `hm_[ok_: int_, er_: str_]` for `ok_` being `int_` and `er_` being a `str_`.
+the types via `hm_{ok_: int_, er_: str_}` for `ok_` being `int_` and `er_` being a `str_`.
 If the `ok_` and `er_` types are distinct, you don't need to wrap a return value in
 `ok_(valid_result)` and `er_(error_result)`; you can just return `valid_result` or `error_result`.
 See [the `hm` section](#hm) for more details.  It is a compile error to not handle
@@ -262,9 +262,9 @@ We also don't use a different concept for interfaces and inheritance.
 The equivalent of an interface in oh-lang is simply an abstract class.  This way
 we don't need two different keywords to `extend` or `implement` a class or interface.
 In fact, we don't use keywords at all; to just add methods (or class functions/variables),
-we use this syntax, `child_class_: parent_class_ { ::extra_methods_(): int_, ... }`,
+we use this syntax, `wrapper_class_: parent_class_ { ::extra_methods_(): int_, ... }`,
 and to add instance variables to the child class we use this notation:
-`child_class_: all_of_[parent_class:, m: [child_x: int_, child_y: str_]] { ... methods }`.
+`child_class_: all_of_{parent_class:, m: [child_x: int_, child_y: str_]} { ... methods }`.
 
 oh-lang handles generics/templates in a way more similar to zig or python rather than C++ or Rust.
 When compiled without any usage, templates are only tested for syntax/grammar correctness.
@@ -274,13 +274,13 @@ specified types.  Any errors are still compile-time errors, but you get to have 
 of duck typing without needing to specify your type constraints fully.
 
 ```
-my_generic_[of_](a: ~of_, b: of_): of_
+my_generic_{of_}(a: ~of_, b: of_): of_
      # this clearly requires `of_` to implement `*`
      # but we didn't need to specify `[of_: number_]` or similar in the generic template.
      a * b
 
 print_(my_generic_(a: 3, b: 4))                 # OK
-print_(my_generic_(a: [1, 2, 3], b: [4, 5]))    # COMPILE ERROR: no definition for `array_[int_] * array_[int_]`
+print_(my_generic_(a: [1, 2, 3], b: [4, 5]))    # COMPILE ERROR: no definition for `array_{int_} * array_{int_}`
 ```
 
 Similarly, duck typing means that if you define an appropriate `::hash` function on your class,
@@ -301,21 +301,21 @@ hide errors from other developers, however, but if you do, you should make the
 program panic/terminate rather than continue.  Example code:
 
 ```
-custom_container_[of_]: [vector[10, of_];]
+custom_container_{of_:}: [@private vector{10, of_};]
 {    # make an overload for `m[ordinal]` where `ordinal_` is a 1-based indexing type.
-     :;[ordinal]: hm_[ok_: (of:;), er_: str_]
+     :;[ordinal.]: hm_{ok_: (of:;), er_: str_}
           if ordinal > 10
                er_("index too high")
           else
-               ok_((of:; vector[ordinal]))
+               ok_((of:; m vector[ordinal]))
 
      @can_panic
-     :;[ordinal]: (of:;)
+     :;[ordinal.]: (of:;)
           m[ordinal] hm assert_()
 
      # for short, you can use this `@hm_or_panic` macro, which will essentially
      # inline the logic into both methods but panic on errors.
-     :;[ordinal]: @hm_or_panic_[ok_: (of:;), er_: str_]
+     :;[ordinal.]: @hm_or_panic_{ok_: (of:;), er_: str_}
           if ordinal > 10
                er_("index too high")
           else
@@ -354,13 +354,15 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
 * use `:` to declare readonly things, `;` to declare writable things.
      * use `a: x_` to declare `a` as an instance of type `x_`, see [variables](#variables),
           with `a` any `variable_case` identifier.
-     * use `fn_(): x_` to declare `fn_` as a function returning an instance of type `x_`, see [functions](#functions),
-          with any arguments inside `()`.  `fn_` can be renamed to anything
-          `function_case_`, but `fn_` is the default.
+     * use `fn_(): x_` or `fn_[]: x_` to declare `fn_` as a function returning an instance of type `x_`,
+          see [functions](#functions), with any arguments inside `()` or `[]`, with the distinction being
+          useful for [references](#references).  `fn_` can be renamed to anything `function_case_`,
+          but `fn_` is one of the defaults.
+     * use `new_{}: y_` to declare `new_` as a function returning *a type* `y_`, with any arguments inside `{}`.
+          `new_` can be renamed to anything `type_case_`, but `new_` is the default.
+          See [returning a type](#returning-a-type).
      * use `a_: y_` to declare `a_` as a constructor that builds instances of type `y_`
           with `a_` any `type_case_` identifier.
-     * use `new_[]: y_` to declare `new_` as a function returning a type `y_`, with any arguments inside `[]`.
-          `new_` can be renamed to anything `type_case_`, but `new_` is the default.
      * while declaring *and defining* something, you can avoid the type if you want the compiler to infer it,
           e.g., `a: some_expression_()`
      * thus `:=` is usually equivalent to `:` (and similarly for `;=`), except in the case of defining
@@ -416,8 +418,8 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
      * `my_generic_function_(value: ~u_): u_` to declare a function that takes a generic type `u_`
           and returns an instance of that type.  For more details, see
           [generic/template functions](#generictemplate-functions).
-     * `my_result; array_[~] = do_stuff_()` is essentially equivalent to `my_result; do_stuff_() array`, i.e.,
-          asking for the first array return-type overload.  This infers an inner type via `[~]` but doesn't name it.
+     * `my_result; array_{~} = do_stuff_()` is essentially equivalent to `my_result; do_stuff_() array`, i.e.,
+          asking for the first array return-type overload.  This infers an inner type via `{~}` but doesn't name it.
      * `named_inner; array_[~infer_this_] = do_stuff_()` asks for the first array return-type overload,
           and defines the inner type so it can be used later in the same block, e.g.,
           `first_value; infer_this_ = named_inner[0]`.
@@ -1333,7 +1335,7 @@ The corresponding generic for symmetric integers is `symmetric_[bits: count]`.
 
 Note that the `ordinal_` type behaves exactly like a number but can be used
 to index arrays starting at 1.  E.g., `array[ordinal_(1)]` corresponds to `array[index_(0)]`
-(which is equivalent to other numeric but non-index types, e.g., `Array[0]`).
+(which is equivalent to other numeric but non-index types, e.g., `array[0]`).
 There is an automatic delta by +-1 when converting from `index_` to `ordinal_`
 or vice versa, e.g., `ordinal_(index_(1)) == 2` and `index_(ordinal_(1)) == 0`.
 Note however, that there's a bit of asymmetry here; non-index, numeric types
@@ -1826,7 +1828,7 @@ example_class_: [x: int_, y: dbl_]
 
 
 ```
-some_class_: [x: dbl_, y: dbl_, a; array_[str_]]
+some_class_: [x: dbl_, y: dbl_, a; array_{str_}]
 Some_class; some_class_(x: 1, y: 2.3, a: ["hello", "world"])
 print_(some_class::a)       # prints ["hello", "world"] with a readonly reference overload
 print_(some_class::a[1])    # prints "world"
@@ -5907,7 +5909,6 @@ be the function with all overloads; otherwise we should technically require spec
 type "overloads" for generic types like `hm_[of_]: hm_[ok_: of_, er_]` that come from other files.
 there's not a huge difference between types and functions, they both can
 take arguments to return something else.
-TODO: i think we can use `[*]: \/other_file` to import everything.
 
 You can use this `\/` notation inline as well, which is recommended
 for avoiding unnecessary imports.  It will be a language feature to
