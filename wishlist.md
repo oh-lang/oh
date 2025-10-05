@@ -430,7 +430,7 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
                `array: if some_condition $[1, 2, 3] else $[4, 5]`
           * `$(...)` as shorthand for `{(...)}`, e.g., creating a block for a reference object:
                `result: if x > y $(max: x, min: y) else $(min: x, max: y)`
-          * `${...}` is shorthand for a `(fn_(): {...})`, which can be used to create
+          * `${...}` is shorthand for a `(fn_(...): {...})`, which can be used to create
                [lambda function](#lambda-functions), e.g., `my_array map_${2 * $int + 1}` to define
                `my_array map_(fn_(int:): 2 * int + 1)`.
      * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
@@ -510,8 +510,8 @@ important_items:
 # this is the same as `important_items: "Fridge\nPancakes and syrup\nCheese\n"`
 
 # a single-line ampersanded string can be used to avoid lots of escapes:
-avoid_escapes: &|This is a 'line' "you know"
-# this is equivalent to `avoid_escapes: "This is a 'line' \"you know\""
+avoid_escapes: &|This is not a 'line' "you know"
+# this is equivalent to `avoid_escapes: "This is not a 'line' \"you know\""
 
 # a single-line plussed string will include a newline at the end.
 just_one_line: +|This is a 'line' "you know"
@@ -523,8 +523,9 @@ multiline_interpolation:
           +|You will receive ${important_items} and more.
 # becomes "Special delivery for Barnabus\nYou will receive Fridge\nPancakes and syrup\nCheese\n and more."
 
-# if you want to avoid string interpolation, e.g., because you need to include a literal "${" in your string,
-# you only need to escape one of the two characters.  e.g., `$a` is never interpolated as the value of `a`.
+# if you want to avoid string interpolation, e.g., because you need to include a literal
+# "${", "$[", or "$(" in your string, you only need to escape one of the two characters.
+# e.g., `$a` is never interpolated as the value of `a`.
 print_("ok \${we want this literally as} $\[whatever] $ok")
 # literally prints "ok ${we want this literally as} $[whatever] $ok"
 
@@ -557,18 +558,18 @@ See [arrays](#arrays) for more information.
 
 ```
 # declaring a readonly array
-my_array: array_[element_type_]
+my_array: array_{element_type_}
 
 # defining a writable array:
-array_var; array_[int_](1, 2, 3, 4)
+array_var; array_{int_}(1, 2, 3, 4)
 # We can also infer types implicitly via one of the following:
 #   * `array_var; array_(1, 2, 3, 4)`
 #   * `array_var; [1, 2, 3, 4]`
 array_var[5] = 5    # array_var == [1, 2, 3, 4, 0, 5]
 ++array_var[6]      # array_var == [1, 2, 3, 4, 0, 5, 1]
 array_var[0] += 100 # array_var == [101, 2, 3, 4, 0, 5, 1]
-array_var[1]!       # returns 2, zeroes out array_var[1]:
-                         # array_var == [101, 0, 3, 4, 0, 5, 1]
+array_var[1]!       # returns 2, defaults array_var[1]:
+                    # array_var == [101, 0, 3, 4, 0, 5, 1]
 
 # declaring a long array (note the Horstmann indent):
 long_implicitly_typed:
@@ -578,7 +579,7 @@ long_implicitly_typed:
 ]
 
 # declaring a long array with an explicit type:
-long_explicitly_typed: array_[i32_]
+long_explicitly_typed: array_{i32_}
 (    5   # commas aren't needed here.
      6
      7
@@ -590,43 +591,45 @@ as shown above.  See [line continuations](#line-continuations) for more details.
 
 ## defining lots
 
+Lots are oh-lang's version of dictionaries or maps.
 See [lots](#lots) for more information.
 
 ```
 # declaring a readonly lot
-my_lot: lot_[at: id_type_, value_type_]
+my_lot: lot_{at: id_type_, value_type_}
 
 # defining a writable lot:
-votes_lot; lot_[at_: str_, int_]("Cake": 5, "Donuts": 10, "Cupcakes": 3)
+votes_lot; lot_{at_: str_, int_}("Cake": 5, "Donuts": 10, "Cupcakes": 3)
 # We can also infer types implicitly via one of the following:
 #   * `votes_lot; lot_(["Cake": 5, ...])`
 #   * `votes_lot; ["Cake": 5, ...]`
-votes_lot["Cake"]           # 5
-++votes_lot["Donuts"]       # 11
-++votes_lot["Ice Cream"]    # inserts "Ice Cream" with default value, then increments
-votes_lot["Cupcakes"]!      # resets "Cupcakes" to 0 and returns 3
-votes_lot::["Cupcakes"]     # null
+votes_lot["Cake"]        # 5
+++votes_lot["Donuts"]    # 11
+++votes_lot["Ice Cream"] # inserts "Ice Cream" with default value, then increments
+votes_lot["Cupcakes"]!   # resets "Cupcakes" to 0 and returns 3
+votes_lot::["Cupcakes"]  # null
 # now `votes_lot == ["Cake": 5, "Donuts": 11, "Cupcakes": 0, "Ice Cream": 1]`
 ```
 
 ## defining sets
 
 See [sets](#sets) for more details.
+TODO: we may not want to create defaults for sets here using `set["asdf"]`
 
 ```
 # declaring a readonly set
-my_set: set_[element_type_]
+my_set: set_{element_type_}
 
 # defining a writable set:
-some_set; set_[str_]("friends", "family", "fatigue")
+some_set; set_{str_}("friends", "family", "fatigue")
 # We can also infer types implicitly via the following:
 #   * `some_set; set_("friends", ...)`
-some_set::["friends"]   # `true`, without changing the set.
-some_set::["enemies"]   # null (falsey), without changing the set.
-some_set["fatigue"]!    # removes "fatigue", returns `true` since it was present.
-                              # `some_set == set_("friends", "family")`
-some_set["spools"]      # adds "spools", returns null (wasn't in the set), but now is.
-                              # `some_set == set_("friends", "family", "spools")`
+some_set::["friends"]    # `true`, without changing the set.
+some_set::["enemies"]    # null (falsey), without changing the set.
+some_set["fatigue"]!     # removes "fatigue", returns `true` since it was present.
+                         # `some_set == set_("friends", "family")`
+some_set["spools"]       # adds "spools", returns null (wasn't in the set), but now is.
+                         # `some_set == set_("friends", "family", "spools")`
 ```
 
 ## defining functions
@@ -677,6 +680,8 @@ do_something_(x: int_, y: int_): [w: int_, z: int_]
 do_something_(x: int_, y: int_): [w: int_, z: dbl_]
 {    # NOTE! return fields `w` and `z` are in scope and can be assigned
      # directly in option A:
+     # TODO: i don't know if this is consistent with our `vector1_: [x: dbl_]` logic
+     #    we may want to allow not using `m` if the class is not defined with it
      z = \\math atan_(x, y)
      w = 123
      # option B: can just return `w` and `z` in an object:
@@ -725,19 +730,20 @@ hello_world_(): print_(do_something_(you_(): "world", greet_(name: str_): "Hello
 ### defining generic functions
 
 There are two ways to define a generic function: (1) via type inference `~x`
-and (2) with an explicit generic specification `[types_...]` after the function name.
+and (2) with an explicit generic specification `{types_...}` after the function name.
 You can combine the two methods if you want to infer a type and specify a
-condition that the type should satisfy, e.g., `fn_[x_: number_](~x): x_`,
-where `~x` expands to `x: ~x_`, meaning that `x_` is inferred, and the
-brackets require `x_` to be a number type.  Any types that are not inferred
-but are explicitly given in brackets must be added at the callsite, e.g.,
-`fn_[x_: number_, y_](~x, after: y_): y_` should be called like `fn_[y_: int_](123.4, after: 5)`.
+condition that the type should satisfy, e.g., `fn_{x_: number_}(~x.): x_`,
+where `~x.` expands to `x. ~x_`, meaning that `x_` is inferred, and the
+braces `{x_: number_}` require `x_` to be a number type.  Any types that are
+not inferred but are given in braces must be added at the callsite, e.g.,
+`fn_{x_: number_, y_:}(~x., after: y_): y_` should be called like
+`fn_{y_: int_}(123.4, after: 5)`.
 
-Note that default names apply to either case; `~x` is shorthand for `x: ~x_`
-which would not need an argument name, and `fn_[value_](value): null` would
-require `value_` specified in the brackets but not in the argument list,
-e.g., `fn_[value_: int_](123)`.  In brackets, the "default name" for a type is
-`of_`, so you can call a function like `fn_[of_](of): null_` as `fn_[int_](123)`.
+Note that default names apply to either case; `~x:` is shorthand for `x: ~x_`
+which would not need an argument name, and `fn_{value_:}(value.): null_` would
+require `value_` specified in the braces but not in the argument list,
+e.g., `fn_{value_: int_}(123)`.  In braces, the "default name" for a type is
+`of_`, so you can call a function like `fn_{of_:}(of.): null_` as `fn_{int_}(123)`.
 
 Some examples:
 
@@ -774,7 +780,7 @@ fn_[x_: str_](value: "asdf")
 
 # explicit default-named generic, but argument is not default named:
 fn_[of_](value: of_): of_
-# call it like this; you can omit `of_: ...` in brackets:
+# call it like this; you can omit `of_: ...` in braces:
 fn_[int_](value: 123)
 ```
 
@@ -865,7 +871,7 @@ Generally it's recommended to add child fields last.
 
 ### defining generic classes
 
-With classes, generic types must be explicitly declared in brackets.
+With classes, generic types must be explicitly declared in braces.
 Any conditions on the types can be specified via `[the_type: the_condition, ...]`.
 
 ```
@@ -1556,9 +1562,9 @@ unnest_[hm_[ok_: ~nested_, ~_er_]]: _nested
 unnest_[~nested_?]: nested_
 ```
 
-Note that if we have a function that returns a type, we must use brackets, e.g.,
+Note that if we have a function that returns a type, we must use braces, e.g.,
 `the_function_[...]: the_return_type_`, but we can use instances like booleans
-or numbers inside of the brackets (e.g., `array_[3, int_]` for a fixed size array type).
+or numbers inside of the braces (e.g., `array_[3, int_]` for a fixed size array type).
 Conversely, if we have a function that returns an instance, we must use parentheses,
 e.g., `the_function_(...): instance_type_`.  In either case, we can use a type as
 an argument, e.g., `nullable_(of_): bool_` or `array3_[of_]: array_[3, of_]`.
@@ -2943,10 +2949,6 @@ do_something_(0.75)   # returns 1.5
 See [generic/template functions](#generictemplate-functions) for more details
 on the syntax.
 
-TODO: i don't like having two ways of doing this.  should we always
-assume that arguments in parentheses are values and arguments in brackets are types?
-but we do need values in brackets.
-
 However, there are use cases where we might actually want to pass in
 the type of something.  We can use `of_` as a type name to get default naming.
 ```
@@ -2978,7 +2980,7 @@ that we're dealing with a type if we use `[]`.  The alternative would be to use
 `int_` constructor, but again we never need to mix and match.  It's also clear that
 we use comptime constants in generics like `[count: count_]`, which would require
 a macro if we switched to `()`, e.g., `array_(@comptime count: count_)`.
-The bracket syntax is related to [template classes](#generictemplate-classes) and
+The brace syntax is related to [template classes](#generictemplate-classes) and
 [overloading generic types](#overloading-generic-types).
 
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
@@ -4235,13 +4237,13 @@ result: copy_(value: vector3)   # prints "got vector3_(x: 0.0, y: 5.0, z: 0.0)".
 vector3 == result               # equals True
 ```
 
-You can also add the new types in brackets just after the function name,
+You can also add the new types in braces just after the function name,
 e.g., `copy_[t_: my_type_constraints_](value: ~t_): t_`, which allows you to specify any
 type constraints (`my_type_constraints_` being optional).  Note that types defined with
-`~` are inferred and therefore can never be explicitly given inside of the brackets,
+`~` are inferred and therefore can never be explicitly given inside of the braces,
 e.g., `copy_[t_: int_](value: 3)` is invalid here, but `copy_(value: 3)` is fine.
 
-If you want to require explicitly providing the type in brackets, don't use `~` when
+If you want to require explicitly providing the type in braces, don't use `~` when
 defining the function.
 
 ```
@@ -4250,7 +4252,7 @@ copy_[the_type_](value: the_type_): the_type_
      ...
      the_type_(value)
 
-# therefore we need to specify the generics in brackets before calling the function.
+# therefore we need to specify the generics in braces before calling the function.
 copy_[the_type_: int_](value: 1234) # returns 1234
 ```
 
@@ -4266,7 +4268,7 @@ copy_[of_](value: of_): of_
      ...
      of_(value)
 
-# because the type is not inferred, you always need to specify it in brackets.
+# because the type is not inferred, you always need to specify it in braces.
 # you can use `of_: the_type_` but this is not idiomatic:
 copy_[of_: int_](value: 3)    # will return the integer `3`
 
@@ -4360,7 +4362,7 @@ logger_(value. 3)   # returns the integer `3`
 And as in other contexts, you can avoid inferring the type by omitting `~`.
 
 ```
-# this generic needs to be specified in brackets at the call site: 
+# this generic needs to be specified in braces at the call site: 
 logger_[value_](NAMED_value.): value_
      ...
      NAMED_value
