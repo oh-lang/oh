@@ -892,13 +892,13 @@ my_generic: generic_(1.23)  # infers `generic_{dbl_}` for this type.
 WOW_generic("hi")           # shorthand for `WOW_generic: generic_("hi")`, infers `generic_{str_}`
 
 # not default named:
-entry_{at_: hashable_, of_: number_}: [at, value; of_]
+entry_{at_: hashable_, of_: number_}: [at:, value; of_]
 {    ;;add_(of): null_
           m value += of
 }
 
 # shorthand for `entry: entry_{at_: str_, of_: int_}(...)`:
-entry{at_: str_, int_}(at: "cookies", value: 123)
+entry{at_: str_, int_}(at: "cookies", value: 123):
 my_entry: entry_(at: 123, value: 4.56)              # infers `at_: int_` and `of_: dbl_`.
 my_entry add_(1.23)
 my_entry value == 5.79
@@ -938,7 +938,7 @@ can only be used as a reference to an *o*ther instance of the same type;
 The corresponding types `m_`, and `o_` are reserved, `m_` for class bodies
 (to indicate the current type) and `o_` as a method to *clone* (or copy)
 the current instance, with function signature `::o_(): m_` or
-`::o_(): hm_[ok_: m_, er: ...]` if cloning can fail (e.g., due to OOM).
+`::o_(): hm_{ok_: m_, er: ...}` if cloning can fail (e.g., due to OOM).
 
 Most ASCII symbols are not allowed inside identifiers, e.g., `*`, `/`, `&`, etc., but
 underscores (`_`) have some special handling.  They are ignored in numbers,
@@ -965,9 +965,9 @@ and [masks](#masks), among other things.  Some examples:
 
 For imports/modules we have, e.g., `\/my/implementation/vector2 _` being equivalent
 to `vector2_` (`_` is combined with the base file name `vector2` to get `vector2_`).
-For enums like `my_enum_: one_of_[cool:, neat:, sweet:]`, we can define them like
+For enums like `my_enum_: one_of_{cool:, neat:, sweet:}`, we can define them like
 this: `my_enum: _ cool`, where `_` infers the type of `my_enum` on the LHS.
-This works similarly for masks like `my_mask_: any_of_[world:, npc:, player:]`;
+This works similarly for masks like `my_mask_: any_of_{world:, npc:, player:}`;
 `my_mask: _ world | _ npc` will set `my_mask` to `my_mask_ world | my_mask_ npc`.
 
 We also can use `_` when defining default-named variables to refer to the variable's
@@ -1047,7 +1047,7 @@ If you *don't* want to pair a block with the previous line, use `pass` or `retur
 ```
 # example of returning `[x, y]` values from a function.
 # there's no issue here because we're not indenting in `[x, y]`:
-my_function_(int): [x: int_, y: int_]
+my_function_(int:): [x: int_, y: int_]
      do_something_(int)
      [x: 5 - int, y: 5 + int]
 
@@ -1093,7 +1093,7 @@ array_variable:
      5    # and this gets a comma before it.
 ]
 
-# this is inferred to be a `lot` with a string ID and a `one_of_[int:, str:]` value.
+# this is inferred to be a `lot` with a string ID and a `one_of_{int:, str:}` value.
 lot_variable;
 [    "Some_value": 100
      "Other_value": "hi"
@@ -1210,9 +1210,9 @@ defining_another_function_that_returns_a_generic_
 (    argument0: str_
      argument1: int_
 ): some_generic_type_
-[    type0_: int_
+{    type0_: int_
      type1_: str_
-]
+}
      do_something_(argument0)
      print_("got arguments ${argument0}, ${argument1}")
      return: ...
@@ -1320,7 +1320,7 @@ Other types which have a fixed amount of memory:
 * `u64_` : unsigned integer which can hold values from 0 to `2^64 - 1`, inclusive
 * `uXYZ_` : unsigned integer which can hold values from 0 to `2^XYZ - 1`, inclusive,
      where `XYZ` is 128 to 512 in steps of 64, and generically we can use
-     `unsigned_[Bits: count]: what Bits {8 {u8}, 16 {u16}, 32 {u32}, ..., else {disallowed}}`
+     `unsigned_{bits: count_}: what bits {8 {u8_}, 16 {u16_}, 32 {u32_}, ..., else {disallowed_}}`
 * `count_` : `u64_` under the hood, intended to be <= `i64_ max_() + 1` to indicate the amount of something.
 * `index_` : signed integer, `i64_` under the hood.  for indexing arrays starting at 0, can be negative
      to indicate we're counting from the back of the array.
@@ -1328,7 +1328,7 @@ Other types which have a fixed amount of memory:
 
 and similarly for `i8_` to `i512_`, using two's complement.  For example,
 `i8_` runs from -128 to 127, inclusive, and `u8_(wrap: i8_(-1))` equals `255`.
-The corresponding generic is `signed_[bits: count]`.  We also define the
+The corresponding generic is `signed_{bits: count_}`.  We also define the
 symmetric integers `s8_` to `s512_` using two's complement, but disallowing
 the lowest negative value of the corresponding `i8_` to `i512_`, e.g.,
 -128 for `s8_`.  This allows you to fit in a null type with no extra storage,
@@ -1336,7 +1336,7 @@ e.g., `s8_?` is exactly 8 bits, since it uses -128 for null.
 (See [nullable classes](#nullable-classes) for more information.)
 Symmetric integers are useful when you want to ensure that `-symmetric`
 is actually the opposite sign of `symmetric`; `-i8_(-128)` is still `i8_(-128)`.
-The corresponding generic for symmetric integers is `symmetric_[bits: count]`.
+The corresponding generic for symmetric integers is `symmetric_{bits: count_}`.
 
 Note that the `ordinal_` type behaves exactly like a number but can be used
 to index arrays starting at 1.  E.g., `array[ordinal_(1)]` corresponds to `array[index_(0)]`
@@ -1364,7 +1364,7 @@ Notice we use `assert` to shortcircuit function evaluation and return an error r
 ```
 # Going from a floating point number to an integer should be done carefully...
 x: dbl_(5.43)
-safe_cast: x int_()                 # Safe_cast is a result type (`hm_[ok_: int_, number_ er_]`)
+safe_cast: x int_()                 # Safe_cast is a result type (`hm_{ok_: int_, number_ er_}`)
 # also OK: `safe_cast: int_(x)`.
 q: x int_() assert_()               # panics since `x` is not representable as an integer
 y: x round_(down) int_() assert_()  # y = 5.  equivalent to `x floor_()`
@@ -1378,7 +1378,7 @@ q: a u8_() assert_()                # RUN-TIME ERROR, `a` is not representable a
 b: u8_(a & 255) assert_()           # OK, communicates intent and puts `a` into the correct range.
 ```
 
-Casting to a complex type, e.g., `one_of_[int:, str:](some_value)` will pass through `some_value`
+Casting to a complex type, e.g., `one_of_{int:, str:}(some_value)` will pass through `some_value`
 if it is an `int_` or a `str_`, otherwise try `int_(some_value)` if that is allowed, and finally
 `str_(some_value)` if that is allowed.  If none of the above are allowed, the compiler will
 throw an error.  Note that nullable types absorb errors in this way (and become null), so
@@ -1398,7 +1398,7 @@ scaled8_:
      @private
      scale: 32_u8
 
-     m_(flt): hm_[ok_: m_, er_: one_of_[negative:, too_big:]]
+     m_(flt): hm_{ok_: m_, er_: one_of_{negative:, too_big:}}
           scaled_value: round_(flt * scale)
           if scaled_value < 0
                er_(negative)
@@ -1418,7 +1418,7 @@ scaled8_:
           scaled_value flt_() / scale flt_()
 
      # if you have representability issues, you can return a result instead.
-     ::to_(): hm[ok_: int_, number_ er_]
+     ::to_(): hm_{ok_: int_, number_ er_}
           if scaled_value % scale != 0
                er_(not_an_integer)
           else
@@ -1432,7 +1432,7 @@ dbl_(scaled8): dbl_
      scaled8 scaled_value dbl_() / scaled8 scale dbl_()
 
 # global function which returns a result, can be called like `scaled8 u16_()`
-u16_(scaled8): hm_[ok_: u16_, number_ er_]
+u16_(scaled8): hm_{ok_: u16_, number_ er_}
      if scaled8 scaled_value % scaled8 scale != 0
           er_(not_an_integer)
      else
@@ -1448,13 +1448,13 @@ in the variable, which can be accessed via the `type_case_` version of the
 ```
 # implementation note: `int_` comes first so it gets tried first;
 # `dbl_` will eat up many values that are integers, including `4`.
-x; one_of_[int:, dbl:] = 4
+x; one_of_{int:, dbl:} = 4
 y; x_ = 4.56    # use the type of `x` to define a variable `y`.
 ```
 
 Note that the `type_case_` version of the `variable_case` name does not have
-any information about the instance, so `x` is `one_of_[int:, dbl:]` in the above
-example and `y` is an instance of the same `one_of_[int:, dbl:]` type.  For other
+any information about the instance, so `x` is `one_of_{int:, dbl:}` in the above
+example and `y` is an instance of the same `one_of_{int:, dbl:}` type.  For other
 ways to handle different types within a `one_of_`, [go here](#one_of_-with-data).
 
 Some more examples:
@@ -1475,11 +1475,11 @@ easier to reason about types.
 ## type overloads
 
 Similar to defining a function overload, we can define type overloads for generic types.
-For example, the generic result class in oh-lang is `hm_[ok_, er_]`, which
+For example, the generic result class in oh-lang is `hm_{ok_, er_}`, which
 encapsulates an ok value (`ok_`) or a non-nullable error (`er_`).  For your custom class you
-may not want to specify `hm_[ok_: my_ok_type_, er_: my_class_er_]` all the time for your custom
-error type `my_class_er_`, so you can define `hm_[of_]: hm_[ok_: of_, er_: my_class_er_]` and
-use e.g. `hm_[int_]` to return an integer or an error of type `my_class_er_`.  Shadowing variables is
+may not want to specify `hm_{ok_: my_ok_type_, er_: my_class_er_}` all the time for your custom
+error type `my_class_er_`, so you can define `hm_{of_}: hm_{ok_: of_, er_: my_class_er_}` and
+use e.g. `hm_{int_}` to return an integer or an error of type `my_class_er_`.  Shadowing variables is
 invalid in oh-lang, but overloads are valid.  Note however that we disallow redefining
 an overload, as that would be the equivalent of shadowing.
 
@@ -1488,28 +1488,28 @@ an overload, as that would be the equivalent of shadowing.
 Plain-old-data objects can be thought of as merging all fields in this way:
 TODO: i think this needs to be separate from `tag`s, but see if we can combine
 `field` and `tag` ideas.  or maybe use `TAG_` to indicate this is a built-in.
-TODO: `$field` should create a `fn_(field)` not a `new_[field]` by default;
+TODO: `$field` should create a `fn_(field)` not a `new_{field}` by default;
 can we figure out how to make it typey?  `{$...}_` maybe?  or can we just
-do `$field_` and infer `new_[field_]: field_`?
+do `$field_` and infer `new_{field_:}: field_`?
+TODO: OR we use `${}` for types, and `$[]`/`$()` for functions with `[]`/`()`
+args respectively.
 
 ```
 # tautologies
-# TODO: `fields_` should be compile-time constant (so shouldn't be `fields_()`)
-#    but `fields_[]` would return a type rather than an iterator over types
 object_
-    ==  merge_[object_ fields_[], {$field}]
-    ==  merge_[object_ fields_[], {field_($field name, $field value_)}]
+    ==  merge_{object_ fields_{}, ${$field}}
+    ==  merge_{object_ fields_{}, ${field_($field name, $field value_)}}
 ```
 
 There are some nice ways to manipulate object types, like converting all
 field values of an object into some other type:
 
 ```
-object_ valued_[new_[value_]: new_value_]
-    ==  merge_[object_ fields_(), {field_($field name, new_[$field value_])}]
+object_ valued_{new_{value_:}: new_value_}
+    ==  merge_{object_ fields_(), ${field_{$field name, new_{$field value_}}}}
 ```
 
-For example, `object_ valued_[{um_[$value_]}]` is a way to convert `object_`
+For example, `object_ valued_{${um_{$value_}}}` is a way to convert `object_`
 data into futures.
 
 Here are some examples of changing the nested fields on an object
@@ -1517,60 +1517,60 @@ or a container, e.g., to convert an array or object to one containing futures.
 
 ```
 # base case, needs specialization.
-nest_[m_, new_[of_]: ~n_]: disallowed_
+nest_{m_, new_{of_:}: ~n_}: disallowed_
 
 # container specialization.
-# e.g., `array_[int_] nest_[{um_[$of_]}] == array_[um_[int_]]`,
-# or you can do `nest_[m_: array_[int_], {um_[$of_]}]` for the same effect.
+# e.g., `array_{int_} nest_${um_{$of_}} == array_{um_{int_}}`,
+# or you can do `nest_{m_: array_{int_}, ${um_{$of_}}}` for the same effect.
 nest_
-[    c_: container_
-     m_: ~c_[of_: ~nested_, ~at_]
-     new_[of_]: ~n_
-]: c_[of_: new_[nested_], at_]
+{    c_: container_
+     m_: ~c_{of_: ~nested_, ~at_:}
+     new_{of_:}: ~n_
+}: c_{of_: new_{nested_}, at_}
 
 # object specialization.
-# e.g., `[x: int_, y: str_] nest_[{hm_[ok_: $of_, er_: some_er_]}]`
-# or you can do `nest_[{hm_[ok_: $of_, er_: some_er_]}, m_: [x: int_, y: str_]]` for the same effect.
-# to make `[x: hm_[ok_: int_, er_: some_er_], y: hm_[ok_: str_, er_: some_er_]]`,
-nest_[m_: object_, new_[of_]: ~n_]: merge_
-[    m_ fields_()
-     {[$field name: new_[$field value_]]}
-]
+# e.g., `[x: int_, y: str_] nest_{{hm_{ok_: $of_, er_: some_er_}}}`
+# or you can do `nest_{{hm_{ok_: $of_, er_: some_er_}}, m_: [x: int_, y: str_]}` for the same effect.
+# to make `[x: hm_{ok_: int_, er_: some_er_}, y: hm_{ok_: str_, er_: some_er_}]`,
+nest_{m_: object_, new_{of_}: ~n_}: merge_
+{    m_ fields_()
+     ${field_{$field name, new_{$field value_}}}
+}
 ```
 
 Here are some examples of unnesting fields on an object/future/result.
 
 ```
 # base case, needs specialization
-unnest_[of_]: disallowed_
+unnest_{of_:}: disallowed_
 
 # container specialization
-# e.g., `unnest_[array_[int_]] == int_`
-unnest_[container_[of_: ~nested_, ~_at_]]: nested_
+# e.g., `unnest_{array_{int_}} == int_`
+unnest_{container_{of_: ~nested_, ~_at_:}}: nested_
 
 # `set` needs its own specialization because it has interesting
-# `container_` dynamics.  e.g., `unnest_[set_[str_]] == str_`.
-unnest_[set_[~nested_]]: nested_
+# `container_` dynamics.  e.g., `unnest_{set_{str_}} == str_`.
+unnest_{set_{~nested_:}}: nested_
 
 # future specialization
-# e.g., `unnest_[um_[str_]] == str_`.
-unnest_[um_[~nested_]]: nested_
+# e.g., `unnest_{um_{str_}} == str_`.
+unnest_{um_{~nested_:}}: nested_
 
 # result specialization
-# e.g., `unnest_[hm_[ok_: str_, er_: int_]] == str`.
-unnest_[hm_[ok_: ~nested_, ~_er_]]: _nested
+# e.g., `unnest_{hm_{ok_: str_, er_: int_}} == str`.
+unnest_{hm_{ok_: ~nested_, ~_er_:}}: _nested
 
 # null specialization
-# e.g., `unnest_[int_?] == int`.
-unnest_[~nested_?]: nested_
+# e.g., `unnest_{int_?:} == int`.
+unnest_{~nested_?:}: nested_
 ```
 
 Note that if we have a function that returns a type, we must use braces, e.g.,
-`the_function_[...]: the_return_type_`, but we can use instances like booleans
-or numbers inside of the braces (e.g., `array_[3, int_]` for a fixed size array type).
+`type_function_{...}: the_return_type_`, but we can use instances like booleans
+or numbers inside of the braces (e.g., `array_{3, int_}` for a fixed size array type).
 Conversely, if we have a function that returns an instance, we must use parentheses,
 e.g., `the_function_(...): instance_type_`.  In either case, we can use a type as
-an argument, e.g., `nullable_(of_): bool_` or `array3_[of_]: array_[3, of_]`.
+an argument, e.g., `nullable_(of_): bool_` or `array3_{of_:}: array_{3, of_}`.
 Type functions can be specialized in the manner shown above, but instance functions
 cannot be.  TODO: would we want to support that at some point??
 
@@ -1579,27 +1579,27 @@ Here is some nullable type manipulation:
 ```
 # the `null` type should not be considered nullable because there's
 # nothing that can be unnulled, so ensure there's something not-null in a nullable.
-#   nullable_(one_of_[dbl:, int:, str:]) == false
-#   nullable_(one_of_[dbl:, int:]?) == true
+#   nullable_(one_of_{dbl:, int:, str:}) == false
+#   nullable_(one_of_{dbl:, int:}?) == true
 #   nullable_(null_) == false
-nullable_(of_): of_ contains_(not_[null_], null_)
+nullable_(of_:): of_ contains_(not_{null_}, null_)
 
 # examples
-#   unnull_[int_] == int_
-#   unnull_[int_?] == int_
-#   unnull_[one_of_[array[int_]:, set[dbl_]:]?] == one_of_[array[int_]:, set[dbl_]:]
-unnull_[of_]: if nullable_(of_) {unnest_[of_]} else {of_}
+#   unnull_{int_} == int_
+#   unnull_{int_?} == int_
+#   unnull_{one_of_{array{int_}:, set{dbl_}:}?} == one_of_{array{int_}:, set{dbl_}:}
+unnull_{of_:}: if nullable_(of_) {unnest_{of_}} else {of_}
 
 # a definition without nullable, using template specialization:
-unnull_[of_]: of_
-unnull_[~nested_?]: nested_
+unnull_{of_:}: of_
+unnull_{~nested_?:}: nested_
 ```
 
 # operators and precedence
 
 TODO: add : , ; ?? postfix/prefix ?
 TODO: add ... for dereferencing.  maybe we also allow it for spreading out an object into function arguments,
-e.g., `my_function(A: 3, B: 2, ...My_object)` will call `my_function(A: 3, B: 4, C: 5)` if `My_object == [B: 4, C: 5]`.
+e.g., `my_function_(a: 3, b: 2, ...my_object)` will call `my_function_(a: 3, b: 4, c: 5)` if `my_object == [b: 4, c: 5]`.
 
 | Precedence| Operator  | Name                      | Type/Usage        | Associativity |
 |:---------:|:---------:|:--------------------------|:-----------------:|:-------------:|
@@ -1842,7 +1842,7 @@ some_class;;a[4] = "love"   # the fifth element is love.
 some_class::a[7] = "oops"   # COMPILE ERROR, `::` means the array should be readonly.
 some_class;;a[7] = "no problem"
 
-nested_class; array_[some_class_]
+nested_class; array_{some_class_}
 nested_class[1] x = 1.234        # creates a default [0] and [1], sets [1]'s x to 1.234
 nested_class[3] a[4] = "oops"    # creates a default [2] and [3], sets [3]'s a to ["", "", "", "", "oops"]
 ```
@@ -1855,7 +1855,7 @@ does not change the instance but returns a sorted copy of the array (`::sort(): 
 
 ```
 # there are better ways to get a median, but just to showcase member access:
-get_median_slow_(array_[int_]): hm_[ok_: int_, er_: string_]
+get_median_slow_(array{int_}:): hm_{ok_: int_, er_: string_}
      if array count_() == 0
           return: er_("no elements in array, can't get median.")
      # make a copy of the array, but no longer allow access to it (via `@hide`):
@@ -1863,7 +1863,7 @@ get_median_slow_(array_[int_]): hm_[ok_: int_, er_: string_]
      ok(SORTED_array[SORTED_array count_() // 2])
 
 # sorts the array and returns the median.
-get_median_slow_(array[int_];): hm_[ok_: int_, er_: string_]
+get_median_slow_(array{int_};): hm_{ok_: int_, er_: string_}
      if array count_() == 0
           return: er_("no elements in array, can't get median.")
      array sort_()   # same as `array;;sort_()` since `array` is writable.
@@ -1929,8 +1929,9 @@ that would make things like `!!!` ambiguous.
 ## superscripts/exponentiation
 
 Note that exponentiation -- `^` and `**` which are equivalent --
-binds less strongly than function calls and member access.  So something like `a[b]^2` will be
-equivalent to `(a[b])^2` and `a b^3` is equivalent to `(a::b)^3`.
+binds less strongly than function calls and member access.  So something like
+`a[b]^2` is equivalent to `(a[b])^2`, `fn_(x)^b` is equivalent to `(fn_(x))^b`,
+and `a b^3` is equivalent to `(a::b)^3`.
 
 ## bitshifts `<<` and `>>`
 
@@ -2013,17 +2014,17 @@ If you are looking for bitwise `AND`, `OR`, and `XOR`, they are `&`, `|`, and `>
 The operators `and` and `or` act the same as JavaScript `&&` and `||`, as long as the
 left hand side is not nullable.  `xor` is an "exclusive or" operator.
 
-The `or` operation `x or y` has type `one_of_[x:, y:]` (for `x: x_` and `y: y_`).
+The `or` operation `x or y` has type `one_of_{x:, y:}` (for `x: x_` and `y: y_`).
 If `x` evaluates to truthy (i.e., `!!x == true`), then the return value of `x or y` will be `x`.
 Otherwise, the return value will be `y`.  Note in a conditional, e.g., `if x or y`, we'll always
 cast to boolean implicitly (i.e., `if bool_(x or y)` explicitly).
 
-Similarly, the `and` operation `x and y` also has type `one_of_[x:, y:]`.  If `x` is falsey,
+Similarly, the `and` operation `x and y` also has type `one_of_{x:, y:}`.  If `x` is falsey,
 then the return value will be `x`.  If `x` is truthy, the return value will be `y`.
 Again, in a conditional, we'll cast `x and y` to a boolean.
 
 If the LHS of the expression can take a nullable, then there is a slight modification.
-`x or y` will be `one_of_[x:, y:]?` and `x and y` will be `y_?`.
+`x or y` will be `one_of_{x:, y:}?` and `x and y` will be `y_?`.
 The result will be `null` if both (either) operands are falsey for `or` (`and`).
 
 ```
@@ -2034,12 +2035,12 @@ nullable_and?: x and y      # nullable_and?: if !!x and !!y {null} else {y}
 ```
 
 This makes things similar to the `xor` operator, but `xor` always requires a nullable LHS.
-The exclusive-or operation `x xor y` has type `one_of_[x:, y:]?`, and will return `null`
+The exclusive-or operation `x xor y` has type `one_of_{x:, y:}?`, and will return `null`
 if both `x` and `y` are truthy or if they are both falsey.  If just one of the operands
 is truthy, the result will be the truthy operand.  An example implementation:
 
 ```
-xor_(~x, ~y)?: one_of_[x:, y:]
+xor_(~x, ~y)?: one_of_{x:, y:}
      x_is_true: bool_(x)     # `x_is_true: !!x` is also ok.
      y_is_true: bool_(y)
      if x_is_true
@@ -2143,10 +2144,9 @@ To make it easy to indicate when a variable can be nullable, we reserve the ques
 symbol, `?`, placed just after the variable name like `x?: int_`.  The default value for
 an optional type is `null`.
 
-TODO: do we want to allow the `one_of_[..., null:]` option?  this breaks the requirement
-to always annotate variables with `x?: ...` if they are null, which i think we want to
-keep/require for comptime considerations.  but it would save some keystrokes to avoid
-needing to do `x[require: of_ is not_[null_]]: of_`.
+For generics where `null_` might be a valid option, make sure to only include your variable
+if necessary, e.g., `x{require: of_ is not_{null_}}: of_`.
+TODO: keep migrating [] to {}
 
 For an optional type with more than one non-null type, we use
 `y?: one_of_[some_type:, another_type:]` or equivalently,
@@ -2500,7 +2500,7 @@ Note that you can use all the same methods on a reference as the original type.
 
 ```
 my_value; int_(1234567890)
-(my_ref; int_) = My_value
+(my_ref; int_) = my_value
 # equivalent: `my_ref; (int;) = my_value`
 (my_readonly_ref: int_) = my_value
 # equivalent: `my_readonly_ref: (int:) = my_value`
@@ -2529,7 +2529,7 @@ my_value2: int_(765)
 # define `my_ref` as a mutable pointer to an immutable variable:
 my_ref; (int:) = my_value1
 # that way we can update the pointer like this:
-(my_ref) = My_value2
+(my_ref) = my_value2
 ```
 
 Note that by default, references like `(my_ref; int_) = some_reference_()`
@@ -2988,10 +2988,9 @@ The brace syntax is related to [template classes](#generictemplate-classes) and
 
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
 
-TODO: whether we return a type or an instance probably shouldn't depend on `[]`
-or `()`; `[]` currently gives copied arguments by default and `()` gives
-referenceable arguments by default.
+TODO: discuss that you can use a block instead of `{}` for generics.
 
+TODO: 
 it seems like we should be able to overload `fn_` for a `[]` argument list or a `()` argument list,
 and that we should be able to return a type or a non-type either way.  but we should have a way
 of indicating when a function is compile-time constant, so we can do `object_ fields_()`.
@@ -7937,7 +7936,7 @@ my_fn_(str:): str_
 my_fn_(5)           # OK
 my_fn_("world")     # OK
 MY_one_of; one_of_[int:, str:](3)
-# ... some logic that might change My_one_of
+# ... some logic that might change MY_one_of
 my_fn_(MY_one_of)   # COMPILE ERROR
 ```
 
