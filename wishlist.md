@@ -749,39 +749,39 @@ Some examples:
 
 ```
 # this argument type is inferred, with a default name
-fn_(~x): x_
+fn_(~x.): x_
 # call it like this:
 fn_(512)
 
 # this argument type is inferred but need to name it as `x: ...`
-fn_(~NAMED_x): x_
+fn_(~NAMED_x:): null_
 # call it like this:
 fn_(x: 512)
 
-# another way to infer an argument but require naming it as `x: ...`
-fn_(x: ~t_): t_
+# another way to infer an argument but require naming it as `x; ...`
+fn_(x; ~t_): t_
 # we call it like this:
-fn_(x: 512)
+fn_(x; 512)
 
 # explicit generic with condition, not inferred:
-fn_[x_: condition_or_parent_type_](x): x_
+fn_{x_: condition_or_parent_type_}(x.): x_
 # call it like this, where `int_` should satisfy `condition_or_parent_type_`
-fn_[x_: int_](5)
+fn_{x_: int_}(5)
 
-# explicit generic with condition, inferred
-fn_[x_: condition_](~x): x_
+# explicit generic with condition, inferred:
+fn_{x_: condition_}(~x.): x_
 # call it like this, where `dbl_` should satisfy `condition_`
-fn_[x_: dbl_](3.14)
+fn_(3.14)
 
 # explicit generic without a default name:
-fn_[x_](value: x_): null_
+fn_{x_:}(value: x_): null_
 # call it like this:
-fn_[x_: str_](value: "asdf")
+fn_{x_: str_}(value: "asdf")
 
 # explicit default-named generic, but argument is not default named:
-fn_[of_](value: of_): of_
+fn_{of_:}(value: of_): of_
 # call it like this; you can omit `of_: ...` in braces:
-fn_[int_](value: 123)
+fn_{int_}(value: 123)
 ```
 
 See [generic/template functions](#generictemplate-functions) for more details.
@@ -836,17 +836,19 @@ expression alongside any child instance variables, which should be tucked
 inside an `m` field.
 
 ```
-parent1_: [p1: str]
+parent1_: [p1: str_]
 {    ::do_p1_(): null_
           print_("doing p1 ${m p1}")
 }
 
-parent2_: [p2: str]
+parent2_: [p2: str_]
 {    ::do_p2_(): null_
           print_("doing p2 ${m p2}")
 }
 
-child3_: all_of_[parent1, parent2, m: [c3: int_]]
+# TODO: we probably can allow for immutable parent types by doing `parent1:`
+#    and mutable via `parent1;`; is there any point to doing that?
+child3_: all_of_{parent1:, parent2:, m: [c3: int_]}
 {    # this passes p1 to parent1 and c3 to child3 implicitly,
      # and p2 to parent2 explicitly.
      ;;renew_(parent1 p1. str_, p2. str_, m c3. int_): null_
@@ -864,7 +866,7 @@ child3_: all_of_[parent1, parent2, m: [c3: int_]]
 ```
 
 For those aware of storage layout, order matters when using `all_of_`;
-the struct will be started with fields in `a` for `all_of_[a, b, c]`
+the struct will be started with fields in `a` for `all_of_{a:, b:, c:}`
 and finish with fields in `c`; the child fields do not need to be first
 (or last); they can be added as `a`, `b`, or `c`, of course as `m: [...]`.
 Generally it's recommended to add child fields last.
@@ -872,30 +874,31 @@ Generally it's recommended to add child fields last.
 ### defining generic classes
 
 With classes, generic types must be explicitly declared in braces.
-Any conditions on the types can be specified via `[the_type: the_condition, ...]`.
+Any conditions on the types can be specified via `{the_type: the_condition, ...}`.
 
 ```
 # default-named generic
-generic_[of_]: [@private of]
+generic_{of_:}: [@private of;]
 {    # you can use inference in functions, so you can use `generic_(12)`
      # to create an instance of `generic_` with `of_: int_` inferred.
-     # You don't need this definition if `[of]` is public.
+     # You don't need this definition if `m of` is public.
      # NOTE: `g_` is like `m_` for generic classes but without the specification.
-     g_(~t.): g_[t_]
+     g_(~t.): g_{t_}
           [of. t] 
 }
 
-generic[int_](1)            # shorthand for `generic: generic_[int_](1)`.
-my_generic: generic_(1.23)  # infers `generic_[dbl_]` for this type.
-WOW_generic("hi")           # shorthand for `WOW_generic: generic_("hi")`, infers `generic_[str_]`
+generic{int_}(1)            # shorthand for `generic: generic_{int_}(1)`.
+my_generic: generic_(1.23)  # infers `generic_{dbl_}` for this type.
+WOW_generic("hi")           # shorthand for `WOW_generic: generic_("hi")`, infers `generic_{str_}`
 
 # not default named:
-entry_[at_: hashable_, of_: number_]: [at, value; of_]
+entry_{at_: hashable_, of_: number_}: [at, value; of_]
 {    ;;add_(of): null_
           m value += of
 }
 
-entry[at_: str_, int_](at: "cookies", value: 123)   # shorthand for `entry: entry_[at_: str_, of_: int_](...)`
+# shorthand for `entry: entry_{at_: str_, of_: int_}(...)`:
+entry{at_: str_, int_}(at: "cookies", value: 123)
 my_entry: entry_(at: 123, value: 4.56)              # infers `at_: int_` and `of_: dbl_`.
 my_entry add_(1.23)
 my_entry value == 5.79
