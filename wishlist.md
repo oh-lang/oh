@@ -1614,7 +1614,7 @@ e.g., `my_function_(a: 3, b: 2, ...my_object)` will call `my_function_(a: 3, b: 
 |           |   ` `     | implicit member access    | binary: `a b`     |               |
 |           |   ` []`   | subscript                 | binary: `a[b]`    |               |
 |           |   `!`     | postfix moot = move+renew | unary:  `a!`      |               |
-|           |   `?`     | postfix nullable          | unary: `a?`/`a_?` |               |
+|           |   `?`     | postfix nullable          | unary:  `a?`      |               |
 |           |   `??`    | nullish OR                | binary: `a??b`    |               |
 |   3       |   `^`     | superscript/power         | binary: `a^b`     | RTL           |
 |           |   `**`    | also superscript/power    | binary: `a**b`    |               |
@@ -2141,36 +2141,20 @@ come up with a more sane approach than C++ and JavaScript's `const`.
 ## nullable variable types
 
 To make it easy to indicate when a variable can be nullable, we reserve the question mark
-symbol, `?`, placed just after the variable name like `x?: int_`.  The default value for
-an optional type is `null`.
+symbol, `?`, placed just after the variable name like `x?: int_`, and `?` is required
+in order to give **null visibility** to any variable that could be nullable.  Even when
+defining a variable without a type, the `?` symbol is required if the variable could be
+nullable, e.g., `x?: nullable_result_(...)`, again for null visibility.  The default
+value for a nullable type is `null`.  For generics where `null_` might be a valid value
+for a template type, make sure to only include your nullable variable if necessary, e.g.,
+`x{require: template_type_ is not_{null_}}: of_`.
 
-For generics where `null_` might be a valid option, make sure to only include your variable
-if necessary, e.g., `x{require: of_ is not_{null_}}: of_`.
-TODO: keep migrating [] to {}
-
-For an optional type with more than one non-null type, we use
-`y?: one_of_[some_type:, another_type:]` or equivalently,
-`y: one_of_[some_type:, another_type:, null:]` (where `null:` comes last).
-Note that `null_` should come last for casts to work correctly (e.g.,
-`one_of_[null:, int:](1234)` would cast to null rather than `int_(1234)`).
-Normally the first value in a `one_of_` is the default, but if `null_` is an option,
-then null is the default.  
-
-In either case, you can use `;` instead of `:` to indicate that the variable is writable.
-Note that if you are defining a nullable variable inline, you should
-prefix the operator with a `?`, e.g., `x?: nullable_result_(...)`.  It is a compiler error
-if a declared variable is nullable but `?` is not used, since we want the programmer to be
-aware of the fact that the variable could be null, even though the program will take care
-of null checks automatically and safely.  The `?` operator is required for any `one_of_` that
-could take on a `null` value, e.g., `one_of_[bread:, tomato:, mozzarella:, null:]`.
-
-One of the cool features of oh-lang is that we don't require the programmer
-to check for null on a nullable type before using it.  The executable will automatically
-check for null on variables that can be null.  If a function can be null, the executable
-will return null if the function is null, or otherwise execute the function.
-This is also helpful for method chaining on classes (see more on those below).
-If your code calls a method on an instance that is null, a null will be
-returned instead (and the method will not be called).
+One of the cool features of oh-lang is that we don't require the programmer to check for
+null on a nullable type before using it.  The executable will automatically check for null
+on variables that can be null.  This is also helpful for method chaining on classes (see 
+more on those below).  If your code calls a method on an instance that is null, a null
+will be returned instead (and the method will not be called).  But because of null visibility,
+this will be clear to the programmer.
 
 ```
 # define a class with a method called `some_method_`:
@@ -2181,12 +2165,7 @@ nullable?; some_class_ = null
 value?: nullable some_method_()    # `value` has type `int_?` now,
                                    # so it needs to be defined with `?`
 
-# eventually we want to support things like this, where the compiler
-# can tell if the type is nullable or not:
-if nullable != null
-     non_null_value: nullable some_method_() # `non_null_value` here must be `int_`.
-
-# however the easier compiler thing to do is use the `is` reduction.
+# use `is` coercion to determine if a class is not null.
 if nullable is some_class:
      non_null_value: some_class some_method_()   # `non_null_value` here must be `int_`.
 ```
@@ -2196,15 +2175,15 @@ See the [`is` operator](#is-operator) for more details.
 It is not allowed to implicitly cast from a nullable type to a non-nullable type,
 e.g., `value: nullable some_method_()`.  The compiler will require that we define
 `value` with `?:`, or that we explicitly cast via whatever ending type we desire,
-e.g., `value: int_(nullable some_method_())`.  Note that `whatever_type_(null)` is
+e.g., `value: int_(nullable some_method_()?)`.  Note that `whatever_type_(null)` is
 the same as `whatever_type_()`, i.e., the default constructor, and number types
-(e.g., `int_()` or `flt_()`)  default to 0.
-TODO: doesn't this break the requirement that we pass in the argument as `?:`?
-would we need `value: int_(from?: nullable some_method_())`?
-probably best to just use `value: nullable some_method_() ?? 0`.
+(e.g., `int_()` or `flt_()`)  default to 0, but we still need to acknowledge as
+the programmer that the argument could be null (for null visibility), so we either
+need `value: int_(from?: nullable some_method_()?)` or perhaps more idiomatically,
+`value: nullable some_method_() ?? 0`.
 
-Optional functions are defined in a similar way (cf. section on [nullable functions](#nullable-functions)),
-with the `?` just after the function name, e.g., `some_function_?(...args): return_type_`.
+[Nullable functions](#nullable-functions)) do not exist per se, but can be constructed
+via a data wrapper.
 
 ## nullable classes
 
