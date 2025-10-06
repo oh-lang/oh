@@ -426,6 +426,9 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
           Any `type_case_` identifier can be used for `infer_this_`.
 * `$` for inline block and lambda arguments
      * [inline blocks](#block-parentheses-and-commas) include:
+          TODO: do we want to use `$[...]` as shorthand for defining a function `fn_[]: ...` with any arguments
+          specified by `$`?  it would be more consistent, then `${...}` could be for generic/type functions.
+          i think i like this...
           * `$[...]` as shorthand for `{[...]}`, e.g., creating a block for a return value:
                `array: if some_condition $[1, 2, 3] else $[4, 5]`
           * `$(...)` as shorthand for `{(...)}`, e.g., creating a block for a reference object:
@@ -584,6 +587,24 @@ long_explicitly_typed: array_{i32_}
      6
      7
 )
+
+# because {} is equivalent to an indented block, these are also valid definitions
+# equivalent definitions:
+array; array_{int_} = [1, 2, 3]
+array{int_}; [1, 2, 3]
+array
+     int_
+;    [1, 2, 3]
+# more equivalence:
+array; array_{int_}(1, 2, 3)
+array{int_}(1, 2, 3);
+# TODO: does this work with lexer??
+array
+     int_
+(    1
+     2
+     3
+);
 ```
 
 Note there are some special rules that allow line continuations for parentheses
@@ -782,6 +803,28 @@ fn_{x_: str_}(value: "asdf")
 fn_{of_:}(value: of_): of_
 # call it like this; you can omit `of_: ...` in braces:
 fn_{int_}(value: 123)
+
+# because braces are equivalent to indented blocks, these are also equivalent:
+generic_fn_{of_: number_}(of.): of_
+     print_(of)
+     of *= 2
+     of
+# with blocks:
+generic_fn_
+     of_: number_
+(    of.
+): of_
+     print_(of)
+     of *= 2
+     of
+
+# calling with braces
+generic_fn_{int_}(123)
+# calling without braces, might be nice for a few specified generics but probably not one
+generic_fn_
+     int_
+(    123
+)
 ```
 
 See [generic/template functions](#generictemplate-functions) for more details.
@@ -887,9 +930,9 @@ generic_{of_:}: [@private of;]
           [of. t] 
 }
 
-generic{int_}(1)            # shorthand for `generic: generic_{int_}(1)`.
+generic{int_}(1):           # shorthand for `generic: generic_{int_}(1)`.
 my_generic: generic_(1.23)  # infers `generic_{dbl_}` for this type.
-WOW_generic("hi")           # shorthand for `WOW_generic: generic_("hi")`, infers `generic_{str_}`
+WOW_generic("hi");          # shorthand for `WOW_generic; generic_("hi")`, infers `generic_{str_}`
 
 # not default named:
 entry_{at_: hashable_, of_: number_}: [at:, value; of_]
@@ -899,9 +942,28 @@ entry_{at_: hashable_, of_: number_}: [at:, value; of_]
 
 # shorthand for `entry: entry_{at_: str_, of_: int_}(...)`:
 entry{at_: str_, int_}(at: "cookies", value: 123):
-my_entry: entry_(at: 123, value: 4.56)              # infers `at_: int_` and `of_: dbl_`.
+my_entry; entry_(at: 123, value: 4.56)              # infers `at_: int_` and `of_: dbl_`.
 my_entry add_(1.23)
 my_entry value == 5.79
+
+# because braces are equivalent to indented blocks, these are also equivalent:
+generic_class_
+{    a_: some_constraint_
+     b_: another_constraint_
+}:   [a;, b;]
+{    ::do_something_(): one_of_{a:, b:}
+          m a || m b
+}
+# defining the generics without braces:
+generic_class_
+     a_: some_constraint_
+     b_: another_constraint_
+:    [a;, b;]
+{    ::do_something_(): one_of_{a:, b:}
+          m a || m b
+}
+```
+
 ```
 
 See [generic/template classes](#generictemplate-classes) for more information.
@@ -2293,7 +2355,7 @@ vector z == 0   # should be true.
 # to make an object variable readonly, use : when defining:
 vector2: [x: 3.75, y: 3.25]
 # or you can use `:` with an explicit type specifier and then `=`:
-vector2: [x: dbl, y: dbl] = [x: 3.75, y: 3.25]
+vector2: [x: dbl_, y: dbl_] = [x: 3.75, y: 3.25]
 # then these operations are invalid:
 vector2 x += 3          # COMPILER ERROR, variable is readonly, field cannot be modified
 vector2 = [x: 1, y: 2]  # COMPILER ERROR, variable is readonly, cannot be reassigned
@@ -2645,14 +2707,14 @@ However, since function arguments can be references (e.g., if they are defined w
 `:` or `;`), references that use these function arguments can escape the function block.
 
 ```
-fifth_element_(array[int_];): (int;)
+fifth_element_(array{int_};): (int;)
      # this is OK because `array` is a mutable reference
      # to an array that already exists outside of this scope.
      # NOTE: this actually returns a pointer to the array with an offset (i.e., 4)
      #       in case the array reallocates, etc.
      (;array[4])
 
-my_array; array_[int_](1, 2, 3, 4, 5, 6)
+my_array; array_{int_}(1, 2, 3, 4, 5, 6)
 (fifth;) = fifth_element_(;my_array)
 fifth += 100
 my_array == [1, 2, 3, 4, 105, 6]    # should be true
@@ -2686,8 +2748,8 @@ so that we can elide the reference object creation when possible.
 ```
 my_array; [1, 2, 3, 4]
 
-# here we can elide `refer_` here that is inside the method
-# `array_[int_];;[index]: (int;)`
+# here we can elide the `refer_` that is inside the method
+# `array_{int_};;[index]: (int;)`
 my_array[0] = 0     # my_array == [0, 2, 3, 4]
 
 # here we cannot elide `refer_`
@@ -2860,60 +2922,47 @@ detect_(greet_(int): {["hi", "hey", hello"][int % 3] + ", world!"}) # returns 2
 ### lambda functions
 
 Lambda functions are good candidates for [functions as arguments](#functions-as-arguments),
-since they are very concise ways to define a function.  They utilize an indented block
-or set of braces  like `{...function-body...}` with function arguments defined inside using
-`$the_argument_name`.  There is no way to specify the type of a lambda function argument,
-so the compiler must be able to infer it (e.g., via using the lambda function as an argument,
-or by using a default name like `$int` to define an integer).  Some examples:
+since they are very concise ways to define a function.  They utilize a brace with a specific
+number of `$` like `${...function-body...}` with function arguments defined inside using
+`$the_argument_name` (using the corresponding number of `$` as the brace).  There is no way
+to specify the type of a lambda function argument, so the compiler must be able to infer it
+(e.g., via using the lambda function as an argument, or by using a default name like `$int`
+to define an integer).  Some examples:
 
 ```
 run_asdf_(do_(j: int_, k: str_, l: dbl_): null_): null_
      print_(do_(j: 5, k: "hay", l: 3.14))
 
 # Note that `$k`, `$j`, and `$l` attach to the same lambda based on looking
-# for the first matching `{}`.
-run_asdf_({$k * $j + str_($l)})     # prints "hayhayhayhayhay3.14"
-
-# One example with brackets:
-my_array: [0.06, 0.5, 4.0, 30.0, 200.0, 1000.0]
-# Again, `$k`, `$j`, and `$l` attach to the same lambda.
-run_asdf_({$k + str_(my_array[$j] * $l)})   # prints "hay3140"
-# The same example with an indent:
-run_asdf_
-(    $k + str_(my_array[$j] * $l)
-)
-# this is wrong, this looks like line continuation.
-run_asdf_
-(       $k + str_(my_array[$j] * $l)
-)
+# for the matching `${}`.  `${}` also automatically gets a wrapping `()`.
+run_asdf_${$k * $j + str_($l)}     # prints "hayhayhayhayhay3.14"
 ```
 
-If you need a lambda function inside a lambda function, use another `$` to escape
-one variable into the parent scope, e.g.,
+If you need a lambda function inside a lambda function, use more `$` to escape
+the arguments into the brace with the same number of `$`, e.g.,
 
 ```
 # with function signatures
 # `run_(fn_(x: any_): any_): any_` and
 # `run_nested_(fn_(y: any_): any_): any_`
-run_({$x + run_nested_({$y + $$x})})
+run_${$x + run_nested_$${$$y + $x}}
 
-# or with indents
+# which is equivalent to the arguably the more readable:
 run_
-(    $x + run_nested_
-     (    $y + $$x
-     )
+(    OUTER_fn_(x: any_):
+          x + run_nested_
+          (    INNER_fn_(y: any_):
+                    y + x
+          )
 )
 ```
 
-But it would probably be more readable to just define the functions normally in this instance.
+Again, it is likely more readable to just define the functions normally in this instance
+rather than nest `$${}`.
 
 There is currently no good way to define the name of a lambda function; we may use
 `@named(whatever_name_) {$x + $y}`, but it's probably more readable to just define
-the function inline as `whatever_name_(x, y): x + y`.
-
-TODO: i think we can use `run_asdf_{$k * $j + str($l)}`, i.e., `{}` instead of `({})`.
-but i don't know if this works for indents/conditionals; `if run_asdf_ {$k + $j}`
-would be valid conditional logic if `run_asdf_` was nullable.
+the function inline as `whatever_name_(x:, y:): x + y`.
 
 ### types as arguments
 
@@ -2954,129 +3003,39 @@ print_(do_something_(u8_))  # returns u8(123)
 
 ### returning a type
 
-We use a different syntax for functions that return types; namely `()` becomes `[]`,
-e.g., `type_fn_[args...]: the_type_`.  This is because we do not need
-to support functions that return instances *or* constructors, and it becomes clearer
-that we're dealing with a type if we use `[]`.  The alternative would be to use
-`fn_(int): int` to return an `int_` instance and `fn_(int): int_` to return the
-`int_` constructor, but again we never need to mix and match.  It's also clear that
-we use comptime constants in generics like `[count: count_]`, which would require
-a macro if we switched to `()`, e.g., `array_(@comptime count: count_)`.
+We use a different syntax for functions that return types; namely `()` becomes `{}`,
+e.g., `type_fn_{args...}: the_type_`.  This is because we do not need to support
+functions that return instances *or* constructors, and it becomes clearer that we're
+dealing with a type if we use a different enclosure.  We can also pass in comptime
+constants into generics like `{count: count_}`.  Because braces are the gramatically
+equivalent to indented blocks, the following are equivalent:
+
+```
+my_optional_{of_:}: one_of_{none:, some: of_}
+
+# TODO: not 100% sure the lexer will like this, but let's try to figure it out:
+my_optional_
+     of_:
+:    one_of_{none:, some: of_}
+
+my_optional_{of_:}: one_of_
+     none:
+     some: of_
+```
+
 The brace syntax is related to [template classes](#generictemplate-classes) and
 [overloading generic types](#overloading-generic-types).
 
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
 
-TODO: discuss that you can use a block instead of `{}` for generics.
-
 TODO: 
 it seems like we should be able to overload `fn_` for a `[]` argument list or a `()` argument list,
 and that we should be able to return a type or a non-type either way.  but we should have a way
 of indicating when a function is compile-time constant, so we can do `object_ fields_()`.
-we're already doing this implicitly with enums, e.g., `abc_: one_of_[a:, b:, c:]`, then
+we're already doing this implicitly with enums, e.g., `abc_: one_of_{a:, b:, c:}`, then
 `abc_ count_()`.  but again we'll need to do some built-in like `COUNT_(abc_)` in case
-we have something like `w_: one_of_[count:, ...]`.  we should also investigate how to
+we have something like `w_: one_of_{count:, ...}`.  we should also investigate how to
 overload `[]` for array indexing, because theoretically we can have `array[1, 2, 3]`.
-
-current:
-* `[]` is for generics (e.g., `whatever_[of_: number_](~of.): of_`),
-     array/object creation (`[x: 3.4, y: "hello"]`), array/lot indexing (`array[3]`),
-     and other type function manipulation, e.g., `object_ valued_[new_[value_]: um_[value_]]`
-* `()` is for references
-* pro: it's disambiugous when returning a type or an instance (e.g., `new_[value_]` vs. `fn_(value)`).
-
-proposed option 1:
-* `[]` is for array/object creation (`[x: 3.4, y: "hello"]`) and array/lot indexing (`array[3]`)
-* `()` is for all functions, including instance functions `whatever_(int:): str`
-     and type functions `whatever_(of_:): some_type_`
-* pro: `generic_(a_, b_): [...] { ::method_(...): ... }` looks very nice with `()[]{}` sequence.
-* con: `generic_(a_, b_): [...]` looks like it's returning something, not defining a class
-     (maybe need a `class` keyword).
-     TODO: could we do `generic_: (a_, b_)[...] { ::method_(...): ... }` instead?
-     i prefer the earlier syntax though because we use `generic_(a_, b_)` to do typedefs, etc.
-* con: it's hard to know if `do_something_(): generic_(...)` is returning a type or an instance
-     without looking at `generic_(...)`'s default declaration.
-* con: functions like `get_value(): int_` look like they're returning an `int_` type.
-     while `get_value(): int` could be used to return an `int` instance, it puts `int` into
-     scope and makes it look like you should use it (`WARN_NO_UNUSED_VARIABLE`)
-
-proposed option 2:
-* `{}` is for generics (e.g., `whatever_{of_: number_}(~of.): of_`), blocks `if x {print_("ok")}`
-* `[]` is for array/object creation (`[x: 3.4, y: "hello"]`), array/lot indexing (`array[3]`),
-* `()` is for references
-* `[]` or `()` can be used for functions, e.g., `nop_[0]` could be `nop_ o` for `nop_: one_of_{n: -1, o: 0, p: +1}`.
-* pro: `[]` doesn't get super overloaded
-* con: `if my_nullable_fn_ { do_something_() }` actually tries to generic the `{ do_something_() }`.
-     however, i'm not a big fan of `my_nullable_fn_` in the first place; but `my_nullable_fn_ != null` 
-     could be a workaround.
-* con: `{}` usually only enscopes things within the block, anything inside of the generic
-     block gets enscoped into the rest of the class definition
-* con: due to `{}` syntax, we can replace with a block, but this looks a bit odd:
-```
-# equivalent declarations:
-array; array_{int_} = [1, 2, 3]
-array{int_}; [1, 2, 3]
-array
-     int_
-;         [1, 2, 3]
-# more equivalence:
-array; array_{int_}(1, 2, 3)
-array{int_}(1, 2, 3);
-# TODO: does this work with lexer??
-array
-     int_
-(    1
-     2
-     3
-);
-
-# generic functions
-# defining more idiomatic:
-generic_fn_
-{    of_: number_
-}
-(    of.
-): of_
-     print_(of)
-     of *= 2
-     of
-# defining less idiomatic:
-generic_fn_
-     of_: number_
-(    of.
-): of_
-     print_(of)
-     of *= 2
-     of
-
-# calling more idiomatic:
-generic_fn_{int_}(123)
-# calling less idiomatic:
-generic_fn_
-     int_
-(    123
-)
-
-# generic classes
-# defining more idiomatic
-generic_class_
-{    a_
-     b_
-}:   [a;, b;]
-{    ::do_something_(): one_of_[a:, b:]
-          m a || m b
-}
-# defining less idiomatic:
-generic_class_
-     a_
-     b_
-:    [a;, b;]
-{    ::do_something_(): one_of_[a:, b:]
-          m a || m b
-}
-```
-but this is actually growing on me a bit, either way.
-+++
 
 ### unique argument names
 
