@@ -3045,7 +3045,7 @@ the two arguments inside the function body.
 
 ```
 # COMPILER ERROR.  duplicate identifiers
-my_fun_(x: int_, x: dbl_): one_of_[int:, dbl:]
+my_fun_(x: int_, x: dbl_): one_of_{int:, dbl:}
 ```
 
 However, there are times where it is useful for a function to have two arguments with the same
@@ -3291,7 +3291,7 @@ y?; int = ... # `y` is maybe null, maybe non-null
 
 # the following calls `overloaded_()` if `y` is null, otherwise `overloaded_(y)`:
 z: overloaded_(y?) # also OK, but not idiomatic: `z: overloaded_(y?: y)`
-# `z` has type `one_of_[dbl:, string:]` due to the different return types of the overloads.
+# `z` has type `one_of_{dbl:, string:}` due to the different return types of the overloads.
 ```
 
 The reason behind this behavior is that in oh-lang, an argument list is conceptually an object
@@ -3378,6 +3378,10 @@ different here, in that we cannot define (1) and (3) simultaneously for nullable
 This enables us to distinguish between, e.g., `x?: my_overload_(y)` and `x: my_overload_(y)`,
 which defines a nullable `x` or a non-null `x`.
 
+If cases (1) and (2) are defined, then we should never ask for `x?: my_overload_(y)`; we
+should only ask for `x: my_overload_(y)` or `my_overload_(y)` (which requests the null output
+because it is not moved into a variable).
+
 TODO: discussion on `fn_(): [x?: int_]` differences from `fn_()?: [x: int_]`.
 
 ```
@@ -3390,35 +3394,24 @@ my_overload_(y: str_): [x: int_]
      [x: int_(y) ?? panic_("should be an integer")]
 
 # case 3, nullable output (not compatible with case 1):
-my_overload_(y: str_): [x?: int_]
-     # this is essentially an implementation of `x?: int_(y), return: [x]`
+my_overload_(y: str_)?: [x: int_]
      what int_(y)
-          ok: $[x: ok]
-          er: $[]
+          ok: {[x: ok]}
+          er: {null}
 
-[x]: my_overload_(y: "1234")    # calls (2) if it's defined, otherwise it's a compiler error.
-[x?]: my_overload_(y: "abc")    # calls (1) or (3) if one is defined, otherwise it's a compiler error.
+my_overload_(y: "9999999")    # calls (1) if it's defined, otherwise it's a compile error
+x: my_overload_(y: "1234")    # calls (2) if it's defined, otherwise it's a compiler error.
+x?: my_overload_(y: "abc")    # calls (3) if it's defined, otherwise it's a compiler error.
 ```
 
 TODO: can we make `assert_` shorter?  Rust is nice with `?`, but we use that for
 nullable stuff.  we should consider being nice.  Maybe `?!`.
+
 Note that if only Case 3 is defined, we can use `assert_`s to ensure that the return
-value is not null, e.g., `[x]: my_overload_() assert_()`.  This will throw a run-time
+value is not null, e.g., `x: my_overload_() assert_()`.  This will throw a run-time
 error if the return value for `x` is null.  Note that this syntax is invalid if Case 2
 is defined, since there is no need to assert a non-null return value in that case.
 This will also work for an overload which returns a result `hm`.
-
-```
-# normal call for case 3, defines an `x` which may be null:
-[x?]: my_overload_(y: "123")
-
-# special call for case 3; if `x` is null, this will return a run-time error,
-# otherwise will define a non-null `x`:
-[x]: my_overload_(y: "123") assert_()
-
-# make a default for case 3, in case X comes back as null from the function
-[x: -1] = my_overload_(y: "123")
-```
 
 If there are multiple return arguments, i.e., via an output type data class,
 e.g., `[x: dbl_, y: stra_]`, then we support [destructuring](#destructuring)
