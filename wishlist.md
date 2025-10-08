@@ -3448,7 +3448,7 @@ things outside the function block.  Inside the function block, pass-by-value
 arguments are mutable, and can be reassigned or modified as desired.
 Similar to Rust, variables that can be easily copied implement a `::o_(): m_`
 method, while variables that may require large allocations should only implement
-`;;renew_(o:): hm[ok_: null_, er_: ...]` or `::o_(): hm_[ok_: m_, er_: ...]`
+`;;renew_(o:): hm_{ok_: null_, er_: ...}` or `::o_(): hm_{ok_: m_, er_: ...}`
 which indicates that an error (like out-of-memory) can occur when trying to copy.
 A default definition for these copy constructors are created for most oh-lang classes.
 
@@ -3629,12 +3629,12 @@ syntax for writable/readonly references.  There will be some annotation/macros w
 used while before compiling, e.g., `@writable`/`@readonly` to determine if the variable is
 writable or not.  Similarly, we can use const templates like `:;.` for
 readonly-reference/writable-reference/temporary.  When we have the const template `:;.`,
-use `respectively_[a, b, c]` to get type `a`  for `:`, `b` for `;`, and `c` for `.`.
-Similarly for the const template `:;`, `respectively_[a, b]` will give `a` for `:` and
-`b` when `;`.
+use `respectively_{a:, b:, c:}` to get type `a_`  for `:`, `b_` for `;`, and `c_` for `.`.
+Similarly for the const template `:;`, `respectively_{a:, b:}` will give `a_` for `:` and
+`b_` when `;`.
 
 ```
-my_class_[of_]: [x; of_]
+my_class_{of_:}: [x; of_]
 {    ;;take_(of.):
           m x = of!
      ;;take_(of:):
@@ -3650,7 +3650,7 @@ my_class_[of_]: [x; of_]
 Alternatively, we can rely on some boilerplate that the language will add for us, e.g.,
 
 ```
-my_class_[of_]: [x; of_]
+my_class_{of_:}: [x; of_]
 {    # these are added automatically by the compiler since `x; of_` is defined.
      ;;x_(of;): { m x<->of }
      ;;x_(of:): { m x = of }
@@ -3667,17 +3667,17 @@ my_class_[of_]: [x; of_]
 For example, this function call passes `array[3]` by reference, even if `array[3]` is a primitive.
 
 ```
-array[int_]; [0, 1, 2, 3, 4]
-my_function_(array[3];) # passed as writable reference
-my_function_(array[3]:) # passed as readonly reference
+array{int_}; [0, 1, 2, 3, 4]
+my_function_(;array[3]) # passed as writable reference
+my_function_(:array[3]) # passed as readonly reference
 my_function_(array[3])  # passed as writable reference since `array` is mutable.
 ```
 
 You can switch to passing by value by using `.` or making an explicit copy:
 
 ```
-array[int_]; [0, 1, 2, 3, 4]
-my_function_(int_(array[3]))    # passed by value (e.g., `my_function_(int.)`):
+array{int_}; [0, 1, 2, 3, 4]
+my_function_(array[3] o_())    # passed by value (e.g., `my_function_(int.)`):
 ```
 
 Normally this distinction of passing by reference or value does not matter except
@@ -3695,7 +3695,7 @@ saw_off_branch_(int;): null_
 saw_off_branch_(array[3];)
 print_(array)   # prints [0, 1, 2, 40]
 # walking through the code:
-# saw_off_branch_(array[3];):
+# saw_off_branch_(;array[3]):
 #     array erase_(array[3])    # `array erase_(3)` --> `array` becomes [0, 1, 2, 4]
 #     array[3] *= 10            # [reference to 4] *= 10  --> 40
 ```
@@ -3799,6 +3799,7 @@ fraction_(in: string_, io; dbl_): [round_down: int_, round_up: int_]
 
 # destructuring
 io; 1.234
+# TODO: i think i prefer `[round_down:] = fraction(...)`
 [round_down]: fraction_(in: "hello", io;)
 
 # === calling the function with variable renaming ===
@@ -3822,7 +3823,7 @@ Note that we're not allowed to cast... or are we?  we want to be able to easily 
 an iterator into a list, for example.
 
 ```
-countdown_(count:): all_of_[iterator[count_]:, m: [count]]
+countdown_(count:): all_of_{iterator{count_}}:, m: [count;]}
 {    ::next_()?: count_
           if m count > 0
                --m count
@@ -3830,7 +3831,7 @@ countdown_(count:): all_of_[iterator[count_]:, m: [count]]
                null
 }
 
-my_array: array_[count_] = countdown_(5)
+my_array: array_{count_} = countdown_(5)
 ```
 
 Note, you can also have nullable output arguments.  These will be discussed
@@ -3878,6 +3879,7 @@ NAMESPACE_i32: patterns_()  # same, defining `NAMESPACE_i32` via the `i32_`.
 
 f32: patterns_()            # COMPILE ERROR: no overload for `patterns_(): f32_`
 
+# TODO: i think i prefer `[chaos:] = patterns_()` unless `chaos` is pre-defined, then `[chaos] = patterns_()` is ok.
 [chaos]: patterns_()        # calls `patterns_(): [chaos: f32_]` overload via destructuring.
 chaos: patterns_()          # same, via SFO concision.
 my_value: patterns_() chaos # same, but with renaming `chaos` to `my_value`. 
