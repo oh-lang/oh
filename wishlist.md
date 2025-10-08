@@ -3908,21 +3908,21 @@ conflict; trying to define both would be a compile error.
 
 ### arguments class
 
-Variadic functions are possible in oh-lang using the `arguments_[of_]` class.
-We recommend only one class type, e.g., `arguments_[int_]` for a variable number
-of integers, but you can allow multiple classes via e.g. `arguments_[one_of_[x:, y:, z:]]`
+Variadic functions are possible in oh-lang using the `arguments_{of_}` class.
+We recommend only one class type, e.g., `arguments_{int_}` for a variable number
+of integers, but you can allow multiple classes via e.g. `arguments_{one_of_{x:, y:, z:}}`
 for classes `x_`, `y_`, and `z_`.  oh-lang disallows mixing `arguments_` with any
-other arguments.  The `arguments_` class has methods like `::count_()`, `;:[index]: (of)`,
+other arguments.  The `arguments_` class has methods like `::count_()`, `;:[index.]: (of;:)`,
 and `;;[index]!`.  Thus, `arguments_` is effectively a fixed-length array, but you
-can modify the contents if you pass as `arguments[type_];`.  It is guaranteed that
+can modify the contents if you pass as `arguments{type_};`.  It is guaranteed that
 there is at least one argument, so `arguments[0]` is always defined.
 
 ```
-max_(arguments[int_]): int_
-     max; arguments[0]
+max_(arguments{int_}:): int_
+     max; arguments[0] o_()
      range_(1, arguments count_()) each index:
           if arguments[index] > max
-               max = arguments[index]
+               max = arguments[index] o_()
      max
 ```
 
