@@ -3936,36 +3936,34 @@ that the function call can do anything (including fetching data from a remote se
 
 ```
 call_:
-[    input; lot_[at_: str_, any_]
-     output; lot_[at_: str_, any_]
+[    input; lot_{at_: str_, any_}
+     output; lot_{at_: str_, any_}
      # things printed to stdout via `print_`:
-     prints; array_[str_]
+     prints; array_{str_}
      # things printed to stderr via `print_(error)`:
-     errors; array_[str_]
+     errors; array_{str_}
 ]
 {    # adds a named argument to the function call.
      # e.g., `call input_(at. "Cave", "Story")`
      ;;input_(at. str_, any.): null_
-          input[at] = any
+          m input[at] = any
 
      ;;input_(any.): null_
           m input_(at. any type_id to_(), any)
 
-     # TODO: this breaks the rule that we don't hold on to references/pointers
-     # beyond the scope of the function.
      ;;input_(at. str_, any:;): null_
-          input[at] = (at:; any)
+          m input[at] = (:;any)
 
      # adds a named field to the return type with a default value.
      # e.g., `call output_(at. "field_name", 123)` will ensure
      # `[field_name]` is defined in the return value, with a
      # default of 123 if `field_name` is not set in the function.
      ;;output_(at. str_, any.): null_
-          output_[at] =  any
+          m output[at] = any
 
      # adds a default-named return type, with a default value.
      ;;output_(any.): null_
-          ;;output_(at. any type_id to_(), any)
+          m output_(at. any type_id to_(), any)
 }
 ```
 
@@ -4022,7 +4020,8 @@ be used in the function call.  In this, oh-lang will return an error at run-time
 
 ```
 call; call_() @{ output_(at. "value1", 123), output_(at: "value2", 456) }
-some_function_(;call) assert_() # returns error since there are no overloads with [value1, value2]
+some_function_(;call) assert_()    # returns error since there are
+                                   # no overloads with [value1, value2]
 ```
 
 If compile-time checks are desired, one should use the more specific
@@ -4093,60 +4092,36 @@ to select that overload on `some_other_fn_`.
 
 ## nullable functions
 
-The syntax for declaring a nullable/optional function is to put a `?`
-after the function name but before the argument list.  E.g.,
-`optional_function_?(...args): return_type_` for a non-reassignable
-function and swapping `:` for `;` to create a reassignable function.
-When calling a nullable function, unless the function is explicitly
-checked for non-null, the return type will be nullable.  E.g.,
-`x?: optional_function_(...args)` will have a type of `return_type_?`.
-Nullable functions are checked by the executable, so the programmer
-doesn't necessarily have to do it.
+oh-lang is not a fan of nullable functions; due to other language choices 
+(specifically function overloading) they look super messy and difficult to
+(re)set to null.  If you need a nullable function we recommend that yoou
+wrap it in a nullable class, e.g.,
 
-TODO: i'm not a big fan of nullable functions, due to syntax reasons they look
-super messy and difficult to set to null.  if people want a nullable function
-we should just recommend that they wrap it in a nullable class, e.g.,
 ```
+# a wrapper type that has a non-null function inside it
 escape_handler_: [do_something_(my_class;): null_]
+
+# a class that now effectively has a nullable function
 my_class_: [escape_handler?;, ...]
 {    ;;escape_(): null_
+          # will automatically check for null:
           m escape_handler do_something_(m)
+
+          # or you can manually check:
+          if m escape_handler is not_null:
+               not_null do_something_(m)
+          else
+               print_("was null")
+
+     ;;handle_escape(): null_
+          m escape_handler =
+          [    do_something_(m;):
+                    print_("escaping!")
+
+                    # setting to null is easy
+                    m escape_handler = null
+          ]
 }
-```
-
-A nullable function has `?` before the argument list; a `?` *after* the argument list
-means that the return type is nullable.  The possible combinations are therefore the following:
-
-* `normal_function_(...args): return_type_` is a non-null function
-  returning a non-null `return_type_` instance.
-
-* `nullable_function_?(...args): return_type_` is a nullable function,
-  which, if non-null, will return a non-null `return_type_` instance.
-  Conversely, if `nullable_function_` is null, trying to call it will return null.
-
-* `nullable_return_function_(...args)?: return_type_` is a non-null function
-  which can return a nullable instance of `return_type_`.
-
-* `super_null_function_?(...args)?: return_type_` is a nullable function
-  which can return a null `return_type_` instance, even if the function is non-null.
-  I.e., if `super_null_function_` is null, trying to call it will return null,
-  but even if it's not null `super_null_function_` may still return null.
-
-```
-# creating an optional function in a class:
-example_: [x: dbl_, optional_fn_?(m:, z: dbl_); int_]
-
-example; example_(x: 5)
-
-# define your own function for `optional_fn_`:
-example::optional_fn_(z: dbl_); int_
-     floor_(z * m x)
-
-# or set it to null:
-example optional_fn_?(z: dbl_); int_ = null
-
-# after setting it to null...
-example optional_fn_(z: 3.21)   # returns null
 ```
 
 ## generic/template functions
