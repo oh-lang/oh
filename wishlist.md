@@ -5978,12 +5978,12 @@ TODO: make it possible to mock out file system access in unit tests.
 ## hm
 
 oh-lang borrows from Rust the idea that errors shouldn't be thrown, they should be
-returned and handled explicitly.  We use the notation `hm_[ok_, er_]` to indicate
+returned and handled explicitly.  We use the notation `hm_{ok_, er_}` to indicate
 a generic return type that might be `ok_` or it might be an error (`er_`).
 In practice, you'll often specify the generic arguments like this:
-`hm_[ok_: int_, er_: string_]` for a result that might be ok (as an integer) or it might
+`hm_{ok_: int_, er_: string_}` for a result that might be ok (as an integer) or it might
 be an error string.  If your function never fails, but the interface requires using
-`hm_`, you can use `hm_[ok_, er_: never_]` to indicate the result will never be an error.
+`hm_`, you can use `hm_{ok_, er_: never_}` to indicate the result will never be an error.
 
 To make it easy to handle errors being returned from other functions, oh-lang uses
 the `assert_` method on a result class.  E.g., `ok: my_hm assert_()` which will convert
@@ -5993,14 +5993,14 @@ It is something of a macro like `?` in Rust.  Note that `assert_` doesn't panic,
 and it *always runs*, not just in debug mode.  See [its section](#assert) for more details.
 
 Note that we can automatically convert a result type into a nullable version
-of the `ok_` type, e.g., `hm_[ok_: string_, er_: error_code_]` can be converted into
+of the `ok_` type, e.g., `hm_{ok_: string_, er_: error_code_}` can be converted into
 `string_?` without issue, although as usual nulls must be made explicit with `?`.
 E.g., `my_function_(string_argument?: my_hm)` to pass in `my_hm` if it's ok or null if not,
 and `string?: my_hm` to grab it as a local variable.  This of course only works
 if `ok` is not already nullable, otherwise it is a compile error.
 
 See [the `hm_` definition](https://github.com/oh-lang/oh/blob/main/core/hm.oh)
-for methods built on top of the `one_of_[ok:, er:]` type.
+for methods built on top of the `one_of_{ok:, er:}` type.
 
 ```
 result: if x { ok_(3) } else { er_("oh no") }
