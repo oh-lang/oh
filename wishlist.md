@@ -4333,22 +4333,22 @@ effectively a keyword within a generic specification, so it can't be used
 for other purposes, and the boolean value it takes must be known at compile-time.
 It also can be used to ensure a generic specification satisfies some constraints,
 e.g., `require: n > 0` in the first line below.  `require` can *never* be
-specified by hand, e.g., `my_class_[int_, n: 0, require: true]` is a compile error.
+specified by hand, e.g., `my_class_{int_, n: 0, require: true}` is a compile error.
 
 ```
-my_class_[of_, n: count_, require: n > 0]:
+my_class_{of_:, n: count_, require: n > 0}:
 [    value: of_
      # this field `second_value` is only present if `n` is 2 or more.
-     # TODO: does this conflict with any other usages of generic classes?
-     # if so, let's switch to `@if n >= 2 {second_value: of_}`
-     second_value[require: n >= 2]: of_
+     second_value{require: n >= 2}: of_
      # this field `third_value` is only present if `n` is 3 or more.
-     third_value[require: n >= 3]: of_
+     third_value{require: n >= 3}: of_
      ... # plz help am i coding this right??     (no, prefer `vector_[n, of_]`)
 ]
 {    # `of_ is hashable_` is true iff `of_` extends `hashable_` either explicitly
      # or implicitly by implementing a `hash_` method like this:
-     ::hash_[require: of_ is hashable_](~builder):
+     # TODO: do we even need `require: of_ is hashable_` or can we just do
+     # `::hash_{of_: hashable_}(~builder;): null_`
+     ::hash_{require: of_ is hashable_}(~builder;):
           builder hash_(value)
           @if n > 1 {builder hash_(second_value)}
           @if n > 2 {builder hash_(third_value)}
@@ -4395,15 +4395,15 @@ You don't need to prefix `m_` on any class variables, types, or functions that a
 inside the class body, which does mean name collisions with globals can be an issue, but
 these will be thrown as errors by the compiler.
 
-Note that when returning a newly-declared type from a function (e.g., `my_fn_(int:): [x: int_, y: dbl_]`),
-we do not allow building out the class body; any indented block will be assumed
-to be a part of the function body/definition:
+Note that when returning an inlined data type from a function, we do not allow building out
+the class body for the type; any indented block will be assumed to be a part of the function
+body/definition, e.g.:
 
 ```
 my_fn_(int:): [x: int_, y: dbl_]
 {    # this is part of the `my_fn_` definition,
      # and never a part of the `[x: int_, y: dbl_]` class body.
-     [x: 5, y: 3.0]
+     [x: 5 + int, y: 3.0]
 }
 ```
 
@@ -4415,7 +4415,7 @@ x_and_y_: [x: int_, y: dbl_]
 {    ::my_method_(): x + round_(y) int
 }
 
-my_fn_(int): x_and_y_
+my_fn_(int:): x_and_y_
      [x: int + 5, y: 3.0]
 ```
 
@@ -4426,7 +4426,7 @@ parent_class_: [name: str_]
 
 # example class definition
 example_class_: all_of_
-[    parent_class:
+{    parent_class:
      m:
      [    # given the inheritance with `parent_class_`,
           # child instance variables should be defined in this `m: [...]` block.
@@ -4436,12 +4436,12 @@ example_class_: all_of_
 
           # instance functions can also be defined here.  they can be set 
           # individually for each class instance, unlike a class function/method
-          # which is shared.
-          # we define a default for this function but you could change its definition in a constructor.
+          # which is shared.  we define a default for this function but you could
+          # change its definition in a constructor.
           # NOTE: instance functions can use `m` as necessary.
           #       even though we could use the notation `::instance_function_()` here,
           #       we prefer to keep that for methods, to make it more clear that
-          #       this is different in principle.
+          #       this has different storage requirements in practice.
           instance_function_(m:): null_
                print_("hello ${m x}!")
 
@@ -4450,7 +4450,7 @@ example_class_: all_of_
           some_mutable_function_(); null_
                print_("hello!")
      ]
-]
+}
 {    # classes must be resettable to a blank state, or to whatever is specified
      # as the starting value based on a `renew_` function.  this is true even
      # if the class instance variables are defined as readonly.
@@ -4465,7 +4465,7 @@ example_class_: all_of_
      # adding `m` to the arg name will automatically set `m x` to the passed in `x`.
 
      # create a different constructor.  constructors use the class reference `m` and must
-     # return either an `m_` or a `hm_[ok_: m_, er_]` for any error type `er_`.
+     # return either an `m_` or a `hm_{ok_: m_, er_}` for any error type `er_`.
      # this constructor returns `m_`:
      m_(k: int_): m_(x. k * 1000)
 
@@ -4515,10 +4515,10 @@ const_var = example_class_(x: 4)    # COMPILER ERROR! variable is readonly.
 dont_need_an_instance: example_class_ some_static_function_(y; 5)
 ```
 
-Note that you normall call a static/class function like this `class_name_ class_function_(...)`,
-but you can also do it like this: `class_function_(m_: class_name_, ...)`.  This is similar to
+Note that you normally call a static/class function like `class_name_ class_function_(...)`,
+but you can also do it via `class_function_(m_: class_name_, ...)`.  This is similar to
 how you can get internal class types like `class_name_ internal_type_` in a different way like
-`internal_type_[m_: class_name_]`.
+`internal_type_{m_: class_name_}`.
 
 ## declaring methods and class functions outside of the class
 
@@ -4530,8 +4530,8 @@ a few methods, but don't use `:` since we're no longer declaring the class.
 
 ```
 # static function that constructs a type or errors out
-example_class_(z: dbl_): hm_[ok_: example_class_, er_: str_]
-     # TODO: can we use `map_{$er, ...}` instead of `map_({$er, ...})`???
+example_class_(z: dbl_): hm_{ok_: example_class_, er_: str_}
+     # we can use `map_${$er, ...}` as well.
      x: z round_() int_() map_(er: "Need `round_(z)` representable as an `int`.") assert_()
      example_class_(x)
 
@@ -4564,8 +4564,8 @@ example_class_@
 ```
 
 If they are public, you can import these custom methods/functions in other files in two
-ways: (1) import the full module via `[*]: \/relative/path/to/file` or `[*]: \\library/module`,
-or (2) import the specific method/function via e.g.,
+ways: (1) import the full module via `[*]: \/relative/path/to/file` or
+`[*]: \\library/module`, or (2) import the specific method/function via e.g.,
 `{example_class_ my_added_class_function_(k: int_): example_class_} \/relative/path/to/file`
 or `{example_class_::my_added_method_(y: int_): int_} \\library/module`.
 
