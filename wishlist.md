@@ -4148,42 +4148,43 @@ vector3 == result               # equals True
 ```
 
 You can also add the new types in braces just after the function name,
-e.g., `copy_[t_: my_type_constraints_](value: ~t_): t_`, which allows you to specify any
-type constraints (`my_type_constraints_` being optional).  Note that types defined with
-`~` are inferred and therefore can never be explicitly given inside of the braces,
-e.g., `copy_[t_: int_](value: 3)` is invalid here, but `copy_(value: 3)` is fine.
+e.g., `copy_{t_: my_type_constraints_}(value: ~t_): t_`, which allows you to
+specify any type constraints (`my_type_constraints_` being optional).  Note
+that types prefixed with `~` anywhere in the expression are inferred and
+therefore can never be explicitly given inside of the braces, e.g.,
+`copy_{t_: int_}(value: 3)` is invalid here, but `copy_(value: 3)` is fine.
 
 If you want to require explicitly providing the type in braces, don't use `~` when
 defining the function.
 
 ```
 # this generic function does not infer any types because it doesn't use `~`.
-copy_[the_type_](value: the_type_): the_type_
+copy_{the_type_:}(value: the_type_): the_type_
      ...
      the_type_(value)
 
 # therefore we need to specify the generics in braces before calling the function.
-copy_[the_type_: int_](value: 1234) # returns 1234
+copy_{the_type_: int_}(value: 1234) # returns 1234
 ```
 
 For this example, it would probably be better to use `of_` instead of `the_type_`,
 since `of_` is the "default name" for a generic type.  E.g., you don't need
-to specify `[of_: int_]` to specialize to `int_`, you can just use `[int_]
-for an `[of_]`-defined generic.  See also
+to specify `{of_: int_}` to specialize to `int_`, you can just use `{int_}`
+for an `{of_:}`-defined generic.  See also
 [default named generic types](#default-named-generic-types).  For example:
 
 ```
 # this generic function does not infer any types because it doesn't use `~`.
-copy_[of_](value: of_): of_
+copy_{of_:}(value: of_): of_
      ...
      of_(value)
 
 # because the type is not inferred, you always need to specify it in braces.
 # you can use `of_: the_type_` but this is not idiomatic:
-copy_[of_: int_](value: 3)    # will return the integer `3`
+copy_{of_: int_}(value: 3)    # will return the integer `3`
 
 # because it is default named, you can just put in the type without a field name.
-copy_[dbl_](value: 3)         # will interpret `3` as a double and return `3.0`
+copy_{dbl_}(value: 3)         # will interpret `3` as a double and return `3.0`
 ```
 
 ### default-named generic arguments
@@ -4221,13 +4222,13 @@ Default naming also works if we specify the generics ahead of
 the function arguments like this:
 
 ```
-logger_[of_: some_constraint_](of.): of_
+logger_{of_: some_constraint_}(of.): of_
      print_("got ${of}")
      of
 
 # need to explicitly add the type since it's never inferred.
-logger_[int_](3)    # returns the integer `3`
-logger_[dbl_](3)    # will return `3.0`
+logger_{int_}(3)    # returns the integer `3`
+logger_{dbl_}(3)    # will return `3.0`
 ```
 
 If you want people to pass in the argument with the field name explicit,
@@ -4248,11 +4249,11 @@ same as the `variable_case` variable name (just add a trailing `_`)
 so default names can apply.
 
 ```
-logger_[value_](value.): value_
+logger_{value_:}(value.): value_
      print_("got ${value}")
      value
 
-logger_[value_: dbl_](3)    # will return `3.0` and print "got 3.0"
+logger_{value_: dbl_}(3)    # will return `3.0` and print "got 3.0"
 ```
 
 If we want to suppress default naming, e.g., require the function argument 
@@ -4273,13 +4274,13 @@ And as in other contexts, you can avoid inferring the type by omitting `~`.
 
 ```
 # this generic needs to be specified in braces at the call site: 
-logger_[value_](NAMED_value.): value_
+logger_{value_:}(NAMED_value.): value_
      ...
      NAMED_value
 
 # and because it has a `NAMED_` namespace,
 # you need to call it like this:
-logger_[value: dbl](value. 3)  # will return `3.0`
+logger_{value: dbl}(value. 3)  # will return `3.0`
 ```
 
 ### argument name generics: with different type
