@@ -5222,12 +5222,14 @@ can be a declaration for a fixed array of size 3.
 It may be useful to create a generic class that whose specified type
 can have writeable or readonly fields.  This can be done using `variable_name\` some_type_`
 inside the generic class definition to define variables, and then specifying
-the class with `[type1_: specified_readonly_type_, type2_; specified_writeable_type_]`.
+the class with `{type1_: specified_readonly_type_, type2_; specified_writeable_type_}`.
 TODO: this is going to be a bit difficult to get right with vim syntax;
 can we use `~` instead with a space afterwards?
 
 ```
-mutable_types_[x_, y_, z_]:
+# TODO: should we declare like this? `{x_;:., ...}` to indicate that the
+#    type can be mutated differently?
+mutable_types_{x_:, y_:, z_:}:
 [    # these fields are always readonly:
      r_x: x_
      r_y: y_
@@ -5248,7 +5250,7 @@ mutable_types_[x_, y_, z_]:
 
 # the following specification will make `v_x` and `v_z` writeable
 # and `v_y` readonly:
-my_specification: mutable_types_[x_; int_, y_: string_, z_; dbl_]
+my_specification: mutable_types_{x_; int_, y_: string_, z_; dbl_}
 ```
 
 We use a new syntax here because it would be confusing
@@ -5257,24 +5259,25 @@ as writeable in a specification with a `;`.
 
 Note that if the generic class has no backticks inside, then it is a compile error
 if you try to specify the generic class with a `;` type.  E.g., if we have the declaration
-`generic_[a_]: [a;]`, then the specification `my_gen: generic_[a_; int_](5)` is a compile error.
-If desired, we can switch to `generic_[a_]: [a\`]` to make the specification correct.
+`generic_{a_:}: [a;]`, then the specification `my_gen: generic_{a_; int_}(5)`
+is a compile error.  If desired, we can switch to `generic_{a_:}: [a\`]`
+to make the specification correct.
 
 ### virtual generic methods
 
 You can also have virtual generic methods on generic classes, which is not allowed by C++.
 
 ```
-generic_[of_]: [value; of_]
+generic_{of_:}: [value; of_]
 {    ::method_(~u): u_
           u + u_(u * m value) ?? panic_()
 }
 
-generic; generic_[str_]
+generic; generic_{str_}
 generic value = "3"
 print_(generic method_(2_i32))  # prints "35" via `2_i32 + i32_(2_i32 * "3")`
 
-specific_[of_: number_]: all_of_[generic[of_]:, m: [scale; of_]]
+specific_{of_: number_}: all_of_{generic{of_}:, m: [scale; of_]}
 {    ;;renew_(m scale. of_ = 1, generic value.): {}
 
      ::method_(~u): u_
@@ -5292,57 +5295,58 @@ field name is already a type name in the current scope.  For example:
 ```
 NAMESPACE_at_: int_
 value_: [x: flt_, y: flt_]
-my_lot; lot_[NAMESPACE_at_, value_]
-# Equivalent to `my_lot; lot_[at_: NAMESPACE_at_, value_: value_]`.
+my_lot; lot_{NAMESPACE_at_, value_}
+# Equivalent to `my_lot; lot_{at_: NAMESPACE_at_, value_: value_}`.
 ```
 
 ### generic type constraints
 
-To constrain a generic type, use `[type_: constraints_, ...]`.  In this expression,
+To constrain a generic type, use `{type_: constraints_, ...}`.  In this expression,
 `constraints_` is simply another type like `non_null_` or `number_`, or even a combination
-of classes like `all_of_[container_[id_, value_], number_]`.  It may be recommended for more
+of classes like `all_of_{container_{id_, value_}, number_}`.  It may be recommended for more
 complicated type constraints to define the constraints like this:
-`my_complicated_constraint_type_: all_of_[t1:, one_of[t2:, t3:]:]` and declaring the class as
-`new_generic_[of_: my_complicated_constraint_type_]`, which might be a more readable way to do
+`my_complicated_constraint_type_: all_of_{t1:, one_of{t2:, t3:}:}` and declaring the class as
+`new_generic_{of_: my_complicated_constraint_type_}`, which might be a more readable way to do
 things if `my_complicated_constraint_type_` is a helpful name.
 TODO: `all_of_` is acting a little bit differently than a child class inheritor here,
 do we need to distinguish between the two?  e.g., the child class usage of `all_of_`
 will be ordered, but `all_of_` here in a type constraint should not require a certain order.
+or maybe we need to do `{of_: constraint1_, of_: constraint2_}`.
 
 ### generic type defaults
 
 Type defaults follow the same pattern as type constraints but the default types are
-not abstract.  So we use `[type_: default_type_, ...]` where `default_type_` is a class
+not abstract.  So we use `{type_: default_type_, ...}` where `default_type_` is a class
 that is non-abstract.
 
 ### overloading generic types
 
-Note that we can overload generic types (e.g., `array_[int_]` and `array_[count: 3, int_]`),
+Note that we can overload generic types (e.g., `array_{int_}` and `array_{count: 3, int_}`),
 which is especially helpful for creating your own `hm_` result class based on the general
-type `hm_[er_, ok_]`, like `MY_er_: one_of_[oops:, my_bad:], hm_[of_]: hm_[ok_: of_, MY_er_]`.
+type `hm_{er_, ok_}`, like `MY_er_: one_of_{oops:, my_bad:}, hm_{of_:}: hm_{ok_: of_, MY_er_}`.
 Here are some examples:
 
 ```
-# Note that in oh-lang we could define this as `pair_[of_1_, of_2_]`
+# Note that in oh-lang we could define this as `pair_{of_1_, of_2_}`
 # so we don't need to specify `first_: int_, second_: dbl_`, but for illustration
 # in the following examples we'll make the generic parameters named.
-pair_[first_, second_]: [first;, second;]
-pair_[of_]: pair_[first_: of_, second_: of_]
+pair_{first_:, second_:}: [first;, second;]
+pair_{of_:}: pair_{first_: of_, second_: of_}
 
-# examples using `pair_[of_]`: ======
+# examples using `pair_{of_}`: ======
 # an array of pairs:
-pair_array: array_[pair_[int_]]([[first. 1, second. 2], [first. 3, second. 4]])
+pair_array: array_{pair_{int_}}([[first. 1, second. 2], [first. 3, second. 4]])
 # a pair of arrays:
-pair_of_arrays: pair_[array_[int_]]([first. [1, 2], second. [3, 4]])
+pair_of_arrays: pair_{array_{int_}}([first. [1, 2], second. [3, 4]])
 
-# examples using `pair_[first_, second_]`: ======
+# examples using `pair_{first_, second_}`: ======
 # an array of pairs:
-pair_array: array_[pair_[first_: int_, second_: dbl_]]
+pair_array: array_{pair_{first_: int_, second_: dbl_}}
 (    [first. 1, second. 2.3]
      [first. 100, second. 0.5]
 )
 # a lot of pairs:
-pair_lot: lot_[at_: str_, pair_[first_: int_, second_: dbl_]]
+pair_lot: lot_{at_: str_, pair_{first_: int_, second_: dbl_}}
 (    "hi there". [first. 1, second. 2.3]
 )
 ```
@@ -5356,14 +5360,14 @@ are useful for generics with a single type requirement, and can be
 used for overloads, e.g.:
 
 ```
-a_class_[x_, y_, n: count_]: array_[[x_, y_], count: n]
+a_class_{x_:, y_:, n: count_}: array_{[x:, y:], count: n}
 
-a_class_[of_]: a_class_[x_: of_, y_: of_, n: 100]
+a_class_{of_:}: a_class_{x_: of_, y_: of_, n: 100}
 ```
 
-TODO: use `vector_[count:]` for a fixed-length array (all elements default-initialized)
-and `array_[max_count: count_]` for a max-length array.  unless we want
-to just overload; `vector_[count:]` will have a different API than `array_`, though.
+TODO: use `vector_{count:}` for a fixed-length array (all elements default-initialized)
+and `array_{max_count: count_}` for a max-length array.  unless we want
+to just overload; `vector_{count:}` will have a different API than `array_`, though.
 e.g., `vector_` is also not allocated dynamically.
 
 Similar to default-named arguments in functions, default-named generics
@@ -5372,17 +5376,17 @@ For example:
 
 ```
 # use the default-name `type_` here:
-a_class_[of_, n: count_]: a_class_[x_: of_, y_: of_, n]
+a_class_{of_:, n: count_}: a_class_{x_: of_, y_: of_, n}
 
 # so that we can do this:
-an_instance: a_class_[dbl_, n: 3]
-# equivalent but not idiomatic: `an_instance: a_class_[of_: dbl_, n: 3]`.
+an_instance: a_class_{dbl_, n: 3}
+# equivalent but not idiomatic: `an_instance: a_class_{of_: dbl_, n: 3}`.
 ```
 
 Similar to default-named arguments in functions, there are restrictions.
 You are not able to create multiple default-named types in your generic
-signature, e.g., `my_generic_[A_of_, B_of_]`, unless we use `_0` and
-`_1` namespaces, e.g., `my_generic_[of_0_, of_1_]`.  These
+signature, e.g., `my_generic_{A_of_, B_of_}`, unless we use `_0` and
+`_1` namespaces, e.g., `my_generic_{of_0_, of_1_}`.  These
 should only be used in cases where order intuitively matters.
 
 ### generic overloads must use the original class or a descendant
@@ -5392,88 +5396,91 @@ the original class or a descendant of the original class for any
 overloads.  Some examples:
 
 ```
-some_class_[x_, y_, n: count_]: [ ... ]
+some_class_{x_:, y_:, n: count_}: [ ... ]
 
 # this is OK:
-some_class_[of_, n: count_]: some_class_[x_: of_, y_: of_, n]
+some_class_{of_:, n: count_}: some_class_{x_: of_, y_: of_, n}
 
 # this is also OK:
-child_class_[of_]: some_class_[x_: of_, y_: of_, n: 256]
+child_class_{of_:}: some_class_{x_: of_, y_: of_, n: 256}
 {    # additional child methods
      ...
 }
-some_class_[of_]: child_class_[of_]
+some_class_{of_:}: child_class_{of_}
 
 # this is NOT OK:
-some_class_[t_, u_, v_]: [ ...some totally different class... ]
+some_class_{t_:, u_:, v_:}: [ ...some totally different class... ]
 ```
 
 Note that we can support a completely specified generic class, e.g.,
-`some_class_: some_class_[my_default_type_]`; we can still distinguish
-between the two usages of `some_class_[specified_type_]` and `some_class_`,
+`some_class_: some_class_{my_default_type_}`; we can still distinguish
+between the two usages of `some_class_{specified_type_}` and `some_class_`,
 as long as there's no default concrete specification all other types, e.g.,
-`some_class[of_: some_concrete_specified_type_]` would already specify the default.
+`some_class_{of_: some_concrete_specified_type_}` would already specify the default.
 
 ### type tuples
 
-One can conceive of a tuple type like `[x_, y_, z_]` for nested types `x_`, `y_`, `z_`.
+TODO: not sure this works with {} for generics.  may need to modify.
+
+One can conceive of a tuple type like `{x_, y_, z_}` for nested types `x_`, `y_`, `z_`.
 They are grammatically equivalent to a `lot` of types (where usually order doesn't matter),
 and their use is make it easy to specify types for a generic class.  This must be done
 using the spread operator `...` in the following manner.
 
 ```
-tuple_type_: [x_, y_, z_]
+tuple_type_: {x_, y_, z_}
 
-# with some other definition `my_generic_[w_, x_, y_, z_]: [...]`:
-some_specification_: my_generic_[...tuple_type_, w_: int_]
+# with some other definition `my_generic_{w_:, x_:, y_:, z_:}: [...]`:
+some_specification_: my_generic_{...tuple_type_, w_: int_}
 
 # you can even override one of your supplied `tuple_type_` values with your own.
 # make sure the override comes last.
-another_spec_[OVERRIDE_of_]: my_generic_[...tuple_type_, w_: str_, x_: OVERRIDE_of_]
+another_spec_{OVERRIDE_of_:}: my_generic_{...tuple_type_, w_: str_, x_: OVERRIDE_of_}
 
 # Note that even if `tuple_type_` completely specifies a generic class
-# `some_generic_[x_, y_, z_]: [...]`, we still need to use the spread operator
+# `some_generic_{x_:, y_:, z_:}: [...]`, we still need to use the spread operator
 # because `some_generic_ tuple_type_` would be syntax for something else,
 # i.e., the nested class `tuple_type_` within `some_generic_`, which will
 # be a compiler error if not present.  Instead:
-a_specification_: some_generic_[...tuple_type_]
+a_specification_: some_generic_{...tuple_type_}
 ```
 
 Here is an example of returning a tuple type.
 
 ```
-tuple_[dbl]: [precision_, vector2_: any_]
+# TODO: this is probably a bad example because we shouldn't have randomness here
+tuple_{dbl:}: {precision_, vector2_: any_}
      if abs_(dbl) < 128.0
-          [precision_: flt_, vector2_: [x: flt_, y: flt_]]
+          {precision_: flt_, vector2_: [x: flt_, y: flt_]}
      else
-          [precision_: dbl_, vector2_: [x: dbl_, y: dbl_]]
+          {precision_: dbl_, vector2_: [x: dbl_, y: dbl_]}
 
-my_tuples_: tuple_[random_() dbl * 256.0]
+my_tuples_: tuple_{random_() dbl * 256.0}
 my_number; my_tuples_ precision_(5.0)
 my_vector; my_tuples_ vector2_(x: 3.0, y: 4.0)
 ```
 
-See also [`new_[...]: ...` syntax](#returning-a-type).
+See also [`new_{...}: ...` syntax](#returning-a-type).
 
 ### default field names with generics
 
-Note that generic classes like `generic_[of_]: [of;]` do not work exactly the same way as
-generic arguments in functions like `fn_[of_](of.)`.  The latter uses a default-named
+Note that generic classes like `generic_{of_:}: [of;]` do not work exactly the same way as
+generic arguments in functions like `fn_{of_:}(of.)`.  The latter uses a default-named
 argument in a reference object and the former creates an object whose field is always
-named `of`, regardless of what the generic type `of_` is.  Thus `fn_[of_](of.)` can be
-called like `fn[int](5)` (without `int. 5` or `of. 5` specified), while creating a generic
-class `generic_[of_]: [of;]` will always declare the field with name `of`, e.g.,
-`generic_[int_]` is `[of: int_]` instead of `[int: int_]`, and which should be instanced
-as `generic[int_]: [of: 3]`.
+named `of`, regardless of what the generic type `of_` is.  Thus `fn_{of_:}(of.)` can be
+called like `fn_{int_}(5)` (without `int. 5` or `of. 5` specified), while creating a generic
+class `generic_{of_:}: [of;]` will always declare the field with name `of`, e.g.,
+`generic_{int_}` is `[of: int_]` instead of `{int: int_}`, and which should be instanced
+as `generic{int_}: [of: 3]`.
 TODO: should we actually use `[int: int_]`?  we should be able to accept input like this:
-`gi_: generic_[int_], gi: [5]`.  if we have two (or more arguments) that conflict,
-e.g., `element_[at_, of_]: [at;, of;]` and use `element_[at_: str_, of_: str_]`,
+`gi_: generic_{int_}, gi: [5]`.  if we have two (or more arguments) that conflict,
+e.g., `element_{at_:, of_:}: [at;, of;]` and use `element_{at_: str_, of_: str_}`,
 then we can use namespaces like this: `[AT_str;, OF_str;]`.  i'm not sure i like this,
-however, and we probably want something like `generic_[x_, y_]: [x;, y;]` to look
+however, and we probably want something like `generic_{x_:, y_:}: [x;, y;]` to look
 like `[x: dbl_, y: str_]`, etc.
 
 There's a slight bit of inconsistency here, but it makes defining generic classes
-much simpler, especially core classes like `hm_[ok_, er_]: one_of_[ok:, er:] {...}`,
+much simpler, especially core classes like `hm_{ok_:, er_:}: one_of_{ok:, er:} {...}`,
 so we always refer to a good value as `ok` and an error result as `er`, rather
 than whatever the internal values are.
 TODO: actually `one_of_` probably follows different rules to make sure things
