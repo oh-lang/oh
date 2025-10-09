@@ -5171,7 +5171,7 @@ TODO: discuss how `null_` can be used as a type in most places.
 But note that if you have a generic function defined like this,
 we are already assuming some constraints:
 ```
-my_generic_[of_](y: of_, z: of_): of_
+my_generic_{of_:}(y: of_, z: of_): of_
      x: y * z
      x
 ```
@@ -5180,24 +5180,24 @@ be defined via `x?: y * z`.  But because oh-lang does template specialization
 only after you supply the specific type you want, this can be caught at
 compile time and only if you're requesting an invalid type.
 
-To create a generic class, you put the expression `[types_...]` after the
-class identifier, or we recommend `[of_]` for a single template type, where
+To create a generic class, you put the expression `{type1_:, ...}` after the
+class identifier, or we recommend `{of_:}` for a single template type, where
 `of_` is the [default name for a generic type](#default-named-generic-types).
-For example, we use `my_single_generic_class_[of_]: [...]` for a single generic
-or `my_multi_generic_class_[type1_, type2_]: [...]` for multiple generics.
+For example, we use `my_single_generic_class_{of_:}: [...]` for a single generic
+or `my_multi_generic_class_{type1_:, type2_:}: [...]` for multiple generics.
 To actually specify the types for the generic class, we use the syntax
-`my_single_generic_class_[int_]` (for an `of_`-defined generic class) or
-`my_multi_generic_class_[type1_: int_, type2_: str_]` (for a multi-type generic).
+`my_single_generic_class_{int_}` (for an `of_`-defined generic class) or
+`my_multi_generic_class_{type1_: int_, type2_: str_}` (for a multi-type generic).
 Note that any static/class methods defined on the class can be accessed
-like this: `my_single_generic_class_[int_] my_class_function_(...)` or
-`my_multi_generic_class_[type1_: int_, type2_: str_] other_class_function_()`.
+like this: `my_single_generic_class_{int_} my_class_function_(...)` or
+`my_multi_generic_class_{type1_: int_, type2_: str_} other_class_function_()`.
 
 ```
-generic_class_[id_, value_]: [id;, value;]
+generic_class_{id_:, value_:}: [id;, value;]
 {    # this gives a method to construct the instance and infer types.
      # `g_` is like `m_` but without the template specialization, so
      # `g_` is `generic_class_` in this class body.
-     g_(id. ~t_, value. ~u_): g_[id_: t_, value_: u_]
+     g_(id. ~t_, value. ~u_): g_{id_: t_, value_: u_}
           [id, value]
 }
 
@@ -5206,19 +5206,16 @@ generic_class_[id_, value_]: [id;, value;]
 class_instance: generic_class_(id. 5, value. "hello")
  
 # creating an instance with template/generic types specified:
-other_instance: generic_class_[id_: dbl_, value_: string_](id. 3, value. "4")
+other_instance: generic_class_{id_: dbl_, value_: string_}(id. 3, value. "4")
 ```
 
 ### default-named generics
 
-If you have a generic class like `my_generic_[type1_, type2_]`, you can use them as a
-default-named function argument like `my_generic[type1_, type2_]:`, which is short for
-`my_generic: my_generic_[type1_, type2_]`.  This works even for generics over values,
-e.g., if `fixed_array_[count]` is a fixed-size array of size `count`, then `fixed_array[3]:`
-can be a declaration for a fixed array of size 3.  We can distinguish between 
-`fixed_array[3]` being (1) this declaration or (2) a request to access the fourth
-element in an array based on whether `fixed_array` is in scope, but adding a trailing `:`
-helps point towards (1).
+If you have a generic class like `my_generic_{type1_:, type2_:}`, you can use them as a
+default-named function argument like `my_generic{type1_, type2_}:`, which is short for
+`my_generic: my_generic_{type1_, type2_}`.  This works even for generics over values,
+e.g., if `fixed_array_{count}` is a fixed-size array of size `count`, then `fixed_array{3}:`
+can be a declaration for a fixed array of size 3.
 
 ### generic class type mutability
 
