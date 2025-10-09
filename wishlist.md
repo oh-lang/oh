@@ -5505,15 +5505,15 @@ some cannot be overridden, and some must have certain function signatures.
 * you can define one of `m_(...): m_` (class constructors) or `;;renew_(...): null` 
      (renew methods), and the other will be automatically defined with the same arguments.
      `;;renew_` can be called on any writable variable even if some fields are constant.
-* you can define one of `m_(...): hm_[ok_: m_, er_]` (class-or-error constructors)
-     or `;;renew_(...): hm_[ok_: m_, er_]` (renew-or-error methods), and the other will be
-     automatically defined with the same arguments.
-* besides `m_(...): m_` and `m_(...): hm_[ok_: m_, er_]`, you are not allowed to define
+* you can define one of `m_(...): hm_{ok_: m_, er_: ...}` (class-or-error constructors)
+     or `;;renew_(...): hm_{ok_: m_, er_: ...}` (renew-or-error methods), and the other
+     will be automatically defined with the same arguments.
+* besides `m_(...): m_` and `m_(...): hm_{ok_: m_, er_: ...}`, you are not allowed to define
      any other methods named `m_` that return anything else.  Defining both is ok,
      and defining overloads for different input arguments is ok.
-* you can define `::o_(): m_` (copy constructor) or `::o_(): hm_[ok_: m_, er_]`
+* you can define `::o_(): m_` (copy constructor) or `::o_(): hm_{ok_: m_, er_: ...}`
      (copy-or-error constructor), or both.
-* besides `::o_(): m_` and `::o_(): hm_[ok_: m_, er_]`, you are not allowed to define
+* besides `::o_(): m_` and `::o_(): hm_{ok_: m_, er_: ...}`, you are not allowed to define
      any other methods named `o_`.  Defining both is ok; whichever one comes first
      is the default copy method, so we recommend the copy-or-error constructor coming
      first.
@@ -5525,9 +5525,9 @@ by using `variable_case` when defining it.
 
 ```
 awesome_service: all_of_
-[    parent_class1_, parent_class2_, #(etc.)#,
-     m_: [url_base: "http://my/website/address.bazinga"]
-]
+{    parent_class1:, parent_class2:, #(etc.)#,
+     m: [url_base: "http://my/website/address.bazinga"]
+}
 {    ::get_(id: string_): awesome_data_
           json: http get_("${m url_base}/awesome/${id}")
           awesome_data_(json)
@@ -5622,9 +5622,11 @@ with all the methods in the RHS of the sequence builder.  E.g., from the above e
 a `my_builder_` instance with all the `set_` methods called.  Otherwise, if the LHS
 is a reference (either readonly or writable), the return value of the sequence
 builder will depend on the type of parentheses used:
-`{}` returns the value of the last statement in `{}`,
-`[]` creates an object with all the fields built out of the RHS methods, and
-`()` creates a reference object with all the fields built out of the RHS methods.
+
+* `{}` returns the value of the last statement in `{}`,
+* `[]` creates an object with all the fields built out of the RHS methods, and
+* `()` creates a reference object with all the fields built out of the RHS methods.
+
 Some examples of the LHS being a reference follow:
 
 ```
@@ -5650,7 +5652,7 @@ result: writeable_array@
      min_()
 ]
 # should print [-1, 20, 100, 4001, 30000]
-# note that `sort_()` returns null and is collapses.
+# note that `sort_()` returns null and thus collapses.
 # result == [int_0: 20, int_1: 4001, min: -1]
 ```
 
