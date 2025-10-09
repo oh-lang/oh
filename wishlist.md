@@ -5724,15 +5724,15 @@ Aliases can be used for simple naming conventions, e.g.:
 
 ```
 options_: one_of
-[    align_inherit_x: 0
+{    align_inherit_x: 0
      align_center_x:
      align_left:
      align_right:
-]
+}
 {    @alias inherit_align_x: align_inherit_x
 }
 
-Options: options inherit_align_x    # converts to `options align_inherit_x` on next format.
+options: _ inherit_align_x    # converts to `_ align_inherit_x` on next format.
 ```
 
 Aliases can also be used for more complicated logic and even deprecating code.
@@ -5816,9 +5816,10 @@ Or you can just import the file and use the function as needed:
 `other_file: \/other_file, other_file my_function_(123)`.
 TODO: i think we can relax this requirement; if you request `[my_function_]` it can just
 be the function with all overloads; otherwise we should technically require specifying
-type "overloads" for generic types like `hm_[of_]: hm_[ok_: of_, er_]` that come from other files.
-there's not a huge difference between types and functions, they both can
-take arguments to return something else.
+type "overloads" for generic types like `hm_{of_:}: hm_[ok_: of_, er_: ...]` that come
+from other files.  there's not a huge difference between types and functions, they both can
+take arguments to return something else.  but we can't use `my_function_` as a type, so it
+would be nice to distinguish, maybe `[my_function_(*): *]: \/other_file`?
 
 You can use this `\/` notation inline as well, which is recommended
 for avoiding unnecessary imports.  It will be a language feature to
@@ -5844,8 +5845,9 @@ To import a path that has special characters, just use the special characters
 inline after the `\/`, e.g., `\/sehr/übel` to reference the file at `./sehr/übel.oh`.
 For a path that has spaces (e.g., in file or directory names), use parentheses to
 surround the path, e.g., `\\[library/path/with spaces]` for a library path or 
-`\/(relative/path/with a space/to/a/great file)` for a relative path.  Or you can
-use a backslash to escape the space, e.g., `\\library/path/with\ spaces` or
+`\/(relative/path/with a space/to/a/great file)` for a relative path; you can use
+any type of parenthetical `{}`, `[]`, or `()` for either absolute or relative.  Or
+you can use a backslash to escape the space, e.g., `\\library/path/with\ spaces` or
 `\/relative/path/with\ a\ space/to/a/great\ file`.  Other standard escape sequences
 (using backslashes) will probably be supported.
 
@@ -5901,20 +5903,20 @@ public_function_(x1: int_, y1: int_, x2: int_, y2: int_): null_
      print_(protected_function_(x: x1, y: y1) z, private_function_(x: x2, y: y2))
 
 @test "foundation works fine":
-     test_(private_function_(x: 5, y: 3)) == [z: "5:3"]
-     test_(private_function_(x: -2, y: -7)) == [z: "-2:-7"]
+     assert_(private_function_(x: 5, y: 3)) == [z: "5:3"]
+     assert_(private_function_(x: -2, y: -7)) == [z: "-2:-7"]
 
 @test "building blocks work fine":
-     test_(protected_function_(x: 5, y: -3)) == [z: "5:-3!"]
-     test_(protected_function_(x: -2, y: 7)) == [z: "-2:7!"]
+     assert_(protected_function_(x: 5, y: -3)) == [z: "5:-3!"]
+     assert_(protected_function_(x: -2, y: 7)) == [z: "-2:7!"]
 
 @test "public function works correctly":
      public_function_(x1: -5, y1: 3, x2: 2, y2: 7)
-     test_(context printed_()) == ["-5:3!2:7"]
+     assert_(test printed_()) == ["-5:3!2:7"]
 
      @test "nested tests also work":
           public_function_(x1: 2, y1: -7, x2: -5, y2: -3)
-          test_(context printed_()) == ["2:-7!-5:-3"]
+          assert_(test printed_()) == ["2:-7!-5:-3"]
 ```
 
 See [the test definition](https://github.com/oh-lang/oh/blob/main/core/test.oh) for
@@ -5924,13 +5926,12 @@ Nested tests will freshly execute any parent logic before executing themselves.
 This ensures a clean state.  If you want multiple tests to start with the same
 logic, just move that common logic to a parent test.
 
-TODO: rename `context` to `test` and `test_` to `assert_` above.
-Inside of a `@test` block, you have access to a `context` variable which includes
-things like what has been printed (`context printed_()`).  `context printed_()`
+Inside of a `@test` block, you have access to a `test` variable which includes
+things like what has been printed (`test printed_()`).  `test printed_()`
 will pull everything that would have been printed in the test, putting it into
 a string array (one string per newline), for comparisons and matching.
-It then clears its internal state so that new calls to `context printed_()`
-will only see new things since the last time `context printed_()` was called.
+It then clears its internal state so that new calls to `test printed_()`
+will only see new things since the last time `test printed_()` was called.
 
 Parametric tests are also possible; just make sure to use `@each` (or another control flow macro)
 in order to expand the loops at compile time.
@@ -5940,10 +5941,10 @@ in order to expand the loops at compile time.
 test_case_: [argument: str_, result: int_]
 
 @test_only
-test_cases: lot_[at_: str_, test_case_]
-[    "hello": [argument: "hello world", result: 11]
+test_cases: lot_{at_: str_, test_case_}
+(    "hello": [argument: "hello world", result: 11]
      "wow": [argument: "wowee", result: 5]
-]
+)
 
 @test "do_something":
      # this common setup executes before each parametric test;
