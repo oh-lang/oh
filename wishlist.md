@@ -4578,7 +4578,7 @@ E.g., instead of `my_date: date_class_ from_iso_string_("2020-05-04")`, just use
 
 ## destructors
 
-The `;;renew_(Args...): null_` (or `: hm_[ok_: m_, er_: ...]`) constructors
+The `;;renew_(args...): null_` (or `: hm_{ok_: m_, er_: ...}`) constructors
 are technically resetters.  If you have a custom destructor, i.e., code
 that needs to run when your class goes out of scope, you shouldn't define
 `;;renew_` but instead `;;descope_(): null_` for the destructor and
@@ -4678,10 +4678,10 @@ it overwrites the parent's instance function; calling one calls the other.
 
 Class constructors can be defined in two ways, as a method resetter or class function.
 Class *method* resetters are defined with the function signature
-(a) `;;renew_(args...): null_` or (b) `;;renew_(args...): hm_[ok_: null_, er_: ...]`,
+(a) `;;renew_(args...): null_` or (b) `;;renew_(args...): hm_{ok_: null_, er_: ...}`,
 and these methods also allow you to renew an existing class instance as long as
 the variable is writable.  Class *function* constructors are defined like
-(c) `m_(args...): m_` or (d) `m_(args...): hm_[ok_: m_, er_: ...]`.
+(c) `m_(args...): m_` or (d) `m_(args...): hm_{ok_: m_, er_: ...}`.
 In both (a) and (c) cases, you can use them like `my_val: my_class_(args...)`,
 and for (b) and (d) you use them like `my_var: my_class_(args...) assert_()`.
 
@@ -4757,18 +4757,16 @@ latter, as it's the least surprising.)
 
 ```
 # for example, this class:
-example_: [@visibility x; str_("hello")]
+example_: [x; str_("hello")]
 w; example_()
 w x += ", world"
 print_(w x) # prints "hello, world"
 
 # expands to this:
 example_:
-[    @invisible
-     x; str_("hello")
+[    x; str_("hello")
 ]
 {    # no-copy readonly reference getter.
-     @visibility
      ::x_(): (str:)
           (str: m x)
 
@@ -4785,12 +4783,10 @@ example_:
           m x = str!
 
      # swapper: swaps the value of `x` with whatever is passed in.
-     @visibility
      ;;x_(str;):
           m x <-> str
 
      # no-copy "take" method.  moves `x` from this temporary.
-     @visibility
      ..x_(): m x!
 }
 w = example_()
@@ -4808,7 +4804,7 @@ and modifier classes.
 
 ```
 # a class with a getter and setter gets reference getters automatically:
-just_copyable_: [@invisible a_var; int_]
+just_copyable_: [a_var; int_]
 {    ::some_var_(): int_
           m a_var - 1000
 
@@ -4843,10 +4839,9 @@ just_copyable_: [@invisible a_var; int_]
 }
 
 # a class with a swapper method gets a setter and taker method automatically:
-just_swappable_: [@invisible some_var; int_]
-{    @visibility
-     ;;some_var_(int;): null_
-          m some_var <-> int
+just_swappable_: [internal_some_var; int_]
+{    ;;some_var_(int;): null_
+          m internal_some_var <-> int
           # you can do some checks/modifications on `some_var` here if you want,
           # though it's best not to surprise developers.  a default-constructed
           # value for `some_var` (e.g., in this case `int: 0`) should be allowed
@@ -4869,9 +4864,9 @@ just_swappable_: [@invisible some_var; int_]
 }
 
 # a class with a readonly reference getter method gets a copy getter automatically:
-just_gettable_: [@invisible some_var; int_]
+just_gettable_: [internal_some_var; int_]
 {    ::some_var_(): (int:)
-          (int: some_var)
+          (int: m internal_some_var)
 
      #(#
      # the following becomes automatically defined:
@@ -4882,9 +4877,9 @@ just_gettable_: [@invisible some_var; int_]
 }
 
 # a class with a writable reference method gets a swapper and taker method automatically:
-just_referable_: [@invisible some_var; int_]
+just_referable_: [internal_some_var; int_]
 {    ;;some_var_(): (int;)
-          (int; m some_var)
+          (int; m internal_some_var)
 
      #(#
      # the following swapper becomes automatically defined:
@@ -4893,12 +4888,12 @@ just_referable_: [@invisible some_var; int_]
 
      # the following setter becomes automatically defined:
      ;;some_var_(int.): null_
-          some_var_() = int!
+          m some_var_() = int!
 
      # and the following taker method becomes automatically defined:
      ..some_var_(): int_
           result; int_
-          result <-> some_var_()
+          result <-> m some_var_()
           result
      #)#
 }
@@ -4915,8 +4910,8 @@ TODO: parent class with getter defined, child class with copy defined.
 
 You can define parent-child class relationships with the following syntax.
 For one parent, `child_class_: parent_class_name_ {#( child methods )#}`.  Multiple
-inheritance is allowed as well, via `all_of_[parent1:, parent2:] {#( child methods )#}`.
-If you want to add child instance fields, use e.g., `all_of_[parent:, m: [field1: int_, ...]]`
+inheritance is allowed as well, via `all_of_{parent1:, parent2:} {#( child methods )#}`.
+If you want to add child instance fields, use e.g., `all_of_{parent:, m: [field1: int_, ...]}`
 to add a big-integer `field1` to the child class.  With a slight overload of notation,
 We can access the current class instance using `m`, and `m_` will be the current instance's
 type.  Thus, `m_` is the parent class if the instance is a parent type, or a subclass
@@ -4977,7 +4972,7 @@ snake escape_()  # prints "Fred slithers away!!"
 To define extra instance variables for a child class, you'll use this notation:
 
 ```
-cat_: all_of_[animal:, m: [fur_balls: int_]]
+cat_: all_of_{animal:, m: [fur_balls: int_]}
 {    # here we define a `renew_` method, so the parent `renew_` methods
      # become hidden to users of this child class:
      ;;renew_(): null
@@ -5012,7 +5007,7 @@ constructor like this `;;renew_(parent_argument:): parent renew_(:parent_argumen
 you can make it simpler like this instead:
 
 ```
-horse_: all_of_[animal:, m: [owner: str_]]
+horse_: all_of_{animal:, m: [owner: str_]}
 {    # this passes `name` to the `animal_` constructor and sets `owner` on self:
      ;;renew_(animal name: str_, m owner: str_, neigh_times: int_ = 0)
           neigh_times each int_:
@@ -5129,7 +5124,7 @@ or specifying `@only i64`.  classes that are `final` would not need to be marked
 ```
 # extra field which will get sliced off when converting from
 # `mythological_cat_` to `@only cat_`:
-mythological_cat_: all_of_[cat:, m: [lives; 9]]
+mythological_cat_: all_of_{cat:, m: [lives; 9]}
 
 cat; @only cat_
 mythological_cat; mythological_cat_(lives; 7)
