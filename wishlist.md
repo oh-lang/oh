@@ -6413,16 +6413,16 @@ with file; open_some_file_()
 
 We can rewrite conditionals to accept an additional `then` "argument".  For `if`/`elif`
 statements, the syntax is `if expression -> then:` to have the compiler infer the `then`'s
-return type, or `elif expression -> whatever_name: then_[whatever_type_]` to explicitly
+return type, or `elif expression -> whatever_name: then_{whatever_type_}` to explicitly
 provide it and also use `whatever_name` for the `then_`'s name.  Similarly for `what
-statements, e.g., `what expression -> whatever_name: then_[whatever_]` or
+statements, e.g., `what expression -> whatever_name: then_{whatever_}` or
 `what expression -> then:`.  `else` statements also use the `->` expression, e.g.,
-`else -> then:` or `else -> whatever: then_[else_type_]`.  Note that we use a `:` here
+`else -> then:` or `else -> whatever: then_{else_type_}`.  Note that we use a `:` here
 because we're declaring an instance of `then_`; if we don't use `then` logic we don't use
 `:` for conditionals.  Also note that `then_` is a thin wrapper around the
 [`block_` class](#blocks) (i.e., a reference that removes the `::loop_()` method that
 doesn't make sense for a `then_`).  If you want to just give the type without renaming,
-you can do `if whatever -> then[my_if_block_type_]:`.
+you can do `if whatever -> then{my_if_block_type_}:`.
 
 ```
 if some_condition -> then:
@@ -6434,7 +6434,7 @@ if some_condition -> then:
                SOME_NAMESPACE_then exit_()
      # do other stuff
 
-result: what some_value -> then[str_]:
+result: what some_value -> then{str_}:
      5
           ...
           if other_condition
@@ -6562,7 +6562,7 @@ into more idiomatic things like `if x is another_type: ...`.
 
 ```
 # not idiomatic:
-my_decider_(x: one_of_[type1:, type2:]):
+my_decider_(x: one_of_{type1:, type2:}):
      x is_
      (    a_(type1:):
                print_("x was type1: ", type1)
@@ -6571,7 +6571,7 @@ my_decider_(x: one_of_[type1:, type2:]):
      x is_({print_("x was type2: ", $type2)})
 
 # idiomatic:
-my_decider_(x: one_of_[type1:, type2:]):
+my_decider_(x: one_of_{type1:, type2:}):
      if x is type1:
           print("x was type1: ", type1)
      elif x is type2:
@@ -6589,7 +6589,7 @@ example_class_: [value: int_]
                print_("was large: ${large}")
           ```
      #]#
-     :;.is_(if_block[declaring_: (large:;. int_), ~t_]): never_
+     :;.is_(if_block{declaring_: (large:;. int_), ~t_}): t_
           if m value > 999
                if_block then_(declaring: (large` m value))
           else
@@ -6613,7 +6613,7 @@ pair_class: [value1: int_, value2: int_]
                print_("had a 123 internally")
           ```
      #]#
-     :;.has_(int:, if_block[~t_]): never_
+     :;.has_(int:, if_block{~t_}): t_
           if m value1 == int || m value2 == int
                if_block then_()
           else
