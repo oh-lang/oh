@@ -6192,13 +6192,13 @@ a generic.  The class definition for a `lot_` is
 
 A lot can look up, insert, and delete elements by key quickly (ideally amortized
 at `O(1)` or at worst `O(lg(N)`).  You can use this way to define a lot, e.g.,
-`variable_name: lot_[at_: id_type_, of_: value_type_]`, e.g.,
-`my_var: lot_[at_: str_, int_]` which declares a lot of integers located at strings.
-A default-named lot can be defined via `lot[at_: id_type_, value_type_]`, e.g.,
-`lot[dbl, at: int]`.  Note that while an array can be thought of as a lot with the
-`at_` type as `index_`, the array type `array_[element_type_]` is most useful for
+`variable_name: lot_{at_: id_type_, of_: value_type_}`, e.g.,
+`my_var: lot_{at_: str_, int_}` which declares a lot of integers located at strings.
+A default-named lot can be defined via `lot{at_: id_type_, value_type_};`, e.g.,
+`lot{dbl, at: int};`.  Note that while an array can be thought of as a lot with the
+`at_` type as `index_`, the array type `array_{element_type_}` is most useful for
 densely packed data (i.e., instances of `element_type_` for most indices), while
-the lot  type `lot_[element_type_, at_: index_]` would be useful for sparse data.
+the lot  type `lot_{element_type_, at_: index_}` would be useful for sparse data.
 
 To define a lot (and its contents) inline, use this notation:
 
@@ -6207,7 +6207,7 @@ jim1: "Jim C"
 jim2: "Jim D"
 jim: 456
 # lot linking string to ints:
-employee_ids_: lot_[at_: int_, str_]
+employee_ids_: lot_{at_: int_, str_}
 (    # option 1.A: `x: y` syntax
      "Jane": 123
      # option 1.B: `[at: x, of: y]` syntax
@@ -6231,7 +6231,7 @@ To define a lot quickly (i.e., without a type annotation), use the notation
 
 Lots require an `at_` type whose instances can hash to an integer or string-like value.
 E.g., `dbl_` and `flt_` cannot be used, nor can container types which include those
-(e.g., `array_[dbl_]`).  However, standard container types with hashable elements are
+(e.g., `array_{dbl_}`).  However, standard container types with hashable elements are
 likewise hashable and can thus be used as `at_` types.
 
 Note: when used as a lot `at_`, types with nested fields become deeply constant,
@@ -6255,8 +6255,8 @@ like `unordered_lot_`.
 A set contains some elements, and makes checking for the existence of an element within
 fast, i.e., O(1).  Like with container `at`s, the set's element type must satisfy certain
 properties (i.e., hashable, e.g., integer/string-like).  The syntax to define a set is
-`variable_name: set_[element_type_]`.  You can elide `set_` for default named arguments
-like this: `set[element_type_];` (or `:` or `.`).  See
+`variable_name: set_{element_type_}`.  You can elide `set_` for default named arguments
+like this: `set{element_type_};` (or `:` or `.`).  See
 [the set definition here](https://github.com/oh-lang/oh/blob/main/core/set.oh).
 
 Like the `at`s in lots, items added to a set become deeply constant, even if the set
