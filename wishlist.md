@@ -5977,6 +5977,9 @@ TODO: make it possible to mock out file system access in unit tests.
 
 ## hm
 
+TODO: should we be using `hm_{ok:, er:}` since this boils down to a `one_of_{ok:, er:}`?
+probably not since we need to pass it into the `one_of_`.
+
 oh-lang borrows from Rust the idea that errors shouldn't be thrown, they should be
 returned and handled explicitly.  We use the notation `hm_{ok_, er_}` to indicate
 a generic return type that might be `ok_` or it might be an error (`er_`).
@@ -6066,23 +6069,23 @@ debug binary, use `assert_(debug_only, ...)`, which otherwise has the same signa
 Using debug asserts is not recommended, except to enforce the caller contract of private/protected
 methods.  For public methods, `assert_` should always be used to check arguments.
 
-Note that for functions that return results, i.e., `hm_[ok_, er_]`, `assert_` will automatically
+Note that for functions that return results, i.e., `hm_{ok_:, er_:}`, `assert_` will automatically
 return early with an `er_` based on the error the `assert_` encountered.  If a function does
 *not* return a result, then using `assert_` will be a run-time panic; to make sure that's
 what you want, annotate the function with `@can_panic`, otherwise it's a compile error.
 
 ## automatically converting errors to null
 
-If a function returns a `hm_` type, e.g., `my_function_(...): hm_[ok_, er_]`,
+If a function returns a `hm_` type, e.g., `my_function_(...): hm_{ok_: ..., er_: ...}`,
 then we can automatically convert its return value into a `ok_?`, i.e.,
 a nullable version of the `ok_` type.  This is helpful for things like type casting;
 instead of `my_int: what int_(my_dbl) {ok. {ok}, er: {-1}}` you can do
 `my_int: int_(my_dbl) ?? -1`.  Although, there is another option that
 doesn't use nulls:  `int_(my_dbl) map_(fn_(_er): -1)`, or via
-[lambda functions](#lambda-functions): `int_(my_dbl) map_({$er_, -1})`.
+[lambda functions](#lambda-functions): `int_(my_dbl) map_${$er_, -1}`.
 
 TODO: should this be valid if `ok` is already a nullable type?  e.g.,
-`my_function_(): hm_[ok_: int_?, er_: str_]`.
+`my_function_(): hm_{ok_: int_?, er_: str_}`.
 we probably should compile-error-out on casting to `int?: my_function_()` since
 it's not clear whether `int` is null due to an error or due to the return value.
 maybe we allow flattening here anyway.
@@ -6110,30 +6113,30 @@ indexes an element, we can stop iteration.
 TODO: switch to `hazable`
 
 An array contains a list of elements in contiguous memory.  You can define
-an array explicitly using the notation `array_name: array_[element_type_]`
+an array explicitly using the notation `array_name: array_{element_type_}`
 for the type `element_type`.  The default-name of an array does not depend
-on the element type; it is always `array`, e.g., `array[element_type_]:`
-to define `array: array_[element_type_]`.  For example, to declare an
+on the element type; it is always `array`, e.g., `array{element_type_}:`
+to define `array: array_{element_type_}`.  For example, to declare an
 argument which is a default-named array of strings, you'd use a function
-signature like `my_function_(array[string_];:.): null_`.  To define an array
+signature like `my_function_(array{string_};:.): null_`.  To define an array
 quickly (i.e., without a type annotation), use the notation `["hi", "hey"]`.
 Example usage and declarations:
 
 ```
 # this is a readonly array:
-my_array: array_[dbl_]([1.2, 3, 4.5])   # converts all to `dbl_`
+my_array: array_{dbl_}(1.2, 3, 4.5)     # converts all to `dbl_`
 my_array append_(5) # COMPILE ERROR: `my_array` is readonly
 my_array[1] += 5    # COMPILE ERROR: `my_array` is readonly
 
 # writable integer array:
-array[int_];        # declaring a writable, default-named integer array
-array append(5)     # now `array == [5]`
+array{int_};        # declaring a writable, default-named integer array
+array append_(5)    # now `array == [5]`
 array[3] += 30      # now `array == [5, 0, 0, 30]`
 array[4] = 300      # now `array == [5, 0, 0, 30, 300]`
 array[2] -= 5       # now `array == [5, 0, -5, 30, 300]`
 
 # writable string array:
-string_array; array_[string_](["hi", "there"])
+string_array; array_{string_}("hi", "there")
 print_(string_array pop_())     # prints "there".  now `string_array == ["hi"]`
 ```
 
@@ -6157,20 +6160,16 @@ Vectors have all their elements initialized to the default value (e.g., 0 for
 number types) and will always have the same size/count.
 
 A vector has this declaration:
-`vector_[of_: element_type_, count:, count_: select_count_ = count_arch_]`,
-and so can be instantiated like this: `vector_[5, int_]`.  Example usage:
-
-TODO: i don't think we support runtime parameters in `[]`.  this is probably
-a bad example unless we can also do something like `vector_[..., @runtime count:]`
-and define it on the heap in case of runtime values for count.
+`vector_{of_: element_type_, count:, count_: select_count_ = arch_ count_}`,
+and so can be instantiated like this: `vector_{5, int_}`.  Example usage:
 
 ```
-# note you can use an input argument to define the return type's
-# fixed-array count, which is something like a generic:
-count_up_(count_arch.): vector_[int_, count_arch]
+# this function requires being called with comptime-known argument
+# because the return type depends on it.
+count_up_(@comptime ~count.): vector_{int_, count}
      result; return_
-     count_arch each index: count_arch_
-          result[index] = index
+     count each index: count_
+          result[index] = int_(index)
      result
 
 print_(count_up_(10))    # prints [0,1,2,3,4,5,6,7,8,9]
