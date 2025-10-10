@@ -7881,13 +7881,13 @@ Masks are generalized from enumerations to allow multiple values held simultaneo
 Each value can also be thought of as a flag or option, which are bitwise OR'd together
 (i.e., `|`) for the variable instance.  Under the hood, these use unsigned integer types.
 Trying to assign a negative tag will throw a compiler error.  Unlike enums which only hold
-`one_of_` the fields at a time, masks hold "any of", so we use `any_of_[a:, b:, c:]`
+`one_of_` the fields at a time, masks hold "any of", so we use `any_of_{a:, b:, c:}`
 to declare a mask which can be `a`, `b`, `c`, or some (non-empty) combination of all three.
 If there are no values present, we use `null` to represent the value, so the variable must
-be defined as nullable for this situation.
+be defined as nullable for that situation.
 
 The reason why we overload `null` here is that if we want to define an options bag
-for a function, e.g., `search_options_: any_of_[name: str_, id: u64_]` for
+for a function, e.g., `search_options_: any_of_{name: str_, id: u64_}` for
 `search_(search_options:): t_`, we want `search_()` to be a separate overload
 which means having passed in no options, which isn't declared implicitly.
 Both overloads can be declared simultaneously (and explicitly) using a nullable
@@ -7898,7 +7898,7 @@ defining the non-null overload `search_(search_options:): t_`.
 oh-lang masks share similar features with enums.
 
 * You can specify the integer type that backs the mask tag, but in this case
-it must be an unsigned type, e.g., `u32_ any_of_[...]`.  Note that by default, the tag
+it must be an unsigned type, e.g., `u32_ any_of_{...}`.  Note that by default, the tag
 is exactly as many bits as it needs to be to fit the desired options, rounded up to
 the nearest standard unsigned type (`u8_`, `u16_`, `u32_`, `u64_`, `u128_`, etc.).
 We will add a warning if the user is getting into the `u128_+` territory.
@@ -7911,7 +7911,7 @@ which is true if the mask is exactly equal to `this_value` **and nothing else**.
 You can use `has_this_value_()` to see if it contains `this_value`,
 but may contain other values besides `this_value`.
 
-* Masks can contain data aside from tags.  E.g., `the_mask_: any_of_[some_type:, other_type:]`
+* Masks can contain data aside from tags.  E.g., `the_mask_: any_of_{some_type:, other_type:}`
 where `some_type_` and `other_type_` are defined elsewhere.  In this case,
 you can use `is` and `has` operators to narrow the type like this:
 `if the_mask is some_type;` or `if the_mask has other_type;`.
@@ -7925,10 +7925,10 @@ Here is an example with default-assigned tags, which showcases the nullable issu
 
 ```
 food_: any_of_
-[    carrots:
+{    carrots:
      potatoes:
      tomatoes:
-]
+}
 
 food_ carrots == tag_(1)
 food_ potatoes == tag_(2)
@@ -7959,11 +7959,11 @@ other_food ><= _ potatoes     # toggle potatoes
 ```
 # if specified, the mask should have tags that are powers of two:
 non_mutually_exclusive_type_: any_of_
-[    x: 1
+{    x: 1
      y: 2
      z: 4
      t: 32     # cannot use 8 or 16 because reason Q
-]
+}
 
 non_mutually_exclusive_type_ x == tag_(1)
 non_mutually_exclusive_type_ y == tag_(2)
@@ -7997,15 +7997,15 @@ options has_t_()    # true
 ### `any_of_` with data
 
 ```
-search_options_: any_of_[name: str_, id: u64_]
+search_options_: any_of_{name: str_, id: u64_}
 
 # to be consistent with masks without data,
 # the field will give you the tag number,
 # but if you want the type use the `_` postfix.
 search_options_ name == tag_(1)
-search_options_ name_ == tag_[any_of_: search_options_, 1, str_, field: "name"]
+search_options_ name_ == tag_{any_of_: search_options_, 1, str_, field: "name"}
 search_options_ id == tag_(2)
-search_options_ id_ == tag_[any_of_: search_options_, 2, u64_, field: "id"]
+search_options_ id_ == tag_{any_of_: search_options_, 2, u64_, field: "id"}
 
 search_(search_options:): null_
      if search_options is name:
@@ -8028,21 +8028,21 @@ search_(search_options_ name_("cool dude"))  # prints "searching for (name: cool
 
 ```
 explicitly_tagged_: any_of_
-[    name: str_ = 4      # cannot use 1 or 2 for reason I
+{    name: str_ = 4      # cannot use 1 or 2 for reason I
      str: 16             # cannot use 8 for reason J
      next: u64_          # implicit tag, will use next available.
      wow: 64             # explicit tag, no data type
-]
+}
 
 explicitly_tagged_ name == tag_(4)
-explicitly_tagged_ name_ == tag_[any_of_: explicitly_tagged_, 4, str_, field: "name"]
+explicitly_tagged_ name_ == tag_{any_of_: explicitly_tagged_, 4, str_, field: "name"}
 explicitly_tagged_ str == tag_(16)
-explicitly_tagged_ str_ == tag_[any_of_: explicitly_tagged_, 16, str_, field: "str"]
+explicitly_tagged_ str_ == tag_{any_of_: explicitly_tagged_, 16, str_, field: "str"}
 explicitly_tagged_ next == tag_(32)
 # TODO: should we use `field: @"next"` to indicate `@"next"` is a symbol/field in the code?
-explicitly_tagged_ next_ == tag_[any_of_: explicitly_tagged_, 32, u64_, field: "next"]
+explicitly_tagged_ next_ == tag_{any_of_: explicitly_tagged_, 32, u64_, field: "next"}
 explicitly_tagged_ wow == tag_(64)
-explicitly_tagged_ wow_ == tag_[any_of_: explicitly_tagged, 64, null_, field: "wow"]
+explicitly_tagged_ wow_ == tag_{any_of_: explicitly_tagged, 64, null_, field: "wow"}
 
 explicitly_tagged; _ next_(1234)
 explicitly_tagged == explicitly_tagged_ next_(1234)    # true
@@ -8082,7 +8082,7 @@ present for `&` or regardless of the second value for `|`).
 You can add some named combinations by extending a mask like this.
 
 ```
-my_mask_: any_of_[x:, y:]
+my_mask_: any_of_{x:, y:}
 {    x_and_y: x | y
 }
 
