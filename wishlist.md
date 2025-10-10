@@ -1662,6 +1662,27 @@ unnull_{~nested_?:}: nested_
 TODO: add : , ; ?? postfix/prefix ?
 TODO: add ... for dereferencing.  maybe we also allow it for spreading out an object into function arguments,
 e.g., `my_function_(a: 3, b: 2, ...my_object)` will call `my_function_(a: 3, b: 4, c: 5)` if `my_object == [b: 4, c: 5]`.
+TODO: i think i would like a `|>` "inline-tab" operator for indenting the next line, e.g.,
+```
+["a", "bc", "def"] each str. |> what str
+     "a"
+          print_("got a")
+     "bc"
+          print_("got bc")
+     else
+          print_("got something else: ${str}")
+
+# equivalent to 
+["a", "bc", "def"] each str.
+     what str
+          "a"
+               print_("got a")
+          "bc"
+               print_("got bc")
+          else
+               print_("got something else: ${str}")
+```
+TODO: or we could make it just a "pipe" like operator, so `each str. |> what` would not need `str` after it.
 
 | Precedence| Operator  | Name                      | Type/Usage        | Associativity |
 |:---------:|:---------:|:--------------------------|:-----------------:|:-------------:|
@@ -6691,16 +6712,16 @@ The `what` operation is also useful for narrowing in on `one_of_` variable types
 E.g., suppose we have the following:
 
 ```
-status_: one_of_[unknown:, alive:, dead:]
+status_: one_of_{unknown:, alive:, dead:}
 vector3_: [x; dbl_, y; dbl_, z; dbl_]
 {    ::length_(): sqrt_(x^2 + y^2 + z^2)
 }
 
 update_: one_of_
-[    status:
+{    status:
      position: vector3_
      velocity: vector3_
-]
+}
 # example usage of creating various `update`s:
 update0: update_ status_ alive
 update1: update_ position_(x: 5.0, y: 7.0, z: 3.0)
@@ -6733,16 +6754,16 @@ or `where` to further restrict the scope of a matching case.
 
 ```
 speed_: one_of_
-[    none:
+{    none:
      slow:
      going_up:
      going_down:
      going_sideways:
      dead:
-]
+}
 # here's an example with a `then` that works for all cases.
 # note we are declaring a `then` so we need a `:`
-speed1: speed_ = what update -> then[speed_]:
+speed1: speed_ = what update -> then{speed_}:
      velocity: vector3_
           if Velocity length() < 5.0
                then exit_(slow)
@@ -6762,7 +6783,7 @@ speed1: speed_ = what update -> then[speed_]:
 speed2: speed_ = what update
      status dead
           dead
-     velocity: vector3_ -> then[speed_]:
+     velocity: vector3_ -> then{speed_}:
           if Velocity length() < 5.0
                then exit_(slow)
           print_("going slow, checking up/down")
@@ -6790,9 +6811,9 @@ since we can infer this if any internal matching block uses `;`.
 
 ```
 whatever_: one_of_
-[    str:
+{    str:
      card: [name: str_, id: u64_]
-]
+}
 
 whatever; whatever_ str_("this could be a very long string, don't copy if you don't need to")
 
@@ -6814,14 +6835,14 @@ and `card.` above).
 
 Any class that supports a compile-time fast hash with a salt can be
 put into a `what` statement.  Floating point classes or containers thereof
-(e.g., `dbl_` or `array_[flt_]`) are not considered *exact* enough to be hashable, but
-oh-lang will support fast hashes for classes like `int_`, `i32_`, and `array_[u64_]`,
+(e.g., `dbl_` or `array_{flt_}`) are not considered *exact* enough to be hashable, but
+oh-lang will support fast hashes for classes like `int_`, `i32_`, and `array_{u64_}`,
 and other containers of precise types, as well as recursive containers thereof.
 
 ```
 # note it's not strictly necessary to mention you implement `hashable_`
 # if you have the correct `hash` method signature.
-my_hashable_class_: all_of_[hashable_, m: [id: u64_, name; str_]]
+my_hashable_class_: all_of_{hashable;, m: [id: u64_, name; str_]}
 {    # we allow a generic hash builder so we can do cryptographically secure hashes
      # or fast hashes in one definition, depending on what is required.
      # This should automatically be defined for classes with precise fields
