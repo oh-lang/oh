@@ -1644,8 +1644,8 @@ Here is some nullable type manipulation:
 #   nullable_(one_of_{dbl:, int:, str:}) == false
 #   nullable_(one_of_{dbl:, int:}?) == true
 #   nullable_(null_) == false
-# TODO: i think i like `!null_` for `not_{null_}`.
 nullable_(of_:): of_ contains_(not_{null_}, null_)
+# TODO: i think i like `!null_` for `not_{null_}`.
 nullable_(of_:): of_ contains_(!null_, null_)
 
 # examples
@@ -7417,10 +7417,10 @@ holds subtype `data_type_`).
 
 Enums use tag number types that are by default the smallest standard integral type that
 holds all values, and can be signed types (in contrast to masks which are only unsigned).
-If desired, you can specify the underlying tag number type using `i8_ one_of_[...]` instead
-of `one_of_[...]`, but this will be a compile error if the type is not big enough to
+If desired, you can specify the underlying tag number type using `i8_ one_of_{...}` instead
+of `one_of_{...}`, but this will be a compile error if the type is not big enough to
 handle all options.  It will not be a compile warning if the `one_of_` includes types
-inside (e.g., `i8_ one_of_[u32:, f32:]`); we'll assume you want the tag number type to be
+inside (e.g., `i8_ one_of_{u32:, f32:}`); we'll assume you want the tag number type to be
 an `i8_`.  However, it should be obvious that the full type will be at least the size of the
 tag number plus the largest element in the `one_of_`; possibly more to achieve alignment.
 
@@ -7429,11 +7429,11 @@ the values aren't specified, they are deterministically chosen.
 
 ```
 my_enum_: one_of_
-[    first_value_defaults_to_zero:
+{    first_value_defaults_to_zero:
      second_value_increments:
      third_value_is_specified: 123
      fourth_value_increments:
-]
+}
 assert_(my_enum_ first_value_defaults_to_zero) == 0
 assert_(my_enum_ second_value_increments) == 1
 assert_(my_enum_ third_value_is_specified) == 123
@@ -7441,13 +7441,13 @@ assert_(my_enum_ fourth_value_increments) == 124
 
 # behind the scenes, tags have a bit of reflection going on:
 my_enum_ first_value_defaults_to_zero_
-     ==   tag_[one_of_: my_enum_, 0, null_, field: "first_value_defaults_to_zero"]
+     ==   tag_{one_of_: my_enum_, 0, null_, field: "first_value_defaults_to_zero"}
 my_enum_ second_value_increments_
-     ==   tag_[one_of_: my_enum_, 1, null_, field: "second_value_increments"]
+     ==   tag_{one_of_: my_enum_, 1, null_, field: "second_value_increments"}
 my_enum_ third_value_is_specified_
-     ==   tag_[one_of_: my_enum_, 123, null_, field: "third_value_is_specified"]
+     ==   tag_{one_of_: my_enum_, 123, null_, field: "third_value_is_specified"}
 my_enum_ fourth_value_increments_
-     ==   tag_[one_of_: my_enum_, 124, null_, field: "fourth_value_increments"]
+     ==   tag_{one_of_: my_enum_, 124, null_, field: "fourth_value_increments"}
 ```
 
 You can even pass in existing variable(s) to the enum, although they should be
@@ -7462,10 +7462,10 @@ crazy: 15
 # `other_enum_ super = 12`,
 # and `other_enum_ other_value2 = 15`.
 other_enum_: one_of_
-[    other_value1:
+{    other_value1:
      super:
      other_value2: crazy
-]
+}
 ```
 
 Here is an example enum with just specified values, all inline:
@@ -7474,8 +7474,8 @@ Here is an example enum with just specified values, all inline:
 # fits in a `u1_`.
 # TODO: add syntax for globalizing values in an enum so you don't need to do
 # `bool_ false` when you ask for that value.  e.g., `@global false: 0, @global true: 1`
-# or maybe `whatever_: one_of_[...], @enscope_all(whatever_)`
-bool_: one_of_[false: 0, true: 1]
+# or maybe `whatever_: one_of_{...}, @enscope_all(whatever_)`
+bool_: one_of_{false: 0, true: 1}
 ```
 
 Enums provide a few extra additional methods for free as well, including
@@ -7503,12 +7503,11 @@ enumerated value name, but it is not illegal, since we can still distinguish bet
 enumerated value (`enum_name_ count`) and total number of enumerated values
 (`enum_name_ count_()`).  Similarly for `min`/`max`.
 TODO: Actually this does get confusing since we can have data types in a `one_of_`,
-and `the_enum_ count_(123)` with `the_enum_: one_of_[count:, ...]`.
+and `the_enum_ count_(123)` with `the_enum_: one_of_{count:, ...}`.
 we might need to do something like `one_of_ count_(the_enum_)`.
-OR we use something like `count_[the_enum_]()`.  but that should correspond
-to `the_enum_ count_()`.  so maybe `count_[one_of_: the_enum_]()`.
+or `count_{one_of_: the_enum_}()`.
 this does make it a bit confusing for generics: should `count_(the_enum_)`
-(which is the same as `the_enum_ count_()`) be the same as `count_[the_enum_]()`?
+be the same as `the_enum_ count_()`, and be the same as `count_{the_enum_}()`?
 or maybe we do something like `the_enum_ tags_() count_()` (and similarly for `min_`/`max_`).
 maybe reserve `tags` and `tag` for enums and masks.
 
@@ -7519,21 +7518,21 @@ in case you use non-standard enumerations (i.e., with values less than 0):
 ```
 # this will fit in an `i2_` due to having negative values.
 sign_: one_of_
-[    negative: -1
+{    negative: -1
      zero: 0
      positive: 1
-]
+}
 
 print_("sign has ${sign_ count_()} values")   # 3
 print_("starting at ${sign_ min_()} and going to ${sign_ max_()}")     # -1 and 1
 
 # this will fit in a `u4_` due to values going up to 9.
 weird_: one_of_
-[    x: 1
+{    x: 1
      y: 2
      z: 3
      q: 9
-]
+}
 
 print_(weird_ count_())     # prints 4
 print_(weird_ min_())       # prints 1
@@ -7545,9 +7544,9 @@ print_(weird_ max_())       # prints 9
 Note that the default value for a `one_of_` is the first value, unless zero is an option
 (and it's not the first value).  Note that `null` does not belong in a `one_of_`, but
 will automatically be space-optimized for if you leave enough tags in your enum and
-you request a nullish type, e.g., `one_of_[a:, ...]?`.  The reason we don't allow
+you request a nullish type, e.g., `one_of_{a:, ...}?`.  The reason we don't allow
 `null`s in a `one_of_` is to align with [`any_of_` logic](#masks).  If a `one_of_`
-instance is nullable, e.g., `x?: one_of_[a:, b:]`, then `null` is the default value.
+instance is nullable, e.g., `x?: one_of_{a:, b:}`, then `null` is the default value.
 
 ### testing enums with lots of values
 
@@ -7559,14 +7558,14 @@ are declaring new values in the enum.
 
 ```
 option_: one_of_
-[    unselected:
+{    unselected:
      not_a_good_option:
      content_with_life:
      better_options_out_there:
      best_option_still_coming:
      oops_you_missed_it:
      now_you_will_be_sad_forever:
-]
+}
 
 print_("number of options should be 7:  ${option_ count_()}")
 
@@ -7602,29 +7601,29 @@ The `one_of_` type is a tagged union, which can easily mix simple enum values
 
 ```
 id_: one_of_
-[    unknown:                      # defaults to tag 0, no subtype data
+{    unknown:                      # defaults to tag 0, no subtype data
      another_pure_enum_value: 5    # enum with explicit tag
      int:                          # data type, implicitly tagged to 6
      dbl: 9                        # data type with explicit tag of 9
      named_type: u64_ = 15         # renamed data type with explicit tag of 15
      str: 19                       # data type (`str_`) with explicit tag of 19
      fragrance: u32_               # data type with implicit tag of 20
-]
+}
 
 id_ unknown == tag_(0)
-id_ unknown_ == tag_[one_of_: id_, 0, null_, field: "unknown"]
+id_ unknown_ == tag_{one_of_: id_, 0, null_, field: "unknown"}
 id_ another_pure_enum_value == tag_(5)
-id_ another_pure_enum_value_ == tag_[one_of_: id_, 5, null_, field: "another_pure_enum_value"]
+id_ another_pure_enum_value_ == tag_{one_of_: id_, 5, null_, field: "another_pure_enum_value"}
 id_ int == tag_(6)
-id_ int_ == tag_[one_of_: id_, 6, int_, field: "int"]
+id_ int_ == tag_{one_of_: id_, 6, int_, field: "int"}
 id_ dbl == tag_(9)
-id_ dbl_ == tag_[one_of_: id_, 9, dbl_, field: "dbl"]
+id_ dbl_ == tag_{one_of_: id_, 9, dbl_, field: "dbl"}
 id_ named_type == tag_(15)
-id_ named_type_ == tag_[one_of_: id_, 15, u64_, field: "named_type"]
+id_ named_type_ == tag_{one_of_: id_, 15, u64_, field: "named_type"}
 id_ str == tag_(19)
-id_ str_ == tag_[one_of_: id_, 19, str_, field: "str"]
+id_ str_ == tag_{one_of_: id_, 19, str_, field: "str"}
 id_ fragrance == tag_(20)
-id_ fragrance_ == tag_[one_of_: id_, 20, u32_, field: "fragrance"]
+id_ fragrance_ == tag_{one_of_: id_, 20, u32_, field: "fragrance"}
 
 # you can use the tag type to create an instance of `id_`:
 my_id; id_ fragrance_(1234)   # `my_id` is of type `id_`
@@ -7648,12 +7647,12 @@ Consider this example `one_of_`.
 
 ```
 tree_: one_of_
-[    leaf: [value; int_]
+{    leaf: [value; int_]
      branch:
      [    left; heap_[tree_]
           right; heap_[tree_]
      ]
-]
+}
 ```
 
 When checking a `tree_` type for its internal structure, you can use `is_leaf_()`
@@ -7722,7 +7721,7 @@ OOM errors and want to avoid panicking, use the result overload via e.g.
 `new_leaf?: tree leaf_() assert_()`.
 
 ```
-one_of_[..., ~t_]: []
+one_of_{..., ~t_}: []
 {    # returns true if this `one_of_` is of type `t`, also allowing access
      # to the underlying value by passing it into the function.
      ;:is_(fn_(t;:): null_): bool_
@@ -7731,33 +7730,25 @@ one_of_[..., ~t_]: []
      # the signature for `if tree is branch; {#[do stuff with `branch`]#}`
      # the method returns true iff the block should be executed.
      # the block itself can return a value to the parent scope.
-     ;:.is_(), block[declaring_:;. t_, exit_: ~u_]: bool_
+     ;:.is_(), block{declaring_:;. t_, exit_: ~u_}: bool_
 }
 ```
 
 ### flattening and containing
 
-Note that `one_of_[one_of[a:, b:]:, one_of[c:, d:]:]` is not the same as
-`one_of_[a:, b:, c:, d:]`.  To get that result, use `flatten_`, e.g.,
-`flatten_[one_of_[a:, b:], one_of_[c:, d:]]` will equal `one_of_[a:, b:, c:, d:]`.
-This is safe to use on other types, so `flatten_[one_of_[c:, d:], e:]`
-is `one_of_[c:, d:, e:]`.
-
-If you want to check if a condition is true for a type,
-you can use notation like `x is one_of_[a:, b:]`.  This is true if `x`
-is `a_`, `b_`, or even `one_of_[a:, b:]`, and false otherwise.
-You can also use `contains_` to go the opposite direction, e.g.,
-`one_of_[a:, b:] contains_(x_)` is the same as `x is one_of_[a:, b:]`.
-(Note we use parentheses in `contains_(...)` because we return a value,
-i.e., a boolean, not a type.)
+Note that `one_of_{one_of{a:, b:}:, one_of{c:, d:}:}` is not the same as
+`one_of_{a:, b:, c:, d:}`.  To get that result, use `flatten_`, e.g.,
+`flatten_{one_of_{a:, b:}, one_of_{c:, d:}}` will equal `one_of_{a:, b:, c:, d:}`.
+This is safe to use on other types, so `flatten_{one_of_{c:, d:}, e:}`
+is `one_of_{c:, d:, e:}`.
 
 ### `one_of`s as function arguments
 
 The default name for a `one_of_` argument is `one_of`.  E.g.,
 
 ```
-# this is short for `my_function_(one_of: one_of_[int:, str:]): dbl_`:
-my_function_(one_of[int:, str:]:): dbl_
+# this is short for `my_function_(one_of: one_of_{int:, str:}): dbl_`:
+my_function_(one_of{int:, str:}:): dbl_
      dbl_(one_of) ?? panic_()
 
 print_(my_function_(123))      # prints 123.0
@@ -7773,8 +7764,8 @@ If you need to use multiple `one_of_`s in a function and still want them to be
 default-named, it's recommended to give specific names to each `one_of_`, e.g.,
 
 ```
-int_or_string_: one_of_[int:, str:]
-weird_number_: one_of_[u8:, i32:, dbl:]
+int_or_string_: one_of_{int:, str:}
+weird_number_: one_of_{u8:, i32:, dbl:}
 
 my_function_(int_or_string:, weird_number:): dbl_
      dbl_(int_or_string) ?? panic_() * weird_number
@@ -7784,8 +7775,8 @@ However, you can also achieve the same thing using namespaces,
 if you don't want to add specific names for the `one_of_`s.
 
 ```
-# arguments short for `A_one_of: one_of_[int:, str:]` and `B_one_of: one_of_[u8:, i32:, dbl:]`.
-my_function(A_one_of[int:, str:], B_one_of[u8:, i32:, dbl:]): dbl_
+# arguments short for `A_one_of: one_of_{int:, str:}` and `B_one_of: one_of_{u8:, i32:, dbl:}`.
+my_function(A_one_of{int:, str:}, B_one_of{u8:, i32:, dbl:}): dbl_
      dbl_(A_one_of) ?? panic_() * B_one_of
 ```
 
@@ -7810,7 +7801,7 @@ You can restrict inputs to an allowed subset of e.g., integers using
 # by default this will use the smallest integer (or even unsigned integer) type
 # that will fit all values; in this case, a `u4_`.
 # TODO: should this be a `u3_` because we have more than 4 but fewer than 8 values?
-small_odd_: one_of_[1, 3, 5, 7, 9]
+small_odd_: one_of_{1, 3, 5, 7, 9}
 
 x: small_odd_ = 3  # OK
 
@@ -7821,16 +7812,16 @@ small_odd_ @symbol(3) == tag_(1)
 small_odd_ @symbol(5) == tag_(2)
 # etc.
 # and you can get the type like this:
-small_odd_ @symbol(1_) == tag_[one_of_: small_odd_, 0, 1, field: "1"]
-small_odd_ @symbol(3_) == tag_[one_of_: small_odd_, 1, 3, field: "3"]
-small_odd_ @symbol(5_) == tag_[one_of_: small_odd_, 2, 5, field: "5"]
+small_odd_ @symbol(1_) == tag_{one_of_: small_odd_, 0, 1, field: "1"}
+small_odd_ @symbol(3_) == tag_{one_of_: small_odd_, 1, 3, field: "3"}
+small_odd_ @symbol(5_) == tag_{one_of_: small_odd_, 2, 5, field: "5"}
 # etc.
 ```
 
 Here is an example with specific string instances.
 
 ```
-valid_color_: one_of_["gray", "black", "white"]
+valid_color_: one_of_{"gray", "black", "white"}
 
 get_(valid_color:): str_
      what valid_color
@@ -7844,21 +7835,21 @@ get_(valid_color:): str_
 assert_(get_("black")) == "#000000"
 
 valid_color_ @symbol("gray") == tag(0)
-valid_color_ @symbol("gray"_) == tag_[one_of_: valid_color_, 0, "gray", field: "gray"]
+valid_color_ @symbol("gray"_) == tag_{one_of_: valid_color_, 0, "gray", field: "gray"}
 valid_color_ @symbol("black") == tag(1)
-valid_color_ @symbol("black"_) == tag_[one_of_: valid_color_, 1, "black", field: "black"]
+valid_color_ @symbol("black"_) == tag_{one_of_: valid_color_, 1, "black", field: "black"}
 valid_color_ @symbol("white") == tag(2)
-valid_color_ @symbol("white"_) == tag_[one_of_: valid_color_, 2, "white", field: "white"]
+valid_color_ @symbol("white"_) == tag_{one_of_: valid_color_, 2, "white", field: "white"}
 ```
 
 ## select
 
-If you *don't* want to allow the combined case as an argument, e.g., `one_of_[a:, b:]`,
-you can use `select_[a:, b:]` for a function argument.  This will only generate overloads
+If you *don't* want to allow the combined case as an argument, e.g., `one_of_{a:, b:}`,
+you can use `select_{a:, b:}` for a function argument.  This will only generate overloads
 with the distinct types and not the combined type, like so:
 
 ```
-my_fn_(select_[int:, str:]:): str_
+my_fn_(select_{int:, str:}:): str_
      "hello ${select}"
 
 # becomes only these two functions internally:
@@ -7871,17 +7862,17 @@ my_fn_(str:): str_
 # when calling:
 my_fn_(5)           # OK
 my_fn_("world")     # OK
-MY_one_of; one_of_[int:, str:](3)
+MY_one_of; one_of_{int:, str:}(3)
 # ... some logic that might change MY_one_of
 my_fn_(MY_one_of)   # COMPILE ERROR
 ```
 
 This is generally not recommended for function arguments, but it can
 be used to restrict class generics to a list of only certain types, e.g.,
-`primitives: select_[i8:, i16:], my_generic_[of_: primitives_]: [of;]`
-will only allow specification as `my_generic_[i8_]` or `my_generic_[i16_]`,
-and not `my_generic_[one_of_[i8:, i16:]]`.  Note that `select_` generally
-needs to be put into a named type (e.g., `a_or_b_: select_[a:, b:]`) and
+`primitives_: select_{i8:, i16:}, my_generic_{of_: primitives_}: [of;]`
+will only allow specification as `my_generic_{i8_}` or `my_generic_{i16_}`,
+and not `my_generic_{one_of_{i8:, i16:}}`.  Note that `select_` generally
+needs to be put into a named type (e.g., `a_or_b_: select_{a:, b:}`) and
 specified at compile time as exactly one of the subtypes since it is a meta-type.
 
 ## masks
