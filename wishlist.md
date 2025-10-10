@@ -1644,7 +1644,9 @@ Here is some nullable type manipulation:
 #   nullable_(one_of_{dbl:, int:, str:}) == false
 #   nullable_(one_of_{dbl:, int:}?) == true
 #   nullable_(null_) == false
+# TODO: i think i like `!null_` for `not_{null_}`.
 nullable_(of_:): of_ contains_(not_{null_}, null_)
+nullable_(of_:): of_ contains_(!null_, null_)
 
 # examples
 #   unnull_{int_} == int_
@@ -4356,6 +4358,14 @@ It also can be used to ensure a generic specification satisfies some constraints
 e.g., `require: n > 0` in the first line below.  `require` can *never* be
 specified by hand, e.g., `my_class_{int_, n: 0, require: true}` is a compile error.
 
+TODO: do we even need a `require` keyword or can we just do
+`second_value{n >= 2}: of_` and assume all booleans are "require"-like?
+that would force people who have a lot of things, e.g., `lot_{bool_, at_: str_}`
+would look like a `require` statement possibly.
+i also don't want to make it look like we're redefining the generic type,
+e.g., `;;some_method_{template_type_: some_constraint_}`, so having
+`;;some_method_{require: template_type_ is some_constraint_}` is better.
+
 ```
 my_class_{of_:, n: count_, require: n > 0}:
 [    value: of_
@@ -5250,6 +5260,8 @@ can we use `~` instead with a space afterwards?
 ```
 # TODO: should we declare like this? `{x_;:., ...}` to indicate that the
 #    type can be mutated differently?
+#    we could do `gen_{x_:;}: [whatever:; x_]` and use respectively on `{x_}` whenever `x_` is encountered,
+#    but only in the `[]` brackets
 mutable_types_{x_:, y_:, z_:}:
 [    # these fields are always readonly:
      r_x: x_
@@ -6888,7 +6900,7 @@ Arrays have order-dependent hashes, since `[1, 2]` should be considered differen
 
 TODO: could we just use `if` or `when` here?  i like how `where` reads, though,
 very mathematically.  also it might be required to have a different keyword
-for the specialized versions of methods, like `::do_this_(): hm_[i32_]`
+for the specialized versions of methods, like `::do_this_(): hm_{i32_}`
 and `::do_this_(): i32_ where !!m`, which will never throw.
 
 The `where` operator can be used to further narrow a conditional.  It
@@ -6896,10 +6908,10 @@ is typically used in a `what` statement like this:
 
 ```
 cows_: one_of_
-[    one:
+{    one:
      two:
      many: i32_
-]
+}
 cows: some_function_returning_cows_()
 what cows
      one
@@ -6952,7 +6964,7 @@ my_vec2_: [x; dbl_, y; dbl_]
           do_(quadrant_iii. dbl_): ~c_
           do_(quadrant_iv. dbl_): ~d_
           else_(): ~e_
-     ): flatten_[a_, b_, c_, d_, e_]
+     ): flatten_{a_, b_, c_, d_, e_}
           if x == 0.0 or y == 0.0
                else_()
           elif x > 0.0
@@ -6992,7 +7004,7 @@ range_(1, 10) each int:
 
 # iterating over non-number elements:
 vector2_: [x: dbl_, y: dbl_]
-array[vector2_]: [[x: 5, y: 3], [x: 10, y: 17]]
+array{vector2_}: [[x: 5, y: 3], [x: 10, y: 17]]
 
 # should print `[x: 5, y: 3]` then `[x: 10, y: 17]`.
 array each vector2:
@@ -7040,18 +7052,18 @@ else
 Here are some examples of iterating over a container while mutating some values.
 
 ```
-a_array; array_[int_] = [1, 2, 3, 4]
+a_array; array_{int_} = [1, 2, 3, 4]
 # this is clearly a reference since we have `int` in parentheses, `(int;)`:
 a_array each (index, int;)
      int += index
 a_array == [1, 3, 5, 7] # should be true
 
-b_array; array_[int_] = [10, 20, 30]
+b_array; array_{int_} = [10, 20, 30]
 b_array each (int;)
      int += 1
 b_array == [11, 21, 31] # should be true
 
-c_array; array_[int_] = [88, 99, 110]
+c_array; array_{int_} = [88, 99, 110]
 start_referent; int_ = 77
 (iterand_value;) = start_referent
 c_array each iterand_value
@@ -7069,7 +7081,7 @@ but it does kinda make sense for the value that escapes the loop.
 let's try to figure out how to make the copy explicit.
 
 ```
-b_array; array_[int_] = [10, 20, 30]
+b_array; array_{int_} = [10, 20, 30]
 # WARNING! this is not the same as the previous `b_array` logic.
 b_array each int;
      # NOTE: `int` is a mutable copy of each value of `b_array` element.
@@ -7080,7 +7092,7 @@ b_array each int;
      #       e.g., "use (int;) if you want to modify the elements"
 b_array == [11, 21, 31] # FALSE
 
-c_array; array_[int_] = [88, 99, 110]
+c_array; array_{int_} = [88, 99, 110]
 iterand_value; 77 
 c_array each iterand_value
      # NOTE: `iterand_value` is a mutable copy of each `c_array` element.
@@ -7105,7 +7117,7 @@ maybe we just look at `print_` and add the newlines at the start.  Each thread s
 have its own tab stop.  E.g.,
 
 ```
-array_[of_]: []
+array_{of_:}: []
 {    ...
      ::print_(): null_
           if m count_() == 0
@@ -7138,20 +7150,22 @@ You don't usually create a `block` instance; you'll use it in combination with t
 
 ```
 # indent function which returns whatever value the `block` exits the loop with.
-indent_(do_(block[~t_];): never_): t_
+indent_(do_(block{~t_};): never_): t_
 # indent function which populates `block declaring` with the value passed in.
-indent_(~declaring;:., do_(block[~t_, (declaring;:.)];): never_): t_
+indent_(~declaring;:., do_(block{~t_, (declaring;:.)};): never_): t_
 
 @referenceable_as(then_)
-block_[of_, declaring_: any_ = null_]:
+block_{of_:, declaring_: any_ = null_}:
 [    # variables defined only for the lifetime of this block's scope.
      # TODO: give examples, or maybe remove, if this breaks cleanup with the `jump` ability
-     declaring[require: declaring_ is not_[null_]]`
+     # TODO: if `declaring_` is nullable, then we also have a problem here, would need
+     declaring{require: declaring_ is !null_}`
+     declaring{require: declaring_ is nullable_}?`
 ]
 {    # exits the `indent_` with the corresponding `of_` value.  example:
      #    value; 0
      #    what indent_
-     #    (    do_(block[str_];): never_
+     #    (    do_(block{str_};): never_
      #              OLD_value: value
      #              value = value // 2 + 9
      #              # sequence should be: 0, 9, 4+9=13, 6+9=15, 7+9=16, 8+9=17
@@ -7172,7 +7186,7 @@ block_[of_, declaring_: any_ = null_]:
      # the start of the `indent` block.  example:
      #    value; 0
      #    indent
-     #    (    do_(block[str_];): never_
+     #    (    do_(block{str_};): never_
      #              if ++value >= 10 {block exit_("done")}
      #              if value % 2
      #                   block loop_()
@@ -7189,7 +7203,7 @@ block_[of_, declaring_: any_ = null_]:
 
 ```
 my_int: indent_
-(    block[int_]:
+(    block{int_}:
           if some_condition_()
                block exit_(3)
           block loop_()
@@ -7208,22 +7222,22 @@ even that probably could be better served by pulling out a function to call in
 both blocks.
 
 ```
-if some_condition -> then[str_]:
+if some_condition -> then{str_}:
      if other_condition
           if nested_condition
                then exit_(x)
      else
           then exit_("whatever")
      # COMPILE ERROR, this function returns here if
-     # `Other_condition && !Nested_condition`.
+     # `other_condition && !nested_condition`.
      # needs a non-null exit value since we should return a `str_`.
 
 # here's an example where we re-use a function for the block.
-my_then: then_[str_]
+my_then: then_{str_}
      ... complicated logic ...
      # TODO: this syntax seems suspect, shouldn't it be `then exit_`?
      # or maybe this should just be a function.
-     # e.g., `my_then: then_[str_]({ ... complicated logic ..., "made it" })`
+     # e.g., `my_then: then_{str_}({ ... complicated logic ..., "made it" })`
      exit_("made it")
 
 result: if some_condition -> my_then
@@ -7237,7 +7251,7 @@ else -> my_then
 
 Similar to conditionals, we allow defining functions with `block` in order
 to allow low-level flow control.  Declarations like `my_function_(x: int_): str_`,
-however, will be equivalent to `my_function_(x: int_, block[str_]): never_`.  Thus
+however, will be equivalent to `my_function_(x: int_, block{str_}:): never_`.  Thus
 there is no way to overload a function defined with `block` statements compared
 to one that is not defined explicitly with `block`.
 
@@ -7247,7 +7261,7 @@ to one that is not defined explicitly with `block`.
 # evaluated statement (which can occur if you don't use `block exit_(...)`
 # or `block loop_(...)` on the last line of the function block).
 # i.e., you must use `block exit_(...)` to return a value from this function.
-my_function_(x: int_, block[str_];): never_
+my_function_(x: int_, block{str_};): never_
      inner_function_(y: int_): dbl_
           if y == 123
                block exit_("123")  # early return from `my_function_`
@@ -7259,28 +7273,28 @@ my_function_(x: int_, block[str_];): never_
 
 ## coroutines
 
-We'll reserve `co_[of_]` for a coroutine for now, but I think futures are all
+We'll reserve `co_{of_}` for a coroutine for now, but I think futures are all
 that is necessary.
 
 # futures
 
 oh-lang wants to make it very simple to do async code, without additional
 metadata on functions like `async` (JavaScript).  You can indicate that
-your function takes a long time to run by returning the `um_[of_]` type,
+your function takes a long time to run by returning the `um_{of_}` type,
 where `of_` is the type that the future `um_` will resolve to, but callers
 will not be required to acknowledge this.  If you define some overload
-`my_overload_(x: str_): um_[int_]`, an overload `my_overload_(x: str_): int_`
+`my_overload_(x: str_): um_{int_}`, an overload `my_overload_(x: str_): int_`
 will be defined for you that comes *before* your async definition, so that
 the default type of `value` in `value: my_overload_(x: "asdf")` is `int_`.
 We generally recommend a timeout `er_` being present, however, so for
-convenience, we define `um_[of_, er_]: um_[hm_[ok_: of_, er_]]`.
+convenience, we define `um_{of_:, er_:}: um_{hm_{ok_: of_, :er_}}`.
 
 The reason we obscure futures in this way is to avoid needing to change any
 nested function's signatures to return futures if an inner function becomes
 a future.  If the caller wants to treat a function as a future, i.e., to run
 many such futures in parallel, then they ask for it explicitly as a future
 by calling a function `f_()` via `f_() um` or `um: f_()`.  You can also type
-the variable explicitly as `um_[of_]`, e.g., `f: um_[of_] = f_()`.  Note that
+the variable explicitly as `um_{of_}`, e.g., `f: um_{of_} = f_()`.  Note that
 `f: um_(f_())` is a compile error because casting to a future would still run
 `f_()` serially.  You can use `f: um_(immediate: 123)` to create an "immediate
 future"; `f: um_(immediate: h_())` similarly will run `h_()` serially and put
@@ -7288,8 +7302,8 @@ its result into the immediate future.  If `h_` takes a long time to run, prefer
 `f: h_() um` of course.
 
 ```
-# you don't even need to type your function as `um_[~]`, but it's highly recommended:
-some_very_long_running_function_(int): um_[string_]
+# you don't even need to type your function as `um_{~}`, but it's highly recommended:
+some_very_long_running_function_(int): um_{string_}
      result; ""
      int each COUNT_int:
           sleep_(seconds: COUNT_int)
@@ -7303,11 +7317,11 @@ print_("the result is ${my_name} many seconds later")
 
 # this approach calls the function as a future:
 print_("starting a future, won't make progress unless polled")
-# `future` here has the type `um_[string_]`:
+# `future` here has the type `um_{string_}`:
 future: some_very_long_running_function_(10) um
-# OR: `future: um_[string_] = some_very_long_running_function_(10)`
-# OR: `future: um_[~] = some_very_long_running_function_(10)` (infers the inner type)
-# OR: `future: um_[~inner_] = some_very_long_running_function_(10)` (infers inner type and gives it a name)
+# OR: `future: um_{string_} = some_very_long_running_function_(10)`
+# OR: `future: um_{~} = some_very_long_running_function_(10)` (infers the inner type)
+# OR: `future: um_{~inner_} = some_very_long_running_function_(10)` (infers inner type and gives it a name)
 # which is useful if you want to use the `inner_` type later in this block.
 print_("this `print` executes right away")
 result: string_ = future
@@ -7315,20 +7329,20 @@ print_("the result is ${result} many seconds later")
 ```
 
 That is the basic way to resolve a future, but you can also use
-the `::decide_(): of_` method for an explicit conversion from `um_[of_]`
+the `::decide_(): of_` method for an explicit conversion from `um_{of_}`
 to `of_`.  Ultimately futures are most useful when combined for
 parallelism.  Here are two examples, one using an array of futures
 and one using an object of futures:
 
 ```
-# you don't even need to type your function as `um_[~]`, but it's highly recommended:
-after_(seconds: int_, resolve: string_): um_[string_]
+# you don't even need to type your function as `um_{~}`, but it's highly recommended:
+after_(seconds: int_, resolve: string_): um_{string_}
      sleep_(seconds)
      resolve
 
-futures_array; array_[um_[string_]]
+futures_array; array_{um_{string_}}
 # no need to use `after_(...) um` here since `futures_array`
-# elements are already typed as `um[string]`:
+# elements are already typed as `um_{string_}`:
 futures_array append_(after_(seconds: 2, resolve: "hello"))
 futures_array append_(after_(seconds: 1, resolve: "world"))
 print_("this executes immediately.  deciding futures now...")
@@ -7336,16 +7350,16 @@ results_array: decide_(futures_array)
 print_(results_array)   # prints `["hello", "world"]` after 2ish seconds.
 
 # here we put them all in at once.
-# notice you can use `field: um_[type_] = fn_()` or `field: fn_() um`.
+# notice you can use `field: um_{type_} = fn_()` or `field: fn_() um`.
 futures_object:
 [    greeting: after_(seconds: 2, resolve: "hello") um
-     noun: um_[string_] = after_(seconds: 1, resolve: "world")
+     noun: um_{string_} = after_(seconds: 1, resolve: "world")
 ]
 print_(decide_(futures_object)) # prints `[greeting: "hello", noun: "world"]`
 
 # if your field types are already futures, you don't need to be
 # explicit with `um`.
-future_type_: [greeting: um_[str_], noun: um_[str_]]
+future_type_: [greeting: um_{str_}, noun: um_{str_}]
 # note that we need to explicitly type this via `the_type_(args...)`
 # so that the compiler knows that the arguments are futures and should
 # receive the `um_` overload.
