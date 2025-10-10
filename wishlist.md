@@ -6264,14 +6264,6 @@ variable is writable.  The default type of a set is an `insertion_ordered_set_`,
 because oh-lang makes insertion-ordered containers the default.  For equality checking,
 insertion order doesn't matter, but for iteration it does.
 
-TODO: make it easy to pass in a set as an argument and return a lot with e.g. those IDs.
-  maybe this isn't as important as it would be if we had a dedicated object type.
-
-```
-fn_(pick_from: ~o_, ats: ~k_ from ats_(o_)): pick_(o_, k_)
-     pick_(pick_from, ats)
-```
-
 TODO: discuss how `in` sounds like just one key from the set of IDs (e.g., `k_ in ats_(o_)`)
 and `from` selects multiple (or no) IDs from the set (`k_ from ats_(o_)`).
 
@@ -6281,13 +6273,13 @@ For reference, see [the definition here](https://github.com/oh-lang/oh/blob/main
 For example, here is a way to create an iterator over some incrementing values:
 
 ```
-my_range_[of_: number_]: all_of_
-[    @private m_:
+my_range_{of_: number_}: all_of_
+{    @private m:
      [    next_value; of_ = 0
           less_than: of_
      ]
-     iterator_[of_]
-]
+     iterator{of_};
+}
 {    ;;renew_(start_at. of_ = 0, m less_than. of_ = 0): null_
           m next_value = start_at
 
@@ -6316,7 +6308,7 @@ the element and advance the iterator, e.g.:
 
 ```
 array: [1, 2, 3]
-iterator; iterator_[int_]
+iterator; iterator_{int_}
 assert(iterator next_(array)) == 1
 assert_(next_(array, iterator)) == 2    # you can use global `next_`
 assert_(iterator::peak_(array)) == 3
@@ -6334,8 +6326,8 @@ The way we achieve that is through using an array iterator:
 # the iterator will become an array iterator.  this allows us to check for
 # `@only` annotations (e.g., if `iterator` was not allowed to change) and
 # throw a compile error.
-next_[t_](iterator[t_]; @becomes array_iterator_[t_], array[~t_]:)?: t_
-     iterator = array_iterator_[t_]()
+next_{t_}(iterator{t_}; @becomes array_iterator_{t_}, array{~t_}:)?: t_
+     iterator = array_iterator_{t_}()
      iterator;;next_(array)
 ```
 
@@ -6348,7 +6340,7 @@ as a method called `each_`.
 TODO: is this true, can we really infer?
 
 ```
-array_[of_]: []
+array_{of_}: []
 {    # TODO: decide between blockable and function approach:
      # function approach doesn't contain any block information (e.g., what was `break`ed)
      ;:each_(fn_(of;:): loop_): bool_
@@ -6357,7 +6349,7 @@ array_[of_]: []
                     return: true
           false
 
-     .;:each_(each_blockable[declaring: (of.;:), ~t_]): t_
+     .;:each_(each_blockable{declaring_: (of.;:), ~t_}): t_
           m count_() each index:
                each_blockable then_(.;:m[index])
           each_blockable else_()
@@ -6374,16 +6366,15 @@ else
      ""
 
 # becomes something like
-each_blockable[declaring: (int.), int_]: _
-(    then_(int.)?: str_
+each_blockable{declaring_: (int.), int_}: _
+(    each_(int.): bc_{str_}
           if int > 3
                print_("choosing ${int}")
-               return: "${int}"
+               bc_ break_("${int}")
           else
                print_("ignoring ${int}")
-          # TODO: i don't like checking for null here;
-          # null might be a valid return type, we need some block-like logic.
-     else_():
+          bc_ continue
+     else_(): str_
           print_("found no good matches")
           ""
 )
@@ -6598,7 +6589,7 @@ example_class_: [value: int_]
                print_("was large: ${large}")
           ```
      #]#
-     :;.is_(if_block[declaring: (large:;. int_), ~t_]): never_
+     :;.is_(if_block[declaring_: (large:;. int_), ~t_]): never_
           if m value > 999
                if_block then_(declaring: (large` m value))
           else
@@ -7705,7 +7696,7 @@ one_of_[..., ~t_]: []
      # the signature for `if tree is branch; {#[do stuff with `branch`]#}`
      # the method returns true iff the block should be executed.
      # the block itself can return a value to the parent scope.
-     ;:.is_(), block[declaring:;. t_, exit_: ~u_]: bool_
+     ;:.is_(), block[declaring_:;. t_, exit_: ~u_]: bool_
 }
 ```
 
