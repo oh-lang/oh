@@ -1,41 +1,51 @@
-hm_[ok_, er_]: one_of_[ok_, er_]
+hm_{ok_:, er_:}: one_of_{ok:, er:}
 {    #[#
      The API is `ok: hm assert_()`, which will bubble up this `er`
      if the result was an error.  Note that we use the `block_` API
      which normally is implicit but can be used explicitly if needed.
           ```
-          do_something_(dbl): hm_[ok_: dbl_, er_: str_]
+          do_something_(dbl): hm_{ok_: dbl_, er_: str_}
                if dbl < 0
                     er_("invalid dbl: ${dbl}")
                else
                     ok_(dbl sqrt_())
 
           # example with implicit `block_` (like a guard/control flow):
-          implicit_block_(): hm_[ok_: null_, er_: str_]
+          implicit_block_(): hm_{ok_: null_, er_: str_}
                # will return early if an invalid type.
                result: do_something_(1.234) assert_()
                print_(result)
 
           # example with explicit `block` that does the same thing as implicit:
-          explicit_block_(): hm_[ok_: null_, er_: str_]
+          explicit_block_(): hm_{ok_: null_, er_: str_}
                indent_
-               (    fn_(block[hm_[ok_: null_, er_: str_]];):
+               (    fn_(block{hm_{ok_: null_, er_: str_}};):
                          result: do_something_(1.234) assert_(block)
                          print_(result)
                          block exit_(null)
                )
           ```
      #]#
-     ..assert_[block_return_: contains_[er_]](block[~block_return_]): ok_
-          what m!
+     ..assert_
+     {    block_hm_: hm_{~IGNORE_ok_, ~BLOCK_er}
+          require: er_ in BLOCK_er
+     }
+     (    block{~block_hm_};
+     ): ok_
+          what m
                ok. {ok}
                er. {block exit_(er)}
 
+     ..assert_{require: oh_info_ caller_() can_panic_()}(): ok_
+          what m
+               ok. {ok}
+               er. {panic_(er)}
+
      # maps an `ok` result to a different type `new_ok_`, consuming `m`.
-     # since this is a `NAMED_` namespace, we need to use `my_hm map_({$ok + 3})`
-     # instead of whatever type `ok_` is, e.g., `my_hm map_({$int + 3})` would not work
+     # since this is a `NAMED_` namespace, we need to use `my_hm map_${$ok + 3}`
+     # instead of whatever type `ok_` is, e.g., `my_hm map_${$int + 3}` would not work
      # even if `ok` is type `int`.
-     ..map_(fn_(NAMED_ok.): ~new_ok_): hm_[ok_: new_ok_, er_]
+     ..map_(fn_(NAMED_ok.): ~new_ok_): hm_{ok_: new_ok_, er_}
 
      # passes through any `ok` result, but maps an `er` to the desired `ok_` result
      # via the passed-in function.  while this looks like it could be indistinguishable
@@ -46,7 +56,7 @@ hm_[ok_, er_]: one_of_[ok_, er_]
      ..map_(fn_(NAMED_er.): ok_): ok_
 
      # maps an `er` result to a `new_er_` type.
-     ..map_(fn_(NAMED_er.): ~new_er_): hm_[ok_, er_: new_er_]
+     ..map_(fn_(NAMED_er.): ~new_er_): hm_{ok_, er_: new_er_}
 
      # TODO: do we really want a function like this when we can have people
      # do `what m! { ok. {...ok logic...}, er. {...er logic...}}`?
@@ -67,10 +77,10 @@ hm_[ok_, er_]: one_of_[ok_, er_]
      ..to_()?: ok_
 }
 
-hm_[ok_: hm_[ok_: ~other_ok_, er_: ~other_er_], er_]: disallowed_
-[    "do not nest a `hm_` class inside another `hm_`'s `ok_`."
-]
+hm_{ok_: hm_{ok_: ~other_ok_, er_: ~other_er_}, er_:}: disallowed_
+{    "do not nest a `hm_` class inside another `hm_`'s `ok_`."
+}
 
-hm_[ok_, er_: hm_[ok_: ~other_ok_, er_: ~other_er_]]: disallowed_
-[    "do not nest a `hm_` class inside another `hm_`'s `er_`."
-]
+hm_{ok_:, er_: hm_{ok_: ~other_ok_, er_: ~other_er_}}: disallowed_
+{    "do not nest a `hm_` class inside another `hm_`'s `er_`."
+}

@@ -24,25 +24,6 @@ assert_{block_hm_: hm_{~ok_:, ~er_:}, er_: runtime_er_}
 assert_{require: oh_info_ caller_() can_panic_()}(~t?.)
 :         t_
 
-# for converting a result value into an ok value, e.g., `ok: assert_(hm)`
-# in a function that returns a `hm_` result.
-assert_
-{    hm_: hm_{~ok_:, ~HM_er_:}
-     block_hm_: hm_{~IGNORE_ok_, ~BLOCK_er_}
-     require: HM_er_ in BLOCK_er_
-}
-(    ~hm.
-     block{~block_hm_};
-):        ok_
-# for converting a result value into an ok value, e.g., `ok: assert_(hm)`
-# in a function that can panic.
-assert_
-{    require: oh_info_ caller_() can_panic_()
-     hm_: hm_{~ok_, ~IGNORE_er_}
-}
-(    ~hm.
-):        ok_
-
 @private
 assertion_{of_:, RETURNED_er_: runtime_er_, held_er_: RETURNED_er_}:
 [    of;
@@ -82,8 +63,9 @@ assertion_{of_:, RETURNED_er_: runtime_er_, held_er_: RETURNED_er_}:
      # `assert: assert_(5) == 6`
      # but that might be desired anyway, in case you want to check a bunch of results.
      # however, i think the results would only get checked one-at-a-time at the end anyway.
-     ;;descope_(): null_
-          # TODO: throw a compile error if the current block is not annotated as `@can_panic`
+     ;;descope_
+     {    require: oh_info_ caller_() can_panic_()
+     }(): null_
           @if of_ is bool_
                if !m of
                     print_(error: "${m oh_info}: expected ${m transformation}")
@@ -96,6 +78,7 @@ assertion_{of_:, RETURNED_er_: runtime_er_, held_er_: RETURNED_er_}:
                if !m transformation
                     print_(error: "${m oh_info}: expected an expression like `assert_(x) == 7`")
 
+     # TODO: avoid including `descope_` here.
      @methods(of_) @each method:
           # `method arguments` will include `m:`, `m;`, or `m.`, so we don't
           # need to add `::`, `;;`, or `..` to the start here.
