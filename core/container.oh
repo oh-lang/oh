@@ -1,50 +1,37 @@
-container_[of_: not_[null_], at_, count_: select_count_ = count_arch_]: []
+container_
+{    of_:
+     at_:
+     count_: select_count_ = arch_ count_
+     require: of_ is !null_
+     PROVIDED_er_: er_
+     require: er_ in PROVIDED_er_
+}: []
 {    ::count_(): count_
 
      !!(m:): bool_
           count_(m) > 0
 
-     #[#
-     gets a nullable reference to an element using a referenced `at`,
-     returning `null` if `at` is not in this container,
-     otherwise the `of` instance at that `at`.
-     this is wrapped in a reference object to enable passing by reference.
-     USAGE:
-          ```
-          # suppose `container` has `at_: int_`.
-          # get the value at `5` and make a copy of it:
-          of?: container[5]
-          # get the value at `7` and keep a mutable reference to it:
-          (of?;) = container[7]
-          ```
-     prefer the `[at.]` version unless you want the value to update
-     whenever the referenced `at` does, or if `at` is expensive to copy.
-     TODO: i think we need to update to `;:[(at:)]: (of?:;)`;
-     `[]` has different semantics than `()`; `[at.]` and `[at;]` are roughly equivalent,
-     whereas `(at.)` and `(at;)` are temporary and writable-reference versions.
-
-     notice that for a mutable reference, mooting a non-null element will remove the
-     element from the container (because mooting will set it to null, which means to
-     delete it), possibly triggering `O(k)` operations to move/swap elements around,
-     e.g., in an array.
-     #]#
-     :;[at:]: (of?:;)
+     # TODO: think about the mutable nullable API, we don't want to
+     # have inconsistent implementations between arrays and lots.
+     # maybe rely on `pop_` and `remove_`
 
      # get a nullable reference to an element.
-     :;[at.]: (of?:;)
+     ::[at.]: (of?:)
 
      #[#
      safe API for creating a reference at `at`.
+     this will add a default `of` if `at` is not already in the container.
      can return an error if the container runs out of memory
      or for other container-specific reasons.
      #]#
-     ;;[at]: hm_[(of;)]
+     ;;[at.]: hm_{(of;)}
 
-     # get a non-null reference to an element.
-     # this will add a default `of` if `at` is
-     # not already in the container.
-     # mooting this element will not remove the element from the array, because
-     # mooting a non-nullable element will just reset it to default.
+     #[#
+     get a non-null reference to an element.
+     this will add a default `of` if `at` is not already in the container.
+     mooting this element will not remove the element from the container,
+     but will reset it to the default.
+     #]#
      ;;[at.]: (of;)
 
      # returns the element at `at` or null if not present,
@@ -55,36 +42,36 @@ container_[of_: not_[null_], at_, count_: select_count_ = count_arch_]: []
      #        maybe `if @specialized ;;pop_ { ... }`
      #        and `@require: @specialized ;;pop_ || @specialized ;;swap_`...
      #        this `@require` is only needed for a non-abstract class.
-     ;;pop_(at)?: of_
+     # TODO: i'm not a big fan of `pop`, maybe `remove_(at.)?: of_` and `remove_(all. of_): count_`
+     ;;pop_(at.)?: of_
 
      # TODO: `::min_()`, `::max_()`, and `::order_(count.)` methods.
-     #        these should just pass through to the iterator, but `[require: of_ is orderable_]`
+     #        these should just pass through to the iterator, but `{require: of_ is orderable_}`
 
-     # TODO: is this the correct way to define the iterator?
-     #         we probably need a "preblock" since we'll run the block
-     #         using something like `preblock_(defining_: ...)`
-     #         or maybe `blockable_`
-     :;each_(block[defining_:; of_, ~t_]:)?: t_
+     :;.each_(blockable{defining_: (of_:;.), ~t_}:)?: t_
 
-     :;each_(block[defining_: (at::, of:;), ~t_]:)?: t_
+     :;.each_(blockable{defining_: (at::., of:;.), ~t_}:)?: t_
 
      # can implicitly convert to an iterator (with writeable/readonly references).
-     ;:iterator_(): iterator_[(at:, of;:)]
+     ;:iterator_(): iterator_{(at:, of;:)}
 
      # iterate over keys/`at`s.
-     ::iterator_(): iterator_[(at:)]
+     ::ats_(): iterator_{(at:)}
 
      # iterate over values.
-     ;:iterator_(): iterator_[(of;:)]
+     ;:ofs_(): iterator_{(of;:)}
 
      @alias ::has_(at): m[at] != null
      @alias ::contains_(at): m[at] != null
+
+     hm_{of_:}: hm_{ok_: of_, PROVIDED_er_}
 }
 
+# TODO: we don't want these in the global namespace; maybe in the `core` directory
+# we only automatically export classes that are named after the file,
+# e.g., `container.oh::container_`?
 er_: one_of_
-[    out_of_memory
+{    out_of_memory:
      # etc.
-]
-
-hm_[of_]: hm_[ok_: of_, er_]
+}
 

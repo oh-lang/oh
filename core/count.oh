@@ -5,27 +5,27 @@ from 0 to 128, so all signed `i8_` indexes from -128 to 127 are valid
 we also have concepts of an `count_ offset_` which is an unsigned
 index that is valid from 0 to 127 for a `u8_` count.
 #]#
-select_count_: select_[count64_, count32_, count16_, count8_]
+select_count_: select_{count64_:, count32_:, count16_:, count8_:}
 
-count_arch_: count_[arch_ unsigned_]
+count_arch_: count_{arch_ unsigned_}
 
-count64_: count_[u64_]
-count32_: count_[u32_]
-count16_: count_[u16_]
-count8_: count_[u8_]
+count64_: count_{u64_}
+count32_: count_{u32_}
+count16_: count_{u16_}
+count8_: count_{u8_}
 
 @final
-count_[of_: select_unsigned_]: all_of_
-[    m: [@private value; of_]
-     integer
-]
-{    m_(of.): hm_[m_]
+count_{of_: select_unsigned_}: all_of_
+{    m: [@private value; of_]
+     integer;
+}
+{    m_(of.): hm_{m_}
           if of <= max_() value
                [value. of]
           else
                unrepresentable
 
-     m_(signed. signed_[of_]): hm_[m_]
+     m_(signed{of_}.): hm_{m_}
           [value: of_(signed) assert_()]
 
      ?:
@@ -49,7 +49,7 @@ count_[of_: select_unsigned_]: all_of_
 
      ["min_", "max_"] @each method: str_
           @concat(method, "_")(): m_
-               [value: @concat(method, "_")()]
+               [value: _ @concat(method, "_")()]
 
      ::double_or_max_(): m_
           if m value < max_() value // 2
@@ -57,11 +57,11 @@ count_[of_: select_unsigned_]: all_of_
           else
                max_()
 
-     index_: index_[signed_[of_]]
-     offset_: offset_[of_]
-}
+     index_: index_{signed_{of_}}
+     offset_: offset_{of_}
 
-hm_[of_]: hm_[ok_: of_, number_ er_]
+     hm_{of_:}: hm_{ok_: of_, number_ er_}
+}
 
 @test "min_"
      assert_(count8_ max_()) == 0
@@ -90,5 +90,5 @@ hm_[of_]: hm_[ok_: of_, number_ er_]
 @test "index and offset"
      @test "count8_"
           c_: count8_
-          assert_(c_ index_) == index_[i8_]
-          assert_(c_ offset_) == offset_[u8_]
+          assert_(c_ index_) == index_{i8_}
+          assert_(c_ offset_) == offset_{u8_}
