@@ -1,6 +1,6 @@
 @final
 allocation_
-[    of_
+{    of_:
      # if not null, we allocate just enough space for this extra data
      # just before the buffer of `of_` values.  there can be multiple
      # `of` values, but only ever one instance of `header` is added.
@@ -8,16 +8,13 @@ allocation_
      # determines the maximum size of the allocation, and
      # makes indexing this allocation potentially more efficient.
      capacity_: select_count_
-     # use an alias so we can do, e.g., `allocation_[capacity_managed_ on_heap]`
-     # to specify `capacity_managed` (see next field).
-     capacity_managed_: managed_
      # whether to put capacity locally inside this allocation.
      # if `on_heap`, it gets added to the `full_header_`
      capacity_managed:
-]:
+}:
 [    @private m:
-     [    of_ptr[of_];
-          capacity[require: capacity_managed == _ locally];
+     [    of_ptr{of_};
+          capacity{require: capacity_managed == _ locally};
      ]
 ]
 {    ::capacity_(): capacity_
@@ -33,20 +30,20 @@ allocation_
      # ensure you free any elements that were initialized
      # if the new capacity is smaller than the old capacity.
      # this data structure does not keep track of which elements are initialized.
-     ;;capacity_(capacity.): hm_[null_]
+     ;;capacity_(capacity.): hm_{null_}
           m capacity_(new. capacity, old. m capacity_())
 
      @private
-     ;;capacity_(new. capacity_, old. capacity_): hm_[null_]
+     ;;capacity_(new. capacity_, old. capacity_): hm_{null_}
           required_bytes: memory_ = assert_
           (    new * of_ memory_() + full_header_bytes
                er_ out_of_memory
           )
           if old == 0
-               ptr[u8_]: required_bytes allocate_() assert_(er_ out_of_memory)
+               ptr{u8_}: required_bytes allocate_() assert_(er_ out_of_memory)
                m full_head_(ptr)
           else
-               ptr[u8_]; m full_head_()
+               ptr{u8_}; m full_head_()
                required_bytes reallocate_(;ptr) assert_(er_ out_of_memory)
                m full_head_(ptr)
 
@@ -55,7 +52,7 @@ allocation_
      # this will return an error if `offset` is out of bounds.
      # TODO: the `hm` doesn't seem to be in the right spot since `offset` is lazily evaluated.
      #[#
-     ;:at_(offset.): hm_[(of;:)]
+     ;:at_(offset.): hm_{(of;:)}
           refer_
           (    m
                at. offset
@@ -69,7 +66,7 @@ allocation_
      # this will return an error if `offset` is out of bounds and we can't resize to encompass `offset`.
      # TODO: i think we need to put `;:` before the type here:
      # but that kinda looks gross.  maybe revert the "call with :; before" idea.
-     ;;at_(offset.): hm_[ptr_[;of_]]
+     ;;at_(offset.): hm_{ptr_{;of_}}
           if offset >= m capacity_()
                m capacity_(offset + 1) assert_()
           if m of_ptr == null
@@ -81,54 +78,54 @@ allocation_
      # make sure that this element is already initialized;
      # this `allocation` does not keep track of which elements are initialized.
      # this will return an error if `offset` is out of bounds.
-     ::at_(offset.): hm_[ptr_[of_]]
+     ::at_(offset.): hm_{ptr_{of_}}
           assert_(offset < m capacity_(), er_ out_of_bounds)
           if m of_ptr == null
                null
           else
                m of_ptr + offset
 
-     ;:at_(in_bounds. offset_): ptr_[of_]
+     ;:at_(in_bounds. offset_): ptr_{of_}
           debug assert_(in_bounds < m capacity_())
           m of_ptr + offset
 
      # TODO: non-local_capacity versions of the above, call them.
-     ::header_[require: header_ is not_[null_]](): hm_[(header:)]
+     ::header_{require: header_ is !null_}(): hm_{(header:)}
           if m
                ok_(m header_())
           else
                er_ unallocated
 
-     ;;header_[require: header_ is not_[null_]](): hm_[(header;)]
+     ;;header_{require: header_ is !null_}(): hm_{(header;)}
           if !m
                m capacity_(small_capacity) assert_()
           assert_(!!m)
           ok_(m header_())
 
      # gets the `header`, when `m` is truthy.
-     ;:header_[require: header_ is not_[null_]](): (header;:) where !!m
+     ;:header_{require: header_ is !null_}(): (header;:) where !!m
           (full_header;:) = m full_head_() to_()
           full_header header
 
      @private
      has_full_header_():
-          header_ is not_[null_] or capacity_managed == on_heap
+          header_ is !null_ or capacity_managed == on_heap
 
      @private
-     ;;full_head_(ptr[u8_].): null_
+     ;;full_head_(ptr{u8_}.): null_
           if ptr == null
                m of_ptr = null
           else
                m of_ptr = ptr + full_header_bytes
 
      @private
-     ::full_head_[require: full_header_ is not_[null_]](): ptr_[u8_] where !!m
-          ptr[u8_]: m of_ptr  # TODO: casting??
+     ::full_head_{require: full_header_ is !null_}(): ptr_{u8_} where !!m
+          ptr{u8_}: m of_ptr  # TODO: casting??
           ptr -= full_header_bytes  # `full_header_` starts before the `of_` buffer
           ptr
 
      @private
-     ::full_head_(): ptr_[u8_] where !m
+     ::full_head_(): ptr_{u8_} where !m
           ptr_()    # null pointer
 
      @private
@@ -146,20 +143,22 @@ allocation_
      # TODO: update based on size of `of_`
      small_capacity: 4
 
-     offset_: offset_[capacity_]
+     offset_: capacity_ offset_
 
-     @if header_ is not_[null_] or capacity_managed == on_heap
+     @if header_ is !null_ or capacity_managed == _ on_heap
           @private full_header_:
-          [    header[require: header_ is not_[null_]];
-               capacity[require: capacity_managed == on_heap];
+          [    header{require: header_ is !null_};
+               capacity{require: capacity_managed == _ on_heap};
           ]
      @else
           @private full_header_: null_
 
-     hm_[of_]: hm_[of_]
-}
+     hm_{of_}: hm_
+     {    ok_: of_
+          er_: container_ er_
+     }
 
-hm_[of_]: hm_
-[    ok_: of_
-     er_: container_ er_
-]
+     # use an alias so we can do, e.g., `allocation_{capacity_managed_ on_heap}`
+     # to specify `capacity_managed` (see next field).
+     capacity_managed_: managed_
+}

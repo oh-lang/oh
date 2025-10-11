@@ -1,29 +1,30 @@
-array_[of_, capacity_: select_count_ = arch count_]: all_of_
-[    indexable_sequence_[of_]
+array_{of_, capacity_: select_count_ = arch_ count_}: all_of_
+{    indexable_sequence{of_};
      # we could make this `hashable_` if `of_` is hashable, but we'll
      # implicitly make it hashable (by defining a `::hash_` method)
      # and only add to hashable's lookup table as needed.
-]
-{    index_: signed_[count_]
+}
+{    index_: count_ signed_
 
      # sets this array's capacity to exactly `max_(m count_(), capacity)`;
      # i.e., no elements would get deleted by this operation.
      # prefer `array capacity_(at_least. count)` because it will grow the array
      # in an amortized way if you are increasing the capacity over time.
-     ;;capacity_(capacity.): hm_[null_]
+     ;;capacity_(capacity.): hm_{null_}
 
      :;[in_bounds.]: (of:;)
 
-     ;;append_(of.): hm_[null_]
+     ;;append_(of.): hm_{null_}
           m capacity_(at_least: m count_() + 1) assert_()
           m append_(of, assuming. capacity)
 
-     # called as `array append_(3, assuming. capacity)`
-     ;;append_(of., assuming. one_of_[capacity]): null_
+     # called as `array append_(3, assuming. _ capacity)`
+     # TODO: `array append_(3, assuming_ capacity)` might be nicer
+     ;;append_(of., assuming. one_of_{capacity:}): null_
 
      ::count_(): count_
 
-     ;;count_[require: of_ is defaultable_](NEW_count.): hm_[null_]
+     ;;count_{require: of_ is defaultable_}(NEW_count.): hm_{null_}
           OLD_count: m count_()
           if NEW_count == OLD_count
                return ok_()
@@ -38,16 +39,17 @@ array_[of_, capacity_: select_count_ = arch count_]: all_of_
 
      ::capacity_(): count_
 
-     ;;capacity_(at_least. count_): hm_[null_]
+     ;;capacity_(at_least. count_): hm_{null_}
           current_capacity: m capacity_()
           if at_least <= current_capacity
                return ok_()
           doubled_capacity: current_capacity double_or_max_()
           m capacity_(max_(at_least, doubled_capacity))
 
-     # call as `array clear_(keeping. no_capacity)` to deallocate
-     # or `array clear_(keeping. same_capacity)` to keep the allocation.
-     ;;clear_(keeping. one_of_[no_capacity, same_capacity]): null_
+     # call as `array clear_(keeping. _ no_capacity)` to deallocate
+     # or `array clear_(keeping. _ same_capacity)` to keep the allocation.
+     # TODO: `array clear_(keeping_ no_capacity)` might be nicer
+     ;;clear_(keeping. one_of_{no_capacity:, same_capacity:}): null_
           while m count > 0
                UNUSED_of: m pop()
           what keeping
@@ -59,7 +61,7 @@ array_[of_, capacity_: select_count_ = arch count_]: all_of_
      ::[index.]?: (of:)
           # TODO: use m[in_bounds]
 
-     ;;[index.]: hm_[(of;)]
+     ;;[index.]: hm_{(of;)}
           # TODO: use m[in_bounds]
 
      ;;pop_()?: of_
@@ -97,10 +99,10 @@ array_[of_, capacity_: select_count_ = arch count_]: all_of_
           1
 
      # returns a copy of this array, but sorted.
-     ::sort_[require: of_ is orderable_](): o_
+     ::sort_{require: of_ is orderable_}(): o_
 
      # sorts this array in place.
-     ;;sort_[require: of_ is orderable_](): null_
+     ;;sort_{require: of_ is orderable_}(): null_
 
      #[#
      sorts with a custom comparator that acts on a single element at a time.
@@ -113,9 +115,9 @@ array_[of_, capacity_: select_count_ = arch count_]: all_of_
           print_(array sort_({$by count_()}))     # same, but via lambda arguments
           ```
      #]#
-     :;sort_[require: t_ is orderable_]
+     :;sort_{require: t_ is orderable_}
      (    fn_(by: of_): ~t_
-     ):        respectively_[o_, null_]
+     ):        respectively_{o_, null_}
 
      #[#
      sorts using a tabulated work array (with an additional cost of
@@ -127,21 +129,21 @@ array_[of_, capacity_: select_count_ = arch count_]: all_of_
           print_(array sort_({$tabulated_by count_()}))
           ```
      #]#
-     :;sort_[require: t_ is orderable_]
+     :;sort_{require: t_ is orderable_}
      (    fn_(tabulated_by: of_): ~t_
-     ):        respectively_[o_, null_]
+     ):        respectively_{o_, null_}
 
      # sorts with a custom comparator that acts on two elements at a time.
      # without certain transitive properties, the result's order may not make sense.
-     :;sort_(fn_(left: of_, right: of_): ordering_): respectively_[o_, null_]
+     :;sort_(fn_(left: of_, right: of_): ordering_): respectively_{o_, null_}
 
-     ::hash_[require: of_ is hashable_](~builder;): null_
+     ::hash_{require: of_ is hashable_}(~builder;): null_
           m each of:
                builder hash_(of)
 
-     maybe_local_[local_bytes_]:
-               maybe_local_array_[of_, local_bytes_, locality_: count_]
-     non_local_: non_local_array_[of_, count_]
+     maybe_local_{local_bytes_}:
+               maybe_local_array_{of_, local_bytes_, locality_: count_}
+     non_local_: non_local_array_{of_, count_}
 
      @alias heap_: non_local_
      @alias heap_or_local_: maybe_local_
@@ -151,6 +153,6 @@ array_[of_, capacity_: select_count_ = arch count_]: all_of_
 }
 
 # for simplicity, rounds to multiples of 8 bytes.
-local_bytes_: select_[16, 24, 32, 40, 48, 56, 64]
+local_bytes_: select_{16, 24, 32, 40, 48, 56, 64}
 
 [hm_, CONTAINER_er_]: \/container

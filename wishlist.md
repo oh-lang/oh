@@ -1554,7 +1554,8 @@ TODO: `$field` should create a `fn_(field)` not a `new_{field}` by default;
 can we figure out how to make it typey?  `{$...}_` maybe?  or can we just
 do `$field_` and infer `new_{field_:}: field_`?
 TODO: OR we use `${}` for types, and `$[]`/`$()` for functions with `[]`/`()`
-args respectively.
+args respectively.  if we keep `$(...)` meaning `{(...)}` then we can do
+`array_{(int;)}` as `array_$(int;)`, although not a huge boost to readability.
 
 ```
 # tautologies
@@ -7485,9 +7486,9 @@ check if an enum instance `enum` is a specific value `this_value` via
 `enum is_this_value_()` which will return true iff so.
 
 ```
-test: bool_ = false  # or `test: bool_ false`
+test: bool_ = false # or `test: bool_ false`
 
-if test == true     # OK
+if test == _ true   # OK
      print_("test is true :(")
 if test is_false_() # also OK
      print_("test is false!")
