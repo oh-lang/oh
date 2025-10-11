@@ -6106,7 +6106,8 @@ methods.  For public methods, `assert_` should always be used to check arguments
 Note that for functions that return results, i.e., `hm_{ok_:, er_:}`, `assert_` will automatically
 return early with an `er_` based on the error the `assert_` encountered.  If a function does
 *not* return a result, then using `assert_` will be a run-time panic; to make sure that's
-what you want, annotate the function with `@can_panic`, otherwise it's a compile error.
+what you want, annotate the function with `@can_panic`, otherwise it's a compile warning/error in
+debug/release mode (respectively).
 
 ## automatically converting errors to null
 

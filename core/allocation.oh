@@ -139,7 +139,6 @@ allocation_
                need_one_more_word: at_least_memory %% word_memory != 0
                (at_least_memory // word_memory + need_one_more_word) * word_memory
 
-
      # TODO: update based on size of `of_`
      small_capacity: 4
 
@@ -160,5 +159,6 @@ allocation_
 
      # use an alias so we can do, e.g., `allocation_{capacity_managed_ on_heap}`
      # to specify `capacity_managed` (see next field).
+     # TODO: move `managed_` to `memory_ managed_` or something like `memory_ location_`
      capacity_managed_: managed_
 }

@@ -1,32 +1,73 @@
-assert_[block_hm_: hm_[~ok_, ~er_], er_: runtime_er_](~t., block[block_hm_];): assertion_[t, er_, held_er_: null_]
+# for wrapping any value into an assertion, e.g., `assert_(x) == 5`
+# in a function that returns a `hm_` result.
+assert_
+{    block_hm_: hm_{~ok_:, ~er_:}
+     # NOTE: `assertion_` will throw a `runtime_er_`.
+     require: runtime_er_ in er_
+}
+(    ~t.
+     block{~block_hm_:};
+):        assertion_{t, er_, held_er_: null_}
+# for wrapping any value into an assertion, e.g., `assert_(x) == 5`
+# in a function that can panic.
+assert_{require: oh_info_ caller_() can_panic_()}(~t.)
+:         assertion_{t, er_, held_er_: null_}
 
-assert_[require: oh_info_ caller_() can_panic_()](~t.): assertion_[t, er_, held_er_: null_]
+# for converting a nullable value into a non-null, e.g., `not_null: assert_(x?)`
+# in a function that returns a `hm_` result.
+assert_{block_hm_: hm_{~ok_:, ~er_:}, er_: runtime_er_}
+(    ~t?.
+     block{~block_hm_:};
+):        t_
+# for converting a nullable value into a non-null, e.g., `not_null: assert_(x?)`
+# in a function that can panic.
+assert_{require: oh_info_ caller_() can_panic_()}(~t?.)
+:         t_
 
-#[#
-for converting a nullable value into a non-null via `assert_(x?)`
-#]#
-assert_[block_hm_: hm_[~ok_, ~er_], er_: runtime_er_](~t?., block[~block_hm_];): t_
-assert_[require: oh_info_ caller_() can_panic_()](~t?.): t_
-
-#[#
-for converting a result value into an ok value via `assert_(hm)`
-#]#
-assert_[hm_: hm_[~ok_, ~HM_er_], block_hm_: hm_[~IGNORE_ok_, ~BLOCK_er_], BLOCK_er_: contains_[HM_er_]](~hm., block[~block_hm_];): ok_
-assert_[require: oh_info_ caller_() can_panic_(), hm_: hm_[~ok_, ~IGNORE_er_]](~hm.): ok_
+# for converting a result value into an ok value, e.g., `ok: assert_(hm)`
+# in a function that returns a `hm_` result.
+assert_
+{    hm_: hm_{~ok_:, ~HM_er_:}
+     block_hm_: hm_{~IGNORE_ok_, ~BLOCK_er_}
+     require: HM_er_ in BLOCK_er_
+}
+(    ~hm.
+     block{~block_hm_};
+):        ok_
+# for converting a result value into an ok value, e.g., `ok: assert_(hm)`
+# in a function that can panic.
+assert_
+{    require: oh_info_ caller_() can_panic_()
+     hm_: hm_{~ok_, ~IGNORE_er_}
+}
+(    ~hm.
+):        ok_
 
 @private
-assertion_[of_, RETURNED_er_: runtime_er_, held_er_: RETURNED_er_]: [of;, oh_info:, transformation; str_, held_er;]
-{    g_(~t., ~GIVEN_RETURNED_er., oh_info. _ caller_(), transformation. ""): g_[t_, RETURNED_er_: GIVEN_RETURNED_er_]
+assertion_{of_:, RETURNED_er_: runtime_er_, held_er_: RETURNED_er_}:
+[    of;
+     oh_info:
+     transformation; str_
+     held_er;
+]
+{    g_(~t., ~GIVEN_RETURNED_er., oh_info. _ caller_(), transformation. ""):
+               g_{t_, RETURNED_er_: GIVEN_RETURNED_er_}
           [t, held_er. RETURNED_er, oh_info, transformation]
 
      # TODO: something like this for nullable.
-     g_(hm[~ok_, ~er_]., oh_info. _ caller_(), transformation. ""): g_[hm_[ok_, er_], RETURNED_er_: er_, held_er_: null_]
+     g_(hm{~ok_:, ~er_:}., oh_info. _ caller_(), transformation. ""):
+               g_{hm_{ok_, er_}, RETURNED_er_: er_, held_er_: null_}
           [hm, held_er. null, oh_info, transformation]
 
-     g_(~t., oh_info. _ caller_(), transformation. ""): g_[t_]
+     g_(~t., oh_info. _ caller_(), transformation. ""): g_{t_}
           [t, held_er. runtime_er_ unspecified, oh_info, transformation]
 
-     ;;descope_[t_: contains_[RETURNED_er_]](block[t_];): null_
+     ;;descope_
+     {    require: RETURNED_ER_ in er_
+          hm_: hm_{~IGNORE_ok:, ~er_:}
+     }
+     (    block{~hm:};
+     ):        null_
           @if of_ is bool_
                if !m of
                     block exit_(m held_er)
@@ -58,7 +99,7 @@ assertion_[of_, RETURNED_er_: runtime_er_, held_er_: RETURNED_er_]: [of;, oh_inf
      @methods(of_) @each method:
           # `method arguments` will include `m:`, `m;`, or `m.`, so we don't
           # need to add `::`, `;;`, or `..` to the start here.
-          @concat(method name)(...method arguments): g_[method returning_]
+          @concat(method name)(...method arguments): g_{method returning_}
                # TODO: in release mode, we need to make `transformation` not a string
                # and do something else.
                transformation. str_ = "${m transformation} ${of_ string_(method)}"
@@ -69,9 +110,9 @@ assertion_[of_, RETURNED_er_: runtime_er_, held_er_: RETURNED_er_]: [of;, oh_inf
 }
 
 runtime_er_: one_of_
-[    unspecified
-     invalid_argument
-     broken_invariant
-]
+{    unspecified:
+     invalid_argument:
+     broken_invariant:
+}
 {   @alias invalid_arguments: invalid_argument
 }
