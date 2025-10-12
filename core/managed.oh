@@ -1,2 +1,0 @@
-# TODO: add an `unmanaged` option.
-managed_: one_of_[locally:, on_heap:]
