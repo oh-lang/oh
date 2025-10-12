@@ -47,7 +47,8 @@ container_
      # TODO: i'm not a big fan of `pop`, maybe `remove_(at.)?: of_` and `remove_(all. of_): count_`
      # or we can do `give_(of)` (to add) and `take_(at)` (to remove) so that we have matching lengths.
      # `take` could have an iterator overload
-     # `lot give_([at. "hello", of. 123])` -- don't love this compared to `insert_` and `remove_` though.
+     # `lot give_(at. "hello", 123)` -- don't love this compared to `insert_` and `remove_` though.
+     # `lot insert_(at. "hello", 123)`, `lot remove_("hello")`
      ;;pop_(at.)?: of_
 
      # TODO: `::min_()`, `::max_()`, and `::order_(count.)` methods.

@@ -2,37 +2,41 @@ memory_: arch_ unsigned_
 {    # built in.  returns the number of bytes in a type.
      m_(~t_): m_
 
-     ::allocate_(): hm_[ptr_[u8_]]
-     ::reallocate_(ptr_[u8_];): hm_[null_]
+     ::allocate_(): hm_{ptr_{u8_}}
+     ::reallocate_(ptr{u8_};): hm_{null_}
 
      # assumes that the value at `ptr` hasn't been initialized
      # and moves `t` into that memory location.  this does not
      # check `ptr` for any null or empty value before nuking it.
-     initialize_(~t., ptr[~t_]:): null_
+     initialize_(~t., ptr{~t_}:): null_
 
      # assumes that the value at `ptr` has been initialized
      # and deinitializes it.  in debug mode, the `ptr` is cleared,
      # while in non-debug it is not.
-     deinitialize_(ptr_[~t_]:): null_
+     deinitialize_(ptr{~t_}:): null_
 
      # assumes that the value at `ptr` has been initialized
      # and returns it.  in debug mode, the `ptr` is cleared,
      # while in non-debug it is not.
-     remove_(ptr_[~t_]:): t_
+     remove_(ptr{~t_}:): t_
 
-     heap_[t_: any_]: on_heap_[t_]
+     # uses `on_heap_` internally to create the `refer_`.
+     heap_{of_:}: refer_{of_}
+
+     # TODO: add an `elsewhere` option
+     site_: one_of_{local:, on_heap:}
 }
 
 er_: one_of_
-[    out_of_memory:
-]
+{    out_of_memory:
+}
 
-hm_[of_]: hm_[ok_: of_, er_]
+hm_{of_:}: hm_{ok_: of_, er_}
 
 @private
-on_heap_[of_]: all_of_
-[    m: [ptr[of_];]
-     refer[of_]
-]
+on_heap_{of_:}: all_of_
+{    m: [ptr{of_};]
+     refer{of_}:
+}
 {    # TODO: deref logic
 }

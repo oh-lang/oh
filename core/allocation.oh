@@ -4,21 +4,22 @@ allocation_
      # if not null, we allocate just enough space for this extra data
      # just before the buffer of `of_` values.  there can be multiple
      # `of` values, but only ever one instance of `header` is added.
+     # TODO: we probably can infer `header_: null_` implies `header_: any_ = null_`.
      header_: any_ = null_
      # determines the maximum size of the allocation, and
      # makes indexing this allocation potentially more efficient.
      capacity_: select_count_
      # whether to put capacity locally inside this allocation.
      # if `on_heap`, it gets added to the `full_header_`
-     capacity_managed:
+     capacity_site: _ local
 }:
 [    @private m:
      [    of_ptr{of_};
-          capacity{require: capacity_managed == _ locally};
+          capacity{require: capacity_site is_local_()};
      ]
 ]
 {    ::capacity_(): capacity_
-          @if capacity_managed == _ locally
+          @if capacity_site is_local_()
                m capacity
           @else
                # TODO: add full_header method
@@ -99,6 +100,7 @@ allocation_
      ;;header_{require: header_ is !null_}(): hm_{(header;)}
           if !m
                m capacity_(small_capacity) assert_()
+          # TODO: better syntax here, maybe `with !!m {m header_()}`
           assert_(!!m)
           ok_(m header_())
 
@@ -109,7 +111,7 @@ allocation_
 
      @private
      has_full_header_():
-          header_ is !null_ or capacity_managed == on_heap
+          header_ is !null_ or capacity_site is_on_heap_()
 
      @private
      ;;full_head_(ptr{u8_}.): null_
@@ -144,10 +146,10 @@ allocation_
 
      offset_: capacity_ offset_
 
-     @if header_ is !null_ or capacity_managed == _ on_heap
+     @if header_ is !null_ or capacity_site is_on_heap_()
           @private full_header_:
           [    header{require: header_ is !null_};
-               capacity{require: capacity_managed == _ on_heap};
+               capacity{require: capacity_site is_on_heap_()};
           ]
      @else
           @private full_header_: null_
@@ -157,8 +159,7 @@ allocation_
           er_: container_ er_
      }
 
-     # use an alias so we can do, e.g., `allocation_{capacity_managed_ on_heap}`
-     # to specify `capacity_managed` (see next field).
-     # TODO: move `managed_` to `memory_ managed_` or something like `memory_ location_`
-     capacity_managed_: managed_
+     # use an alias so we can do, e.g., `allocation_{capacity_site_ on_heap}`
+     # to specify `capacity_site`
+     capacity_site_: memory_ site_
 }
