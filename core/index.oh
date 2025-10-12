@@ -1,13 +1,13 @@
 index_: index64_
-index64_: index_[wrapping_: i64_]
-index32_: index_[wrapping_: i32_]
-index16_: index_[wrapping_: i16_]
-index8_: index_[wrapping_: i8_]
+index64_: index_{wrapping_: i64_}
+index32_: index_{wrapping_: i32_}
+index16_: index_{wrapping_: i16_}
+index8_: index_{wrapping_: i8_}
 
 @final
-index_[wrapping_: signed_primitive_]: all_of_
-[    @private m: [value; wrapping_]
-     integer
-]
+index_{wrapping_: signed_primitive_}: all_of_
+{    @private m: [value; wrapping_]
+     integer:
+}
 {    @integer(m value)
 }

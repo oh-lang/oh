@@ -1,5 +1,5 @@
-lot_[of_, at_: hashable_]: all_of_
-[    #[#
+lot_{of_:, at_: hashable_}: all_of_
+{    #[#
      ```
      lot: ["great": 50, "wow": 77]
      if lot has "great"
@@ -10,37 +10,36 @@ lot_[of_, at_: hashable_]: all_of_
           print_("ok!")
      ```
      #]#
-     hazable_[at_]
-]
+     hazable{at_}:
+     container{at_, of_}:
+}
 {    # returns null if `at` is not in the lot.
-     ::[at]: (of?:)
+     ::[at.]: (of?:)
 
      # gets the existing value at `at` if present,
      # otherwise inserts a default `of` into the lot and returns it.
-     ;;[at]: hm_[(of;)]
+     ;;[at.]: hm_{(of;)}
 
      @can_panic
-     ;;[at]: (of;)
+     ;;[at.]: (of;)
           m[at] hm assert_()
 
      ::count_(): count_
 
      # ejects the (possibly null) value at `at` and returns it.
-     # a subsequent, immediate call to `::[at]` returns null.
-     ;;pop_(at)?: of_
+     # a subsequent, immediate call to `::[at.]` returns null.
+     ;;pop_(at.)?: of_
 
-     # Returns the last element added to the lot if the lot is
+     # returns the last element added to the lot if the lot is
      # insertion ordered, otherwise returns any convenient element.
-     # The element is removed from the lot.
-     ;;pop_(): hm_[of_]
+     # the element is removed from the lot.
+     ;;pop_()?: of_
 
-     # TODO: some good way to do this; it should be ok to shadow if it's the same type.
-     # maybe `@export(er_)`?
      er_: er_
 }
 
-er: one_of_
-[    out_of_memory
-     # etc...
-]
-hm_[of_]: hm_[ok_: of_, er_]
+# extend as necessary
+er: CONTAINER_er_
+hm_{of_:}: hm_{ok_: of_, er_}A
+
+[CONTAINER_er_: er_]: \/container

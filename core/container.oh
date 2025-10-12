@@ -5,7 +5,9 @@ container_
      require: of_ is !null_
      PROVIDED_er_: er_
      require: er_ in PROVIDED_er_
-}: []
+}: all_of_
+{    hazable{at_}:
+}
 {    ::count_(): count_
 
      !!(m:): bool_
@@ -43,6 +45,9 @@ container_
      #        and `@require: @specialized ;;pop_ || @specialized ;;swap_`...
      #        this `@require` is only needed for a non-abstract class.
      # TODO: i'm not a big fan of `pop`, maybe `remove_(at.)?: of_` and `remove_(all. of_): count_`
+     # or we can do `give_(of)` (to add) and `take_(at)` (to remove) so that we have matching lengths.
+     # `take` could have an iterator overload
+     # `lot give_([at. "hello", of. 123])` -- don't love this compared to `insert_` and `remove_` though.
      ;;pop_(at.)?: of_
 
      # TODO: `::min_()`, `::max_()`, and `::order_(count.)` methods.

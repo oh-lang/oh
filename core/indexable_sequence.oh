@@ -1,5 +1,8 @@
-indexable_sequence_[of_: not_[null_]]: container_[of_, at_: index_]
-{    ;;count_[require: of_ is defaultable_](count.): null_
+indexable_sequence_
+{    of_: !null_
+     count_: select_count_ = arch_ count_
+}:   container_{of_, at_: index_, count_}
+{    ;;count_{require: of_ is defaultable_}(count.): null_
 
      # nullable getter; returns null if `index` is outside the bounds of the array.
      ::[index.]: (of?:)
@@ -16,7 +19,7 @@ indexable_sequence_[of_: not_[null_]]: container_[of_, at_: index_]
           refer_
           (    m
                at. @hide index
-               fn_(o;, index.): @hm_or_panic[(of;)]
+               fn_(o;, index.): @hm_or_panic{(of;)}
                     in_bounds: o in_bounds_(index) assert_()
                     (of; o[in_bounds])
           )
@@ -25,23 +28,26 @@ indexable_sequence_[of_: not_[null_]]: container_[of_, at_: index_]
      # throws in debug, prefer `index` access which will bounds check.
      :;[in_bounds.]: (of:;)
 
+     # can error out if `index` is too negative.
      @protected
-     ::in_bounds_(index.): hm_[in_bounds_]
+     ::in_bounds_(index.): hm_{in_bounds_}
           m ensure_non_negative_(;index) assert_()
-          assert_(index < m count_(), er: invalid_index)
+          assert_(index < m count_(), er: _ invalid_index)
           ok_(in_bounds_(index))
 
      # resizes the array to make `index` in bounds, as long as it's positive.
      # can error out if `index` is too negative or array expansion failed.
      @protected
-     ;;in_bounds_[requires: of_ is defaultable_](index.): hm_[in_bounds_]
+     ;;in_bounds_{requires: of_ is defaultable_}(index.): hm_{in_bounds_}
           m ensure_non_negative_(;index) assert_()
           if index >= m count_()
                m count_(index + 1) assert_()
           ok_(in_bounds_(index))
 
      # TODO: `ensure_non_negative_`
+
+     index_: index_{count_}
+
+     # TODO: ensure this is `@distinct` and requires an explicit cast.
+     in_bounds_: index_
 }
-
-[in_bounds_]: \/allocation
-
