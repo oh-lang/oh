@@ -1,1 +1,1 @@
-method_: [name: str_, arguments:, returning:]
+method_: [name: str_, arguments:, returns:]

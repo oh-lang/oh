@@ -1,10 +1,18 @@
-offset_[of_: select_unsigned_]: of_
+offset_{of_: select_unsigned_}: of_
 {    ::is_valid_index_(): bool_
-          m < count_[of_] max
+          m < count_{of_} max
 }
+
+# TODO: should this be `select_{:offset8_, ...}` or `select_{offset8:, ...}`???
+select_offset_: select_{offset8_, offset16_, offset32_, offset64_}
+
+offset64_: offset_{u64_}
+offset32_: offset_{u32_}
+offset16_: offset_{u16_}
+offset8_: offset_{u8_}
 
 @test "is_valid_index"
      @test "u8_"
-          t_: offset_[u8_]
+          t_: offset_{u8_}
           assert_(t_(127) is_valid_index_())
           assert_(!t_(128) is_valid_index_())

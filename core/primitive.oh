@@ -1,3 +1,7 @@
+# TODO: split into separate `unsigned.oh` `signed.oh` etc. files
+# TODO: for import concerns, we probably need to do the conversions here,
+#         e.g., `primitive_ signed_{u8_}: i8_`,
+#              `primitive_ select_signed_`, etc.
 # TODO: fix for 32bit architectures
 h_arch_: h64_
 s_arch_: s64_
@@ -5,7 +9,7 @@ i_arch_: i64_
 u_arch_: u64_
 
 primitive_: flatten_
-[    # unsigned_ primitives represent `0` to `2^p - 1`.
+{    # unsigned_ primitives represent `0` to `2^p - 1`.
      select_unsigned_
      # signed primitives represent `-2^(p-1)` to `2^(p-1) - 1`.
      select_signed_
@@ -13,22 +17,22 @@ primitive_: flatten_
      select_symmetric_
      # hoisted_ primitives represent `-2^(p-1) + 1` to `2^(p-1)`.
      select_hoisted_
-]
+}
 
 # TODO: support 128, 256, 512, etc.
-bit_count_: select_[8, 16, 32, 64]
+bit_count_: select_{8, 16, 32, 64}
 
 # unsigned_ primitives represent numbers from `0` to `2^p - 1`, inclusive,
 # where `p` is the number of bits used; i.e., `u8_` has `p: 8` and `u64_` has `p: 64`.
 # `u8_` can thus represent numbers from 0 to 255.
 select_unsigned_: select_
-[    u8_
+{    u8_
      u16_
      u32_
      u64_
-]
-{    # usage: `unsigned_: select_unsigned_ bits_[32]` to define `unsigned_` as a `u32_`.
-     bits_[bit_count]: what bit_count
+}
+{    # usage: `unsigned_: select_unsigned_ bits_{32}` to define `unsigned_` as a `u32_`.
+     bits_{bit_count:}: what bit_count
           8 { u8_ }
           16 { u16_ }
           32 { u32_ }
@@ -39,90 +43,90 @@ select_unsigned_: select_
 ```
 ["i", "s", "h"] @each q: str_
      bit_count_ @each bits:
-          unsigned_[@concat(q, bits, "_")]: @concat("u", bits, "_")}
+          unsigned_{@concat(q, bits, "_")}: @concat("u", bits, "_")}
 ```
 #]#
-unsigned_[select_signed_]: select_unsigned_
-unsigned_[i8_]: u8_
-unsigned_[i16_]: u16_
-unsigned_[i32_]: u32_
-unsigned_[i64_]: u64_
+unsigned_{select_signed_}: select_unsigned_
+unsigned_{i8_}: u8_
+unsigned_{i16_}: u16_
+unsigned_{i32_}: u32_
+unsigned_{i64_}: u64_
 
-unsigned_[select_symmetric_]: select_unsigned_
-unsigned_[s8_]: u8_
-unsigned_[s16_]: u16_
-unsigned_[s32_]: u32_
-unsigned_[s64_]: u64_
+unsigned_{select_symmetric_}: select_unsigned_
+unsigned_{s8_}: u8_
+unsigned_{s16_}: u16_
+unsigned_{s32_}: u32_
+unsigned_{s64_}: u64_
 
-unsigned_[select_hoisted_]: select_unsigned_
-unsigned_[h8_]: u8_
-unsigned_[h16_]: u16_
-unsigned_[h32_]: u32_
-unsigned_[h64_]: u64_
+unsigned_{select_hoisted_}: select_unsigned_
+unsigned_{h8_}: u8_
+unsigned_{h16_}: u16_
+unsigned_{h32_}: u32_
+unsigned_{h64_}: u64_
 
 # signed primitives represent numbers from `-2^(p-1)` to `2^(p-1) - 1`, inclusive,
 # where `p` is the number of bits used; i.e., `i8_` has `p: 8` and `i64_` has `p: 64`.
 # `i8_` can thus represent numbers from -128 to 127.
 select_signed_: select_
-[    i8_
+{    i8_
      i16_
      i32_
      i64_
-]
-{    # usage: `signed_: select_signed_ bits_[16]` to define `signed_` as an `i16_`.
-     bits_[bit_count]: what bit_count
+}
+{    # usage: `signed_: select_signed_ bits_{16}` to define `signed_` as an `i16_`.
+     bits_{bit_count}: what bit_count
           8 { i8_ }
           16 { i16_ }
           32 { i32_ }
           64 { i64_ }
 }
 
-signed_[select_unsigned_]: select_signed_
-signed_[u8_]: i8_
-signed_[u16_]: i16_
-signed_[u32_]: i32_
-signed_[u64_]: i64_
+signed_{select_unsigned_}: select_signed_
+signed_{u8_}: i8_
+signed_{u16_}: i16_
+signed_{u32_}: i32_
+signed_{u64_}: i64_
 
-signed_[select_symmetric_]: select_signed_
-signed_[s8_]: i8_
-signed_[s16_]: i16_
-signed_[s32_]: i32_
-signed_[s64_]: i64_
+signed_{select_symmetric_}: select_signed_
+signed_{s8_}: i8_
+signed_{s16_}: i16_
+signed_{s32_}: i32_
+signed_{s64_}: i64_
 
-signed_[select_hoisted_]: select_signed_
-signed_[h8_]: i8_
-signed_[h16_]: i16_
-signed_[h32_]: i32_
-signed_[h64_]: i64_
+signed_{select_hoisted_}: select_signed_
+signed_{h8_}: i8_
+signed_{h16_}: i16_
+signed_{h32_}: i32_
+signed_{h64_}: i64_
 
 # symmetric_ primitives represent numbers from `-2^(p-1) + 1` to `2^(p-1) - 1`, inclusive,
 # where `p` is the number of bits used; i.e., `s8_` has `p: 8` and `s64_` has `p: 64`.
 # `s8_` can thus represent numbers from -127 to 127.  they use two's complement but
 # keep `-2^(p-1)` reserved as a `null` value for when the type is nullable.
 select_symmetric_: select_
-[    s8_
+{    s8_
      s16_
      s32_
      s64_
-]
-{    # usage: `symmetric_: select_symmetric_ bits_[8]` to define `symmetric_` as an `s8_`.
-     bits_[bit_count]: what bit_count
+}
+{    # usage: `symmetric_: select_symmetric_ bits_{8}` to define `symmetric_` as an `s8_`.
+     bits_{bit_count:}: what bit_count
           8 { s8_ }
           16 { s16_ }
           32 { s32_ }
           64 { s64_ }
 }
 
-s64_: symmetric_[i64_]
-s32_: symmetric_[i32_]
-s16_: symmetric_[i16_]
-s8_: symmetric_[i8_]
+s64_: symmetric_{i64_}
+s32_: symmetric_{i32_}
+s16_: symmetric_{i16_}
+s8_: symmetric_{i8_}
 
-symmetric_[of_: select_signed_]: all_of_
-[    m: [@private value; of_]
-     integer_
-]
-{    m_(of.): hm_[number_ er_, m_]
+symmetric_{of_: select_signed_}: all_of_
+{    m: [@private value; of_]
+     integer;
+}
+{    m_(of.): hm_{number_ er_, m_}
           if of == of_ min_()
                er_ unrepresentable
           else
@@ -132,56 +136,56 @@ symmetric_[of_: select_signed_]: all_of_
 
      ?:
      {    null: [value: of_ min()]
-          ::is(null_): m value == of_ min()
+          ::is_(null_): m value == of_ min()
      }
 }
 
-symmetric_[select_unsigned_]: select_symmetric_
-symmetric_[u8_]: s8_
-symmetric_[u16_]: s16_
-symmetric_[u32_]: s32_
-symmetric_[u64_]: s64_
+symmetric_{select_unsigned_}: select_symmetric_
+symmetric_{u8_}: s8_
+symmetric_{u16_}: s16_
+symmetric_{u32_}: s32_
+symmetric_{u64_}: s64_
 
-symmetric_[select_symmetric_]: select_symmetric_
-symmetric_[s8_]: s8_
-symmetric_[s16_]: s16_
-symmetric_[s32_]: s32_
-symmetric_[s64_]: s64_
+symmetric_{select_symmetric_}: select_symmetric_
+symmetric_{s8_}: s8_
+symmetric_{s16_}: s16_
+symmetric_{s32_}: s32_
+symmetric_{s64_}: s64_
 
-symmetric_[select_hoisted_]: select_symmetric_
-symmetric_[h8_]: s8_
-symmetric_[h16_]: s16_
-symmetric_[h32_]: s32_
-symmetric_[h64_]: s64_
+symmetric_{select_hoisted_}: select_symmetric_
+symmetric_{h8_}: s8_
+symmetric_{h16_}: s16_
+symmetric_{h32_}: s32_
+symmetric_{h64_}: s64_
 
 # hoisted_ primitives represent numbers from `-2^(p-1) + 1` to `2^(p-1)`, inclusive,
 # where `p` is the number of bits used; i.e., `h8_` has `p: 8` and `h64_` has `p: 64`.
 # `h8_` can thus represent numbers from -127 to 128.
 select_hoisted_: select
-[    h8_
+{    h8_
      h16_
      h32_
      h64_
-]
-{   # usage: `hoisted_: select_hoisted_ bits_[64]` to define `hoisted_` as `h64_`.
-     bits_[bit_count]: what bit_count
+}
+{   # usage: `hoisted_: select_hoisted_ bits_{64}` to define `hoisted_` as `h64_`.
+     bits_{bit_count:}: what bit_count
           8 { h8_ }
           16 { h16_ }
           32 { h32_ }
           64 { h64_ }
 }
 
-h64_: hoisted_[i64_]
-h32_: hoisted_[i32_]
-h16_: hoisted_[i16_]
-h8_: hoisted_[i8_]
+h64_: hoisted_{i64_}
+h32_: hoisted_{i32_}
+h16_: hoisted_{i16_}
+h8_: hoisted_{i8_}
 
 # internally a `hoisted_` primitive negates the primitive type to represent itself.
-hoisted_[of_: select_signed_]: all_of_
-[    m_: [@private negated_value; of_]
+hoisted_{of_: select_signed_}: all_of_
+{    m_: [@private negated_value; of_]
      integer_
-]
-{    m_(of.): hm_[number_ er_, ok_: m_]
+}
+{    m_(of.): hm_{number_ er_, ok_: m_}
           if of == of_ min_()
                er_ unrepresentable
           else
@@ -193,20 +197,20 @@ hoisted_[of_: select_signed_]: all_of_
      @negated_integer(m negated_value)
 }
 
-hoisted_[select_unsigned_]: select_hoisted_
-hoisted_[u8_]: h8_
-hoisted_[u16_]: h16_
-hoisted_[u32_]: h32_
-hoisted_[u64_]: h64_
+hoisted_{select_unsigned_}: select_hoisted_
+hoisted_{u8_}: h8_
+hoisted_{u16_}: h16_
+hoisted_{u32_}: h32_
+hoisted_{u64_}: h64_
 
-hoisted_[select_signed_]: select_hoisted_
-hoisted_[i8_]: h8_
-hoisted_[i16_]: h16_
-hoisted_[i32_]: h32_
-hoisted_[i64_]: h64_
+hoisted_{select_signed_}: select_hoisted_
+hoisted_{i8_}: h8_
+hoisted_{i16_}: h16_
+hoisted_{i32_}: h32_
+hoisted_{i64_}: h64_
 
-hoisted_[select_symmetric_]: select_hoisted_
-hoisted_[s8_]: h8_
-hoisted_[s16_]: h16_
-hoisted_[s32_]: h32_
-hoisted_[s64_]: h64_
+hoisted_{select_symmetric_}: select_hoisted_
+hoisted_{s8_}: h8_
+hoisted_{s16_}: h16_
+hoisted_{s32_}: h32_
+hoisted_{s64_}: h64_
