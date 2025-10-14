@@ -1,36 +1,40 @@
-# a "future"; something that will produce an `of` when `decide` is called.
-# the best way to use futures is in combination with other futures, deciding
-# them all at the same time, to avoid running them sequentially.  example:
-#   # BAD: prints "world" after 2 seconds, then "hello" 1 second after that.
-#   # this therefore takes 3s in total.
-#   run({print("world")}, After: Seconds: 2)
-#   run({print("hello")}, After: Seconds: 1)
-#   # GOOD: prints "hello" after 1 second, then "world" 1 second after that.
-#   # this therefore takes 2s in total.
-#   What; run({print("world")}, After: Seconds: 1) Um
-#   Greeting; run({print("hello")}, After: Seconds: 2) Um
-#   decide(What, Greeting)
-um_[of_]: []
+#[#
+a "future"; something that will produce an `of` when `decide_` is called.
+the best way to use futures is in combination with other futures, deciding
+them all at the same time, to avoid running them sequentially.  example:
+```
+# BAD: prints "world" after 2 seconds, then "hello" 1 second after that.
+# this therefore takes 3s in total.
+run_({print_("world")}, after: seconds: 2)
+run_({print_("hello")}, after: seconds: 1)
+# GOOD: prints "hello" after 1 second, then "world" 1 second after that.
+# this therefore takes 2s in total.
+what; run_(${print_("world")}, after: seconds: 1) um
+greeting; run_(${print_("hello")}, after: seconds: 2) um
+decide_(what, greeting)
+```
+#]#
+um_{of_:}: []
 {    # TODO: by default, should we include `of` as a field on this type,
      # so that we can do `my_future; whatever_fn_() um, result; my_future_ of_ = my_future decide_()`?
      # we could do this by default for all generics, or only if we do this:
      of_: of_
 
      g_(~t.): disallowed_
-     [    "use `um_(immediate. abc)` if you want to create a future with `abc`"
+     {    "use `um_(immediate. abc)` if you want to create a future with `abc`"
      &    "or `some_long_running_fn_() um` to get the future from `some_long_running_fn_()`"
-     ]
+     }
 
-     g_(immediate. ~t_): g_[t_]
+     g_(immediate. ~t_): g_{t_}
 
      ;;decide_(): of_
 }
 
-um_[of_, er_]: um_[hm_[of_, er_]]
+um_{of_:, er_:}: um_{hm_{of_, er_}}
 
 @test "um_(x) gives a compile error"
      lines; ["um_(123)"]
-     hm; compile_(;lines)
+     hm; compile_(lines)
      assert_(lines) ==
           [    "x: um_(123)"
                "#@!^ use `um_(immediate. abc)` if you want to create a future"
