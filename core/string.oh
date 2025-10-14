@@ -3,50 +3,59 @@ str_: str128_
 # takes up 16 bytes = 128 bits.
 # has room for 128 bytes efficiently,
 # can fit up to 15 bytes locally if unallocated.
-usually_short_str128_: str_[special_count_: u8_, local_bytes: 16]
+usually_short_str128_: str_{special_count_: u8_, local_bytes: 16}
 
 # takes up 16 bytes = 128 bits.
 # has room for 32_768 bytes efficiently,
 # can fit up to 14 bytes locally if unallocated.
-str128_: str_[special_count_: u16_, local_bytes: 16]
+str128_: str_{special_count_: u16_, local_bytes: 16}
 
 # takes up 24 bytes = 192 bits.
 # has room for 2^31 bytes efficiently,
 # can fit up to 20 bytes locally if unallocated.
-str192_: str_[special_count_: u32_, local_bytes: 24]
+str192_: str_{special_count_: u32_, local_bytes: 24}
 
 # takes up 32 bytes = 256 bits.
 # has room for 2^63 bytes efficiently,
 # can fit up to 24 bytes locally if unallocated.
-str256_: str_[special_count_: u64_, local_bytes: 32]
+str256_: str_{special_count_: u64_, local_bytes: 32}
 
 @align(8)
-str_[special_count_: unsigned_primitive_, local_bytes]: all_of_
-[    m: str_array_[special_count_, local_bytes]
-]
-{    # returns the number of bytes in this string.
-     # `CHAR_count: str count_(u8_)`
-     ::count_(u8_): count_
-     # TODO: is it better to do `::count_(type_)` or `::count_[type_]()`?
-     #    the former is fewer characters.
-     # returns the number of runes in this string.
-     ::count_(rune_): count_
+str_{special_count_: unsigned_primitive_, local_bytes:}: all_of_
+{    @private m: str_array_{special_count_, local_bytes}
+}
+{    # `str count_(_ bytes)` returns the number of bytes in this string,
+     # `str count_(_ runes)` returns the number of ruens in this string.
+     ::count_(iterate.): count_
 
-     # TODO: better as `::iterator_(type_)` or `::iterator_[type_]()`??
-     #    `str iterator_(rune_)` is theoretically the same as `iterator_(str, rune_)`, while
-     #    `str iterator_[rune_]()` is the same as `iterator_[rune_](str)`.
-     #    the latter seems more correct from a global calling convention.
-     #    it also seems more correct from a "not needing to put a type onto the stack to call a function"
-     #    although it's likely we'd determine the overload to call at comptime and not push the type.
-     #    it is nice to use the `::to_()` syntax for this, which would imply the latter is better.
-     ::to_(): iterator_[u8_, can: peak]
+     #[#
+     when it's clear we're wanting one iterator type over the other, e.g.,
+     ```
+     str each rune:
+          print_("next: '${rune}'")
+     # or with renaming:
+     str each byte: u8_
+          print_("next: '${byte}'")
+     ```
+     #]#
+     ::to_(): iterator_{rune_, can: peak}
+     ::to_(): iterator_{u8_, can: peak}
 
-     # TODO: a nice syntax for assuming all the other default generic values like so:
-     #    `iterator[rune_, ...]; _(str)`, which will default to this
-     #    `iterator; iterator_[rune_, can: peek](str)`.
-     #    maybe `iterator[rune_, ~]; _(str)`, i.e., `~` instead of `...`
-     ::to_(): iterator_[rune_, can: peak]
+     #[#
+     when we want to make it obvious which iterator type we want.
+     ```
+     iterator; str to_(iterate_ bytes)
+     iterator each u8.
+          if u8 == '5'
+               break
+     ```
+     #]#
+     ::to_(iterate. iterate_ runes): iterator_{rune_, can: peak}
+     ::to_(iterate. iterate_ bytes): iterator_{u8_, can: peak}
+
+     iterate_: str_iterate_
 }
 
-str_array_[special_count_, local_bytes]: heap_or_local_array_[u8_, special_count_, local_bytes]
+str_array_{special_count_:, local_bytes:}: heap_or_local_array_{u8_, special_count_, local_bytes}
 
+str_iterate_: one_of_{bytes:, runes:}
