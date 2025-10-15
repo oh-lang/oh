@@ -1,13 +1,19 @@
-dll_[of_, count_: arch_ count_]: all_of_
-[    @private m_:
-     [    stack; @only stack_[element_, count_]
+dll_{of_:, count_: arch_ count_}: all_of_
+{    @private m_:
+     [    stack; @only stack_{element_, count_}
+          # TODO: option to put this into a header in `stack`
           count; count_
-          used_root; [next; offset_ max_(), previous; offset_ max_()]
-          # Free nodes are indexed as a SLL, i.e., only in the forward direction.
+          # TODO: option to put this into a header in `stack`
+          used_root;
+          [    next; offset_ max_()
+               previous; offset_ max_()
+          ]
+          # TODO: option to put this into a header in `stack`
+          # free nodes are indexed as a SLL, i.e., only in the forward direction.
           next_free_offset; offset_ max_()
      ]
-]
-{    offset_: unsigned_[count_]
+}
+{    offset_: unsigned_{count_}
 
      ::count_(): count_
           m count
@@ -18,7 +24,7 @@ dll_[of_, count_: arch_ count_]: all_of_
      # but no one else's.  (i.e., nothing will be at the offset
      # initially, but a new element might reuse the offset later.)
      # other operations (like `defrag_`) will invalidate this offset.
-     ;;append_(of.): hm_[offset_]
+     ;;append_(of.): hm_{offset_}
           if m count_free_() == 0
                m expand_() assert_()
           offset: m next_free_offset
@@ -59,7 +65,7 @@ dll_[of_, count_: arch_ count_]: all_of_
           m stack count_() - m count
 
      @private
-     ;;expand_(): hm_[null_]
+     ;;expand_(): hm_{null_}
           # TODO 
 
      @private

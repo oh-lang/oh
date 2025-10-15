@@ -257,7 +257,10 @@ linked_swiss_table_
                offset_metadatum: m metadatum_(offset)
                # TODO: this part can be sped up with SIMD, if available.
                if !offset_metadatum filled_()
-                    debug assert_(offset_metadatum cleared_(), er. "we should have no tombstones here")
+                    debug assert_
+                    (    offset_metadatum cleared_()
+                         er. "we should have no tombstones here"
+                    )
                     return [link_location: [offset, attempts]]
                ++offset
           er_ out_of_memory
@@ -408,7 +411,6 @@ linked_swiss_table_
                offset %%= slot_count
                bucket_inner_offset. offset %% slots_per_bucket
                which_bucket. offset // slots_per_bucket
-               # TODO: i think i like `metadata at_(bucket_inner_offset)` instead of `metadata[bucket_inner_offset]`.
                m at_(which_bucket) resolve_() metadata[bucket_inner_offset]
 
           ::dll_element_(offset.): dll_element_
