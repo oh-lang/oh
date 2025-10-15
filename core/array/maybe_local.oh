@@ -1,109 +1,108 @@
 # stores up to 9_223_372_036_854_775_808 elements.
 # uses at least 8 bytes for a pointer + 8 bytes for count.
-maybe_local_array64_[of_, local_bytes, require: arch_ bits >= 64]:
-          maybe_local_array_[of_, special_unsigned_: u64_, local_bytes]
+maybe_local_array64_{of_:, local_bytes:, require: arch_ bits >= 64}:
+          maybe_local_array_{of_, efficient_unsigned_: u64_, local_bytes}
 
 # efficiently stores up to 2_147_483_648 elements, more being less efficient.
-# uses at least 8 bytes for a pointer + 4 bytes for count & special_unsigned.
-maybe_local_array32_[of_, local_bytes, require: arch_ bits >= 32]:
-          maybe_local_array_[of_, special_unsigned_: u32_, local_bytes]
+# uses at least 8 bytes for a pointer + 4 bytes for count & efficient_unsigned.
+maybe_local_array32_{of_:, local_bytes:, require: arch_ bits >= 32}:
+          maybe_local_array_{of_, efficient_unsigned_: u32_, local_bytes}
 
 # efficiently stores up to 32_768 elements, more being less efficient.
-# uses at least 8 bytes for a pointer + 2 bytes for count & special_unsigned.
-maybe_local_array16_[of_, local_bytes, require: arch_ bits >= 16]:
-          maybe_local_array_[of_, special_unsigned_: u16_, local_bytes]
+# uses at least 8 bytes for a pointer + 2 bytes for count & efficient_unsigned.
+maybe_local_array16_{of_:, local_bytes:, require: arch_ bits >= 16}:
+          maybe_local_array_{of_, efficient_unsigned_: u16_, local_bytes}
 
 # efficiently stores up to 128 elements, more being less efficient.
-# uses at least 8 bytes for a pointer + 1 byte for count & special_unsigned.
-maybe_local_array8_[of_, local_bytes, require: arch_ bits >= 8]:
-          maybe_local_array_[of_, special_unsigned_: u8_, local_bytes]
+# uses at least 8 bytes for a pointer + 1 byte for count & efficient_unsigned.
+maybe_local_array8_{of_:, local_bytes:, require: arch_ bits >= 8}:
+          maybe_local_array_{of_, efficient_unsigned_: u8_, local_bytes}
 
 # array that is local up to a certain capacity (`max_local_count`)
 # and allocated on the heap past that.
 @align(8)
 maybe_local_array_
-[    special_unsigned_: select_unsigned_
+{    efficient_unsigned_: select_unsigned_
      of_: defaultable_
-     local_bytes
-     require:
-               # ensure that `efficient_allocation` doesn't increase the size
+     local_bytes:
+     require:  # ensure that `efficient_allocation` doesn't increase the size
                # of this struct past `local_bytes`.
                local_bytes
-                    >=   count_bytes_(allocation_[count_: special_count_, of_])
-                    +    count_bytes_(special_unsigned_)
+                    >=   memory_ size_(allocation_{count_: efficient_count_, of_})
+                    +    memory_ size_(efficient_unsigned_)
                # ensure that we can distinguish between local, efficient, and inefficient.
-          &&   counts_to_distinguish <= special_unsigned_ max_()
-]: all_of_
-[    @private m:
+          &&   counts_to_distinguish <= efficient_unsigned_ max_()
+}: all_of_
+{    @private m:
      [    union; c_union_
-          [    local_vector; vector_[max_local_count, of_]
-               efficient_allocation; allocation_[count_: special_count_, of_]
-               non_local_array[require: has_non_local_array]; ptr_[non_local_array_[of_]]
-          ]
-          special_unsigned;
+          {    local_vector; vector_{max_local_count, of_}
+               efficient_allocation; allocation_{count_: efficient_count_, of_}
+               non_local_array{require: has_non_local_array}; ptr_{non_local_array_{of_}}
+          }
+          efficient_unsigned;
      ]
-     array[of_]
-]
+     array{of_};
+}
 {    @private
-     signed_special_: signed_[special_unsigned_]
+     efficient_signed_: signed_{efficient_unsigned_}
      @private
-     special_count_: count_[special_unsigned_]
+     efficient_count_: count_{efficient_unsigned_}
      @private
-     has_non_local_array: special_unsigned_ bits < arch_ bits
+     has_non_local_array: efficient_unsigned_ bits < arch_ bits
      @private
      counts_to_distinguish: int_
           # spots for local array, note that we need to reserve a spot for 0.
           1 + max_local_count
                     # spots for counting `efficient_allocation`
-               +    special_count_ max_()
+               +    efficient_count_ max_()
                     # need to save a count for the non-local array.
                +    int_(has_non_local_array)
 
      # we can locally store up to `max_local_count`.
-     # while we can efficiently store only up to a count of `signed_special_ max_() + 1`,
+     # while we can efficiently store only up to a count of `efficient_signed_ max_() + 1`,
      # we expand if necessary via the `non_local_array` to `count_arch_`.
-     max_local_count: (local_bytes - count_bytes_(special_unsigned_)) // count_bytes_(of_)
-     local_zero_start: special_unsigned_(signed_[special_unsigned_] max_()) + 1
-     inefficient_count[require: has_non_local_array]: local_zero_start + max_local_count + 1
+     max_local_count: (local_bytes - memory_ size_(efficient_unsigned_)) // memory_ size_(of_)
+     local_zero_start: efficient_unsigned_(signed_{efficient_unsigned_} max_()) + 1
+     inefficient_count{require: has_non_local_array}: local_zero_start + max_local_count + 1
 
      ::count_(): arch_ count_
-          if m special_unsigned <= special_count_ max_()
-               arch_ count_(m special_unsigned)
-          elif m special_unsigned <= local_zero_start + max_local_count
-               arch_ count_(m special_unsigned - local_zero_start)
-          elif[require: has_non_local_array] m special_unsigned == inefficient_count
+          if m efficient_unsigned <= efficient_count_ max_()
+               arch_ count_(m efficient_unsigned)
+          elif m efficient_unsigned <= local_zero_start + max_local_count
+               arch_ count_(m efficient_unsigned - local_zero_start)
+          elif{require: has_non_local_array} m efficient_unsigned == inefficient_count
                m union non_local_array count_()
           else
                panic_("maybe_local_array was in an invalid state")
 
      @private
      ::memory_(): memory_
-          if m special_unsigned <= special_count_ max_()
+          if m efficient_unsigned <= efficient_count_ max_()
                efficient_allocation
-          elif m special_unsigned <= local_zero_start + max_local_count
+          elif m efficient_unsigned <= local_zero_start + max_local_count
                local_vector
-          elif[require: has_non_local_array] m special_unsigned == inefficient_count
+          elif{require: has_non_local_array} m efficient_unsigned == inefficient_count
                non_local_array
           else
                panic_("maybe_local_array was in an invalid state")
 
      # need one more spot for null than in standard non-null arrays.
-     [require: 1 + counts_to_distinguish <= special_unsigned_max_()]?: m_
-     {    null: [special_unsigned: null_offset]
+     {require: 1 + counts_to_distinguish <= efficient_unsigned_max_()}?:
+     {    null: [efficient_unsigned: null_offset]
 
           ::is_(null): bool_
-               m special_unsigned >= null_offset
+               m efficient_unsigned >= null_offset
 
           @private
-          null_offset: special_count_ = local_zero_start + max_local_count + special_count_(has_non_local_array) + 1
+          null_offset: efficient_count_ = local_zero_start + max_local_count + efficient_count_(has_non_local_array) + 1
      }
 
      @private
      memory_: one_of_
-     [    local_vector:
+     {    local_vector:
           efficient_allocation:
-          non_local_array[require: has_non_local_array]:
-     ]
+          non_local_array{require: has_non_local_array}:
+     }
 }
 
 [local_bytes_]: \/../array

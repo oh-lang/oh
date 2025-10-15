@@ -29,24 +29,23 @@ unicode (and common letters) are passed through as-is.
 encode_(str:): str_
 {    result; str_
      index; 0
-     BYTE_count: str count_(u8_)
+     BYTE_count: str count_(_ bytes)
      while index < BYTE_count
           remaining: BYTE_count - index
-          # TODO: decide on `slice_(u8_, ...)` vs. `slice_[u8_](...)`
-          if remaining >= 3 and substitutions3[str slice_(u8_, index, index + 3)] is rune.
+          if remaining >= 3 and substitutions3[str slice_{u8_}(index, index + 3)] is rune.
                result += rune
                index += 3
-          elif remaining >= 2 and substitutions2[str slice_[u8_](index, index + 2)] is rune.
+          elif remaining >= 2 and substitutions2[str slice_{u8_}(index, index + 2)] is rune.
                result += rune
                index += 2
           else
                # this could be a bit smarter about skipping unicode chars and consuming them
                # at this time, instead of checking substitutions for each code point above.
-               char: u8_ = str[index]
+               char; u8_ = str[index]
                if arch_ windows and char == '\\'
                     # `/` is invalid as a character in a Windows path anyway,
                     # so replace `\\` (directory separator) with `/`.
-                    result += '/'
+                    char = '/'
                if needs_escape[char]
                     result += '\\'
                     result += char
@@ -60,7 +59,7 @@ encode_(str:): str_
 decode_(str:): str_
 {    result; str_
      escaped; false
-     str iterator_[u8_, ~]() each u8.
+     str each u8.
           if escaped
                escaped = false
                result += u8
@@ -72,12 +71,12 @@ decode_(str:): str_
 }
 
 @private
-substitutions3: map_[at_: str_, u8_]
+substitutions3: map_{at_: str_, u8_}
 (    [".oh", '.']   # .oh -> .
 )
 
 @private
-substitutions2: map_[at_: str_, u8_]
+substitutions2: map_{at_: str_, u8_}
 (    ["ar", '^']    # ar -> ^
      ["ee", 'E']    # ee -> E
      ["en", '&']    # en -> & for the Dutch
@@ -93,7 +92,7 @@ substitutions2: map_[at_: str_, u8_]
      ["on", ']']    # on -> ]
      ["or", '|']    # or -> |
      ["oo", 'O']    # oo -> O
-     ["ou", 'U']    # ou -> UA
+     ["ou", 'U']    # ou -> U
      ["ow", '!']    # ow -> !
      ["th", '#']    # th -> #
      ["te", ';']    # te -> ;
@@ -103,8 +102,8 @@ substitutions2: map_[at_: str_, u8_]
 )
 
 @private
-needs_escape: set_[u8_]
-{    set[u8_];
+needs_escape: set_{u8_}
+{    set{u8_};
      substitutions3 each (_at: str_, of: u8_)
           set add_(of)
      substitutions2 each (_at: str_, of: u8_)
@@ -131,7 +130,7 @@ needs_escape: set_[u8_]
 swizzle_(str.): str_
 {    # there's a way to do this in place, but it feels harder from a maintenance/logic
      # perspective because strings are utf8 encoded (packed).
-     array[rune_]; str interator_[rune_]()
+     array{rune_}; interator_{rune_}(str)
      RUNE_count: array count_()
      if RUNE_count <= 1
           # return early so that we can assume `RUNE_count > 1`.

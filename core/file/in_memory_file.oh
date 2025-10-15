@@ -1,8 +1,8 @@
 # TODO: probably should rename to in_memory_regular_file, OR we template on `regular_file_path` as `~path`.
 in_memory_file_: all_of_
-[    m: [regular_file_path;, lines; array_[str_]]
-]
-{    open_(regular_file_path.): hm_[m_]
+{    m: [regular_file_path;, lines; array_{str_}]
+}
+{    open_(regular_file_path.): hm_{m_}
           result; m_ = [regular_file_path!, lines: []]
           if result read_() is er: where er != file_not_found
                # file_not_found is ok, but other errors are not.
@@ -10,12 +10,12 @@ in_memory_file_: all_of_
           result
 
      # reads lines from the file and returns the old values.
-     ;;read_(): hm_[array_[str_]]
+     ;;read_(): hm_{array_{str_}}
           lines; m regular_file_path mode_(read_only) assert_() read_() assert_()
           m lines <-> lines
           lines
 
-     ::write_(): hm_[null_]
+     ::write_(): hm_{null_}
           m regular_file_path mode_(truncate_write) assert_() write_(m lines)
 }
 

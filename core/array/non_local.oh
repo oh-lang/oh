@@ -1,14 +1,14 @@
-non_local_array_[of_, count_: select_count_ = arch_ count_]: all_of_
-[    @private m:
-     [    allocation[of_, count_];
+non_local_array_{of_:, count_: select_count_ = arch_ count_}: all_of_
+{    @private m:
+     [    allocation{of_, count_};
           count;
      ]
-     array[of_]
-]
+     array{of_};
+}
 {    # constructs an array `[1, 2, 3]` via syntax `non_local_array_(1, 2, 3)`,
      # inferring e.g., `t: int`.
-     g_(arguments[~t_].): hm_[g_[t_]]
-          allocation[of_];
+     g_(arguments{~t_}.): hm_{g_{t_}}
+          allocation{of_};
           count: arguments count_()
           allocation capacity_(count) assert_()
           count each index:
@@ -21,7 +21,7 @@ non_local_array_[of_, count_: select_count_ = arch_ count_]: all_of_
      ::capacity_(): capacity_
           m allocation capacity_()
 
-     ;;capacity_(NEW_capacity.): hm_[null_]
+     ;;capacity_(NEW_capacity.): hm_{null_}
           while m count > NEW_capacity
                _of: m remove_() ?? panic_("broken invariant")
           m allocation capacity_(NEW_capacity)
@@ -29,7 +29,7 @@ non_local_array_[of_, count_: select_count_ = arch_ count_]: all_of_
      ::count_(): count_
           m count
 
-     ;;append_(of.): hm_[null_]
+     ;;append_(of.): hm_{null_}
           REQUIRED_capacity: (m count + 1) assert_(er: out_of_memory)
           if REQUIRED_capacity > m capacity_()
                m capacity_(at_least: REQUIRED_capacity) assert_()

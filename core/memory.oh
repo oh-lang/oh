@@ -25,6 +25,8 @@ memory_: arch_ unsigned_
 
      # TODO: add an `elsewhere` option
      site_: one_of_{local:, on_heap:}
+
+     size_(~of_): arch_ size_
 }
 
 er_: one_of_
