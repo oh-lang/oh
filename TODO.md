@@ -395,12 +395,12 @@ generic templates with generic methods is disallowed by C++, but we should
 be able to make it happen because we specialize at comptime, not before.
 
 ```
-generic_[of_]: [value; of_]
+generic_{of_:}: [value; of_]
 {   ::method_(~u:): u_
         u_value: u_ = (u * m value) ?? panic_()
         u + u_value
 }
-specific_[of_: number_]: all_of_[generic[of_]:, m: [scale; of_]]
+specific_{of_: number_}: all_of_{generic{of_}:, m: [scale; of_]}
 {   ;;renew_(m scale. of_ = 1, generic value. of_): {}
 
     ::method_(~u:): u_
@@ -408,15 +408,15 @@ specific_[of_: number_]: all_of_[generic[of_]:, m: [scale; of_]]
         m scale * parent_result
 }
 
-`generic_` is actually wrapping a `specific_[i8_]` here:
-generic[i8_]; specific_[i8_](value. 10_i8, scale. 2_i8)
+`generic_` is actually wrapping a `specific_{i8_}` here:
+generic{i8_}; specific_{i8_}(value. 10_i8, scale. 2_i8)
 print_(generic method_(0.5))  # should print "11" via `2 * (0.5 + dbl_(0.5 * 10))`
 ```
 
 would transpile to this:
 
 ```
-// defined because of `specific_[i8_]` needing this as a parent.
+// defined because of `specific_{i8_}` needing this as a parent.
 typedef struct F1L3__generic_OF_I8_T_
 {   struct
     {   u8_t value;
@@ -431,7 +431,7 @@ dbl_t F1L3__method__generic_OF_I8_T_c__dbl_c__dbl_tx
     return dbl + u_value;
 }
 
-// defined because of `specific_[i8_]`
+// defined because of `specific_{i8_}`
 struct F1L3__specific_OF_I8_T_
 {   struct
     {   i8_t value;
@@ -447,8 +447,8 @@ dbl_t F1L3__method__specific_OF_I8_T_c__dbl_c__dbl_tx
     const dbl_t *dbl
 )
 {   dbl_t parent_result = F1L3__method__generic_OF_I8_T_c__dbl_c__dbl_tx
-    (   // NOTE: in general we need this offset if `specific_[i8_]` fields
-        // were reordered, e.g., `all_of_[m: [scale; i8_], generic[i8_];]`
+    (   // NOTE: in general we need this offset if `specific_{i8_}` fields
+        // were reordered, e.g., `all_of_{m: [scale; i8_], generic{i8_};}`
         (const oh_generic_OF_I8_T_t *)&(specific->generic),
         dbl
     );
@@ -493,7 +493,7 @@ some options:
 from the `update` `one_of` and `status` enum from the wishlist section on `what`.
 
 ```
-// status_: one_of_[unknown:, alive:, dead:]
+// status_: one_of_{unknown:, alive:, dead:}
 typedef enum F1L3_tag__status_
 {    F1L3_tag__status__unknown,
      F1L3_tag__status__alive,
@@ -522,10 +522,10 @@ dbl_ F1L3__length__vector3_c__dbl_tx(const F1L3__vector3_t *vector3)
 }
 
 // update_: one_of_
-// [    status:
+// {    status:
 //      position: vector3_
 //      velocity: vector3_
-// ]
+// }
 typedef enum F1L3_tag__update_
 {    F1L3_tag__update__status,
      F1L3_tag__update__position,
@@ -550,10 +550,10 @@ tag than in an enum.
 
 ```
 # oh-lang
-mask_: any_or_none_of_
-[    no_corresponding_data_value:
+mask_: any_of_
+{    no_corresponding_data_value:
      direction: vector3_
-]
+}
 
 // c:
 typedef enum F1L3_tag__mask_
@@ -646,8 +646,8 @@ e.g., we want this to be possible:
 
 ```
 # vector.oh:
-vector3_[of_]: [x; of_, y; of_, z; of_]
-vector3i_: vector3_[i64_]     # this specialization gets compiled in `.vector.generated.c`
+vector3_{of_:}: [x; of_, y; of_, z; of_]
+vector3i_: vector3_{i64_}     # this specialization gets compiled in `.vector.generated.c`
 
 # some_other_file.oh
 compile_vector3d_(): null_
@@ -693,7 +693,7 @@ we want to do is be able to abstract over "here's a function, get a reference
 at this offset", which we can recurse with if necessary.
 i think we can store it like this, where each pointer from the root feeds
 into the next function to get the next pointer.
-`[root_ptr: ptr_[null_], array_[fn_(ptr[null_]): ptr_[null_]]`
+`[root_ptr: ptr_{null_}, array_{fn_(ptr{null_}): ptr_{null_}}]`
 where each `fn_` is a lambda capture which also includes a hidden "context"
 with the correct `offset` for an `array` or an `at` key for a `lot`.
 the function itself knows to consider the context as an array context
@@ -703,7 +703,7 @@ the following approach is probably worth trying only after doing the simple appr
 of using a pointer to the array and an offset (as a u64):
 we could use something like tagged pointers for "small" offsets, like indexing into
 an array with a small index.  when we make a reference to the third element, we hold
-`[ptr_[array_[~]], offset: 2]` *in one pointer if we can*.  the pointer tag
+`[ptr_{array_{~}}, offset: 2]` *in one pointer if we can*.  the pointer tag
 will hold something like 0 = no offset, 1 = 4 bits in offset, 2 = 8 bits in offset,
 etc. up to 7 = 28 bits in offset.
 see https://en.wikipedia.org/wiki/X86-64#Virtual_address_space_details for why we
@@ -764,34 +764,34 @@ type_name_: str_
 type_dependency_: type_name_
 type_data_:
 [   name;
-    dependencies; stack_[dependency_]
+    dependencies; stack_{dependency_}
 ]
 {   name_: type_name_
     dependency_: type_dependency_
 }
 
-type_datas[type_data_, at_: type_name_];
+type_datas: lot_[type_data_, at_: type_name_];
 # populate the dependencies, when looking at declarations inside the type.
 ...
     type_data ... each dependency
         type_datas[type_data name] dependencies append_(dependency)
 
 
-type_names; set_[vertex_]
+type_names; set_{vertex_}
 type_datas each type_data:
     never_visited;;[type_data name]
 dag_sort_(vertex_set. type_names, 
 
 # returns DAG in dependency order.
 dag_sort_
-(   vertex_set. set_[~vertex_]
-    edges_(vertex): (stack_[vertex_]:)
-): hm_[stack_[vertex_], dag_ er_]
+(   vertex_set. set_{~vertex_}
+    edges_(vertex): (stack_{vertex_}:)
+): hm_{stack_{vertex_}, dag_ er_}
     (never_visited;) = @hide vertex_set
     # for detecting cycles, list of elements we're considering, or descendents of one.
-    currently_visiting; set_[vertex_]
+    currently_visiting; set_{vertex_}
 
-    sorted; stack_[vertex_]
+    sorted; stack_{vertex_}
     while never_visited pop_() is visiting. vertex_
         dag_visit_
         (   .visiting
@@ -805,11 +805,11 @@ dag_sort_
 @private
 dag_visit_
 (   visiting. ~vertex_
-    edges_(vertex): (stack_[vertex_]:)
-    currently_visiting; set_[vertex_]
-    never_visited; set_[vertex_]
-    sorted; stack_[vertex_]
-): hm_[null_]
+    edges_(vertex): (stack_{vertex_}:)
+    currently_visiting; set_{vertex_}
+    never_visited; set_{vertex_}
+    sorted; stack_{vertex_}
+): hm_{null_}
     debug assert_(never_visited::[visiting])
     if currently_visiting::[visiting]
         return er_ cyclic_dependency_(.visiting)
@@ -858,15 +858,15 @@ we don't need to specifically modify the call stack (might not be portable).
 
 ```
 PARENT_fn_(): str_
-     block[str_];
+     block{str_};
      ARRAY_fn_(;block)
      if block exited_() is str.
           return str
      print_("UNEXPECTED STATE: ARRAY_fn_ should return a str")
      return "default"
 
-ARRAY_fn_(block[str_];): never_
-     array[u32_]; [1, 2, 3, 4, 5]
+ARRAY_fn_(block{str_};): never_
+     array{u32_}; [1, 2, 3, 4, 5]
      if some_condition_()
           array append_(6)
      u32: CHILD_fn_(;block)
@@ -876,7 +876,7 @@ ARRAY_fn_(block[str_];): never_
 
 # functions can return a value if the block doesn't exit.
 # this is needed for things like `hm assert_()`
-CHILD_fn_(block[str_];): u32_
+CHILD_fn_(block{str_};): u32_
      if some_other_condition_()
           block exit_("early return")
      print_("some side effects")
@@ -885,7 +885,7 @@ CHILD_fn_(block[str_];): u32_
 # ========TRANSLATED!========
 # the called functions get translated into something like this:
 ARRAY_fn_(): str_
-     array[u32_]; [1, 2, 3, 4, 5]
+     array{u32_}; [1, 2, 3, 4, 5]
      if some_condition_()
           array append_(6)
      u32. what CHILD_fn_()
@@ -896,7 +896,7 @@ ARRAY_fn_(): str_
 
 # functions can return a value if the block doesn't exit.
 # this is needed for things like `hm assert_()`
-CHILD_fn_(): one_of_[str:, u32:]
+CHILD_fn_(): one_of_{str:, u32:}
      if some_other_condition_()
           return "early return"
      print_("some side effects")
