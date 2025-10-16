@@ -26,12 +26,14 @@ we'll need to resolve overloads at compile-time if possible, run-time if necessa
 
 for libraries/projects with lots of files, we'll want to figure out how to
 speed up recompilation by only compiling new changes.  potentially we could
-have `.my_file_name.generated.c`/`.h` and `.my_file_name.generated.o` if need be,
-in the same directory, or in a `.generated` directory (without the `.generated` infix
-on the files).  i'm a fan of the local `.my_file.generated.c` approach so that
-generated code can be inspected easily.
-maybe `.my_file.release.c` and `.my_file.debug.c` if we want to make sure that
-`assert_` doesn't build up complicated structures in release mode.
+have `.my_file_name.generated.c`/`.h` in the same directory, or in a `.generated`
+directory (without the `.generated` infix on the files).  i'm a fan of the local
+`.my_file.generated.c` approach so that generated code can be inspected easily,
+but it probably should be an option.  probably need to split `.o` files based on
+release/debug at the very least, if not platform. e.g., `.my_file.generated.release-linux64.o`,
+so that recompiling is fast.
+
+consider using nob for building.
 
 ## function signatures
 
@@ -120,49 +122,47 @@ but this is ok or even expected because oh-lang does things at comptime.
 alternatively, as an even rougher first pass, we could put everything into one big `.c` file,
 with some DAG logic for where things should be defined.
 
-we'll plan to create a C macro for each generic; generic parameters will be things that
-need to be `#define`d before invoking the macro.  generic parameters with defaults can
-be determined in the macro via `#ifndef ..., #define DEFAULT asdf #endif`.  XXX actually
-you can't define macros inside a macro, we'll just need to pass all parameters as arguments.
-XXX because we can't use macros inside a macro, e.g., `#ifdef X, some_conditional_function, #endif`,
-we actually just need to create a macro for each unique `[require: ...]` statement;
-alternatively, we just generate the entire C code in one pass.  the latter would
-be annoying from a bootstrapping perspective, however, since i'd have to write the C code by hand
-for each specification of the generic.  but all the permutations of requires in `swiss_table.oh`
-will be a nightmare.  it'd be better to generate the code a different way, e.g., via a script.
-
-actually, we can do something similar, but instead of invoking a macro, we need to include
-a header file multiple times.  so we'd do something like this:
+we'll plan to create a C "template" file for each generic; generic parameters will be things that
+need to be `#define`d before importing the template file.  generic parameters with defaults can
+be determined in the file via `#ifndef ..., #define WHATEVER_T default_t #endif`.
+so we'd do something like this:
 
 ```
 # vector2.oh
-vector2_[of_]: [x; of_, y; of_]
-{   ::length_[require: sqrt_(of.): of_](): of_
+vector2_{of_:}: [x; of_, y; of_]
+{   ::length_{require: sqrt_(of.): of_}(): of_
         sqrt_(m x^2 + m y^2)
 }
 
-// .vector2.generated.hi
+// .vector2.generated.t // t for "template"
 #ifndef F1L3__OF_T
 #error "define F1L3__OF_T as the capitalized element type (e.g., `int_t` -> `INT_T`) before importing " __FILE__
 #endif
 #ifndef F1L3__of_t
 #error "define F1L3__of_t as the element type (e.g., `dbl_t`) before importing " __FILE__
 #endif
+#define F1L3__vector2_OF_M F1L3__vector2_OF_ ## F1L3__OF_T
+#define F1L3__vector2_OF_M_t F1L3__vector2_OF_M ## _t
 OH_HI
-(,  typedef struct F1L3__vector2_OF_ ## F1L3__OF_T ## _t_
+(,  typedef struct F1L3__vector2_OF_M
     {   F1L3__of_t x;
         F1L3__of_t y;
-    }       F1L3__vector2_OF_ ## F1L3__OF_T ## _t;
-    OH_TYPES(F1L3__vector2_OF_ ## F1L3__OF_T)
+    }       F1L3__vector2_OF_M_t;
+    OH_TYPES(F1L3__vector2_OF_M)
 ,)
 
 #ifdef F1L3__sqrt__of_t__of_tx_
 OH_HI
-(   OF_T F1L3__length__vector2_OF_ ## F1L3__OF_T ## __ ## F1L3__of_t ## x_(F1L3__vector2_OF_ ## F1L3__OF_T ## _c m),,
+(   OF_T F1L3__length__ ## F1L3__vector2_OF_M ## _c__ ## F1L3__of_t ## x_
+    (   F1L3__vector2_OF_M ## _c m
+    ),,
     {   return F1L3__sqrt__of_t__of_tx_(m->x * m->x + m->y * m->y);
     }
 )
 #endif
+
+#undef F1L3__vector2_OF_M
+#undef F1L3__vector2_OF_M_t
 ```
 
 ```
@@ -190,12 +190,12 @@ int main()
 // .vector2.generated.h
 #include <math.h>
 
-// `main.oh`'s usage of `vector2_[f64_]` and `vector2_[f32_]` results in these blocks:
+// `main.oh`'s usage of `vector2_{f64_}` and `vector2_{f32_}` results in these blocks:
 #define OH_HI(fn, attr, impl) OH_HI_HEADER(fn, attr, impl)
 #define F1L3__OF_T F64_T
 #define F1L3__of_t f64_t
 #define F1L3__sqrt__of_t__of_tx_ sqrt
-#include ".vector2.generated.hi"
+#include ".vector2.generated.i"
 #undef F1L3__sqrt__of_t__of_tx_
 #undef F1L3__of_t
 #undef F1L3__OF_T
@@ -205,7 +205,7 @@ int main()
 #define F1L3__OF_T F32_T
 #define F1L3__of_t f32_t
 #define F1L3__sqrt__of_t__of_tx_ sqrtf
-#include ".vector2.generated.hi"
+#include ".vector2.generated.i"
 #undef F1L3__sqrt__of_t__of_tx_
 #undef F1L3__of_t
 #undef F1L3__OF_T
@@ -218,7 +218,7 @@ int main()
 
 we need to namespace the generic types (e.g., `F1L3__of_t`) in case `vector2.oh`
 imports another generic file and populates it with some generics based on its `of_`,
-but which may be different, e.g., `unsigned_[of_]`.
+but which may be different, e.g., `unsigned_{of_}`.
 
 ## classes
 
