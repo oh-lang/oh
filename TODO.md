@@ -268,7 +268,7 @@ we look at class functions (static functions) first, then instance methods next.
 if there is none, it will go through the parent classes in order and look if they define it.
 
 ```
-my_class_: all_of_[m: [my_data;], parent1:, parent2:]
+my_class_: all_of_{m: {my_data;}, parent1:, parent2:}
 {    ::my_method_(): null_
 }
 
@@ -285,16 +285,16 @@ note we shouldn't need a full type; we could use a smart/small type since we kno
 when creating a class, we give it a positive `OH_ID_` (probably `u_arch_`) only if it
 *has any fields* (e.g., instance variables or instance functions defined in `[]`).
 otherwise we'll set the `OH_ID` to be 0; it's abstract and shouldn't perform any
-of the following logic.  with explicit inheritance, e.g., `child_: all_of_[parent:] {...}`,
+of the following logic.  with explicit inheritance, e.g., `child_: all_of_{parent:} {...}`,
 we create methods that will look up the type ID to switch to the child overrides as needed.
 when classes *implicitly* inherit from a parent, i.e., via duck typing, e.g., implementing
-`::hash_(~builder): null_` without descending from `hashable_`, we only add the child to
+`::hash_(~builder;): null_` without descending from `hashable_`, we only add the child to
 the parent's vtable if the child is specifically requested as a hashable.
 
 ```
 # `hashable_`'s vtable includes `explicitly_hashable_`:
-explicitly_hashable_: all_of_[hashable:, m: [str;]]
-{   ::hash_(~builder): builder hash_(m str)
+explicitly_hashable_: all_of_{hashable:, m: [str;]}
+{   ::hash_(~builder;): builder hash_(m str)
 }
 
 x; hashable_ = explicitly_hashable_("hi")
@@ -314,7 +314,7 @@ however, if we see that there's the possibility of using the implicit child as t
 we'll add it to the parent's vtable.
 
 ```
-do_something_[of_: hashable_](~of): null_
+do_something_{of_: hashable_}(~of:): null_
     print_(hash_(of))
 
 # this triggers adding `implicitly_hashable_` to the `hashable_` vtable.
