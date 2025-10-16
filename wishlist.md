@@ -964,8 +964,6 @@ generic_class_
 }
 ```
 
-```
-
 See [generic/template classes](#generictemplate-classes) for more information.
 
 ## identifiers
