@@ -1,7 +1,8 @@
-set_{of_: hashable_, capacity_: select_count_ = arch_ count_}: all_of_
+set_{of_: hashable_, capacity_: select_count_ = arch_ count_, ordered: true}: all_of_
 {    hazable{of_};
      countable{count_};
-     insertable{of_};
+     insertable{of_, require: ordered};
+     appendable{of_, require: ordered};
      removable{of_, count_};
 }
 {    # returns `true` iff `of` is in the set.

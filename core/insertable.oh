@@ -9,9 +9,10 @@ insertable_{of_:, er_:}:
                true
 }
 
-# TODO: i don't love this API because it changes for almost every container.
+# TODO: i don't love this API because it does something different for almost every container.
 # `array insert_(1, "hi")` will convert `["a", "b", "c"]` into `["a", "hi", "b", "c"]`
 # `lot insert_(1, "hi")` will convert `[0: "a", 1: "b"]` into ???
+# i'd prefer `replace_(at., of.)?: of_` because that would be consistent between containers.
 insertable_{at_:, of_:}:
 {    ;;insert_(at., of.): null_
 }
