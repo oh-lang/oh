@@ -1,6 +1,8 @@
 set_{of_: hashable_, capacity_: select_count_ = arch_ count_}: all_of_
 {    hazable{of_};
      countable{count_};
+     insertable{of_};
+     removable{of_};
 }
 {    # returns `true` iff `of` is in the set.
      ::has_(of:): bool_

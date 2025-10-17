@@ -5,8 +5,10 @@ container_
      require: of_ is !null_
      PROVIDED_er_: er_
      require: er_ in PROVIDED_er_
-}: all_of_
-{    hazable{at_}:
+     ordered_: bool_ = true
+}:   all_of_
+{    hazable{at_};
+     removable{of_, count_, ordered};
 }
 {    ::count_(): count_
 
@@ -15,7 +17,6 @@ container_
 
      # TODO: think about the mutable nullable API, we don't want to
      # have inconsistent implementations between arrays and lots.
-     # maybe rely on `pop_` and `remove_`
 
      # get a nullable reference to an element.
      ::[at.]: (of?:)
@@ -36,20 +37,22 @@ container_
      #]#
      ;;[at.]: (of;)
 
+     # removes any convenient element from the container; when insertion-ordered
+     # it's always the last element.  returns `null` if not present.
+     ;;remove_()?: of_
+
      # returns the element at `at` or null if not present,
      # removing it from the container while doing so.
-     # TODO: good way to do "define one of ;;pop, ;;swap, etc."
+     # TODO: good way to do "define one of ;;remove, ;;swap, etc."
      #        and to indicate that in the code so we can rely on it
      #        in the other "undefined" methods.
-     #        maybe `if @specialized ;;pop_ { ... }`
-     #        and `@require: @specialized ;;pop_ || @specialized ;;swap_`...
+     #        maybe `if @specialized ;;remove_ { ... }`
+     #        and `@require: @specialized ;;remove_ || @specialized ;;swap_`...
      #        this `@require` is only needed for a non-abstract class.
-     # TODO: i'm not a big fan of `pop`, maybe `remove_(at.)?: of_` and `remove_(all. of_): count_`
-     # or we can do `give_(of)` (to add) and `take_(at)` (to remove) so that we have matching lengths.
-     # `take` could have an iterator overload
-     # `lot give_(at. "hello", 123)` -- don't love this compared to `insert_` and `remove_` though.
-     # `lot insert_(at. "hello", 123)`, `lot remove_("hello")`
-     ;;pop_(at.)?: of_
+     ;;remove_(at.)?: of_
+
+     # returns the number of elements removed when matching values of `all`.
+     ;;remove_(all: of_): count_
 
      # TODO: `::min_()`, `::max_()`, and `::order_(count.)` methods.
      #        these should just pass through to the iterator, but `{require: of_ is orderable_}`
