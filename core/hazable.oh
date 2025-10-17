@@ -17,7 +17,7 @@ hazable_{of_:}:
 a type that has a `has_` method that gives a value of type `of_`
 that can be deduced purely from its type.  e.g.,
 ```
-# this `any_of_` is implicitly `hazable_{type_: (cows: int_)}`, etc.
+# this `any_of_` is implicitly `hazable_{implicit_: (cows: int_)}`, etc.
 farm_: any_of_{cows: int_, fields: dbl_, house:}
 farm: _ cows_(3) | _ house
 if farm has fields:
@@ -33,8 +33,12 @@ if farm has _ house      # via `any_of_` being `hazable_{farm_ tags_}`
      print_("this is OK")               # should print.
 ```
 #)#
-hazable_{type_:}:
+# TODO: should we combine this with the other hazable like `hazable_{of_:, implicit_: null_}`
+# and then `require: implicit_` to do these methods?  or maybe do a `hazable_{of_:, check: any_of{explicit:, implicit:}}`
+# and then `require: check is_explicit_()` for the earlier hazable and implicit for this hazable?
+# `hazable_{(cows: int_}, _ check_ implicit}` vs. `hazable_{implicit_: (cows: int_)}`
+hazable_{implicit_:}:
 {    # returns the value `type` at the location `at` is in this instance,
      # or `null` if nothing present at `at`.
-     ::has_()?: type_
+     ::has_()?: implicit_
 }
