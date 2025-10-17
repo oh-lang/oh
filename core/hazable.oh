@@ -1,0 +1,40 @@
+#(#
+a type that has a `has_` method.
+normally we'd call it `hasable_` but that is easy to mistake for
+`hashable_` at a quick glance so we write it as `hazable_`.  e.g.,
+```
+set; ["cool", "beans"]   # `set_{str_}` is implicitly `hazable_{str_}`
+if set has "beans"       # short for `if set has_("beans")`
+     print_("got beans") # should print.
+```
+#)#
+hazable_{of_:}:
+{    # returns `true` iff `of` is in this instance.
+     ::has_(of:): bool_
+}
+
+#(#
+a type that has a `has_` method that gives a value of type `of_`
+that can be deduced purely from its type.  e.g.,
+```
+# this `any_of_` is implicitly `hazable_{type_: (cows: int_)}`, etc.
+farm_: any_of_{cows: int_, fields: dbl_, house:}
+farm: _ cows_(3) | _ house
+if farm has fields:
+     print_("farm has ${fields} acres") # should not print
+if farm has cows;
+     # this will affect `farms` as well since we're defining
+     # `cows` as mutable via `cows;`.
+     cows += 1
+     print_("farm has ${cows} cows")    # should print.
+if farm has house:
+     print_("this is a compile error, `house` is `null_` type")
+if farm has _ house      # via `any_of_` being `hazable_{farm_ tags_}`
+     print_("this is OK")               # should print.
+```
+#)#
+hazable_{type_:}:
+{    # returns the value `type` at the location `at` is in this instance,
+     # or `null` if nothing present at `at`.
+     ::has_()?: type_
+}
