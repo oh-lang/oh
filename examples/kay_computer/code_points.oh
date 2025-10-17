@@ -1,5 +1,5 @@
 # keeping `,` to make things easier to copy-paste into other languages.
-kay_code_points: array_[u16_] =
+kay_code_points: array_{u16_} =
 [    261,      # 0000000100000101
      302,      # 0000000100101110
      313,      # 0000000100111001

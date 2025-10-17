@@ -4,7 +4,7 @@ _unused_function_, _un_used_function_, _unused_,
 fn_(~t:): never_
 fn_(str;): ~t_
 
-infer[~]: whatever_()
+infer{~}: whatever_()
 
 # this is a one-letter function, named `_`:
 _(x: int): null_
@@ -62,7 +62,7 @@ this line should be commented out
 this line should be commented out
 #}#
 
-result_(u64): hm_[ok_: u64_, er_: u64_]
+result_(u64): hm_{ok_: u64_, er_: u64_}
     if u64 % 2 == 0
         ok: u64 // 2
         ok

@@ -2,6 +2,7 @@
 # ========
 
 1234 ^ 3 # end of line comment, ^ is exponentiation
+55 >< 77 # >< is bitwise XOR
 
 #{#
 multiline comment with {}
