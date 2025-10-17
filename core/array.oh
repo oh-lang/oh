@@ -1,5 +1,5 @@
 array_{of_, capacity_: select_count_ = arch_ count_}: all_of_
-{    indexable_sequence{of_};
+{    indexable{of_, count_};
      # we could make this `hashable_` if `of_` is hashable, but we'll
      # implicitly make it hashable (by defining a `::hash_` method)
      # and only add to hashable's lookup table as needed.
