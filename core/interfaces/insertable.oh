@@ -5,7 +5,7 @@ insertable_{of_:, er_:}:
           if m has_(of)
                false
           else
-               m insert_(of)
+               m insert_(of) assert_()
                true
 }
 

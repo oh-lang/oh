@@ -1,0 +1,10 @@
+# TODO: what is better about this than just doing `;;[at.]: (of;)`, e.g.,
+# `swap_this;, swap_this <-> container[at]`?
+# TODO: don't know if i love this because `replace_` with adding a value seems off;
+# should it fail if it doesn't replace something?
+# e.g., `;;replace_(at., of.): hm_{ok_: null_, er_: of_}` (returns what it couldn't replace)
+replaceable_{at_:, of_:}:
+{    # removes what is currently at location `at` and returns it if present,
+     # replacing it with the value `of` that is passed in.
+     ;;replace_(at., of.)?: of_
+}

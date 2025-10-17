@@ -8,7 +8,7 @@ container_
      ordered_: bool_ = true
 }:   all_of_
 {    hazable{at_};
-     removable{of_, count_, ordered};
+     removable{at_, of_, count_, ordered};
 }
 {    ::count_(): count_
 
