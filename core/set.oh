@@ -1,4 +1,4 @@
-set_{of_: hashable_, count_: select_count_ = arch_ count_}: all_of_
+set_{of_: hashable_, capacity_: select_count_ = arch_ count_}: all_of_
 {    hazable{of_};
      countable{count_};
 }
@@ -10,6 +10,11 @@ set_{of_: hashable_, count_: select_count_ = arch_ count_}: all_of_
 
      # returns `true` iff `of` was not already in the set.
      ;;insert_(of.): bool_
+          if m has_(of)
+               false
+          else
+               m insert_(of)
+               true
 
      ::count_(): count_
 
@@ -23,12 +28,14 @@ set_{of_: hashable_, count_: select_count_ = arch_ count_}: all_of_
 
      # removes the last element added to the set if this set is
      # insertion ordered, otherwise any convenient element.
-     # returns an error if there is no element available.
-     ;;remove_(): hm_{of_}
+     # returns null if there is no element available.
+     ;;remove_()?: of_
 
-     # returns true iff the element was in the set.
-     # will remove it if so.
-     ;;remove_(of:): hm_{of_}
+     # returns 1 iff the element was in the set, otherwise 0,
+     # removing it if present.
+     ;;remove_(of:): count_
+
+     count_: capacity_
 }
 
 er_: one_of_
