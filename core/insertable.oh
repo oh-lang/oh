@@ -1,0 +1,17 @@
+insertable_{of_:, er_:}:
+{    ;;insert_(of.): hm_{ok_: null_, er_}
+
+     ;;insert_{require: m_ is hazable_{of_}}(of.): hm_{ok_: bool_, er_}
+          if m has_(of)
+               false
+          else
+               m insert_(of)
+               true
+}
+
+# TODO: i don't love this API because it changes for almost every container.
+# `array insert_(1, "hi")` will convert `["a", "b", "c"]` into `["a", "hi", "b", "c"]`
+# `lot insert_(1, "hi")` will convert `[0: "a", 1: "b"]` into ???
+insertable_{at_:, of_:}:
+{    ;;insert_(at., of.): null_
+}

@@ -9,15 +9,8 @@ set_{of_: hashable_, capacity_: select_count_ = arch_ count_}: all_of_
      ::has_(of:): bool_
 
      # inserts `of` into the set.
+     @override
      ;;insert_(of.): null_
-
-     # returns `true` iff `of` was not already in the set.
-     ;;insert_(of.): bool_
-          if m has_(of)
-               false
-          else
-               m insert_(of)
-               true
 
      ::count_(): count_
 
