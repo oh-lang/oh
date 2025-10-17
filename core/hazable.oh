@@ -33,10 +33,6 @@ if farm has _ house      # via `any_of_` being `hazable_{farm_ tags_}`
      print_("this is OK")               # should print.
 ```
 #)#
-# TODO: should we combine this with the other hazable like `hazable_{of_:, implicit_: null_}`
-# and then `require: implicit_` to do these methods?  or maybe do a `hazable_{of_:, check: any_of{explicit:, implicit:}}`
-# and then `require: check is_explicit_()` for the earlier hazable and implicit for this hazable?
-# `hazable_{(cows: int_}, _ check_ implicit}` vs. `hazable_{implicit_: (cows: int_)}`
 hazable_{implicit_:}:
 {    # returns the value `type` at the location `at` is in this instance,
      # or `null` if nothing present at `at`.

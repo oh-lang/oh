@@ -1,5 +1,28 @@
-removable_{of_:, count_:, ordered: bool_}:
-{    # removes all instances of `all` in this object, returning the number deleted.
+removable_{of_:}:
+{    # removes (and returns) the last element added to this object if it's insertion-ordered;
+     # otherwise any convenient element.  returns null if no elements are present.
+     ;;remove_()?: of_
+
+     # TODO: let's think of a good way to "promote" a null to an error, e.g.,
+     # maybe automatically define `;;remove_(at:): hm_{ok_: of_, er_: not_present}`;
+     # nulls don't get weighted for hot/cold routes, but errors do, so if you're expecting
+     # a value to often be present you can use the result overload to speed up the runtime.
+     # i guess you could do `if removable remove_(at) assert_() is ok.`, since `assert_`
+     # has an overload for something nullable.
+}
+
+# useful for sets or multisets where there is no distinction between `at` and `of`.
+removable_{of_:, count_:}: removable_{of_}
+{    # removes all instances of `of` in this object, returning the number deleted.
+     ;;remove_(of:): count_
+}
+
+# useful for containers where we distinguish between the location `at` where a value `of` is.
+removable_{at_:, of_:, count_:, ordered: bool_}: removable_{of_}
+{    # returns an `of` value if this object had one at `at`.
+     ;;remove_(at:)?: of_
+
+     # removes all instances of `all` in this object, returning the number deleted.
      ;;remove_(all: of_): count_
 
      # removes the first instance of `first` in this object, returning 1 if so, otherwise 0
@@ -9,18 +32,4 @@ removable_{of_:, count_:, ordered: bool_}:
      # removes the last instance of `last` in this object, returning 1 if so, otherwise 0
      # if there were no such instances.
      ;;remove_{require: ordered}(last: of_): count_
-}
-
-# TODO: consider adding a `count_: null_` option, when passed in will do `;;remove_(at:): [count:, of:]`
-# i'm not a huge fan of multisets though, but if there's a good use for them that's how we'd do it.
-removable_{at_:, of_:}:
-{    # returns an `of` value if this object had one at `at`.
-     ;;remove_(at:)?: of_
-
-     # TODO: let's think of a good way to "promote" a null to an error, e.g.,
-     # maybe automatically define `;;remove_(at:): hm_{ok_: of_, er_: not_present}`;
-     # nulls don't get weighted for hot/cold routes, but errors do, so if you're expecting
-     # a value to often be present you can use the result overload to speed up the runtime.
-     # i guess you could do `if removable remove_(at) assert_() is ok.`, since `assert_`
-     # has an overload for something nullable.
 }
