@@ -13,6 +13,7 @@ insertable_{of_:, er_:}:
 # `array insert_(1, "hi")` will convert `["a", "b", "c"]` into `["a", "hi", "b", "c"]`
 # `lot insert_(1, "hi")` will convert `[0: "a", 1: "b"]` into ???
 # maybe we use `insert_` and `append_` only for sequenced containers like arrays
+# and `include_` or `add_` for non-sequenced containers like sets.
 insertable_{at_:, of_:, er_:}:
 {    ;;insert_(at., of.): hm_{ok_: null_, er_}
 }

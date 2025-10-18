@@ -1,45 +1,31 @@
-set_{of_: hashable_, capacity_: select_count_ = arch_ count_, ordered: true}: all_of_
+set_
+{    of_:
+     order:
+     count_: select_count_ = arch_ count_
+     GIVEN_er_: any_ = er_
+     require: er_ in GIVEN_er_
+}: all_of_
 {    hazable{of_};
      countable{count_};
-     insertable{of_, require: ordered};
-     appendable{of_, require: ordered};
+     appendable{of_, er_, count_};
      removable{of_, count_};
 }
-{    # returns `true` iff `of` is in the set.
-     @override
-     ::has_(of:): bool_
-
-     # inserts `of` into the set.
-     @override
-     ;;insert_(of.): null_
-
-     ::count_(): count_
-
-     # unions this set with values from an iterator, returning true if
-     # all the values from the iterator were already in this set, otherwise false.
-     # can error if running out of memory.
-     ;;all_(iterator{of_}.): hm_{bool_}
-
-     # can convert to an iterator.
+{    # can convert to an iterator.
      ::iterator_(): iterator_{(of:)}
 
-     # removes the last element added to the set if this set is
-     # insertion ordered, otherwise any convenient element.
-     # returns null if there is no element available.
-     @override
-     ;;remove_()?: of_
+     @alias ;;add_(of.): m append_(of)
+     @alias ;;insert_(of.): m append_(of)
 
-     # returns 1 iff the element was in the set, otherwise 0,
-     # removing it if present.
-     @override
-     ;;remove_(of:): count_
+     hm_{NEW_of_:}: hm_{ok_: NEW_of_, GIVEN_er_}
+}
 
-     count_: capacity_
+order_: one_of_
+{    none:
+     insertion:
+     ofs:
 }
 
 er_: one_of_
 {    out_of_memory
      # etc...
 }
-hm_{of_:}: hm_{ok_: of_, er_}
-

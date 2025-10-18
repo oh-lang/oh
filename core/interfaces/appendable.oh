@@ -1,0 +1,26 @@
+appendable_{of_:, er_:, count_: select_count_}:
+{    ;;append_(of.): hm_{null_}
+
+     ;;append_{require: m_ is hazable_{of_}}(of.): hm_{bool_}
+          if m has_(of)
+               false
+          else
+               m append_(of) assert_()
+               true
+
+     # returns the number of elements that were actually appended;
+     # if some elements were already in this object, they will not count.
+     ;;append_{require: m_ is hazable_{of_}}(iterator{of_}.): hm_{count_}
+          count; 0
+          iterator each of.
+               if m append_(of) assert_()
+                    ++count
+          ok_(count)
+
+     hm_{OK_of_:}: hm_{ok: OK_of_, er_}
+}
+
+appendable_{at_:, of_:, er_:}:
+{    ;;append_(at., of.): hm_{ok_: null_, er_}
+}
+
