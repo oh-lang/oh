@@ -330,7 +330,7 @@ potentially OOM for `int`.)  If overflow/underflow is desired, use the overload
 which returns a variable named `wrap`, e.g., `x: (a + b) wrap` or `wrap: a + b`.
 Otherwise `a + b` will panic on overflow and terminate the program.  The alternative
 is to handle the error explicitly: `hm: a + b` then something like this:
-`what hm {ok: {print_(ok)}, er: {print_("got error: ${er})}}`.
+`what hm {ok: {print_(ok)}, er: {print_("got error: ${er}")}}`.
 
 For primitive types (like `dbl_` and `i32_`), we don't throw on overflow or underflow.
 But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
@@ -342,8 +342,8 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
      * use `print_(no_newline: "keep going ")` to print without a newline
      * default overload is to print to null, but you can request the string that was printed
           if you use the `print_(str.): str_` or `print_(error. str_): str_` overloads.
-          e.g., `another_fn_(value: int): print_("Value is ${value}")` will return `null`,
-          whereas `another_fn_(value: int): str {print_("Value is ${value}")}` will
+          e.g., `another_fn_(value: int_): print_("Value is ${value}")` will return `null`,
+          whereas `another_fn_(value: int_): str_ {print_("Value is ${value}")}` will
           return "Value is 12" (and print that) if you call `another_fn_(value: 12)`.
 * `type_case_`/`function_case_` identifiers like `x_` are function/type-like, see [identifiers](#identifiers)
 * `variable_case` identifiers like `x` are instance-like, see [identifiers](#identifiers)
@@ -362,13 +362,17 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
           `new_` can be renamed to anything `type_case_`, but `new_` is the default.
           See [returning a type](#returning-a-type).
      * use `a_: y_` to declare `a_` as a constructor that builds instances of type `y_`
-          with `a_` any `type_case_` identifier.
+          with `a_` any `type_case_` identifier.  This is essentially a `typedef` and useful
+          when `y_` is something complicated like a [generic specification](#defining-generic-classes).
      * while declaring *and defining* something, you can avoid the type if you want the compiler to infer it,
           e.g., `a: some_expression_()`
      * thus `:=` is usually equivalent to `:` (and similarly for `;=`), except in the case of defining
           a function via another function, i.e., function aliasing.  E.g.,
           `fn_(x: int_): str_ = other_fn_` will alias `other_fn_(x: int_): str_` to `fn_`, while
           `fn_(x: int_): return_type_` just declares a function that returns an instance of `return_type_`.
+          Note that `fn_(x: int_): str_ = generate_fn_()` is the way to define `fn_` based on the
+          function returned by calling `generate_fn_()` only once, which in this case should have
+          an overload `generate_fn_(): fn_(x: int_): str_`
 * when not declaring things, `:` is not used; e.g., `if` statements do not require a trailing `:` like python
 * commas `,` are equivalent to a line break at the current tab and vice versa
      * `do_something_(), do_something_else_()` executes both functions sequentially 
