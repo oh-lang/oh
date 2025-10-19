@@ -330,7 +330,7 @@ potentially OOM for `int`.)  If overflow/underflow is desired, use the overload
 which returns a variable named `wrap`, e.g., `x: (a + b) wrap` or `wrap: a + b`.
 Otherwise `a + b` will panic on overflow and terminate the program.  The alternative
 is to handle the error explicitly: `hm: a + b` then something like this:
-`what hm {ok: {print_(ok)}, er: {print_("got error: ${er}")}}`.
+`what hm {ok: {print_(ok)}, er: {print_("got error: $(er)")}}`.
 
 For primitive types (like `dbl_` and `i32_`), we don't throw on overflow or underflow.
 But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
@@ -338,12 +338,12 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
 # general syntax
 
 * `print_(...)` to echo some values (in ...) to stdout, `print_(error: ...)` to echo to stderr
-     * use string interpolation for printing dynamic values: `print_("hello, ${variable_1}")`
+     * use string interpolation for printing dynamic values: `print_("hello, $(variable_1)")`
      * use `print_(no_newline: "keep going ")` to print without a newline
      * default overload is to print to null, but you can request the string that was printed
           if you use the `print_(str.): str_` or `print_(error. str_): str_` overloads.
-          e.g., `another_fn_(value: int_): print_("Value is ${value}")` will return `null`,
-          whereas `another_fn_(value: int_): str_ {print_("Value is ${value}")}` will
+          e.g., `another_fn_(value: int_): print_("Value is $(value)")` will return `null`,
+          whereas `another_fn_(value: int_): str_ {print_("Value is $(value)")}` will
           return "Value is 12" (and print that) if you call `another_fn_(value: 12)`.
 * `type_case_`/`function_case_` identifiers like `x_` are function/type-like, see [identifiers](#identifiers)
 * `variable_case` identifiers like `x` are instance-like, see [identifiers](#identifiers)
@@ -384,7 +384,8 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
      * `my_str: "hi", (x: str_) = my_str` to create a [reference](#references) to `my_str` in the variable `x`.
      * `(some_instance x_(), some_instance Y;, w: "hi", z. 1.23)` to instantiate a reference object instance
           with `x` and `w` as readonly references, `y` as mutable reference, and `z` as a temporary.
-     * `"My String Interpolation is $(x, y: z)"` to add `(x: *value-of-x*, y: *value-of-z*)` to the string.
+     * `"Interpolate $(not_printed_(), x)"` to create the string "Interpolate 123" when `x` is 123;
+          note that `not_printed_()` is run but its results are not added to the string.
      * `f_(a: 3, b: "hi")` to call a function, and `f_(a: int_, b: str_): null_` to declare a function.
      * `a@ (x_(), y)` to call `a x_()` then `a y` with [sequence building](#sequence-building)
           and return them in a reference object with fields `x` and `y`, i.e., `(x: a x_(), y: a y)`.
@@ -393,13 +394,12 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
 * `[]` are for types and containers (including objects, arrays, and lots)
      * `[x: dbl_, y: dbl_]` to declare a plain-old-data class with two double-precision fields, `x` and `y`
      * `[x: 1.2, y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `x` and `y`
-     * `"My String interpolation is $[x, y]"` to add `[*value-of-x*, *value-of-y*]` to the string.
      * `[greeting: str_, times: int_] = destructure_me_()` to do destructuring of a return value
           see [destructuring](#destructuring).
      * `a@ [x_(), y]` to call `a x_()` then `a y` with [sequence building](#sequence-building)
           and return them in an object with fields `x` and `y`, i.e., `[x: a x_(), y: a y]`.
           You can also consider them as ordered, e.g.,
-          `results: a@ [x_(), y], print_("${results[0]}, ${results[1]})`.
+          `results: a@ [x_(), y], print_("$(results[0]), $(results[1]))`.
 * `{}` for blocks and generics
      * `{...}` to effectively indent `...`, e.g., `if condition {do_thing_()} else {do_other_thing_(), 5}`
           * Used for defining a multi-statement function inline, e.g., `fn_(): {do_this_(), do_that_()}`.
@@ -416,8 +416,6 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
           where `of_` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
      * `a@ {x_(), y}` with [sequence building](#sequence-building), 
           calling `a x_()` and `a y`, returning `a` if it's a temporary otherwise `a y`
-     * `"My String Interpolation is ${missing_(), x}"` to add `x` to the string.
-          Note that only the last element in the `${}` is added, but `missing_()` will still be evaluated.
 * `~` to infer or generalize a type
      * `my_generic_function_(value: ~u_): u_` to declare a function that takes a generic type `u_`
           and returns an instance of that type.  For more details, see
@@ -430,20 +428,25 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
           Any `type_case_` identifier can be used for `infer_this_`.
 * `$` for inline block and lambda arguments
      * [inline blocks](#block-parentheses-and-commas) include:
-          TODO: do we want to use `$[...]` as shorthand for defining a function `fn_[]: ...` with any arguments
-          specified by `$`?  it would be more consistent, then `${...}` could be for generic/type functions.
-          i think i like this...
-          * `$[...]` as shorthand for `{[...]}`, e.g., creating a block for a return value:
-               `array: if some_condition $[1, 2, 3] else $[4, 5]`
-          * `$(...)` as shorthand for `{(...)}`, e.g., creating a block for a reference object:
-               `result: if x > y $(max: x, min: y) else $(min: x, max: y)`
-          * `${...}` is shorthand for a `(fn_(...): {...})`, which can be used to create
-               [lambda function](#lambda-functions), e.g., `my_array map_${2 * $int + 1}` to define
+          * `$(...)` as shorthand for `(fn_(): {...})`, i.e., defining a [lambda function](#lambda-functions)
+               with `()` arguments specified by any lambda variables (see `$arg` logic).  E.g.,
+               `my_array map_$(2 * $int + 1)` is equivalent to
                `my_array map_(fn_(int:): 2 * int + 1)`.
+          * `$[...]` as shorthand for `[fn_[]: {...}]`, i.e., defining a lambda function with
+               `[]` arguments specified by any lambda variables (see `$arg` logic).
+               TODO: if we go further and do `fn_[]{[...]}` then this would still work:
+               `array: if some_condition $[1, 2, 3] else $[4, 5]`
+               but i'm not sure we want for consistency.  saving one character isn't that great
+               compared to `array: if some_condition {[1, 2, 3]} else {[4, 5]}`.
+          * `${...}` is shorthand for a `{new_{}: {...}}`, which can be used to create
+               lambda functions for types, or [lambda types](#lambda-types) for short,
+               with a similar function for lambda variables becoming arguments.
+               TODO: is the wrapping `{}` ok in every situation?  or should we infer it only
+               when we see a `type_case_` identifier before `${...}`?
      * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
-          * `my_array map_${$int * 2 + 1}` will iterate over e.g., `my_array: [1, 2, 3, 4]`
-               as `[3, 5, 7, 9]`.  The `$` variables attach to the enclosing `${}` as
-               function arguments, variables with `$$` would attach to the enclosing `$${}`, etc. 
+          * `my_array map_$($int * 2 + 1)` will iterate over e.g., `my_array: [1, 2, 3, 4]`
+               as `[3, 5, 7, 9]`.  The `$` variables attach to the enclosing `$()` as
+               function arguments, variables with `$$` would attach to the enclosing `$$()`, etc. 
 * all arguments are specified by name so order doesn't matter, although you can have default-named arguments
   for the given type which will grab an argument with that type (e.g., `int` for an `int_` type).
      * `(x: dbl_, int:)` can be called with `(1234, x: 5.67)` or even `(y, x: 5.67)` if `y` is an `int_`
@@ -499,7 +502,7 @@ other_var; explicit_type_
 name: "Barnabus"
 
 # using interpolation in a string:
-greeting: "hello, ${name}!"
+greeting: "hello, $(name)!"
 
 # declaring a multiline string with spaces added between lines
 long_text:
@@ -526,8 +529,8 @@ just_one_line: +|This is a 'line' "you know"
 
 # declaring a multiline string with interpolation
 multiline_interpolation:
-          +|Special delivery for ${name}:
-          +|You will receive ${important_items} and more.
+          +|Special delivery for $(name):
+          +|You will receive $(important_items) and more.
 # becomes "Special delivery for Barnabus\nYou will receive Fridge\nPancakes and syrup\nCheese\n and more."
 
 # if you want to avoid string interpolation, e.g., because you need to include a literal
@@ -539,17 +542,17 @@ print_("ok \${we want this literally as} $\[whatever] $ok")
 # interpolation over multiple file lines.
 # WARNING: this does not comply with Horstmann indenting,
 # and it's hard to know what the indent should be on the second line.
-evil_long_line: "this is going to be a long discussion, ${
-          name}, can you confirm your availability?"
+evil_long_line: "this is going to be a long discussion, $(
+          name), can you confirm your availability?"
 # INSTEAD, use string concatenation, which automatically adds a space if necessary:
 good_long_line: "this is going to be a long discussion,"
-     &   "${name}, can you confirm your availability?"
+     &   "$(name), can you confirm your availability?"
 best_long_line:
         &|this is going to be a long discussion,
-        &|${name}, can you confirm your availability?
+        &|$(name), can you confirm your availability?
 
 # you can also nest interpolation logic, although this isn't recommended:
-nested_interpolation: "hello, ${if condition {name} else {'World${"!" * 5}'}}!"
+nested_interpolation: "hello, $(if condition {name} else {'World$("!" * 5)'})!"
 ```
 
 Notice that the `&` operator works on strings to add a space (if necessary)
@@ -745,11 +748,11 @@ my_name_(): "World"
 do_something_
 (    you_(): str_ = my_name_
      greet_(name: str_): str_
-          "Hello, ${name}"
+          "Hello, $(name)"
 )
 
 # case (C): defining a few functions inline without `{}`
-hello_world_(): print_(do_something_(you_(): "world", greet_(name: str_): "Hello, ${name}"))
+hello_world_(): print_(do_something_(you_(): "world", greet_(name: str_): "Hello, $(name)"))
 ```
 
 ### defining generic functions
@@ -885,12 +888,12 @@ inside an `m` field.
 ```
 parent1_: [p1: str_]
 {    ::do_p1_(): null_
-          print_("doing p1 ${m p1}")
+          print_("doing p1 $(m p1)")
 }
 
 parent2_: [p2: str_]
 {    ::do_p2_(): null_
-          print_("doing p2 ${m p2}")
+          print_("doing p2 $(m p2)")
 }
 
 # TODO: we probably can allow for immutable parent types by doing `parent1:`
@@ -1239,7 +1242,7 @@ defining_a_function_with_multiline_arguments_
 ):      string_             # indent here is optional/aesthetic
      # "return" is optional for the last line of the block,
      # unless you're returning a multiline array/object.
-     "${greeting}, ${name}! " * times
+     "$(greeting), $(name)! " * times
 
 defining_a_function_with_multiline_return_values_
 (    argument0: int_
@@ -1278,7 +1281,7 @@ defining_another_function_that_returns_a_generic_
      type1_: str_
 }
      do_something_(argument0)
-     print_("got arguments ${argument0}, ${argument1}")
+     print_("got arguments $(argument0), $(argument1)")
      return: ...
 ```
 
@@ -1300,11 +1303,11 @@ some_line_continuation_example_variable:
 
 You can use `{` ... `}` to define a block inline.  The braces block is grammatically
 the same as a standard block, i.e., going to a new line and indenting to +1.
-This is useful for short `if` statements, e.g., `if some_condition {do_something_()}`.
-Similarly, you can return normal objects or reference objects in blocks via
-`$[...]` or `$(...)`, respectively.
+Braces are useful for short `if` statements that you want to inline, e.g.,
+`if some_condition {do_something_()}`, or long blocks that you want to be able to
+navigate quickly in text editors.
 
-Similarly, note that commas are essentially equivalent to a new line and tabbing to the
+Similarly, note that commas are grammatically equivalent to a new line and tabbing to the
 same indent (indent +0).  This allows you to have multiple statements on one line,
 in any block, by using commas.  E.g.,
 
@@ -1326,15 +1329,15 @@ if some_condition { print_("toggling shutoff"), shutdown_() }
 
 If the block parentheses encapsulate content over multiple lines, note that
 the additional lines need to be tabbed to +1 indent to match the +1 indent given by `{`.
-Multiline block parentheses are useful if you want to clearly delineate where your blocks
+Multiline block braces are useful if you want to clearly delineate where your blocks
 begin and end, which helps some editors navigate more quickly to the beginning/end of the block.
 
 ```
-# multiline block parentheses via an optional `{`
+# multiline block braces via an optional `{`
 if some_condition
 {    print_("toggling shutdown")
      print_("waiting one more tick")
-     print_("almost..."), print_("it's a bit weird to use comma statements")
+     print_("almost..."), print_("it's a bit weird to use comma statements here")
      shutdown_()
 }
 ```
@@ -1542,7 +1545,7 @@ Similar to defining a function overload, we can define type overloads for generi
 For example, the generic result class in oh-lang is `hm_{ok_, er_}`, which
 encapsulates an ok value (`ok_`) or a non-nullable error (`er_`).  For your custom class you
 may not want to specify `hm_{ok_: my_ok_type_, er_: my_class_er_}` all the time for your custom
-error type `my_class_er_`, so you can define `hm_{of_}: hm_{ok_: of_, er_: my_class_er_}` and
+error type `my_class_er_`, so you can define `hm_{of_:}: hm_{ok_: of_, er_: my_class_er_}` and
 use e.g. `hm_{int_}` to return an integer or an error of type `my_class_er_`.  Shadowing variables is
 invalid in oh-lang, but overloads are valid.  Note however that we disallow redefining
 an overload, as that would be the equivalent of shadowing.
@@ -1552,29 +1555,30 @@ an overload, as that would be the equivalent of shadowing.
 Plain-old-data objects can be thought of as merging all fields in this way:
 TODO: i think this needs to be separate from `tag`s, but see if we can combine
 `field` and `tag` ideas.  or maybe use `TAG_` to indicate this is a built-in.
-TODO: `$field` should create a `fn_(field)` not a `new_{field}` by default;
-can we figure out how to make it typey?  `{$...}_` maybe?  or can we just
-do `$field_` and infer `new_{field_:}: field_`?
-TODO: OR we use `${}` for types, and `$[]`/`$()` for functions with `[]`/`()`
-args respectively.  if we keep `$(...)` meaning `{(...)}` then we can do
-`array_{(int;)}` as `array_$(int;)`, although not a huge boost to readability.
+
+Each type has reflection properties like `fields_()` which returns an array
+of all the `field_` types that are in an object.  E.g., `[a: int_, b: str_]`
+has fields `field_{name: "a", of_: int_}` and `field_{name: "b", of_: str_}`.
+TODO: we probably need a type-ID field.
+
+Using [lambda types](#lambda-types), we can practice type manipulation:
 
 ```
 # tautologies
 object_
-    ==  merge_{object_ fields_{}, ${$field}}
-    ==  merge_{object_ fields_{}, ${field_($field name, $field value_)}}
+    ==  merge_{object_ fields_(), ${$field_}}
+    ==  merge_{object_ fields_(), ${field_($field_ name, $field_ of_)}}
 ```
 
 There are some nice ways to manipulate object types, like converting all
 field values of an object into some other type:
 
 ```
-object_ valued_{new_{value_:}: new_value_}
-    ==  merge_{object_ fields_(), ${field_{$field name, new_{$field value_}}}}
+object_ valued_{new_{of_:}: ~new_of_}
+    ==  merge_{object_ fields_(), ${field_{$field_ name, new_{$field_ of_}}}}
 ```
 
-For example, `object_ valued_{${um_{$value_}}}` is a way to convert `object_`
+For example, `object_ valued_${um_{$of_}}` is a way to convert `object_`
 data into futures.
 
 Here are some examples of changing the nested fields on an object
@@ -1592,14 +1596,20 @@ nest_
      m_: ~c_{of_: ~nested_, ~at_:}
      new_{of_:}: ~n_
 }: c_{of_: new_{nested_}, at_}
+# TODO: would this work as well?
+nest_
+{    c_: container_
+     m_: ~c_{of_: ~nesting_, ~at_:}
+     new_{of_: nesting_}: ~nested_
+}: c_{of_: nested_, at_}
 
 # object specialization.
-# e.g., `[x: int_, y: str_] nest_{{hm_{ok_: $of_, er_: some_er_}}}`
-# or you can do `nest_{{hm_{ok_: $of_, er_: some_er_}}, m_: [x: int_, y: str_]}` for the same effect.
+# e.g., `[x: int_, y: str_] nest_${hm_{ok_: $of_, er_: some_er_}}`
 # to make `[x: hm_{ok_: int_, er_: some_er_}, y: hm_{ok_: str_, er_: some_er_}]`,
-nest_{m_: object_, new_{of_}: ~n_}: merge_
+# or you can do `nest_{{hm_{ok_: $of_, er_: some_er_}}, m_: [x: int_, y: str_]}` for the same effect.
+nest_{m_: object_, new_{of_:}: ~_n_}: merge_
 {    m_ fields_()
-     ${field_{$field name, new_{$field value_}}}
+     ${field_{$field_ name, new_{$field_ value_}}}
 }
 ```
 
@@ -1675,7 +1685,7 @@ TODO: i think i would like a `|>` "inline-tab" operator for indenting the next l
      "bc"
           print_("got bc")
      else
-          print_("got something else: ${str}")
+          print_("got something else: $(str)")
 
 # equivalent to 
 ["a", "bc", "def"] each str.
@@ -1685,7 +1695,7 @@ TODO: i think i would like a `|>` "inline-tab" operator for indenting the next l
           "bc"
                print_("got bc")
           else
-               print_("got something else: ${str}")
+               print_("got something else: $(str)")
 ```
 TODO: or we could make it just a "pipe" like operator, so `each str. |> what` would not need `str` after it.
 
@@ -1758,7 +1768,7 @@ but you can explicitly curry like this:
 
 ```
 some_function_(x: int_, y; dbl_, z. str_):
-     print_("something cool with ${x}, ${y}, and ${z}")
+     print_("something cool with $(x), $(y), and $(z)")
 
 curried_function_(z. str_): some_function_(x: 5, y; 2.4, .z)
 
@@ -1911,7 +1921,7 @@ readonly/writable `m` (self/this) as an argument.
 ```
 example_class_: [x: int_, y: dbl_]
 {    ;;renew_(m x: int_, m y: dbl_): null_
-          print_("x ${x} y ${y}")
+          print_("x $(x) y $(y)")
 
      # this `::` prefix is shorthand for `multiply_(m:, ...): dbl_`:
      ::multiply_(z: dbl_): dbl_
@@ -2515,11 +2525,7 @@ v_(): int_(600)
 
 # function with X,Y double-precision float arguments that returns nothing
 v_(x: dbl_, y: dbl_): null_
-     print_("x = ${x}, y = ${y}, atan_(y, x) = ${\\math atan_(x, y)}")
-     # Note this could also be defined more concisely using $(),
-     # which also prints the expression inside the parentheses with an equal sign and its value,
-     # although this will print `x: ..., y: ..., atan: ...`, e.g.:
-     # print("$(x, y, \\math atan_(x, y))")
+     print_("x = $(x), y = $(y), atan_(y, x) = $(\\math atan_(x, y))")
 
 # Note that it is also ok to use parentheses around a function definition,
 # but you should use braces `{}`.
@@ -2948,8 +2954,8 @@ detect_(greet_(int): {["hi", "hey", hello"][int % 3] + ", world!"}) # returns 2
 ### lambda functions
 
 Lambda functions are good candidates for [functions as arguments](#functions-as-arguments),
-since they are very concise ways to define a function.  They utilize a brace with a specific
-number of `$` like `${...function-body...}` with function arguments defined inside using
+since they are very concise ways to define a function.  They utilize a parenthetical with a
+number of `$` like `$(...function-body...)` with function arguments defined inside using
 `$the_argument_name` (using the corresponding number of `$` as the brace).  There is no way
 to specify the type of a lambda function argument, so the compiler must be able to infer it
 (e.g., via using the lambda function as an argument, or by using a default name like `$int`
@@ -2960,8 +2966,8 @@ run_asdf_(do_(j: int_, k: str_, l: dbl_): null_): null_
      print_(do_(j: 5, k: "hay", l: 3.14))
 
 # Note that `$k`, `$j`, and `$l` attach to the same lambda based on looking
-# for the matching `${}`.  `${}` also automatically gets a wrapping `()`.
-run_asdf_${$k * $j + str_($l)}     # prints "hayhayhayhayhay3.14"
+# for the matching `$()`.  `$()` also automatically gets a wrapping `()`.
+run_asdf_$($k * $j + str_($l))     # prints "hayhayhayhayhay3.14"
 ```
 
 If you need a lambda function inside a lambda function, use more `$` to escape
@@ -2971,7 +2977,7 @@ the arguments into the brace with the same number of `$`, e.g.,
 # with function signatures
 # `run_(fn_(x: any_): any_): any_` and
 # `run_nested_(fn_(y: any_): any_): any_`
-run_${$x + run_nested_$${$$y + $x}}
+run_$($x + run_nested_$$($$y + $x))
 
 # which is equivalent to the arguably the more readable:
 run_
@@ -2984,7 +2990,7 @@ run_
 ```
 
 Again, it is likely more readable to just define the functions normally in this instance
-rather than nest `$${}`.
+rather than nest `$$()`.
 
 There is currently no good way to define the name of a lambda function; we may use
 `@named(whatever_name_) {$x + $y}`, but it's probably more readable to just define
@@ -3062,6 +3068,10 @@ we're already doing this implicitly with enums, e.g., `abc_: one_of_{a:, b:, c:}
 `abc_ count_()`.  but again we'll need to do some built-in like `COUNT_(abc_)` in case
 we have something like `w_: one_of_{count:, ...}`.  we should also investigate how to
 overload `[]` for array indexing, because theoretically we can have `array[1, 2, 3]`.
+
+### lambda types
+
+TODO: discuss lambda functions for types, i.e., `${the_type_}`.
 
 ### unique argument names
 
@@ -3172,10 +3182,10 @@ argument modifiers (i.e., `;` and `:` are different overloads, as are nullable t
 
 ```
 greet_(string): null_
-     print_("Hello, ${string}!")
+     print_("Hello, $(string)!")
 
 greet_(say: string_, to: string_): null_
-     print_("${say}, ${to}!")
+     print_("$(say), $(to)!")
 
 greet_(say: string_, to: string_, times: int_): null_
      times each _int:
@@ -3189,7 +3199,7 @@ greet_(times: 5, say: "Hey", to: "Sam")
 # note this is a different overload, since it must be called with `say;`
 greet_(say; string_): null_
      say += " wow"
-     print_("${say}, world...")
+     print_("$(say), world...")
 
 my_say; "hello"
 greet_(say; my_say) # prints "hello wow, world..."
@@ -3305,7 +3315,7 @@ we define present and missing argument overloads in the following way:
 overloaded_(): dbl_
      123.4
 overloaded_(y: int_): string_
-     "hi ${y}"
+     "hi $(y)"
 ```
 
 The behavior that we get when we call `overloaded_` will depend on whether we
@@ -3743,7 +3753,7 @@ animals; ["hello": cat_(), "world": snake_(name: "Woodsy")]
 do_something_(animal:): string_
      result; animal name
      animals["world"] = cat_()       # overwrites `snake_` with a `cat_`
-     result += " ${animal speak_()}"
+     result += " $(animal speak_())"
      result
 
 print_(do_something_(animals["world"])) # returns "Woodsy hisss!" (snake name + cat speak)
@@ -3757,11 +3767,11 @@ to reason about, we'll probably want to detect this (if possible) and give an er
 ```
 my_int; 100
 not_actually_constant_(int:): null_
-     print_("int before ${int}")
+     print_("int before $(int)")
      my_int += int
-     print_("int middle ${int}")
+     print_("int middle $(int)")
      my_int += int
-     print_("int after ${int}")
+     print_("int after $(int)")
      # int += 5  # this would be a compiler error since `int` is readonly in this scope.
 
 not_actually_constant_(my_int) # prints "int before 100", then "int middle 200", then "int after 400"
@@ -4095,7 +4105,7 @@ To declare a reassignable function, use `;` after the arguments.
 
 ```
 greet_(noun: string_); null_
-     print_("Hello, ${noun}!")
+     print_("Hello, $(noun)!")
 
 # you can use the function:
 greet_(noun: "World")
@@ -4228,7 +4238,7 @@ which is more idiomatic: `~my_type;` or `~t:`.  Here is a complete example:
 
 ```
 logger_(~t): t_
-     print_("got ${t}")
+     print_("got $(t)")
      t
 
 vector3_: [x: dbl_, y: dbl_, z: dbl_]
@@ -4249,7 +4259,7 @@ the function arguments like this:
 
 ```
 logger_{of_: some_constraint_}(of.): of_
-     print_("got ${of}")
+     print_("got $(of)")
      of
 
 # need to explicitly add the type since it's never inferred.
@@ -4262,7 +4272,7 @@ you can use the `NAMED_` namespace.  This suppresses the default naming.
 
 ```
 logger_(~NAMED_of.): of_
-     print_("got ${of}")
+     print_("got $(of)))
      of
 
 # need to explicitly add the argument name `of` but
@@ -4276,7 +4286,7 @@ so default names can apply.
 
 ```
 logger_{value_:}(value.): value_
-     print_("got ${value}")
+     print_("got $(value)")
      value
 
 logger_{value_: dbl_}(3)    # will return `3.0` and print "got 3.0"
@@ -4288,7 +4298,7 @@ want default names to apply, which we do using the `NAMED_` namespace.
 
 ```
 logger_(~NAMED_value.): value_
-     print_("got ${NAMED_value}")
+     print_("got $(NAMED_value)")
      NAMED_value
 
 # because of the `~` on the type, it can be called like this,
@@ -4321,12 +4331,12 @@ for `this_function_(argument_at: str_, argument: known_type_)`, so
 ```
 this_function_(~argument: int_): null_
      argument_name: str_(@@argument)
-     print("calling this_function with ${argument_name}: ${argument}")
+     print("calling this_function with $(argument_name): $(argument)")
 
 # internally defines this overload:
 this_function_(argument_at: str_, argument: int_): null_
      argument_name: str_(argument_at)
-     print("calling this_function with ${argument_name}: ${argument}")
+     print("calling this_function with $(argument_name): $(argument)")
 
 # and this overload, but this is only for `call_`ers.
 this_function_(argument: int_): null_
@@ -4477,7 +4487,7 @@ example_class_: all_of_
           #       we prefer to keep that for methods, to make it more clear that
           #       this has different storage requirements in practice.
           instance_function_(m:): null_
-               print_("hello ${m x}!")
+               print_("hello $(m x)!")
 
           # this class instance function can be changed after the instance has been created
           # (due to being declared with `;`), as long as the instance is mutable.
@@ -4507,9 +4517,9 @@ example_class_: all_of_
      # prefix `::` (`;;`) is shorthand for adding `m: m_` (`m; m_`) as an argument.
      # this one does not change the underlying instance:
      ::do_something_(int:): int_
-          print_("My name is ${m name}")   # `m name` will check child first, then parents.
+          print_("My name is $(m name)")   # `m name` will check child first, then parents.
           # also ok, if we know it's definitely in `parent_class_`:
-          print_("My name is ${parent_class name}")
+          print_("My name is $(parent_class name)")
           x + int     # equivalent to `m x + int`
 
      # this method mutates the class instance, so it uses `;;` instead of `::`:
@@ -4565,7 +4575,7 @@ a few methods, but don't use `:` since we're no longer declaring the class.
 ```
 # static function that constructs a type or errors out
 example_class_(z: dbl_): hm_{ok_: example_class_, er_: str_}
-     # we can use `map_${$er, ...}` as well.
+     # we can use `map_$($er, ...)` as well.
      x: z round_() int_() map_(er: "Need `round_(z)` representable as an `int`.") assert_()
      example_class_(x)
 
@@ -4624,7 +4634,7 @@ destructor_class_: [x: int_]
 {    # TODO: the `@debug` annotation should do something interesting, like
      #       stop the debugger when the value is `set`ted or `get`ted.
      m_(DEBUG_x. int_): m_
-          print_("x ${DEBUG_x}")
+          print_("x $(DEBUG_x)")
           [x. DEBUG_x]
      # `m_(...): m_` will also add methods like this:
      #   ;;renew_(DEBUG_x. int_): null_
@@ -4633,7 +4643,7 @@ destructor_class_: [x: int_]
 
      # you can define the destructor:
      ;;descope_(): null_
-          print_("going out of scope, had x ${x}")
+          print_("going out of scope, had x $(x)")
           # note that destructors of instance variables (e.g., `x`)
           # will automatically be called, in reverse order of definition.
 }
@@ -4978,7 +4988,7 @@ animal_: [name: string_]
      # this method is defined, so it's implemented by the base class.
      # derived classes can still override it, but this default will be defined for them.
      ::escape_(): null
-          print_("${m name} ${m go_()} away!!")
+          print_("$(m name) $(m go_()) away!!")
 
      # copy method that returns an instance of whatever the class instance
      # type is known to be.  e.g., an animal returns an animal instance,
@@ -5075,7 +5085,7 @@ weird_animal: animal_
      ::escape_(): null_
           # to call the parent method `escape_()` in here, we can use this:
           animal::escape_()
-          print_("${m name} ${m go_()} back...")
+          print_("$(m name) $(m go_()) back...")
           # or we can use this:
           animal escape_(M)
 )
@@ -5565,7 +5575,7 @@ awesome_service: all_of_
      m: [url_base: "http://my/website/address.bazinga"]
 }
 {    ::get_(id: string_): awesome_data_
-          json: http get_("${m url_base}/awesome/${id}")
+          json: http get_("$(m url_base)/awesome/$(id)")
           awesome_data_(json)
 }
 ```
@@ -5927,7 +5937,7 @@ we are declaring a test.
 ```
 @private
 private_function_(x: int_, y: int_): [z: str_]
-     z: "${x}:${y}"
+     z: "$(x):$(y)"
 
 @protected
 protected_function_(x: int_, y: int_): [z: str_]
@@ -5989,8 +5999,8 @@ test_cases: lot_{at_: str_, test_case_}
      get_environment_set_up_()
 
      test_cases @each (name: at_, test_case:)
-          @test "testing ${name}":
-               test_(do_something_(test_case argument)) == test_case result
+          @test "testing $(name)":
+               assert_(do_something_(test_case argument)) == test_case result
 ```
 
 Integration tests can be written in files that end with `.test.oh` or `.test.ohs` (i.e., as a script).
@@ -6047,8 +6057,8 @@ if result is_ok_()
      print_("ok")
 
 # but it'd be nice to transform `result` into the `ok` (or `er`) value along the way.
-result is_(an_(ok): print_("ok: ${ok}"))
-result is_(an_(er): print_("er: ${er}"))
+result is_(an_(ok): print_("ok: $(ok)"))
+result is_(an_(er): print_("er: $(er)"))
 
 # or if you're sure it's not an error, or want the program to terminate if not:
 ok: result ?? panic_("expected `result` to be ok!!")
@@ -6119,7 +6129,7 @@ a nullable version of the `ok_` type.  This is helpful for things like type cast
 instead of `my_int: what int_(my_dbl) {ok. {ok}, er: {-1}}` you can do
 `my_int: int_(my_dbl) ?? -1`.  Although, there is another option that
 doesn't use nulls:  `int_(my_dbl) map_(fn_(_er): -1)`, or via
-[lambda functions](#lambda-functions): `int_(my_dbl) map_${$er_, -1}`.
+[lambda functions](#lambda-functions): `int_(my_dbl) map_$($_er, -1)`.
 
 TODO: should this be valid if `ok` is already a nullable type?  e.g.,
 `my_function_(): hm_{ok_: int_?, er_: str_}`.
@@ -6394,10 +6404,10 @@ array_{of_}: []
 
 x: [1, 2, 3, 4] each int.
      if int > 3
-          print_("choosing ${int}")
-          break: "${int}"
+          print_("choosing $(int)")
+          break: "$(int)"
      else
-          print_("ignoring ${int}")
+          print_("ignoring $(int)")
 else
      print_("found no good matches")
      ""
@@ -6406,10 +6416,10 @@ else
 each_blockable{declaring_: (int.), int_}: _
 (    each_(int.): bc_{str_}
           if int > 3
-               print_("choosing ${int}")
-               bc_ break_("${int}")
+               print_("choosing $(int)")
+               bc_ break_("$(int)")
           else
-               print_("ignoring ${int}")
+               print_("ignoring $(int)")
           bc_ continue
      else_(): str_
           print_("found no good matches")
@@ -6623,12 +6633,12 @@ example_class_: [value: int_]
 {    #[# the standard way to use this method uses syntax sugar:
           ```
           if example_class is large:
-               print_("was large: ${large}")
+               print_("was large: $(large)")
           ```
      #]#
      :;.is_(if_block{declaring_: (large:;. int_), ~t_}): t_
           if m value > 999
-               if_block then_(declaring: (large` m value))
+               if_block then_(declaring: (large:;. m value))
           else
                if_block else_()
 }
@@ -6758,11 +6768,11 @@ what update
           print_("unknown update")
      status:
           # match all other statuses:
-          print_("got update: $(status)")
+          print_("got status update: $(status)")
      position: vector3_
-          print_("got update: $(position)")
+          print_("got position update: $(position)")
      velocity: vector3_
-          print_("got update: $(velocity)")
+          print_("got velocity update: $(velocity)")
 ```
 
 You can use a `then` on the `what` itself or on a specific case that's complicated,
@@ -6835,10 +6845,10 @@ whatever; whatever_ str_("this could be a very long string, don't copy if you do
 
 what whatever!      # ensure passing as a temporary by mooting here.
      str.
-          print_("can do something with temporary here: ${str}")
+          print_("can do something with temporary here: $(str)")
           do_something_(str!)
      card.
-          print_("can do something with temporary here: ${card}")
+          print_("can do something with temporary here: $(card)")
           do_something_else_(card!)
 ```
 
@@ -6888,7 +6898,7 @@ what my_hashable_class
      my_hashable_class_(id. 123, name. "Whatever")
           print_("great!")
      my_hashable_class:
-          print_("it was something else: ${my_hashable_class}")
+          print_("it was something else: $(my_hashable_class)")
 ```
 
 Note that if your `fast_hash_` implementation is terrible (e.g., `fast_hash_(salt): salt`),
@@ -6925,7 +6935,7 @@ what cows
      many: where many <= 5       # optionally `many: i32_ where many <= 5`
           print_("got a handful of cows")
      many:                       # optionally `many: i32`
-          print_("got ${many} cows")
+          print_("got $(many) cows")
 ```
 
 It can also be used in a conditional alongside the `is` operator.
@@ -6935,7 +6945,7 @@ Using the same `cows` definition from above for an example:
 cows: some_function_returning_cows_()
 if cows is many: where many > 5
      # executes if `cows` is `cows_ many` and `many` is 6 or more.
-     print_("got ${many} cows")
+     print_("got $(many) cows")
 else
      # executes if `cows` is something else.
      print_("not a lot of cows")
@@ -7174,7 +7184,7 @@ block_{of_:, declaring_: any_ = null_}:
      #              value = value // 2 + 9
      #              # sequence should be: 0, 9, 4+9=13, 6+9=15, 7+9=16, 8+9=17
      #              if OLD_value == value
-     #                   block exit_("exited at ${OLD_value}")
+     #                   block exit_("exited at $(OLD_value)")
      #              # note we need to `loop_` otherwise we won't satisfy the `never_`
      #              # part of the indent function.
      #              # TODO: i don't know if `loop_` makes sense for `block.
@@ -7317,7 +7327,7 @@ some_very_long_running_function_(int): um_{string_}
 # this approach calls the default `string_` return overload, which blocks:
 print_("starting a long running function...")
 my_name: some_very_long_running_function_(10)
-print_("the result is ${my_name} many seconds later")
+print_("the result is $(my_name) many seconds later")
 
 # this approach calls the function as a future:
 print_("starting a future, won't make progress unless polled")
@@ -7329,7 +7339,7 @@ future: some_very_long_running_function_(10) um
 # which is useful if you want to use the `inner_` type later in this block.
 print_("this `print` executes right away")
 result: string_ = future
-print_("the result is ${result} many seconds later")
+print_("the result is $(result) many seconds later")
 ```
 
 That is the basic way to resolve a future, but you can also use
@@ -7497,9 +7507,9 @@ if test is_false_() # also OK
      print_("test is false!")
 
 # get the count (number of enumerated values) of the enum:
-print_("bool has ${bool_ count_()} possibilities:")
+print_("bool has $(bool_ count_()) possibilities:")
 # get the lowest and highest values of the enum:
-print_("starting at ${bool_ min_()} and going to ${bool_ max_()}")
+print_("starting at $(bool_ min_()) and going to $(bool_ max_())")
 ```
 
 Because of this, it is a bit confusing to create an enum that has `count` as an
@@ -7527,8 +7537,8 @@ sign_: one_of_
      positive: 1
 }
 
-print_("sign has ${sign_ count_()} values")   # 3
-print_("starting at ${sign_ min_()} and going to ${sign_ max_()}")     # -1 and 1
+print_("sign has $(sign_ count_()) values")   # 3
+print_("starting at $(sign_ min_()) and going to $(sign_ max_())")     # -1 and 1
 
 # this will fit in a `u4_` due to values going up to 9.
 weird_: one_of_
@@ -7571,7 +7581,7 @@ option_: one_of_
      now_you_will_be_sad_forever:
 }
 
-print_("number of options should be 7:  ${option_ count_()}")
+print_("number of options should be 7:  $(option_ count_())")
 
 option1: option_ content_with_life
 
@@ -7854,14 +7864,14 @@ with the distinct types and not the combined type, like so:
 
 ```
 my_fn_(select_{int:, str:}:): str_
-     "hello ${select}"
+     "hello $(select)"
 
 # becomes only these two functions internally:
 my_fn_(int:): str_
-     "hello ${int}"
+     "hello $(int)"
 
 my_fn_(str:): str_
-     "hello ${str}"
+     "hello $(str)"
 
 # when calling:
 my_fn_(5)           # OK
@@ -8014,15 +8024,15 @@ search_options_ id_ == tag_{any_of_: search_options_, 2, u64_, field: "id"}
 search_(search_options:): null_
      if search_options is name:
           # only triggers if `search_options` is exactly/only `name`
-          print_("searching for $(name)...")
+          print_("searching for name: $(name)...")
      elif search_options is id:
           # only triggers if `search_options` is exactly/only `id`
-          print_("searching for $(id)...")
+          print_("searching for id: $(id)...")
      else
           # both `id` and `name` can be defined
           name: search_options name_() assert_()
           id: search_options id_() assert_()
-          print_("searching for $(name, id)...")
+          print_("searching for name $(name) and id $(id)...")
 
 # TODO: if we only have one overload, can we simplify to `search_(_ name_("cool dude"))`?
 search_(search_options_ name_("cool dude"))  # prints "searching for (name: cool dude)"
@@ -8052,7 +8062,7 @@ explicitly_tagged; _ next_(1234)
 explicitly_tagged == explicitly_tagged_ next_(1234)    # true
 explicitly_tagged = _ name_("whatever")
 if explicitly_tagged is name:
-     print_("got name: ${name}")   # prints "got name: whatever"
+     print_("got name: $(name)")   # prints "got name: whatever"
 
 explicitly_tagged |= _ wow
 explicitly_tagged |= _ str_("cool")
@@ -8063,9 +8073,9 @@ explicitly_tagged |= _ str_("cool")
 if explicitly_tagged is name:
      print_("should not print, no longer exlusively `name`")
 if explicitly_tagged has name:
-     print_("contains $(name)")    # prints "contains (name: whatever)"
+     print_("contains name: $(name)")   # prints "contains name: whatever"
 if explicitly_tagged has str:
-     print_("contains $(str)")     # prints "contains (str: cool)"
+     print_("contains str: $(str)")     # prints "contains str: cool"
 if explicitly_tagged has _ wow
      print_("also contains wow factor")      # should print
 
