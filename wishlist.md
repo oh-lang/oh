@@ -1122,7 +1122,7 @@ my_function_(int): [x: int_, y: int_]
      # TODO: maybe we forbid `fn_(...)[...]` to avoid this issue.
      #    we could require `fn_(...) whatever[...]` if `fn_` returns an indexable `whatever`
      #    alternatively we could require `array at_(3)` instead of `array[3]`.
-     return
+     return:
      [    x: 5 - int
           y: 5 + int
      ]
@@ -1776,7 +1776,7 @@ at runtime.  Obviously inputs to these need to be resolvable at compile time.
 
 List of existing macros.
 * `@if`, `@elif`, `@else`
-* `@what`
+* `@what`, `@when`, `@also`
 * `@while`, `@each`
 * `@return` - probably isn't necessary but reserved anyway.
 
@@ -6510,22 +6510,22 @@ else
      do_something_else_()
 ```
 HOWEVER we do need to handle the case if something like `if x {print_("asdf")}`
-followed by another `if y {print_("asdf2")}`, which with `when` `when` would only
+followed by another `if y {print_("asdf2")}`, which with `when`-`when` would only
 execute the second statement if `!x`, whereas the first one ignores the value of `x`.
 maybe something like `also`.
 
 ```
 if x
-     print("x was truthy")
+     print_("x was truthy")
 if y
-     print("y was truthy")
+     print_("y was truthy")
 
 # would become
 when x
-     print("x was truthy")
+     print_("x was truthy")
 also
 when y
-     print("y was truthy")
+     print_("y was truthy")
 ```
 
 not sure i love this solution as `when` doesn't have a `elif` feel to me.
