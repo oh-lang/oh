@@ -3,14 +3,14 @@ allocation_
 {    of_:
      # determines the maximum size of the allocation, and
      # makes indexing this allocation potentially more efficient.
-     # when indexing via `index_`, negative indices are used for "from the back";
-     # when indexing via `offset_`, negative indices are not permitted.
+     # when using an `index_count_`, negative indices are used for "from the back";
+     # when using an `offset_count_`, negative indices are not permitted.
      # the downside of `index_` is that the max capacity is `index_ max_count`,
-     # which is half the max capacity of `offset_`.
+     # which is half the max capacity of `offset_ max_count`.
      # TODO: we need an extra bool for `offset_ max_count` because it can go up 256
      # for a u8_ offset.  in this class we can determine if that is active if
      # the allocation pointer is not null and the u8 is zero.
-     at_: select_{index_: select_index_, offset_: select_offset_}
+     count_: select_count_
      # if not null, we allocate just enough space for this extra data
      # just before the buffer of `of_` values.  there can be multiple
      # `of` values, but only ever one instance of `header` is added.
@@ -144,15 +144,12 @@ allocation_
           @else
                at_least_memory: memory_(full_header_)
                word_memory: memory_(arch_ word_)
-               # TODO: maybe just `ceil(at_least_memory / word_memory) * word_memory`??
+               # TODO: maybe just `ceil_(at_least_memory / word_memory) * word_memory`??
                need_one_more_word: at_least_memory %% word_memory != 0
                (at_least_memory // word_memory + need_one_more_word) * word_memory
 
      # TODO: update based on size of `of_`
      small_capacity: 4
-
-     capacity_: count_
-     offset_: capacity_ offset_
 
      @if header_ is !null_ or capacity_site is_on_heap_()
           @private full_header_:
@@ -162,12 +159,16 @@ allocation_
      @else
           @private full_header_: null_
 
-     hm_{of_}: hm_
+     hm_{of_:}: hm_
      {    ok_: of_
           er_: container_ er_
      }
 
      # use an alias so we can do, e.g., `allocation_{capacity_site_ on_heap}`
      # to specify `capacity_site`
-     capacity_site_: memory_ site_
+     capacity_site_: @distinct memory_ site_
+
+     capacity_: count_
+     offset_: count_ offset_
+     index_{require: count_ indexable}: count_ index_
 }

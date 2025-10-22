@@ -1,22 +1,39 @@
 #[#
-we leave room for negative indexing, so a `u8_` count is only valid
-from 0 to 128, so all signed `i8_` indexes from -128 to 127 are valid
-(and there is no space for an invalid index), i.e., via `count_ index_`.
-we also have concepts of an `count_ offset_` which is an unsigned
-index that is valid from 0 to 127 for a `u8_` count.
+there are two types of counts; one that allows negative indexing
+(which is generally the default) and one that doesn't.  e.g.,
+an `index_count_` for a `i8_` index corresponds to  `u8_` type,
+allowing counts from 0 to 128.  indices from 0 to 127 correspond
+to elements 1 to 128, index -1 corresponds to the last element,
+-2 to the second last, etc.  an `offset_count_` for a `u8_` offset
+corresponds essentially to a `u9_` type, since we need to be
+able to hold values from 0 to 256.  for an `offset_count_` type,
+we do not permit negative indexing.  both `index_count_` and
+`offset_count_` have a corresponding unsigned `offset_` type
+(e.g., `u8_` for the above examples), but only `index_count_`
+has a signed `index_` type.
 #]#
-select_count_: select_{count64_:, count32_:, count16_:, count8_:}
-
-count_arch_: count_{arch_ unsigned_}
-
-count64_: count_{u64_}
-count32_: count_{u32_}
-count16_: count_{u16_}
-count8_: count_{u8_}
+@export
+select_offset_count_: select_
+{    count_{u64_, indexable: false}:
+     count_{u32_, indexable: false}:
+     count_{u16_, indexable: false}:
+     count_{u8_, indexable: false}:
+}
+@export
+select_index_count_: select_
+{    count_{u64_, indexable: true}:
+     count_{u32_, indexable: true}:
+     count_{u16_, indexable: true}:
+     count_{u8_, indexable: true}:
+}
+@export
+select_count_: select_{select_index_count_:, select_offset_count_:}
 
 @final
-count_{of_: select_unsigned_}: all_of_
-{    m: [@private value; of_]
+count_{of_: select_unsigned_, indexable: bool_ = true}: all_of_
+{    @private m:
+     [    value; unsigned_ bits_{of_ bits_ + !indexable}
+     ]
      integer;
 }
 {    m_(of.): hm_{m_}
@@ -28,36 +45,37 @@ count_{of_: select_unsigned_}: all_of_
      m_(signed{of_}.): hm_{m_}
           [value: of_(signed) assert_()]
 
+     # TODO: unsigned{of_}, should be foolproof for !indexable
+
      ?:
      {    ::is_(null_): bool_
                m value > max_() value
 
           null: [value: max_() value + 1]
 
+          # be careful as some values become non-null here.
           :;null_boxing_(): (of:;)
                m value
      }
 
      @integer(m value)
 
-     min_(): of_
-          0
+     min_(): m_
+          [value: 0]
 
-     max_(): of_
-          # should be 128 for `of_: u8_`
-          of_ max_() // 2 + 1
-
-     ["min_", "max_"] @each method: str_
-          @concat(method, "_")(): m_
-               [value: _ @concat(method, "_")()]
+     max_(): m_
+          if indexable
+               [value: of_ max_() // 2 + 1]
+          else
+               [value: value_(of_ max_()) + 1]
 
      ::double_or_max_(): m_
-          if m value < max_() value // 2
+          if m < max_()
                [value: m value * 2]
           else
                max_()
 
-     index_: index_{signed_{of_}}
+     index_{require: indexable}: index_{signed_{of_}}
      offset_: offset_{of_}
 
      hm_{of_:}: hm_{ok_: of_, number_ er_}
