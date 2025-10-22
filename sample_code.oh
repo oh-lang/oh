@@ -25,3 +25,5 @@ multiline comment with []
 ø_(ö: int_): null_
     ö each _int:
         print_("hi")
+
+ø_(ö: 10) # prints "hi" 10 times

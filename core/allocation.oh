@@ -1,14 +1,21 @@
 @final
 allocation_
 {    of_:
+     # determines the maximum size of the allocation, and
+     # makes indexing this allocation potentially more efficient.
+     # when indexing via `index_`, negative indices are used for "from the back";
+     # when indexing via `offset_`, negative indices are not permitted.
+     # the downside of `index_` is that the max capacity is `index_ max_count`,
+     # which is half the max capacity of `offset_`.
+     # TODO: we need an extra bool for `offset_ max_count` because it can go up 256
+     # for a u8_ offset.  in this class we can determine if that is active if
+     # the allocation pointer is not null and the u8 is zero.
+     at_: select_{index_: select_index_, offset_: select_offset_}
      # if not null, we allocate just enough space for this extra data
      # just before the buffer of `of_` values.  there can be multiple
      # `of` values, but only ever one instance of `header` is added.
      # TODO: we probably can infer `header_: null_` implies `header_: any_ = null_`.
      header_: any_ = null_
-     # determines the maximum size of the allocation, and
-     # makes indexing this allocation potentially more efficient.
-     capacity_: select_count_
      # whether to put capacity locally inside this allocation.
      # if `on_heap`, it gets added to the `full_header_`
      capacity_site: _ local
@@ -144,6 +151,7 @@ allocation_
      # TODO: update based on size of `of_`
      small_capacity: 4
 
+     capacity_: count_
      offset_: capacity_ offset_
 
      @if header_ is !null_ or capacity_site is_on_heap_()
