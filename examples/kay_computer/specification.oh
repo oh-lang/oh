@@ -74,14 +74,23 @@ because this code has a Hamming distance of 4, we can correct 1 bit
 errors and detect up to 3 bit errors when reading code.
 
 just because the kay count is 1000 doesn't mean we can't represent
-larger numbers; the basic kilo types have 1000 possibilities, but
-there are also mega types (2 words, up to 1_000_000 possibilities),
-giga types (3 words, up to 1_000_000_000 possibilities), and tera
-types (4 words, up to 1_000_000_000_000 possibilities).  kay computers
-specify the endianness of these larger primitive types as little endian.
+larger numbers; the basic kilo types have 10^3 = 1000 possibilities, but
+there are also mega types (2 words, up to 10^6 = 1_000_000 possibilities),
+giga types (3 words, up to 10^9 = 1_000_000_000 possibilities),
+tera types (4 words, up to 10^12 = 1_000_000_000_000 possibilities),
+peta types (5 words, up to 10^15 possibilities)
+exa types (6 words, up to 10^18 possibilities),
+zetta types (7 words, up to 10^21 possibilities),
+yotta types (8 words, up to 10^24 possibilities),
+ronna types (9 words, up to 10^27 possibilities),
+quetta types (10 words, up to 10^30 possibilities), and many more types
+that are built out of types like this.  kay computers specify
+the endianness of primitive types as little endian.
 
 positive numbers can be represented by unsigned types, e.g.,
 `u_kilo_` represent numbers from 0 to 999, `u_mega_` from 0 to 999_999, etc.
+instead of needing to remember the metric prefix, you can also postfix
+the number of words like `u1_` for `u_kilo_` and `u2_` for `u_mega_`, etc.
 
 pessimistic types can represent positive and negative numbers,
 and are called pessimistic because they skew towards negative numbers,
@@ -92,8 +101,26 @@ optimistic types are similar but skew towards positive numbers.
 e.g., `o_kilo_` represents numbers from 0 to 500, then -499 to -1.
 
 symmetric types represent equal counts of positive and negative
-numbers, with an additional null value.  e.g., `s_kilo_` represents
-numbers from 0 to 499, then a null value, then -499 to -1.
+numbers, with an additional NaN value.  e.g., `s_kilo_` represents
+numbers from 0 to 499, then a NaN value, then -499 to -1.
+we break with IEEE754 and `x == NaN` will be true if `x` is NaN.
+
+big integer representations are not required to follow this exact
+specification, but the reference kay computer will use an array
+of `o_kilo_` values for "digits" of the integer in base 1000.
+
+the kay computer has a few dedicated fixed-point types,
+`f_kilo_` which represents -4.97 to 4.97 with precision 0.01,
+`f_mega_` which represents +-499.997 with precision 0.001,
+`f_giga_` which represents +-49,999.9997 with precision 0.0001,
+`f_tera_` which represents +-4,999,999.99997 with precision 0.00001,
+or `fx_` representing approximately `+-0.05 * 10^(2 * x)` with precision
+`10^-(x + 1)` for for word count `x`.
+each type has 5 "invalid" values: NaN (0/0), positive and negative
+infinities (+-∞), and positive and negative infinitesimals (+-1/∞).
+we break with IEEE754 and `x == NaN` will be true if `x` is NaN.
+
+TODO: floating-point types
 
 the kay computer strives to make adding classes/types easy.
 
@@ -116,9 +143,11 @@ executable code looks like a list of operations (op-codes) followed
 by a certain number of arguments (specified by the operation).
 
 ```
-     0-100     # push a `u_kilo_` number to the stack, i.e., 0 through 100, no argument
-     101-200   # push a `p_kilo_` number to the stack, -100 through -1, no argument
-               # concatenate
+     0-100     # push a `s_kilo_` number to the stack, i.e., 0 through 100, no argument
+     101-200   # push a `s_kilo_` number to the stack, -100 through -1, no argument
+               # convert to a type, type given as an argument
+               # add
+               # subtract
                # multiply
                # divide
                # modify the next opcode by popping the TOS, interpreting it as a stack,
