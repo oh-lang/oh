@@ -13,35 +13,25 @@ of an executable; we discuss later a preferred binary version.
 
 ```
      pairs: array_{pair_{u8_}} =
-     [    ['/', '{']
-          ['0', '|']
-          ['1', '}']
-          ['2', '~']
-          ['3', '!']
-          ['4', '"']
-          ['5', '#']
-          ['6', '$']
-          ['7', '%']
-          ['8', '&']
-          ['9', '\'']
-          [':', '(']
-          [';', ')']
-          ['<', '*']
-          ['=', '+']
-          ['>', ',']
-          ['?', '-']
-          ['@', '.']
+     [    ['0', ' ']
+          ['1', '.']
+          ['2', '+']
+          ['3', '-']
+          ['4', '*']
+          ['5', '/']
+          ['6', '^']
+          ['7', '_']
+          ['8', '$']
+          ['9', '%']
+          ['#', '&']
+          [',', '|']
+          ['@', '<']
+          ['~', '>']
+          ['=', '?']
+          ['(', '!']
+          [')', ';']
+          ['`', ':']
      ]
-     # which can be calculated as
-     # `pairs[eighteen] = [first_(eighteen), second_(eighteen)]` via:
-     eighteen_: one_of_{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
-     first_(eighteen.): u8_
-          47 + digit
-     second_(eighteen.): u8_
-          if eighteen < 4
-               123 + eighteen
-          else
-               29 + eighteen
 ```
 
 ASCII executable code can be commented via `[this is a comment]`.
@@ -144,45 +134,53 @@ executable code looks like a list of operations (op-codes) followed
 by a certain number of arguments (specified by the operation).
 
 ```
-     0-100     # push a `s_kilo_` number to the stack, i.e., 0 through 100, no argument
-     101-200   # push a `s_kilo_` number to the stack, -100 through -1, no argument
-               # drop
-               #    `[50 !] -> []`
-               # copy - shallow copy O(1), keeps references
-               #    `[100 c]` -> `[100 100]`
-               #    `[[1 2] c]` -> `[[1 2] @-1]` where @-1 is a reference to the previous element
-               # duplicate - deep copy O(??), will duplicate a reference
-               #    `[100 d]` -> `[100 100]`
-               #    `[[1 2] d]` -> `[[1 2] [1 2]]`
-               # swap
+     0  - 9    # push an `s_kilo_` number to the stack, i.e., 0 through 9
+     0- - 9-   # push an `s_kilo_` number to the stack, -10, then -1 through -9
+     0% - 9%   # push an `f_kilo_` number to the stack, 0.1, then 0.01 to 0.09
+     =         # set - pops TOS and assigns that to the variable at NOS
+     =?        # equals - pops TOS and NOS and compares them, pushes 0 (not equal) or 1 (equal)
+     =!        # not equals - pops TOS and NOS and compares them, pushes 0 (equal) or 1 (not equal)
+     =>        # greater or equal - pops TOS and NOS
+     =<        # less than or equal - pops TOS and NOS
+     ~<        # less than - pops TOS and NOS
+     ~>        # greater than - pops TOS and NOS
+     ~!        # drop
+               #    `[50 ~!] -> []`
+     (:        # copy - shallow copy O(1), keeps references
+               #    `[100 (:]` -> `[100 100]`
+               #    `[[1 2] (:]` -> `[[1 2] @-1]` where @-1 is a reference to the previous element
+     ):        # duplicate - deep copy O(??), will duplicate a reference
+               #    `[100 ):]` -> `[100 100]`
+               #    `[[1 2] ):]` -> `[[1 2] [1 2]]`
+     ~$        # swap
                #    `[1 2 ~] -> [2 1]`
-               # convert to a type, type given as an argument
-               # `++` TOS increment, essentially `1 +=`
+     @$        # convert TOS to a given type, as an argument
+     ~+        # `++` TOS increment, essentially `1 +=`
                #    `[ 1 ++ ] -> [ 2 ]`
-               # `--` TOS decrement, essentially `1 -=`
+     ~-        # `--` TOS decrement, essentially `1 -=`
                #    `[ 1 -- ] -> [ 0 ]`
-               # `+=` pop the TOS and add it to what was the NOS (now TOS);
+     =+        # `+=` pop the TOS and add it to what was the NOS (now TOS);
                #    if the original NOS was a reference, it will update the variable.
                #    `[ 1 5 += ] -> [ 6 ]`
                #    for array types on the NOS, adds to every value
                #    `[ [1 2] 3 += ] -> [ [4 5] ]`
                #    for arrays on TOS and NOS, will cycle through values on TOS
                #    `[ [10 20 30 40] [1 2] += ] -> [ [11 22 31 42] ]`
-               # `-=` pop the TOS and subtract it from what was on the NOS (now TOS);
+     =-        # `-=` pop the TOS and subtract it from what was on the NOS (now TOS);
                #    if the original NOS was a reference, it will update the variable.
                #    `[ 1 5 -= ] -> [ -4 ]`
                #    for array types on the NOS, subtracts from every value
                #    `[ [1 2 3 4] 3 -= ] -> [ [-2 -1 0 1] ]`
                #    for arrays on TOS and NOS, will cycle through values on TOS
                #    `[ [10 20 30 40] [1 2] -= ] -> [ [9 18 29 38] ]`
-               # `*=` pops the TOS and multiplies it with what was the NOS (now TOS)
+     =*        # `*=` pops the TOS and multiplies it with what was the NOS (now TOS)
                #    if the original NOS was a reference, it will update the variable.
                #    `[ 11 5 *= ] -> [ 55 ]`
                #    for array types on the NOS, multiplies every value
                #    `[ [9 2] 5 *= ] -> [ 45 10 ]`
                #    for arrays on TOS and NOS, will cycle through values on TOS
                #    `[ [10 20 30 40] [-2 5 7] *= ] -> [ [-20 100 210 -80] ]`
-               # `/=` pops the TOS and divides it from what was the NOS (now TOS);
+     =/        # `/=` pops the TOS and divides it from what was the NOS (now TOS);
                #    if the original NOS was a reference, it will update the variable.
                #    `[ 11 5 /= ] -> [ 2 ]`
                #    `[ 11.0 5 /= ] -> [ 2.2 ]`
@@ -191,12 +189,14 @@ by a certain number of arguments (specified by the operation).
                #    `[ [9.0 2.0] 5 /= ] -> [ 1.8 0.4 ]`
                #    for arrays on TOS and NOS, will cycle through values on TOS
                #    `[ [10 20 30 40] [1 2 3] /= ] -> [ [10 10 10 40] ]`
-               # `+`, `-`, `*`, `/` each pop the TOS and NOS, and push their operation;
-               #    the difference from `?=` is that the variable from NOS is not updated
-               #    in case it is a reference to something else.
-               # modify the next opcode by popping the TOS, interpreting it as a stack,
-               #    running the next operation with that stack
-               #    then pushing the stack back onto the stack.
+     `+  `-    # `+`, `-`, `*`, `/` each pop the TOS and NOS, and push their operation;
+     `*  `/    #    the difference from `=X` is that the variable from NOS is not updated
+               #    in case it is a reference to something else.  ALSO we promote the
+               #    type, e.g., `f_kilo_ * f_kilo_` will become `f_giga_` (so 0.01 * 0.01
+               #    can be represented as 0.0001), `f_kilo_ + f_kilo_` will become `f_mega_`, etc.
+     ~+  ~-    # same as `+ `- `* `/ but types are NOT promoted
+     ~*  ~/    #    so `f_kilo_ * f_kilo_` like 0.01 * 0.01 will become 1/∞ in `f_kilo_`
+     ($        # modify the next opcode by using the TOS as a stack to do the operation
 ```
 
 #]#
