@@ -146,9 +146,31 @@ by a certain number of arguments (specified by the operation).
      0-100     # push a `s_kilo_` number to the stack, i.e., 0 through 100, no argument
      101-200   # push a `s_kilo_` number to the stack, -100 through -1, no argument
                # convert to a type, type given as an argument
-               # add
-               # subtract
-               # multiply
+               # TOS increment ++
+               #    `[ 1 ++ ] -> [ 2 ]`
+               #    TODO: should this work?  or should `++` just be `1 +=`
+               #    for array types, appends a default value
+               #    `[ [1 2] ++ ] -> [ [1 2 0] ]`
+               # TOS decrement --
+               #    for array types, pops the last element
+               # `+=` pop the TOS and add it to what was the NOS (now TOS)
+               #    `[ 1 5 += ] -> [ 6 ]`
+               #    for array types on the NOS, appends the TOS to it
+               #    `[ [1 2] 3 += ] -> [ [1 2 3] ]`
+               #    for arrays on TOS and NOS, appends all elements
+               #    `[ [1 2] [3 4] += ] -> [ [1 2 3 4] ]`
+               # `-=` pop the TOS and subtract it from what was on the NOS (now TOS)
+               #    `[ 1 5 -= ] -> [ -4 ]`
+               #    for array types on the NOS, will remove the last value that matches.
+               #    `[ [1 2 3 4] 3 -= ] -> [ [1 2 4] ]`
+               #    `[ [5 6] 6 -= ] -> [ [5] ]`
+               #    `[ [0 0 0] 0 -= ] -> [ [0 0] ]`
+               # `+` pops the TOS and NOS, and pushes their addition
+               #    the difference from `+=` is that the variable from NOS is not updated
+               #    in case it is a reference to something else.
+               # `-` pops the TOS and NOS, and pushes their subtraction
+               #    the difference from `-=` is that the variable from NOS is not updated
+               #    in case it is a reference to something else.
                # divide
                # modify the next opcode by popping the TOS, interpreting it as a stack,
                #    running the next operation with that stack
