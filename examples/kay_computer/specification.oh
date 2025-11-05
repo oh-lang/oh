@@ -48,7 +48,8 @@ ASCII executable code can be commented via `[this is a comment]`.
 all other characters, including newlines and spaces, are ignored.
 we reserve the right to "truncate" words, e.g., A3 would be
 short word A followed by a short word 3, whereas Ab3% would
-be a normal word Ab followed by a normal word 3%.
+be a normal word Ab followed by a normal word 3%.  there would
+only be 26+18 = 44 possibilities short words.
 however, for the time being, short words are errors.
 
 binary executable code uses 2 bytes to represent a kay; a kay is
@@ -57,7 +58,7 @@ more kays into several bytes, but we take a conservative approach and
 use an lexicographic code with `N = 16` bits, minimum `D = 4` bits of
 distance between code points, e.g., using an algorithm adapted from
 https://en.wikipedia.org/wiki/Lexicographic_code#Implementation; this
-would normally give 2048 code points, but we include the code points
+would normally give 2048 code points, but we start with code points
 352 and 8483 and require every additional code point's individual bytes
 to not have a 0 byte or a byte from '\n' to '#'.  these inefficiencies
 reduce the number of code points to 1001.  to reduce to 1000 valid code
@@ -145,33 +146,54 @@ by a certain number of arguments (specified by the operation).
 ```
      0-100     # push a `s_kilo_` number to the stack, i.e., 0 through 100, no argument
      101-200   # push a `s_kilo_` number to the stack, -100 through -1, no argument
+               # drop
+               #    `[50 !] -> []`
+               # copy - shallow copy O(1), keeps references
+               #    `[100 c]` -> `[100 100]`
+               #    `[[1 2] c]` -> `[[1 2] @-1]` where @-1 is a reference to the previous element
+               # duplicate - deep copy O(??), will duplicate a reference
+               #    `[100 d]` -> `[100 100]`
+               #    `[[1 2] d]` -> `[[1 2] [1 2]]`
+               # swap
+               #    `[1 2 ~] -> [2 1]`
                # convert to a type, type given as an argument
-               # TOS increment ++
+               # `++` TOS increment, essentially `1 +=`
                #    `[ 1 ++ ] -> [ 2 ]`
-               #    TODO: should this work?  or should `++` just be `1 +=`
-               #    for array types, appends a default value
-               #    `[ [1 2] ++ ] -> [ [1 2 0] ]`
-               # TOS decrement --
-               #    for array types, pops the last element
-               # `+=` pop the TOS and add it to what was the NOS (now TOS)
+               # `--` TOS decrement, essentially `1 -=`
+               #    `[ 1 -- ] -> [ 0 ]`
+               # `+=` pop the TOS and add it to what was the NOS (now TOS);
+               #    if the original NOS was a reference, it will update the variable.
                #    `[ 1 5 += ] -> [ 6 ]`
-               #    for array types on the NOS, appends the TOS to it
-               #    `[ [1 2] 3 += ] -> [ [1 2 3] ]`
-               #    for arrays on TOS and NOS, appends all elements
-               #    `[ [1 2] [3 4] += ] -> [ [1 2 3 4] ]`
-               # `-=` pop the TOS and subtract it from what was on the NOS (now TOS)
+               #    for array types on the NOS, adds to every value
+               #    `[ [1 2] 3 += ] -> [ [4 5] ]`
+               #    for arrays on TOS and NOS, will cycle through values on TOS
+               #    `[ [10 20 30 40] [1 2] += ] -> [ [11 22 31 42] ]`
+               # `-=` pop the TOS and subtract it from what was on the NOS (now TOS);
+               #    if the original NOS was a reference, it will update the variable.
                #    `[ 1 5 -= ] -> [ -4 ]`
-               #    for array types on the NOS, will remove the last value that matches.
-               #    `[ [1 2 3 4] 3 -= ] -> [ [1 2 4] ]`
-               #    `[ [5 6] 6 -= ] -> [ [5] ]`
-               #    `[ [0 0 0] 0 -= ] -> [ [0 0] ]`
-               # `+` pops the TOS and NOS, and pushes their addition
-               #    the difference from `+=` is that the variable from NOS is not updated
+               #    for array types on the NOS, subtracts from every value
+               #    `[ [1 2 3 4] 3 -= ] -> [ [-2 -1 0 1] ]`
+               #    for arrays on TOS and NOS, will cycle through values on TOS
+               #    `[ [10 20 30 40] [1 2] -= ] -> [ [9 18 29 38] ]`
+               # `*=` pops the TOS and multiplies it with what was the NOS (now TOS)
+               #    if the original NOS was a reference, it will update the variable.
+               #    `[ 11 5 *= ] -> [ 55 ]`
+               #    for array types on the NOS, multiplies every value
+               #    `[ [9 2] 5 *= ] -> [ 45 10 ]`
+               #    for arrays on TOS and NOS, will cycle through values on TOS
+               #    `[ [10 20 30 40] [-2 5 7] *= ] -> [ [-20 100 210 -80] ]`
+               # `/=` pops the TOS and divides it from what was the NOS (now TOS);
+               #    if the original NOS was a reference, it will update the variable.
+               #    `[ 11 5 /= ] -> [ 2 ]`
+               #    `[ 11.0 5 /= ] -> [ 2.2 ]`
+               #    for array types on the NOS, divides every value
+               #    `[ [9 2] 5 /= ] -> [ 1 0 ]`
+               #    `[ [9.0 2.0] 5 /= ] -> [ 1.8 0.4 ]`
+               #    for arrays on TOS and NOS, will cycle through values on TOS
+               #    `[ [10 20 30 40] [1 2 3] /= ] -> [ [10 10 10 40] ]`
+               # `+`, `-`, `*`, `/` each pop the TOS and NOS, and push their operation;
+               #    the difference from `?=` is that the variable from NOS is not updated
                #    in case it is a reference to something else.
-               # `-` pops the TOS and NOS, and pushes their subtraction
-               #    the difference from `-=` is that the variable from NOS is not updated
-               #    in case it is a reference to something else.
-               # divide
                # modify the next opcode by popping the TOS, interpreting it as a stack,
                #    running the next operation with that stack
                #    then pushing the stack back onto the stack.
