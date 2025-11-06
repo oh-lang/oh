@@ -7,10 +7,7 @@ allocation_
      # when using an `offset_count_`, negative indices are not permitted.
      # the downside of `index_` is that the max capacity is `index_ max_count`,
      # which is half the max capacity of `offset_ max_count`.
-     # TODO: we need an extra bool for `offset_ max_count` because it can go up 256
-     # for a u8_ offset.  in this class we can determine if that is active if
-     # the allocation pointer is not null and the u8 is zero.
-     count_: select_count_
+     capacity_: select_count_
      # if not null, we allocate just enough space for this extra data
      # just before the buffer of `of_` values.  there can be multiple
      # `of` values, but only ever one instance of `header` is added.
@@ -21,16 +18,40 @@ allocation_
      capacity_site: _ local
 }:
 [    @private m:
-     [    of_ptr{of_};
-          capacity{require: capacity_site is_local_()};
+     [    of_ptr;
+          maybe_capacity{require: capacity_site is_local_()};
      ]
 ]
 {    ::capacity_(): capacity_
           @if capacity_site is_local_()
-               m capacity
+               capacity_(m maybe_capacity, has_ptr. m of_ptr != null)
           @else
                # TODO: add full_header method
-               m full_header_() map_({$ok capacity}, {$_er, 0})
+               m full_header_() map_
+               (    fn_(ok:) capacity_(ok maybe_capacity, has_ptr: true)
+                    fn_(_er:): 0
+               )
+
+     # in case `capacity_` is an `index_count_`, we can use `capacity_ of_`
+     # directly as the capacity of this allocation.
+     # otherwise, if `capacity_` is an `offset_count_`, `capacity_ of_`
+     # is too small in one case, i.e., when at max capacity.
+     # in that case, `maybe_capacity = 0` but `of_ptr != null`,
+     # which we'll interpret as max capacity.
+     @private
+     maybe_capacity_: capacity_ of_
+
+     @private
+     capacity_(maybe_capacity., has_ptr. bool_): capacity_
+          @if capacity_ indexable
+               debug assert_(capacity_(maybe_capacity))
+          @else
+               if maybe_capacity
+                    _(maybe_capacity)
+               elif has_ptr
+                    _ max_()
+               else
+                    _ min_()
 
      ::!(): bool_
           m of_ptr == null
@@ -48,12 +69,16 @@ allocation_
                er_ out_of_memory
           )
           if old == 0
-               ptr{u8_}: required_bytes allocate_() assert_(er_ out_of_memory)
-               m full_head_(ptr)
+               ptr{u8_}. required_bytes allocate_() assert_(er_ out_of_memory)
+               m ptr_(ptr, new{require: capacity_site is_on_heap_()})
           else
-               ptr{u8_}; m full_head_()
+               ptr{u8_}. m ptr_()
                required_bytes reallocate_(;ptr) assert_(er_ out_of_memory)
-               m full_head_(ptr)
+               m ptr_(ptr, new{require: capacity_site is_on_heap_()})
+
+          @if capacity_site is_local_()
+               m maybe_capacity = truncate_(new)
+
 
      # make sure that this element is already initialized;
      # this `allocation` does not keep track of which elements are initialized.
@@ -113,7 +138,7 @@ allocation_
 
      # gets the `header`, when `m` is truthy.
      ;:header_{require: header_ is !null_}(): (header;:) where !!m
-          (full_header;:) = m full_head_() to_()
+          (full_header;:) = m ptr_() to_()
           full_header header
 
      @private
@@ -121,23 +146,27 @@ allocation_
           header_ is !null_ or capacity_site is_on_heap_()
 
      @private
-     ;;full_head_(ptr{u8_}.): null_
+     ;;ptr_(ptr{u8_}., capacity{require: capacity_site is_on_heap_()}.): null_
           if ptr == null
                m of_ptr = null
           else
                m of_ptr = ptr + full_header_bytes
+               @if capacity_site is_on_heap_()
+                    (full_header;) = ptr
+                    full_header maybe_capacity = truncate_(capacity)
 
      @private
-     ::full_head_{require: full_header_ is !null_}(): ptr_{u8_} where !!m
+     ::ptr_{require: full_header_ is !null_}(): ptr_{u8_} where !!m
           ptr{u8_}: m of_ptr  # TODO: casting??
           ptr -= full_header_bytes  # `full_header_` starts before the `of_` buffer
           ptr
 
      @private
-     ::full_head_(): ptr_{u8_} where !m
-          ptr_()    # null pointer
+     ::ptr_(): ptr_{u8_} where !m
+          null
 
      @private
+     # TODO: rename full_header to something like combined_header
      full_header_bytes: memory_
           @if full_header_ is null_
                0
@@ -154,21 +183,21 @@ allocation_
      @if header_ is !null_ or capacity_site is_on_heap_()
           @private full_header_:
           [    header{require: header_ is !null_};
-               capacity{require: capacity_site is_on_heap_()};
+               maybe_capacity{require: capacity_site is_on_heap_()};
           ]
      @else
           @private full_header_: null_
 
-     hm_{of_:}: hm_
-     {    ok_: of_
-          er_: container_ er_
-     }
+     er_: container_ er_
+     hm_{of_:}: hm_{ok_: of_, er_}
 
      # use an alias so we can do, e.g., `allocation_{capacity_site_ on_heap}`
      # to specify `capacity_site`
      capacity_site_: @distinct memory_ site_
 
-     capacity_: count_
-     offset_: count_ offset_
-     index_{require: count_ indexable}: count_ index_
+     offset_: capacity_ offset_
+     index_{require: capacity_ indexable}: capacity_ index_
+
+     @private
+     of_ptr_: ptr_{of_}
 }
