@@ -1,3 +1,25 @@
+# count options that are not negative indexable
+@export
+select_offset_count_: select_
+{    count_{u64_, indexable: false}:
+     count_{u32_, indexable: false}:
+     count_{u16_, indexable: false}:
+     count_{u8_, indexable: false}:
+}
+
+# count options that are negative indexable
+@export
+select_index_count_: select_
+{    count_{u64_, indexable: true}:
+     count_{u32_, indexable: true}:
+     count_{u16_, indexable: true}:
+     count_{u8_, indexable: true}:
+}
+
+# all types of counts
+@export
+select_count_: select_{select_index_count_:, select_offset_count_:}
+
 #[#
 there are two types of counts; one that allows negative indexing
 (which is generally the default) and one that doesn't.  e.g.,
@@ -12,23 +34,6 @@ we do not permit negative indexing.  both `index_count_` and
 (e.g., `u8_` for the above examples), but only `index_count_`
 has a signed `index_` type.
 #]#
-@export
-select_offset_count_: select_
-{    count_{u64_, indexable: false}:
-     count_{u32_, indexable: false}:
-     count_{u16_, indexable: false}:
-     count_{u8_, indexable: false}:
-}
-@export
-select_index_count_: select_
-{    count_{u64_, indexable: true}:
-     count_{u32_, indexable: true}:
-     count_{u16_, indexable: true}:
-     count_{u8_, indexable: true}:
-}
-@export
-select_count_: select_{select_index_count_:, select_offset_count_:}
-
 @final
 count_{of_: select_unsigned_, indexable: bool_ = true}: all_of_
 {    @private m:
@@ -36,16 +41,17 @@ count_{of_: select_unsigned_, indexable: bool_ = true}: all_of_
      ]
      integer;
 }
-{    m_(of.): hm_{m_}
+{    m_{require: !indexable}(of.): m_
+          [value. of]
+
+     m_{require: indexable}(of.): hm_{m_}
           if of <= max_() value
                [value. of]
           else
-               unrepresentable
+               er_ unrepresentable
 
      m_(signed{of_}.): hm_{m_}
-          [value: of_(signed) assert_()]
-
-     # TODO: unsigned{of_}, should be foolproof for !indexable
+          [value: _(signed) assert_()]
 
      ?:
      {    ::is_(null_): bool_
@@ -67,10 +73,10 @@ count_{of_: select_unsigned_, indexable: bool_ = true}: all_of_
           if indexable
                [value: of_ max_() // 2 + 1]
           else
-               [value: value_(of_ max_()) + 1]
+               [value: _(of_ max_()) + 1]
 
      ::double_or_max_(): m_
-          if m < max_()
+          if m < max_() // 2
                [value: m value * 2]
           else
                max_()
@@ -78,7 +84,8 @@ count_{of_: select_unsigned_, indexable: bool_ = true}: all_of_
      index_{require: indexable}: index_{signed_{of_}}
      offset_: offset_{of_}
 
-     hm_{of_:}: hm_{ok_: of_, number_ er_}
+     er_: number_ er_
+     hm_{of_:}: hm_{ok_: of_, er_}
 }
 
 @test "min_"
