@@ -2,73 +2,66 @@
 WISHLIST
 * very similar API between terminal UI and graphical UI
 * upgrading the program to a GUI should be as easy as starting
-    the window in GUI mode.
+     the window in GUI mode.
 * downgrading the program to a terminal should similarly work,
-    ideally without sacrificing too many features.
+     ideally without sacrificing too many features.
 * probably should upgrade coordinates to pairs of `f32`s.
-    well, we're using pixel coordinates, so maybe `i32`s are still ok.
+     well, we're using pixel coordinates, so maybe `i32`s are still ok.
 #)#
 
-
-er_: one_of_
-[   invalid_argument
-    # TODO...
-]
-hm_[of_]: hm_[ok_: of_, er_]
-
 window_: []
-{   terminal_(): terminal_window_
-    graphics_(): graphics_window_
+{    terminal_(): terminal_window_
+     graphics_(): graphics_window_
 
-    # returns the actual window size, i.e., the real-estate available for drawing.
-    ::size_(): size2i_
-    # sets the window size or returns an error.
-    ;;size_(size2i.): hm_[null_]
-    # sets the minimum window size, i.e., for a resizable window.
-    ;;size_(min. size2i_): hm_[null_]
-    # sets the maximum window size, i.e., for a resizable window.
-    ;;size_(max. size2i_): hm_[null_]
+     # returns the actual window size, i.e., the real-estate available for drawing.
+     ::size_(): size2i_
+     # sets the window size or returns an error.
+     ;;size_(size2i.): hm_{null_}
+     # sets the minimum window size, i.e., for a resizable window.
+     ;;size_(min. size2i_): hm_{null_}
+     # sets the maximum window size, i.e., for a resizable window.
+     ;;size_(max. size2i_): hm_{null_}
 
-    # returns the current data in the clipboard,
-    # i.e., for the "pasting" part of copy-paste.
-    ::clipboard_(): string_
-    # sets the current data in the clipboard,
-    # i.e., for the "copying" part of copy-paste.
-    ;;clipboard_(string.): null_
+     # returns the current data in the clipboard,
+     # i.e., for the "pasting" part of copy-paste.
+     ::clipboard_(): string_
+     # sets the current data in the clipboard,
+     # i.e., for the "copying" part of copy-paste.
+     ;;clipboard_(string.): null_
 
-    # awaits the next window event, returning it.
-    ;;poll_(): event_
-    # awaits the next window event, with a timeout in case no events occur.
-    ;;poll_(timeout. duration_): event_
+     # awaits the next window event, returning it.
+     ;;poll_(): event_
+     # awaits the next window event, with a timeout in case no events occur.
+     ;;poll_(timeout. duration_): event_
 
-    # accumulates window events over a frame, for a requested duration.
-    ;;frame_(duration.): [events:]
+     # accumulates window events over a frame, for a requested duration.
+     ;;frame_(duration.): events_
 
-    event_: window_event_
-    events_: array_[event_]
+     event_: window_event_
+     events_: array_{event_}
 }
 
-terminal_window_: all_of_[window_, l2_]
+terminal_window_: all_of_{window:, l2:}
 {
 }
 
-graphics_window_: all_of_[window_, l3_]
-{   # returns true iff the window is fullscreen.
-    ::fullscreen_(): bool_
-    # sets fullscreen/windowed value.
-    ;;fullscreen_(bool.): hm_[null_]
+graphics_window_: all_of_{window:, l3:}
+{    # returns true iff the window is fullscreen.
+     ::fullscreen_(): bool_
+     # sets fullscreen/windowed value.
+     ;;fullscreen_(bool.): hm_{null_}
 
-    @alias ::windowed_(): !m fullscreen_()
-    @alias ;;windowed_(bool.): m fullscreen_(!bool)
+     @alias ::windowed_(): !m fullscreen_()
+     @alias ;;windowed_(bool.): m fullscreen_(!bool)
 
-    ::resolution_(): l3 pixels size_()
-    ;;resolution_(size2i.): l3 pixels size_(size2i)
+     ::resolution_(): l3 pixels size_()
+     ;;resolution_(size2i.): l3 pixels size_(size2i)
 }
 
 # low-level drawing to a set of pixels for 2D operations.
 l2_: pixels_
-{   # Writes some text to the l2.
-    ;;draw_(caret;, string): null_
+{    # writes some text to the l2.
+     ;;draw_(caret;, string): null_
 }
 
 # low-level drawing to a set of pixels, with 3D operations.
@@ -78,134 +71,139 @@ l3_: l2_
 }
 
 window_event_: one_of_
-[   # a resize event, with the new interior size.
-    resize: size2i_
-    # a sequence of runes (e.g., layout and locale included).
-    text: string_
-    # a physical, named key.
-    key: key_event_
-    # mouse button clicked/released, e.g., left mouse button or right mouse button.
-    mouse_button: mouse_button_event_
-    # the mouse moved.
-    mouse_move: mouse_move_event_
-    # the mouse scrolled.
-    mouse_wheel: mouse_wheel_event_
-    # Polling for events timed out.
-    timeout: null_
+{    # a resize event, with the new interior size.
+     resize: size2i_
+     # a sequence of runes (e.g., layout and locale included).
+     text: string_
+     # a physical, named key.
+     key: key_event_
+     # mouse button clicked/released, e.g., left mouse button or right mouse button.
+     mouse_button: mouse_button_event_
+     # the mouse moved.
+     mouse_move: mouse_move_event_
+     # the mouse scrolled.
+     mouse_wheel: mouse_wheel_event_
+     # polling for events timed out.
+     timeout: null_
+}
+
+key_event_:
+[    key;
+     modifiers;
+     state; one_of_{pressed:, released:, repeated:}
 ]
 
-key_event_: [key;, modifiers;, state; one_of_[pressed, released, repeated]]
-
 mouse_button_event_:
-[   # the position relative to the top-left of the shown pixels
-    # (i.e., in case of letterboxing, coordinates can be `< 0`
-    # or `>= window resolution_()`).
-    position; vector2i_
-    button; u8_
-    modifiers;
-    state; one_of_[pressed, released]
+[    # the position relative to the top-left of the shown pixels
+     # (i.e., in case of letterboxing, coordinates can be `< 0`
+     # or `>= window resolution_()`).
+     position; vector2i_
+     button; u8_
+     modifiers;
+     state; one_of_{pressed:, released:}
 ]
 
 mouse_move_event_:
-[   # the relative motion of the mouse since last frame.
-    delta; vector2i_
-    # the absolute position relative to the top-left of the shown pixels
-    # (i.e., in case of letterboxing, coordinates can be `< 0`
-    # or `>= window resolution_()`).
-    position: vector2i_
-    modifiers;
+[    # the relative motion of the mouse since last frame.
+     delta; vector2i_
+     # the absolute position relative to the top-left of the shown pixels
+     # (i.e., in case of letterboxing, coordinates can be `< 0`
+     # or `>= window resolution_()`).
+     position: vector2i_
+     modifiers;
 ]
 
 mouse_wheel_event_: [delta; i32_, modifiers;]
 
-modifiers_[of_]:
-[   control; of_
-    shift; of_
-    meta; of_
-    alt; of_
+modifiers_{of_:}:
+[    control; of_
+     shift; of_
+     meta; of_
+     alt; of_
 ]
-modifiers_: modifiers_[bool_]
+modifiers_: modifiers_{bool_}
 
 @referenceable_as(cpu_pixels_, gpu_pixels_)
 pixels_: all_of_
-[   @private m_:
-    [   state; state_[pixels_id_] cpu_only
+[    @private m_:
+     [    state; state_{pixels_id_} cpu_only
 
-        # the current image size.
-        size; size2i_
+          # the current image size.
+          size; size2i_
 
-        # row-major order, with rows being rows of pixels across the screen left->right,
-        # with `pixels[0]` being the top row and `pixels[height - 1]` the bottom row.
-        # invariant: if `state != gpu_only`,
-        # `pixels[y] size_() == m size_() width` for all `y` in bounds
-        # and `pixels size_() == m size_() height`.
-        pixels; array_[array_[color_]]
-    ]
+          # CPU representation of pixels.
+          # row-major order, with rows being rows of pixels across the screen left->right,
+          # with `pixels[0]` being the top row and `pixels[height - 1]` the bottom row.
+          # invariant: if `state != gpu_only`,
+          # `pixels[y] size_() == m size_() width` for all `y` in bounds
+          # and `pixels size_() == m size_() height`.
+          pixels; array_{array_{color_}}
+     ]
 ]
-{   @hide_from(cpu_pixels_, gpu_pixels_)
-    ;;renew_(file_path:): m load_(file_path)
+{    @hide_from(cpu_pixels_, gpu_pixels_)
+     ;;renew_(file_path:): m load_(file_path)
 
-    # saves the image.
-    ::save_(file_path:): null_
+     # saves the image.
+     ::save_(file_path:): null_
 
-    # loads an image from a file.
-    @hide_from(cpu_pixels_, gpu_pixels_)
-    ;;load_(file_path:): null_
+     # loads an image from a file.
+     @hide_from(cpu_pixels_, gpu_pixels_)
+     ;;load_(file_path:): null_
 
-    # current size of the image.
-    ::size_(): size2i_
+     # current size of the image.
+     ::size_(): size2i_
 
-    # tries to resize the image.  can fail if the new size is too large (OOM)
-    # or if the size is invalid (e.g., negative values).
-    @hide_from(gpu_pixels_)
-    ;;size_(size2i.): hm_[null_]
+     # tries to resize the image.  can fail if the new size is too large (OOM)
+     # or if the size is invalid (e.g., negative values).
+     @hide_from(gpu_pixels_)
+     ;;size_(size2i.): hm_[null_]
 
-    # color reference via coordinates.
-    # can fail if the coordinates are out of bounds (OOB).
-    # can be expensive if the pixels aren't up-to-date on the CPU.
-    @hide_from(gpu_pixels_)
-    ;;[coordinates2i.]: hm[(color;)]
+     # color reference via coordinates.
+     # can fail if the coordinates are out of bounds (OOB).
+     # can be expensive if the pixels aren't up-to-date on the CPU.
+     @hide_from(gpu_pixels_)
+     ;;[coordinates2i.]: hm[(color;)]
 
-    # color setter (doesn't check the color first).
-    ;;draw_(coordinates2i., color.): hm_[null_]
+     # color setter (doesn't check the color first).
+     ;;draw_(coordinates2i., color.): hm_[null_]
 
-    # draws some text to these pixels.
-    ;;draw_(string:, caret;, font;, font_options. font_options_()): null_
+     # draws some text to these pixels.
+     ;;draw_(string:, caret;, font;, font_options. font_options_()): null_
 
-    # TODO: `;;draw_(..., mask)` for scissor operations
+     # TODO: `;;draw_(..., mask)` for scissor operations
 
-    # draws a rectangle of a solid color.
-    # if the rectangle is outside of the pixels coordinates, does nothing;
-    # only the overlap of the pixels' rectangle with `rectangle2` will matter.
-    ;;draw_(rectangle2., color.): null_
+     # draws a rectangle of a solid color.
+     # if the rectangle is outside of the pixels coordinates, does nothing;
+     # only the overlap of the pixels' rectangle with `rectangle2` will matter.
+     ;;draw_(rectangle2., color.): null_
 
-    # draws a rectangle of a solid color.
-    # if any of the rectangle's area is outside the `wrap` rectangle,
-    # the rectangle will be split into pieces and wrapped before drawing.
-    ;;draw_(rectangle2., color., wrap. rectangle2_): null_
+     # draws a rectangle of a solid color.
+     # if any of the rectangle's area is outside the `wrap` rectangle,
+     # the rectangle will be split into pieces and wrapped before drawing.
+     ;;draw_(rectangle2., color., wrap. rectangle2_): null_
 
-    # draws some fragments (triangles) to these pixels, setting the GPU version
-    # of these pixels ahead of the CPU version (if present).
-    # WARNING: will also send `VERTEX_array` to the GPU if not already there.
-    @hide_from(cpu_pixels_)
-    ;;draw_
-    (   VERTEX_array[~vertex_data_];
-        FRAGMENT_array[~fragment_data_];
-        shading[vertex_data_, fragment_data_];
-    ): null_
+     # draws some fragments (triangles) to these pixels, setting the GPU version
+     # of these pixels ahead of the CPU version (if present).
+     # WARNING: will also send `VERTEX_array` to the GPU if not already there.
+     @hide_from(cpu_pixels_)
+     ;;draw_
+     (    VERTEX_array[~vertex_data_];
+          FRAGMENT_array[~fragment_data_];
+          shading[vertex_data_, fragment_data_];
+     ): null_
 
-    # TODO: line-drawing API.  e.g., `;;draw_(line., color.): null_`
-    #       probably want a pixel-perfect one, plus a thickness based one.
+     # TODO: line-drawing API.  e.g., `;;draw_(line., color.): null_`
+     #       probably want a pixel-perfect one, plus a thickness based one.
 
-    # moves the data to the GPU, if it's not already there and up-to-date.
-    # this can be expensive as we copy the entire image from CPU to GPU, if it has changed.
-    @hide_from(cpu_pixels_, gpu_pixels_)
-    ;;send_to_gpu_(): null
+     # moves the data to the GPU, if it's not already there and up-to-date.
+     # this can be expensive as we copy the entire image from CPU to GPU, if it has changed.
+     @hide_from(cpu_pixels_, gpu_pixels_)
+     ;;send_to_gpu_(): null
 
-    # moves the data from the GPU to the CPU, if the CPU is behind the GPU.
-    # this can be expensive as we copy the entire image from GPU to CPU, if it has changed.
-    @hide_from(cpu_pixels_, gpu_pixels_)
-    ;;send_to_cpu_(): null
+     # moves the data from the GPU to the CPU, if the CPU is behind the GPU.
+     # this can be expensive as we copy the entire image from GPU to CPU, if it has changed.
+     @hide_from(cpu_pixels_, gpu_pixels_)
+     ;;send_to_cpu_(): null
 }
 
 # copies from one set of pixels to another.
@@ -230,157 +228,164 @@ draw_(from: (pixels;, rectangle.), to: (pixels;, rectangle.)): null_
 #   |    w------w   |   |               |       w------w    |               |
 #   *---------------*   *---------------*                   *---------------*
 draw_
-(   from: (pixels;, rectangle., wrap_within. rectangle_)
-    to: (pixels;, rectangle., wrap_within. rectangle_)
+(    from: (pixels;, rectangle., wrap_within. rectangle_)
+     to: (pixels;, rectangle., wrap_within. rectangle_)
 ):  null_
 
-vertices_[of_]: all_of_
-[   @private m_:
-    [   state; state_[vertices_id_] cpu_only
-        array[vertex_];
-    ]
+vertices_{of_:}: all_of_
+[    @private m_:
+     [    state; state_{vertices_id_} cpu_only
+          array{vertex_};
+     ]
 ]
-{   vertex_: all_of_[[position: vector3f_], of_]
+{    vertex_: merge_{[position: vector3f_], of_}
 
-    ;;renew_(file_path:): m load_(file_path)
+     ;;renew_(file_path:): m load_(file_path)
 
-    # saves the vertices to a file.
-    ::save_(file_path:): null_
+     # saves the vertices to a file.
+     ::save_(file_path:): null_
 
-    # loads vertices from a file.
-    ;;load_(file_path:): null_
+     # loads vertices from a file.
+     ;;load_(file_path:): null_
 
-    ;;update_(fn_(array[vertex_];): ~t_): t_
-        debug assert_(!my state gpu_ahead_of_cpu_())
+     ;;update_(fn_(array{vertex_};): ~t_): t_
+          debug assert_(!my state gpu_ahead_of_cpu_())
 
-        result: fn_(;m array)
+          result: fn_(;m array)
 
-        if m state is synced.
-            m state = needs_gpu_update_(previous_id. synced id)
+          if m state is synced.
+               m state = needs_gpu_update_(previous_id. synced id)
 
-        result
+          result
 
-    # moves the data to the GPU, if it's not already there and up-to-date.
-    # this can be expensive as we upload all the vertices from CPU to GPU, if they have changed.
-    ;;send_to_gpu_(): null
+     # moves the data to the GPU, if it's not already there and up-to-date.
+     # this can be expensive as we upload all the vertices from CPU to GPU, if they have changed.
+     ;;send_to_gpu_(): null
 
-    # NOTE: there is no `;;send_to_cpu_()` method like with `pixels`; we don't modify
-    # vertices on the GPU like we do with textures.
+     # NOTE: there is no `;;send_to_cpu_()` method like with `pixels`; we don't modify
+     # vertices on the GPU like we do with textures.
 }
 
-@private state_[of_]: one_of_
-[   # this object is not represented on the GPU at all.
-    cpu_only: true_
-    # this object is not represented on the CPU at all.
-    gpu_only: [id: of_]
-    # the CPU version of this object is ahead of the GPU version.
-    # the CPU version should send an update to the GPU (may be expensive)
-    # if you want to draw it efficiently.
-    needs_gpu_update: [previous_id: of_]
-    # the GPU version of this object is ahead of the CPU version.
-    # if needed on the CPU, data must be requested from the GPU (may be expensive).
-    needs_cpu_update: [id: of_]
-    # the GPU version of this object is in sync with the CPU version.
-    synced: [id: of_]
-]
-{   ::gpu_ahead_of_cpu_(): bool_
-        what m
-            _cpu_only: {false}
-            _gpu_only: {true}
-            _needs_gpu_update: {false}
-            _needs_cpu_update: {true}
-            _synced: {false}
+@private state_{of_:}: one_of_
+{    # this object is not represented on the GPU at all.
+     cpu_only: null_
+     # this object is not represented on the CPU at all.
+     gpu_only: [id: of_]
+     # the CPU version of this object is ahead of the GPU version.
+     # the CPU version should send an update to the GPU (may be expensive)
+     # if you want to draw it efficiently.
+     needs_gpu_update: [previous_id: of_]
+     # the GPU version of this object is ahead of the CPU version.
+     # if needed on the CPU, data must be requested from the GPU (may be expensive).
+     needs_cpu_update: [id: of_]
+     # the GPU version of this object is in sync with the CPU version.
+     synced: [id: of_]
+}
+{    ::gpu_ahead_of_cpu_(): bool_
+          what m
+               _cpu_only: {false}
+               _gpu_only: {true}
+               _needs_gpu_update: {false}
+               _needs_cpu_update: {true}
+               _synced: {false}
 }
 
 fragment_:
-[   vertex_indices[3]; u32_
+[    vertex_indices; vector_{3, u32_}
 ]
 
 # WARNING!  ensure that any fields to `vertex_data_` or `fragment_data_`
 # don't use a `builtin` like `vertex_index`, unless you actually want to use that built-in.
 shader_
-[   global_data: gpu_data_ = []
-    vertex_data: gpu_data_ = []
-    fragment_data: gpu_data _= []
-]:
-[   # vertex shader, which returns the position of the vertex
-    # plus any fragment data (for the fragment shader).
-    # TODO: needs to be a pure function.
-    # TODO: needs to have super-reflection so that we can parse this into shader language.
-    vertex_(global_data:, vertex_input_data:): vertex_output_data_
+{    global_data: gpu_data_ = []
+     vertex_data: gpu_data_ = []
+     fragment_data: gpu_data _= []
+}:
+[    # vertex shader, which returns the position of the vertex
+     # plus any fragment data (for the fragment shader).
+     # TODO: needs to be a pure function.
+     # TODO: needs to have super-reflection so that we can parse this into shader language.
+     vertex_(global_data:, vertex_input_data:): vertex_output_data_
 
-    # fragment shader, which returns the color to use for this pixel,
-    # based on `global_data` and `fragment_data` from the fragment's vertices.
-    # if returning null, the result is equivalent to a `discard`,
-    # and can be used for 100% transparency.
-    fragment_(global_data, vertex_output_data)?: color4f_
+     # fragment shader, which returns the color to use for this pixel,
+     # based on `global_data` and `fragment_data` from the fragment's vertices.
+     # if returning null, the result is equivalent to a `discard`,
+     # and can be used for 100% transparency.
+     fragment_(global_data, vertex_output_data)?: color4f_
 ]
-{   vertex_input_data_: all_of_[[position: vector3f_], vertex_data_]
-    vertex_output_data_: all_of_[[position: vector4f_], fragment_data_]
+{    vertex_input_data_: merge_{[position: vector3f_], vertex_data_}
+     vertex_output_data_: merge_{[position: vector4f_], fragment_data_}
 
-    #[#
-    actually use this shader to draw to some GPU pixels.
-    ```
-       shader shade_
-       (   global_data:
-           [   my: 12.3
+     #[#
+     actually use this shader to draw to some GPU pixels.
+     ```
+     shader shade_
+     (    global_data:
+          [    my: 12.3
                global: vector2f_(X: 5.0)
                data: matrix4f_(translation. vector3f_(4.0, 1.0, 7.5))
-           ]
-           draw_(shading;):
+          ]
+          draw_(shading;):
                pixels draw_(shading, my_vertices, my_triangles)
-       )
-    ```
-    #]#
-    ::shade_(global_data:, draw_(shading;): null_): null_
+     )
+     ```
+     #]#
+     ::shade_(global_data:, draw_(shading;): null_): null_
 }
 
 # GPU data is any struct of fields that include these types.
 gpu_data_: fields_of_
-[   u32_
-    f32_
-    vector2f_
-    vector3f_
-    vector4f_
-    matrix3f_
-    matrix4f_
-    pixels_
-]
+{    u32_
+     f32_
+     vector2f_
+     vector3f_
+     vector4f_
+     matrix3f_
+     matrix4f_
+     pixels_
+}
 
 font_:
-[   @private m_:
-    [   vertices[[opacity: f32_]];
-        glyph_size: size2i_
-        glyphs: lot_[at_: rune_, array_[fragment_]]
-    ]
+[    @private m_:
+     [    vertices{[opacity: f32_]};
+          glyph_size: size2i_
+          glyphs: lot_{at_: rune_, array_{fragment_}}
+     ]
 ]
 
 # where the next bit of text will be added.
 caret_:
-[   top; vector2i_
-    height; i32_
+[    top; vector2i_
+     height; i32_
 ]
-{   ;;move_up_(): null_
-    ;;move_down_(): null_
+{    ;;move_up_(): null_
+     ;;move_down_(): null_
 }
 
 font_options_:
-[   foreground; color_
-    background; color_
-    style; font_style_
+[    foreground; color_
+     background; color_
+     style; font_style_
 ]
-{   @alias foreground_color: foreground
-    @alias background_color: background
+{    @alias foreground_color: foreground
+     @alias background_color: background
 }
 
 font_style_: choose_
-[   bold
-    italic
-    underlined
-    inverted # foreground/background color is inverted
-    chaos # add pseudorandom jitter to drawn runes
+[    bold:
+     italic:
+     underlined:
+     inverted: # foreground/background color is inverted
+     chaos: # add pseudorandom jitter to drawn runes
 ]
 
 size2i_: [width; i32_, height; i32_]
 index2i_: [column; i32_, row; i32_]
 [vector2i_, vector2f_]: \/vector
+
+er_: one_of_
+{    invalid_argument:
+     # TODO...
+}
+
+hm_{of_:}: hm_{ok_: of_, er_}
