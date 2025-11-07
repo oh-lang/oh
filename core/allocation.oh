@@ -14,7 +14,7 @@ allocation_
      # TODO: we probably can infer `header_: null_` implies `header_: any_ = null_`.
      header_: any_ = null_
      # whether to put capacity locally inside this allocation.
-     # if `on_heap`, it gets added to the `full_header_`
+     # if `on_heap`, it gets added to the `combined_header_`
      capacity_site: _ local
 }:
 [    @private m:
@@ -23,11 +23,11 @@ allocation_
      ]
 ]
 {    ::capacity_(): capacity_
-          @if capacity_site is_local_()
+          if capacity_site is_local_()
                capacity_(m maybe_capacity, has_ptr. m of_ptr != null)
-          @else
-               # TODO: add full_header method
-               m full_header_() map_
+          else
+               # TODO: add combined_header method
+               m combined_header_() map_
                (    fn_(ok:) capacity_(ok maybe_capacity, has_ptr: true)
                     fn_(_er:): 0
                )
@@ -43,9 +43,9 @@ allocation_
 
      @private
      capacity_(maybe_capacity., has_ptr. bool_): capacity_
-          @if capacity_ indexable
+          if capacity_ indexable
                debug assert_(capacity_(maybe_capacity))
-          @else
+          else
                if maybe_capacity
                     _(maybe_capacity)
                elif has_ptr
@@ -53,6 +53,7 @@ allocation_
                else
                     _ min_()
 
+     # this notation might be more concise and understandable: `!m: bool_`
      ::!(): bool_
           m of_ptr == null
 
@@ -65,7 +66,7 @@ allocation_
      @private
      ;;capacity_(new. capacity_, old. capacity_): hm_{null_}
           required_bytes: memory_ = assert_
-          (    new * of_ memory_() + full_header_bytes
+          (    new * of_ memory_() + combined_header_bytes
                er_ out_of_memory
           )
           if old == 0
@@ -76,7 +77,7 @@ allocation_
                required_bytes reallocate_(;ptr) assert_(er_ out_of_memory)
                m ptr_(ptr, new{require: capacity_site is_on_heap_()})
 
-          @if capacity_site is_local_()
+          if capacity_site is_local_()
                m maybe_capacity = truncate_(new)
 
 
@@ -97,9 +98,7 @@ allocation_
      # make sure that this element is already initialized;
      # this `allocation` does not keep track of which elements are initialized.
      # this will return an error if `offset` is out of bounds and we can't resize to encompass `offset`.
-     # TODO: i think we need to put `;:` before the type here:
-     # but that kinda looks gross.  maybe revert the "call with :; before" idea.
-     ;;at_(offset.): hm_{ptr_{;of_}}
+     ;;at_(offset.): hm_{ptr_{of_}}
           if offset >= m capacity_()
                m capacity_(offset + 1) assert_()
           if m of_ptr == null
@@ -122,43 +121,37 @@ allocation_
           debug assert_(in_bounds < m capacity_())
           m of_ptr + offset
 
-     # TODO: non-local_capacity versions of the above, call them.
-     ::header_{require: header_ is !null_}(): hm_{(header:)}
+     ::header_{require: header_}(): hm_{(header:)}
           if m
                ok_(m header_())
           else
                er_ unallocated
 
-     ;;header_{require: header_ is !null_}(): hm_{(header;)}
+     ;;header_{require: header_}(): hm_{(header;)}
           if !m
                m capacity_(small_capacity) assert_()
-          # TODO: better syntax here, maybe `with !!m {m header_()}`
-          assert_(!!m)
-          ok_(m header_())
+          with !!m
+               ok_(m header_())
 
-     # gets the `header`, when `m` is truthy.
-     ;:header_{require: header_ is !null_}(): (header;:) where !!m
-          (full_header;:) = m ptr_() to_()
-          full_header header
-
-     @private
-     has_full_header_():
-          header_ is !null_ or capacity_site is_on_heap_()
+     # gets the header when `m` is truthy.
+     ;:header_{require: header_}(): (header;:) where !!m
+          (combined_header;:) = m ptr_() to_()
+          combined_header header
 
      @private
      ;;ptr_(ptr{u8_}., capacity{require: capacity_site is_on_heap_()}.): null_
           if ptr == null
                m of_ptr = null
           else
-               m of_ptr = ptr + full_header_bytes
+               m of_ptr = ptr + combined_header_bytes
                @if capacity_site is_on_heap_()
-                    (full_header;) = ptr
-                    full_header maybe_capacity = truncate_(capacity)
+                    (combined_header;) = ptr to_()
+                    combined_header maybe_capacity = truncate_(capacity)
 
      @private
-     ::ptr_{require: full_header_ is !null_}(): ptr_{u8_} where !!m
+     ::ptr_(): ptr_{u8_} where !!m
           ptr{u8_}: m of_ptr  # TODO: casting??
-          ptr -= full_header_bytes  # `full_header_` starts before the `of_` buffer
+          ptr -= combined_header_bytes  # if present, `combined_header_` starts before the `of_` buffer
           ptr
 
      @private
@@ -166,27 +159,26 @@ allocation_
           null
 
      @private
-     # TODO: rename full_header to something like combined_header
-     full_header_bytes: memory_
-          @if full_header_ is null_
-               0
-          @else
-               at_least_memory: memory_(full_header_)
+     combined_header_bytes: memory_
+          if combined_header_
+               at_least_memory: memory_(combined_header_)
                word_memory: memory_(arch_ word_)
                # TODO: maybe just `ceil_(at_least_memory / word_memory) * word_memory`??
                need_one_more_word: at_least_memory %% word_memory != 0
                (at_least_memory // word_memory + need_one_more_word) * word_memory
+          else
+               0
 
      # TODO: update based on size of `of_`
      small_capacity: 4
 
-     @if header_ is !null_ or capacity_site is_on_heap_()
-          @private full_header_:
-          [    header{require: header_ is !null_};
+     @private
+     combined_header_: if header_ or capacity_site is_on_heap_()
+          [    header{require: header_};
                maybe_capacity{require: capacity_site is_on_heap_()};
           ]
-     @else
-          @private full_header_: null_
+     else
+          null_
 
      er_: container_ er_
      hm_{of_:}: hm_{ok_: of_, er_}
