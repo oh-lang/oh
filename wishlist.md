@@ -632,10 +632,17 @@ votes_lot; lot_{at_: str_, int_}("Cake": 5, "Donuts": 10, "Cupcakes": 3)
 #   * `votes_lot; ["Cake": 5, ...]`
 votes_lot["Cake"]        # 5
 ++votes_lot["Donuts"]    # 11
-++votes_lot["Ice Cream"] # inserts "Ice Cream" with default value, then increments
+++votes_lot["Ice Cream"] # appends "Ice Cream" with default value, then increments
 votes_lot["Cupcakes"]!   # resets "Cupcakes" to 0 and returns 3
-votes_lot::["Cupcakes"]  # null
-# now `votes_lot == ["Cake": 5, "Donuts": 11, "Cupcakes": 0, "Ice Cream": 1]`
+votes_lot::["Cupcakes"]  # 0
+votes_lot::["Bread"]     # null
+votes_lot["Bread"]       # creates default, returns 0
+votes_lot append_("Pop", 3)   # returns `true` because "Pop" wasn't in the lot yet
+votes_lot remove_("Cupcakes") # returns 0 because "Cupcakes" had value 0
+votes_lot remove_("Dirt")     # returns null because "Dirt" wasn't present
+votes_lot append_("Cupcakes", 5000")    # `false` because "Cupcakes" was already present
+                                        # NO UPDATE to `votes_lot`.
+# now `votes_lot == ["Cake": 5, "Donuts": 11, "Ice Cream": 1, "Bread": 0, "Pop": 3]`
 ```
 
 ## defining sets

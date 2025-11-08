@@ -20,6 +20,19 @@ appendable_{of_:, er_:, count_: select_count_}:
      hm_{OK_of_:}: hm_{ok: OK_of_, er_}
 }
 
-appendable_{at_:, of_:, er_:}:
-{    ;;append_(at., of.): hm_{ok_: null_, er_}
+appendable_{at_:, of_:, er_:}: hazable_{at_}
+{    ;;append_(at., of.): hm_{bool_}
+          if m has_(at)
+               false
+          else
+               m append_(new. at, of) assert_()
+               true
+
+     # TODO: should this be `append_(at., of.): hm_{null_} where !m has_(at)`??S
+     # i don't think so because that could leak to end users, and if so,
+     # we'd want to return `true_`.
+     @protected
+     ;;append_(new. at_, of.): hm_{null_}
+
+     hm_{OK_of_:}: hm_{ok: OK_of_, er_}
 }
