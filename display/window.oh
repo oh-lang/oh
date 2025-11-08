@@ -156,16 +156,16 @@ pixels_: all_of_
      # tries to resize the image.  can fail if the new size is too large (OOM)
      # or if the size is invalid (e.g., negative values).
      @hide_from(gpu_pixels_)
-     ;;size_(size2i.): hm_[null_]
+     ;;size_(size2i.): hm_{null_}
 
      # color reference via coordinates.
      # can fail if the coordinates are out of bounds (OOB).
      # can be expensive if the pixels aren't up-to-date on the CPU.
      @hide_from(gpu_pixels_)
-     ;;[coordinates2i.]: hm[(color;)]
+     ;;[coordinates2i.]: hm_{(color;)}
 
      # color setter (doesn't check the color first).
-     ;;draw_(coordinates2i., color.): hm_[null_]
+     ;;draw_(coordinates2i., color.): hm_{null_}
 
      # draws some text to these pixels.
      ;;draw_(string:, caret;, font;, font_options. font_options_()): null_
@@ -187,9 +187,9 @@ pixels_: all_of_
      # WARNING: will also send `VERTEX_array` to the GPU if not already there.
      @hide_from(cpu_pixels_)
      ;;draw_
-     (    VERTEX_array[~vertex_data_];
-          FRAGMENT_array[~fragment_data_];
-          shading[vertex_data_, fragment_data_];
+     (    vertices{~vertex_data_};
+          FRAGMENT_array{~fragment_data_};
+          shading{vertex_data_, fragment_data_};
      ): null_
 
      # TODO: line-drawing API.  e.g., `;;draw_(line., color.): null_`
@@ -249,24 +249,25 @@ vertices_{of_:}: all_of_
      ;;load_(file_path:): null_
 
      ;;update_(fn_(array{vertex_};): ~t_): t_
-          debug assert_(!my state gpu_ahead_of_cpu_())
+          debug assert_(!m state is_gpu_ahead_of_cpu_())
 
           result: fn_(;m array)
 
           if m state is synced.
-               m state = needs_gpu_update_(previous_id. synced id)
+               m state = _ needs_gpu_update_(previous_id. synced id)
 
           result
 
      # moves the data to the GPU, if it's not already there and up-to-date.
      # this can be expensive as we upload all the vertices from CPU to GPU, if they have changed.
-     ;;send_to_gpu_(): null
+     ;;send_to_gpu_(): null_
 
      # NOTE: there is no `;;send_to_cpu_()` method like with `pixels`; we don't modify
      # vertices on the GPU like we do with textures.
 }
 
-@private state_{of_:}: one_of_
+@private
+state_{of_:}: one_of_
 {    # this object is not represented on the GPU at all.
      cpu_only: null_
      # this object is not represented on the CPU at all.
@@ -281,7 +282,7 @@ vertices_{of_:}: all_of_
      # the GPU version of this object is in sync with the CPU version.
      synced: [id: of_]
 }
-{    ::gpu_ahead_of_cpu_(): bool_
+{    ::is_gpu_ahead_of_cpu_(): bool_
           what m
                _cpu_only: {false}
                _gpu_only: {true}
