@@ -1,115 +1,116 @@
 @final
-vector2_[of_]: all_of_[swizzleable_[of_], m_: [x; of_, y; of_]]
-{   m_(FIRST_of., SECOND_of.): m_
-        [x. FIRST_of, y. SECOND_of]
+vector2_{of_:}: all_of_{swizzleable{of_}:, m: [x; of_, y; of_]}
+{    m_(of_0., of_1.): m_
+          [x. of_0, y. of_1]
 
-    ::dot_(o): of_
-        m x * o x + m y * o y
-    ::cross_(o): of_
-        m x * o y - m y * o x
-    ::cross_(o): m3_
-        [x: 0, y: 0, z: cross_(o)]
+     ::dot_(o.): of_
+          m x * o x + m y * o y
+     ::cross_(o.): of_
+          m x * o y - m y * o x
+     ::cross_(o.): m3_
+          [x: 0, y: 0, z: cross_(o)]
 
-    fields_(): ["x", "y"]
+     fields_(): ["x", "y"]
 }
 @expand_types(vector2)
 
 @final
-vector3_[of_]: all_of_[swizzleable_[of_], m_: [x; of_, y; of_, z; of_]]
-{   m_(FIRST_of., SECOND_of., THIRD_of.): m_
-        [x. FIRST_of, y. SECOND_of, z. THIRD_of]
+vector3_{of_:}: all_of_{swizzleable{of_}:, m: [x; of_, y; of_, z; of_]}
+{    m_(of_0., of_1., of_2.): m_
+          [x. of_0, y. of_1, z. of_2]
 
-    ::dot_(o): of_
-        m x * o x + m y * o y + m z * o z
-    ::cross_(o): m_
-    (   m y * o z - m z * o y
-        m z * o x - m x * o z
-        m x * o y - m y * o x
-    )
+     ::dot_(o.): of_
+          m x * o x + m y * o y + m z * o z
 
-    fields_(): ["x", "y", "z"]
+     ::cross_(o.): m_
+     (    m y * o z - m z * o y
+          m z * o x - m x * o z
+          m x * o y - m y * o x
+     )
+
+     fields_(): ["x", "y", "z"]
 }
 @expand_types(vector3)
 
 @final
-vector4_[of_]: all_of_[swizzleable_[of_], m_: [x; of_, y; of_, z; of_, w; of_]]
-{   m_(FIRST_of., SECOND_of., THIRD_of., FOURTH_of.): m_
-        [x. FIRST_of, y. SECOND_of, z. THIRD_of, w. FOURTH_of]
+vector4_{of_:}: all_of_{swizzleable{of_}:, m: [x; of_, y; of_, z; of_, w; of_]}
+{    m_(of_0., of_1., of_2., of_3.): m_
+          [x. of_0, y. of_1, z. of_2, w. of_3]
 
-    ::dot_(o): of_
-        m x * o x + m y * o y + m z * o z + m w * o w
+    ::dot_(o.): of_
+          m x * o x + m y * o y + m z * o z + m w * o w
 
     fields_(): ["x", "y", "z", "w"]
 }
 @expand_types(vector4)
 
 @expand_types(v):
-{   @concat(v, "i_"): @concat(v, "_")[i32]
-    @concat(v, "l_"): @concat(v, "_")[i64]
-    @concat(v, "f_"): @concat(v, "_")[f32]
-    @concat(v, "d_"): @concat(v, "_")[f64]
+{   @concat(v, "i_"): @concat(v, "_"){i32_}
+    @concat(v, "l_"): @concat(v, "_"){i64_}
+    @concat(v, "f_"): @concat(v, "_"){f32_}
+    @concat(v, "d_"): @concat(v, "_"){f64_}
 }
 
 # swizzle operators
-swizzleable_[of_]: []
-{   m2_: vector2_[of_]
-    m3_: vector3_[of_]
-    m4_: vector4_[of_]
+swizzleable_{of_:}: []
+{    m2_: vector2_{of_}
+     m3_: vector3_{of_}
+     m4_: vector4_{of_}
 
-    fields_(): array_[str_]
+     fields_(): array_{str_}
 
-    # NOTE: this code adds in all permutations like this:
-    #   ::xx_(): m2_
-    #       [x, y: x]
-    fields_() @each component0:
-        fields_() @each component1:
-            ::@concat(component0, component1, "_")(): m2_
-            (   x: @concat(component0)
-                y: @concat(component1)
-            )
-
-    # NOTE: this code adds in all permutations like this:
-    #   ::xxx_(): m3_
-    #       [x, y: x, z: x]
-    fields_() @each component0:
-        fields_() @each component1:
-            fields_() @each component2:
-                ::@concat(component0, component1, component2, "_")(): m3_
-                (   x: @concat(component0)
+     # NOTE: this code adds in all permutations like this:
+     #    ::xx_(): m2_
+     #         [x, y: x]
+     fields_() @each component0:
+          fields_() @each component1:
+               ::@concat(component0, component1, "_")(): m2_
+               (    x: @concat(component0)
                     y: @concat(component1)
-                    z: @concat(component2)
-                )
+               )
 
-    # NOTE: this code adds in all permutations like this:
-    #   ::xxxx_(): m4_
-    #       [x, y: x, z: x, w: x]
-    fields_() @each component0:
-        fields_() @each component1:
-            fields_() @each component2:
-                fields_() @each component3:
-                    ::@concat(component0, component1, component2, component3, "_")(): m4_
-                    (   x: @concat(component0)
-                        y: @concat(component1)
-                        z: @concat(component2)
-                        w: @concat(component3)
+     # NOTE: this code adds in all permutations like this:
+     #   ::xxx_(): m3_
+     #       [x, y: x, z: x]
+     fields_() @each component0:
+          fields_() @each component1:
+               fields_() @each component2:
+                    ::@concat(component0, component1, component2, "_")(): m3_
+                    (    x: @concat(component0)
+                         y: @concat(component1)
+                         z: @concat(component2)
                     )
+
+     # NOTE: this code adds in all permutations like this:
+     #   ::xxxx_(): m4_
+     #       [x, y: x, z: x, w: x]
+     fields_() @each component0:
+          fields_() @each component1:
+               fields_() @each component2:
+                    fields_() @each component3:
+                         ::@concat(component0, component1, component2, component3, "_")(): m4_
+                         (    x: @concat(component0)
+                              y: @concat(component1)
+                              z: @concat(component2)
+                              w: @concat(component3)
+                         )
 }
 
 @test "swizzle"
-    @test "xx"
-        assert_(vector2i_(1, 2) xx_()) == vector2i_(1, 1)
-        assert_(vector3d_(0.0, 5.0, 9.0) xx_()) == vector2d_(0.0, 0.0)
-        assert_(vector4l_(-1, 7, 3, 4) xx_()) == vector2l_(-1, -1)
-    @test "xy"
-        assert_(vector2i_(1, 2) xy_()) == vector2i_(1, 2)
-        assert_(vector3f_(0.0, 5.0, 9.0) xy_()) == vector2f_(0.0, 5.0)
-        assert_(vector4l_(-1, 7, 3, 4) xy_()) == vector2l_(-1, 7)
-    @test "yx"
-        assert_(vector2i_(1, 2) yx_()) == vector2i_(2, 1)
-        assert_(vector3d_(0.0, 5.0, 9.0) yx_()) == vector2d_(5.0, 0.0)
-        assert_(vector4l_(-1, 7, 3, 4) yx_()) == vector2l_(7, -1)
-    @test "yy"
-        assert_(vector2i_(1, 2) yy_()) == vector2i_(2, 2)
-        assert_(vector3f_(0.0, 5.0, 9.0) yy_()) == vector2f_(5.0, 5.0)
-        assert_(vector4l_(-1, 7, 3, 4) yy_()) == vector2l_(7, 7)
-    # TODO: xxx, xyz, xzy, etc.  probably not exhaustively, sounds tiring.
+     @test "xx"
+          assert_(vector2i_(1, 2) xx_()) == vector2i_(1, 1)
+          assert_(vector3d_(0.0, 5.0, 9.0) xx_()) == vector2d_(0.0, 0.0)
+          assert_(vector4l_(-1, 7, 3, 4) xx_()) == vector2l_(-1, -1)
+     @test "xy"
+          assert_(vector2i_(1, 2) xy_()) == vector2i_(1, 2)
+          assert_(vector3f_(0.0, 5.0, 9.0) xy_()) == vector2f_(0.0, 5.0)
+          assert_(vector4l_(-1, 7, 3, 4) xy_()) == vector2l_(-1, 7)
+     @test "yx"
+          assert_(vector2i_(1, 2) yx_()) == vector2i_(2, 1)
+          assert_(vector3d_(0.0, 5.0, 9.0) yx_()) == vector2d_(5.0, 0.0)
+          assert_(vector4l_(-1, 7, 3, 4) yx_()) == vector2l_(7, -1)
+     @test "yy"
+          assert_(vector2i_(1, 2) yy_()) == vector2i_(2, 2)
+          assert_(vector3f_(0.0, 5.0, 9.0) yy_()) == vector2f_(5.0, 5.0)
+          assert_(vector4l_(-1, 7, 3, 4) yy_()) == vector2l_(7, 7)
+     # TODO: xxx, xyz, xzy, etc.  probably not exhaustively, sounds tiring.
