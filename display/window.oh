@@ -125,7 +125,7 @@ modifiers_: modifiers_{bool_}
 
 @referenceable_as(cpu_pixels_, gpu_pixels_)
 pixels_: all_of_
-[    @private m_:
+[    @private m:
      [    state; state_{pixels_id_} cpu_only
 
           # the current image size.
