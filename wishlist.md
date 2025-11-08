@@ -354,10 +354,15 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
 * use `:` to declare readonly things, `;` to declare writable things.
      * use `a: x_` to declare `a` as an instance of type `x_`, see [variables](#variables),
           with `a` any `variable_case` identifier.
-     * use `fn_(): x_` or `fn_[]: x_` to declare `fn_` as a function returning an instance of type `x_`,
-          see [functions](#functions), with any arguments inside `()` or `[]`, with the distinction being
-          useful for [references](#references).  `fn_` can be renamed to anything `function_case_`,
-          but `fn_` is one of the defaults.
+     * use `fn_(): x_` to declare `fn_` as a function returning an instance of type `x_`,
+          see [functions](#functions), with any arguments inside `()`.
+          `fn_` can be renamed to anything `function_case_`, but `fn_` is one of the defaults.
+     * use `::[]: x_` or `m[]: x_` to declare a class [index operator](#index-operator)
+          that returns an instance of `x_` with any arguments given inside `[]` and
+          that is called like `my_class[123, y: "a"]` depending on arguments.
+          Due to how `[]` objects are constructed, arguments here will be passed by value, but
+          you can annotate `:`, `;`, or `.` to have different effects within the function
+          definition (e.g., using `::[int:]: str_` to indicate that `int` will be readonly).
      * use `new_{}: y_` to declare `new_` as a function returning *a type* `y_`, with any arguments inside `{}`.
           `new_` can be renamed to anything `type_case_`, but `new_` is the default.
           See [returning a type](#returning-a-type).
@@ -428,21 +433,15 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
           Any `type_case_` identifier can be used for `infer_this_`.
 * `$` for inline block and lambda arguments
      * [inline blocks](#block-parentheses-and-commas) include:
-          * `$(...)` as shorthand for `(fn_(): {...})`, i.e., defining a [lambda function](#lambda-functions)
+          * `$(...)` as shorthand for `fn_(): {(...)}`, i.e., defining a [lambda function](#lambda-functions)
                with `()` arguments specified by any lambda variables (see `$arg` logic).  E.g.,
                `my_array map_$(2 * $int + 1)` is equivalent to
                `my_array map_(fn_(int:): 2 * int + 1)`.
-          * `$[...]` as shorthand for `[fn_[]: {...}]`, i.e., defining a lambda function with
-               `[]` arguments specified by any lambda variables (see `$arg` logic).
-               TODO: if we go further and do `fn_[]{[...]}` then this would still work:
-               `array: if some_condition $[1, 2, 3] else $[4, 5]`
-               but i'm not sure we want for consistency.  saving one character isn't that great
-               compared to `array: if some_condition {[1, 2, 3]} else {[4, 5]}`.
-          * `${...}` is shorthand for a `{new_{}: {...}}`, which can be used to create
+          * `$[...]` as shorthand for `fn_(): {[...]}`, i.e., defining a lambda function with
+               `()` arguments specified by any lambda variables (see `$arg` logic).
+          * `${...}` is shorthand for a `new_{}: {...}`, which can be used to create
                lambda functions for types, or [lambda types](#lambda-types) for short,
                with a similar function for lambda variables becoming arguments.
-               TODO: is the wrapping `{}` ok in every situation?  or should we infer it only
-               when we see a `type_case_` identifier before `${...}`?
      * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
           * `my_array map_$($int * 2 + 1)` will iterate over e.g., `my_array: [1, 2, 3, 4]`
                as `[3, 5, 7, 9]`.  The `$` variables attach to the enclosing `$()` as
@@ -2691,7 +2690,7 @@ references, but need nesting to be the most clear.  For example:
 
 ```
 # function declaration
-copy_(from: (pixels, rectangle.), to: (pixels;, rectangle.): null_
+copy_(from: (pixels:, rectangle.), to: (pixels;, rectangle.): null_
 
 # function usage
 SOURCE_pixels: pixels_() { #( build image )# }
@@ -2704,8 +2703,8 @@ copy_
           size + vector2_(x: 3, y: 4)
      )
      to:
-     (    ;DESTINATION_pixels
-          size + Vector2_(x: 9, y: 8)
+     (    DESTINATION_pixels
+          size + vector2_(x: 9, y: 8)
      )
 )
 ```
@@ -3482,9 +3481,10 @@ with `fn_(tmp_arg. my_str o_())` or `fn_(tmp_arg. my_str!)`, respectively.
 The temporary argument, if modified inside the function block, will have no effect on the
 things outside the function block.  Inside the function block, pass-by-value
 arguments are mutable, and can be reassigned or modified as desired.
-Similar to Rust, variables that can be easily copied implement a `::o_(): m_`
-method, while variables that may require large allocations should only implement
-`;;renew_(o:): hm_{ok_: null_, er_: ...}` or `::o_(): hm_{ok_: m_, er_: ...}`
+In the function definition, if you want to make the temporary constant, you can `@lock` it.
+Similar to Rust, variables that can be easily copied implement a `::o_(): m_` method,
+while variables that may fail (e.g., due to requiring large allocations) should only implement
+`m_(o:): hm_{ok_: m_, er_: ...}` or `::o_(): hm_{ok_: m_, er_: ...}`
 which indicates that an error (like out-of-memory) can occur when trying to copy.
 A default definition for these copy constructors are created for most oh-lang classes.
 
@@ -4518,6 +4518,18 @@ example_class_: all_of_
      ;;add_something_(int:): null_
           x += int    # equivalent to `m x += int`
 
+     # index operator usage: `example_class[10]` which would return "!!!!!!!!!!"
+     # NOTE: `int:` is declared readonly but is NOT passed as a reference;
+     # index operator arguments are always passed by value, but you can indicate
+     # the argument will be readonly inside the definition.
+     ::[int:]: str_
+          "!" * int
+
+     # COMPILE ERROR: this is not an overload because `[]` arguments
+     # are always passed by value.
+     ::[int;]: str_
+          "!" * int++
+
      # COMPILE ERROR: reassignable methods are currently not supported;
      # they may be in the future but would require hotswapping functions.
      # in case someone is running an old function, we need to let them
@@ -4726,6 +4738,15 @@ which will be called with default-constructed arguments (if any) if a default
 instance of the class is needed.  It is a compiler error if a constructor with
 zero arguments is defined after another constructor with arguments.
 
+## index operator
+
+Inside a class body, you can define `::[some_index:]: type_` to create
+an index operator method.  There can be multiple (or no) arguments inside
+of `[]`, but they will all be [passed by value](#pass-by-reference-or-pass-by-value).
+Thus you cannot overload `::[int:]: str_` and `::[int;]: str_` because
+there is only really one canonical declaration (`::[int.]: str_`), but
+we allow `:` and `;` argument declarations to indicate inside the function
+whether the argument should be considered readonly or not.
 
 ## public/private/protected visibility
 
