@@ -26,11 +26,11 @@ The reason why we use similar casing for identifiers and functions is because it
 easy to refactor a type (or function) like `the_array_` into something like `special_array_`
 and miss the corresponding update for variables like `The_array` into `Special_array`.
 It also makes internationalization not dependent on unicode parsing; we can immediately
-determine whether something is a function if it has a trailing `_`.
+determine whether something is a function or type if it has a trailing `_`.
 For the remainder of this document, we'll use `variable_case`,
 `type_case_`, and `function_case_`, although the latter two are indistinguishable without context.
 In context, functions and types are followed by optional generics (in `{}` braces),
-while functions alone have parentheses `()` or brackets `[]` with optional arguments inside.
+while functions alone have parentheses `()` with optional arguments inside.
 Because types can act as functions, we don't syntactically distinguish between `type_case_`
 and `function_case_` otherwise.
 
@@ -43,7 +43,7 @@ and defining a variable works the same outside of a function: `x: 5`.  In functi
 `(x: int_, y; str_, z. dbl_)`, we declare `x` as a readonly reference, `y` a writable reference,
 and `z` a temporary, whereas outside of function arguments, `[x: int_, y; str_, z. dbl_]` indicates
 that `x` is readonly (though it can be written in constructors or first assignment), that `y` is
-writable, and `z` should be passed as a temporary (like most Rust variables).  I.e., it will be
+writable, and `z` should be used next as a temporary (like most Rust variables).  I.e., it will be
 hidden from scope if passed into a function that takes a temporary, unless you pass in a clone
 (via `::_o()`).
 
@@ -3935,7 +3935,7 @@ named output.  The danger is that your overload may change based on your return
 variable name; but this is usually desired.
 
 IMPLEMENTATION NOTE: `x: ... assert_()` will require inferring through
-the `[x: x_]` return value through the result `hm_[ok_: [x: x_], ...]`
+the `[x: x_]` return value through the result `hm_{ok_: [x: x_], ...}`
 via `assert_()`.  This may be difficult for more complicated expressions.
 
 SFO effectively makes any `x_` return type into a `[x: x_]` object.  This means
@@ -4386,7 +4386,7 @@ my_class_{of_:, n: count_, require: n > 0}:
      second_value{require: n >= 2}: of_
      # this field `third_value` is only present if `n` is 3 or more.
      third_value{require: n >= 3}: of_
-     ... # plz help am i coding this right??     (no, prefer `vector_[n, of_]`)
+     ... # plz help am i coding this right??     (no, prefer `vector_{count, of_}`)
 ]
 {    # `of_ is hashable_` is true iff `of_` extends `hashable_` either explicitly
      # or implicitly by implementing a `hash_` method like this:
@@ -4400,14 +4400,6 @@ my_class_{of_:, n: count_, require: n > 0}:
           ...
 }
 ```
-
-TODO: should we make this an annotation instead?  `@require(of is orderable)`??
-in C++, these sorts of things are templates, but that can be kinda confusing.
-but it does allow you to do things like this, where you introduce new types
-on the fly and can require them to be a certain way:
-`::do_[additional_type_, require: additional_type_ is foo_](~additional_type:): int_`
-so if possible, i think i'd prefer to keep it as a template.
-the alternative is to do `@if of_ is hashable_ { ::hash_(~builder): ... }`.
 
 # classes
 
@@ -5862,7 +5854,7 @@ Or you can just import the file and use the function as needed:
 `other_file: \/other_file, other_file my_function_(123)`.
 TODO: i think we can relax this requirement; if you request `[my_function_]` it can just
 be the function with all overloads; otherwise we should technically require specifying
-type "overloads" for generic types like `hm_{of_:}: hm_[ok_: of_, er_: ...]` that come
+type "overloads" for generic types like `hm_{of_:}: hm_{ok_: of_, er_: ...}` that come
 from other files.  there's not a huge difference between types and functions, they both can
 take arguments to return something else.  but we can't use `my_function_` as a type, so it
 would be nice to distinguish, maybe `[my_function_(*): *]: \/other_file`?
@@ -7663,8 +7655,8 @@ Consider this example `one_of_`.
 tree_: one_of_
 {    leaf: [value; int_]
      branch:
-     [    left; heap_[tree_]
-          right; heap_[tree_]
+     [    left; heap_{tree_}
+          right; heap_{tree_}
      ]
 }
 ```
