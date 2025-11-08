@@ -1,67 +1,67 @@
 #[#
 # example HTML page with these HTML wrappers.
-    ```
-    page: html_
-    (   body_
-        (   h1_("My page")
-            p_("Hello there")
-            a_("Go here!", url: "https://wikipedia.org")
-        )
-    )
-    ```
+```
+page: html_
+(    body_
+     (    h1_("My page")
+          p_("Hello there")
+          a_("Go here!", url: "https://wikipedia.org")
+     )
+)
+```
 #]#
 
 html_element_:
-[   # TODO
+[    # TODO
 ]
-{   # TODO
+{    # TODO
 }
 
 # <body>
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLBodyElement
 body_: html_element_
-{   ;;renew_(arguments[html_element_].): null_
+{    ;;renew_(arguments{html_element_}.): null_
 }
 
 # <p> paragraph
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLParagraphElement
 p_: html_element_
-{   ;;renew_(arguments[html_element_].): null_
-    ;;renew_(text.): null_
+{    ;;renew_(arguments{html_element_}.): null_
+     ;;renew_(text.): null_
 }
 
 # <h1> through <h6> heading
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLHeadingElement
 h_: html_element_
-{   ;;renew_(arguments[html_element_].): null_
-    ;;renew_(text.): null_
+{    ;;renew_(arguments{html_element_}.): null_
+     ;;renew_(text.): null_
 }
 
 # <a> hyperlink
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLAnchorElement
 a: html_element_
-{   ;;renew_(arguments[html_element_].): null_
-    ;;renew_(text., url.): null_
+{    ;;renew_(arguments{html_element_}.): null_
+     ;;renew_(text., url.): null_
 }
 
 # <img> image
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement
 img_: html_element_
-{   ;;renew_(arguments[html_element_].): null_
-    ;;renew_(alt. text_, url.): null_
+{    ;;renew_(arguments{html_element_}.): null_
+     ;;renew_(alt. text_, url.): null_
 }
 
 # <video>
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement
-vdo_: html_element_
-{   ;;renew_(arguments[html_element_].): null_
-    # <video> + <source> with this `url`.
-    ;;renew_(url.): null_
+vid_: html_element_
+{    ;;renew_(arguments{html_element_}.): null_
+     # <video> + <source> with this `url`.
+     ;;renew_(url.): null_
 }
 
 # <script>
 # https://developer.mozilla.org/en-US/docs/Web/API/HTMLScriptElement
 script_: html_element_
-{   ;;renew_(text.): null_
-    ;;renew_(url.): null_
+{    ;;renew_(code.): null_
+     ;;renew_(url.): null_
 }
