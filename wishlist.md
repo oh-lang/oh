@@ -641,7 +641,6 @@ votes_lot::["Cupcakes"]  # null
 ## defining sets
 
 See [sets](#sets) for more details.
-TODO: we may not want to create defaults for sets here using `set["asdf"]`
 
 ```
 # declaring a readonly set
@@ -651,12 +650,13 @@ my_set: set_{element_type_}
 some_set; set_{str_}("friends", "family", "fatigue")
 # We can also infer types implicitly via the following:
 #   * `some_set; set_("friends", ...)`
-some_set::["friends"]    # `true`, without changing the set.
-some_set::["enemies"]    # null (falsey), without changing the set.
-some_set["fatigue"]!     # removes "fatigue", returns `true` since it was present.
-                         # `some_set == set_("friends", "family")`
-some_set["spools"]       # adds "spools", returns null (wasn't in the set), but now is.
-                         # `some_set == set_("friends", "family", "spools")`
+some_set has_("friends") # `true`
+some_set has_("enemies") # `false`
+some_set remove_("fatigue")   # removes "fatigue" and returns `true` since it was present
+                              # now `some_set == set_("friends", "family")`
+some_set append_("spools")    # adds "spools", returns `true` (because it was appended).
+                              # now `some_set == set_("friends", "family", "spools")`
+some_set append_("family")    # returns `false` because "family" was already present (not appended)
 ```
 
 ## defining functions
@@ -1754,13 +1754,7 @@ Function calls are assumed whenever a function identifier (i.e., `function_case_
 occurs before a parenthetical expression.  E.g., `print_(x)` where `x` is a variable name or other
 primitive constant (like `5`), or `any_function_name_(any + expression / here)`.
 In case a function returns another function, you can also chain like this:
-`get_function_(x)(y, z)` to call the returned function with `(y, z)`.
-
-It is recommended to use parentheses where possible, to help people see the flow more easily.
-E.g., `some_function_(some_instance some_field some_method_()) final_field` looks pretty complicated.
-This would compile as `(some_function(some_instance)::some_field::some_method())::final_field`,
-and including these parentheses would help others follow the flow.  Even better would be to
-add descriptive variables as intermediate steps.
+`get_function_(x) fn_(y, z)` to call the returned function with `(y, z)`.
 
 We don't allow for implicitly currying functions in oh-lang,
 but you can explicitly curry like this:
@@ -1769,10 +1763,7 @@ but you can explicitly curry like this:
 some_function_(x: int_, y; dbl_, z. str_):
      print_("something cool with $(x), $(y), and $(z)")
 
-curried_function_(z. str_): some_function_(x: 5, y; 2.4, .z)
-
-# or you can make it almost implicit like this:
-$curried_function_{some_function_(x: 5, y; 2.4, .$z)}:
+curried_function_(z. str_): some_function_(x: 5, y; 2.4, z)
 ```
 
 ## macros

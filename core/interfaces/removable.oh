@@ -22,8 +22,8 @@ removable_{at_:, of_:, count_:, ordered: bool_}: removable_{of_}
 {    # returns an `of` value if this object had one at `at`.
      ;;remove_(at:)?: of_
 
-     # returns the pair of `at` and `of` that was last added to the object if it's
-     # insertion ordered, otherwise any convenient element's pair.
+     # returns the last pair of `at` and `of` if this object is ordered,
+     # otherwise any convenient element's pair.
      ;;remove_()?: [at:, of:]
 
      # removes all instances of `all` in this object, returning the number deleted.
