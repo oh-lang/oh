@@ -712,12 +712,11 @@ do_something_(x: int_, y: int_): [w: int_, z: int_]
 # defining a function that returns other values.
 # braces are optional as long as you go to the next line and indent.
 do_something_(x: int_, y: int_): [w: int_, z: dbl_]
-{    # NOTE! return fields `w` and `z` are in scope and can be assigned
-     # directly in option A:
-     # TODO: i don't know if this is consistent with our `vector1_: [x: dbl_]` logic
-     #    we may want to allow not using `m` if the class is not defined with it
-     z = \\math atan_(x, y)
-     w = 123
+{    # NOTE! return fields `w` and `z` are in scope via `return`
+     # and can be assigned in option A:
+     # TODO: not sure i love this syntax
+     return z = \\math atan_(x, y)
+     return w = 123
      # option B: can just return `w` and `z` in an object:
      [z: \\math atan_(x, y), w: 123]
 }
@@ -1125,21 +1124,11 @@ my_function_(int:): [x: int_, y: int_]
      [x: 5 - int, y: 5 + int]
 
 # this indents `[x, y]` (i.e., to split into a multi-line array),
-# but note that we need `return` to avoid parsing as `do_something_(int)[x: ...]`.
+# but note that we need `return` to avoid parsing as `do_something_(int)[x: ...]`,
+# which is a compile-time error.
 my_function_(int): [x: int_, y: int_]
      do_something_(int)
-     # TODO: maybe we forbid `fn_(...)[...]` to avoid this issue.
-     #    we could require `fn_(...) whatever[...]` if `fn_` returns an indexable `whatever`
-     #    alternatively we could require `array at_(3)` instead of `array[3]`.
      return:
-     [    x: 5 - int
-          y: 5 + int
-     ]
-
-# alternatively, you could add a comma between the two statements
-# to ensure it doesn't parse as `do_something_(int)[x: ...]`:
-my_function_(int): [x: int, y: int]
-     do_something_(int),
      [    x: 5 - int
           y: 5 + int
      ]
@@ -1147,6 +1136,8 @@ my_function_(int): [x: int, y: int]
 
 Because parentheses indicate [reference objects](#reference-objects),
 which can be returned like brackets, similar care must be taken with `()`.
+See [chained calls forbidden](#chained-calls-forbidden) for more details.
+
 When it comes to parentheses, you are welcome to use
 [one-true-brace style](https://en.wikipedia.org/wiki/Indentation_style#:~:text=One%20True%20Brace),
 which will be converted into Horstmann style.
@@ -1757,11 +1748,10 @@ TODO: discussion on `~`
 
 ## function calls
 
-Function calls are assumed whenever a function identifier (i.e., `function_case_`)
-occurs before a parenthetical expression.  E.g., `print_(x)` where `x` is a variable name or other
-primitive constant (like `5`), or `any_function_name_(any + expression / here)`.
-In case a function returns another function, you can also chain like this:
-`get_function_(x) fn_(y, z)` to call the returned function with `(y, z)`.
+Function calls are assumed whenever a `function_case_` identifier
+occurs before a parenthetical expression.  E.g., `print_(x)`
+where `x` is a variable name or other primitive constant (like `5`),
+or an expresion (like `any_function_name_(any + expression / here)`).
 
 We don't allow for implicitly currying functions in oh-lang,
 but you can explicitly curry like this:
@@ -1772,6 +1762,50 @@ some_function_(x: int_, y; dbl_, z. str_):
 
 curried_function_(z. str_): some_function_(x: 5, y; 2.4, z)
 ```
+
+### chained calls forbidden
+
+In oh-lang we forbid using parentheses `()` or brackets `[]` directly after
+calling a function like `do_()[1]` or `fn_()()`, even if the function
+has an array overload or returns a function.  This is because of the grammar's
+tab indenting logic, multiline arrays or parens may get attached to the
+previous line in a way in which compiler error messages would be confusing.
+
+```
+# example of returning `[x, y]` values from a function.
+# there's no issue here because we're not indenting in `[x, y]`:
+my_function_(int:): [x: int_, y: int_]
+     do_something_(int)
+     [x: 5 - int, y: 5 + int]
+
+# this indents `[x, y]` (i.e., to split into a multi-line array),
+# but note that we need `return` to avoid parsing as `do_something_(int)[x: ...]`,
+# which is a compile-time error.
+my_function_(int): [x: int_, y: int_]
+     do_something_(int)
+     return:
+     [    x: 5 - int
+          y: 5 + int
+     ]
+
+# alternatively, you could add a comma between the two statements
+# to ensure it doesn't parse as `do_something_(int)[x: ...]`:
+my_function_(int): [x: int, y: int]
+     do_something_(int),
+     [    x: 5 - int
+          y: 5 + int
+     ]
+```
+
+If you want to chain into brackets, you need to put in a return name
+like `do_something_() return_name[x: 1, y: 2]` where `do_something_` has
+an overload like `do_something_(): return_name_`
+or `do_something_(): [return_name: whatever_type_]`.
+
+If you want to chain with parentheses, i.e., to call a function that the
+function just returned, you should similarly chain like this:
+`do_something_(int) fn_(y, z)` to call the returned function with `(y, z)`
+if it is default named.
 
 ## macros
 
@@ -1898,8 +1932,7 @@ as long as the variable names don't overlap.
 ### full list of reserved namespaces
 
 * `OH_` - used internally by oh-lang, do not use
-* `_0` - for the first operand in a binary operation (where order matters)
-* `_1` - for the second operand in a binary operation (where order matters)
+* `_0`, `_1`, `_2`, etc. - for arguments that should be passed in in a certain order
 * `NAMED_` - for arguments that should be explicitly named in [functions](#defining-generic-functions)
 
 TODO: maybe change `NAMED_` to `@as` or `@named`.
@@ -1929,7 +1962,7 @@ example_class_: [x: int_, y: dbl_]
 
 ```
 some_class_: [x: dbl_, y: dbl_, a; array_{str_}]
-Some_class; some_class_(x: 1, y: 2.3, a: ["hello", "world"])
+some_class; some_class_(x: 1, y: 2.3, a: ["hello", "world"])
 print_(some_class::a)       # prints ["hello", "world"] with a readonly reference overload
 print_(some_class::a[1])    # prints "world"
 print_(some_class a[1])     # also prints "world", using ` ` (member access)
@@ -1938,8 +1971,9 @@ some_class::a[7] = "oops"   # COMPILE ERROR, `::` means the array should be read
 some_class;;a[7] = "no problem"
 
 nested_class; array_{some_class_}
-nested_class[1] x = 1.234        # creates a default [0] and [1], sets [1]'s x to 1.234
-nested_class[3] a[4] = "oops"    # creates a default [2] and [3], sets [3]'s a to ["", "", "", "", "oops"]
+nested_class[1] x = 1.234     # creates a default [0] and [1], sets [1]'s x to 1.234
+nested_class[3] a[4] = "oops" # creates a default [2] and [3] and
+                              # sets [3]'s a to ["", "", "", "", "oops"]
 ```
 
 For class methods, `;;` (`::`) selects the overload with a writable (readonly) class
@@ -5948,7 +5982,7 @@ we are declaring a test.
 ```
 @private
 private_function_(x: int_, y: int_): [z: str_]
-     z: "$(x):$(y)"
+     return z: "$(x):$(y)"
 
 @protected
 protected_function_(x: int_, y: int_): [z: str_]
