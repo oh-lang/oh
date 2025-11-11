@@ -1,0 +1,60 @@
+#[#
+usage:
+     oh   # format/compile everything in the current directory (and recursive).
+          # if there are unit tests, run them.
+          # if there is a `main` function, run it.
+     oh path/to/file.oh  # format/compile path/to/file.oh
+                         # runs any code in the global scope of the file.
+                         # run unit tests, if present in the file.
+     oh --format [path]  # don't compile or run, just format
+     oh --compile [path] # don't format or run, just compile
+     oh --release [path] # format/compile path ?? everything in release mode
+     oh --debug [path]   # format/compile path ?? everything in debug mode
+#]#
+main(arguments{str_};): arch_ signed_
+     options:  parse_(arguments)
+          ok. {ok}
+          er. {print_(error: er), return: 1}
+     0
+
+
+parse_(arguments{str};): hm_{ok_: options_, er_: str_}
+     options;
+     arguments each str.
+          assert_
+          (    what str
+                    "--format" {options action_(_ format)}
+                    "--compile" {options action_(_ compile)}
+                    "--debug" {options mode_(_ debug)}
+                    "--release" {options mode_(_ release)}
+                    arg. {options add_path_(arg)}
+          )
+     options
+
+mode_: one_of_{release:, debug:}
+action_: one_of_{format:, compile:}
+
+options_:
+[    mode?;
+     action?;
+     paths: array_{valid_file_path_}
+]
+{    ;;mode_(mode.): hm_{ok_: null_, er_: str_}
+          if m mode != null
+               er_("already have set mode ${m mode}")
+          else
+               m mode = mode
+               ok_()
+
+     ;;action_(action.): hm_{ok_: null_, er_: str_}
+          if m action != null
+               er_("already have set action ${m action}")
+          else
+               m action = action
+               ok_()
+
+     ;;add_path_(str.): hm_{ok_: null_, er_: str_}
+          valid_file_path. file_path_(str) resolve_() map_(${str_($er)}) assert_()
+          assert_(valid_file_path exists_(), er: "file ${valid_file_path} does not exist")
+          paths append_(valid_file_path)
+}

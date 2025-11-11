@@ -25,7 +25,10 @@ file_path_:
      # we can still make the path `/a/b/c.txt` in a valid way (e.g., via `::make_()`).
      # NOTE: if the path doesn't exist after a point, `/a/b/c` will be considered
      # a regular file and `/a/b/c/` will be considered a directory.
-     ..resolve_(): hm_{one_of_{regular_file_path:, directory_path:}}
+     ..resolve_(): hm_{valid_file_path_}
+
+     # optimization for when you don't need to keep this instance around.
+     ..parent_(): directory_path_
 
      # if a regular file, returns the directory it's contained in (e.g., `x/file.txt` -> `x/`).
      # if a directory, returns the parent directory (e.g., `x/y/` -> `x/`)
@@ -34,14 +37,15 @@ file_path_:
      # if you need to make sure the path is valid, use `..resolve_()` before calling this.
      ::parent_(): directory_path_
 
-     # optimization for when you don't need to keep this instance around.
-     ..parent_(): directory_path_
-
      ::str_(): (str:)
           m str
 
      ..str_(): str_
           m str!
+}
+
+valid_file_path_: one_of_{regular_file_path:, directory_path:}
+{    ::exists_(): bool_
 }
 
 directory_path_: file_path_

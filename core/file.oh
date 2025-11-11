@@ -1,8 +1,8 @@
 er_: one_of_
 {    unknown:
-     file_not_found:
-     expected_regular_file:
-     expected_directory:
+     file_not_found: str_
+     expected_regular_file: str_
+     expected_directory: str_
 }
 
 hm_{of_:}: hm_{ok_: of_, er_}

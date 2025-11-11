@@ -150,7 +150,7 @@ allocation_
 
      @private
      ::ptr_(): ptr_{u8_} where !!m
-          ptr{u8_}: m of_ptr  # TODO: casting??
+          ptr{u8_}; m of_ptr  # TODO: casting??
           ptr -= combined_header_bytes  # if present, `combined_header_` starts before the `of_` buffer
           ptr
 
