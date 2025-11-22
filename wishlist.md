@@ -7015,6 +7015,47 @@ we could do something like `if other_condition_() or cows is many:`;
 we probably can fix by using `or cows is many?:` to indicate `many`
 might not be defined.
 
+### when statement
+
+TODO: this is on probation, do we really want this?
+
+The `when` operator is used to shorten a `what` statement to something
+a bit more readable when you only care about handling one specific case
+specially.  It only makes sense in combination with a `one_of_` like
+a result type.  It takes an indented block which defines the behavior
+when the operand on the RHS of `when` is matched.
+
+```
+# this:
+x: do_something_() when MATCH_CONDITION
+     MATCH_BEHAVIOR
+
+# is equivalent to this:
+x: what do_something_()
+     MATCH_CONDITION
+          MATCH_BEHAVIOR
+     any.
+          any
+```
+
+You can also make `MATCH_CONDITION` include a `where` operator to
+further restrict when the match will occur.
+For some specific examples:
+
+```
+do_stuff_(): str_
+     input. get_input_() when er.
+          # you can return early from the `do_stuff_` function
+          return. "got input error: ${er}"
+     # `handle_` returns an int, let's convert 0 to -1.
+     output: handle_(input) when 0 {-1}
+     # `alt_handle_` can return an int or something else
+     # let's divide all even integers by two
+     alt_output: alt_handle_(input) when int. where int % 2 == 0
+          int // 2
+     print_("${output} and ${alt_output}")
+```
+
 ### what operator overloading
 
 TODO:

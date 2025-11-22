@@ -32,49 +32,56 @@ usage:
 options_mode_: one_of_{release:, debug:}
 options_action_: any_of_{format:, compile:, run:, test:}
 
-# TODO: make into a builder
-options_: @private
-[    mode?;
-     action?;
-     path?; valid_file_path_
+options_:
+[    mode;
+     action;
+     path;
 ]
 {    m_(arguments{str_};): hm_{ok_: m_, er_: str_}
-          options;
+          mode?;
+          action?;
+          path?;
           arguments each str.
                hm: what str
                     # abc{
-                    "--compile" {options action_(_ compile)}
-                    "--debug" {options mode_(_ debug)}
-                    "--format" {options action_(_ format)}
-                    "--release" {options mode_(_ release)}
-                    "--test" {options action_(_ test)}
+                    "--compile" {add_action_(action, _ compile)}
+                    "--debug" {set_mode_(mode, _ debug)}
+                    "--format" {add_action_(action, _ format)}
+                    "--release" {set_mode_(mode, _ release)}
+                    "--test" {add_action_(action, _ test)}
                     # }xyz
                     # TODO: if `arg` starts with `--` or `-` then we should
                     #         probably give a different error.
-                    arg. {options path_(arg)}
+                    arg. {add_path_(path, arg)}
                hm assert_()
-          ok_(options)
+          ok_
+          ([   mode ?? _ debug
+               action ?? _ format | _ compile | _ run | _ test
+               path ?? os cwd_()
+          ])
 
-     ;;mode_(mode.): hm_{ok_: null_, er_: str_}
-          if m mode != null
-               er_("already have set mode ${m mode}")
+     @private
+     set_mode_(mode?;, SET_mode.): hm_{ok_: null_, er_: str_}
+          if mode != null
+               er_("already have set mode $(mode), can't update to $(SET_mode)")
           else
-               m mode = mode
+               mode = SET_mode
                ok_()
 
-     ;;action_(action.): hm_{ok_: null_, er_: str_}
-          if m action & action
-               er_("already have set action with ${action}, currently ${m action}")
+     @private
+     add_action_(action?;, ADD_action.): hm_{ok_: null_, er_: str_}
+          if action & ADD_action
+               er_("already have set action with $(ADD_action), currently $(action)")
           else
-               m action |= action
+               action |= ADD_action
                ok_()
 
-     ;;path_(str.): hm_{ok_: null_, er_: str_}
-          # TODO: i like the `orelse` logic of zig or v-lang, i think
-          # that's more readable than `map_(${str_($er)}) assert_()`
-          valid_file_path. file_path_(str) resolve_() or FILE_er.
+     @private
+     add_path_(path?; path_, str.): hm_{ok_: null_, er_: str_}
+          valid_file_path. file_path_(str) resolve_() when FILE_er.
                return. er_(FILE_er)
-          assert_(valid_file_path exists_(), er: "file ${valid_file_path} does not exist")
+          if !valid_file_path exists_()
+               return. er_("file $(valid_file_path) does not exist")
           if m path != null
                # currently unsupported.
                # it's a bit confusing how we'd handle `--run` specifically;
@@ -87,15 +94,9 @@ options_: @private
                m path = valid_file_path
                ok_()
 
-     ::action_(): action_
-          m action ?? _ format | _ compile | _ run | _ test
-
-     ::mode_(): mode_
-          m mode ?? _ debug
-
-     ::path_(): valid_file_path_
-          m path ?? os cwd_()
-
      mode_: options_mode_
      action_: options_action_
+     # it's a bit stronger than just `valid_file_path_` since we also verify
+     # if this file already exists, at least at the time of resolution.
+     path_: valid_file_path_
 }

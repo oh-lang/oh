@@ -17,7 +17,7 @@ file_path_:
 
      # verifies that the path is valid on the current OS, returning a regular file
      # or directory path.  this does not care if the path exists (e.g., see
-     # `::already_exists_()`), but it does care if the path would try to change
+     # `::exists_()`), but it does care if the path would try to change
      # an existing regular file into a directory (or vice versa).  e.g., suppose
      # this path is `/a/b/c.txt` but `/a/b` is an existing regular file and
      # not a directory; in this case, then this method will return an error.
