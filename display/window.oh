@@ -125,7 +125,7 @@ modifiers_: modifiers_{bool_}
 
 @referenceable_as(cpu_pixels_, gpu_pixels_)
 pixels_: all_of_
-[    @private m:
+{    @private m:
      [    state; state_{pixels_id_} cpu_only
 
           # the current image size.
@@ -139,7 +139,7 @@ pixels_: all_of_
           # and `pixels size_() == m size_() height`.
           pixels; array_{array_{color_}}
      ]
-]
+}
 {    @hide_from(cpu_pixels_, gpu_pixels_)
      ;;renew_(file_path:): m load_(file_path)
 
@@ -233,11 +233,11 @@ draw_
 ):  null_
 
 vertices_{of_:}: all_of_
-[    @private m_:
+{    @private m:
      [    state; state_{vertices_id_} cpu_only
           array{vertex_};
      ]
-]
+}
 {    vertex_: merge_{[position: vector3f_], of_}
 
      ;;renew_(file_path:): m load_(file_path)

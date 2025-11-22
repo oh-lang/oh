@@ -11,7 +11,7 @@ usage:
      oh --release [path] # format/compile path ?? everything in release mode
      oh --debug [path]   # format/compile path ?? everything in debug mode
 #]#
-main(arguments{str_};): arch_ signed_
+main_(arguments{str_};): arch_ signed_
      options:  parse_(arguments)
           ok. {ok}
           er. {print_(error: er), return: 1}
@@ -56,5 +56,5 @@ options_:
      ;;add_path_(str.): hm_{ok_: null_, er_: str_}
           valid_file_path. file_path_(str) resolve_() map_(${str_($er)}) assert_()
           assert_(valid_file_path exists_(), er: "file ${valid_file_path} does not exist")
-          paths append_(valid_file_path)
+          m paths append_(valid_file_path)
 }

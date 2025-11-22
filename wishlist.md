@@ -145,8 +145,10 @@ or `..one_temporary_method_()` for a method on a temporary `m`, i.e.,
 `one_temporary_method_(m.)`.  Inside an instance method definition, you can use `m`
 to refer to the class instance, regardless of how it was defined.  Inside methods,
 you must use `m the_variable_name` to refer to a class field `the_variable_name`
-and `m my_method_name_()` to call another method; this is to help with overload
-resolution and so that static variables/methods can be easily distinguished.
+and `m my_method_name_()` to call another method; this helps with overload resolution
+(i.e., to distinguish static variables/functions from instance variables/methods)
+but also means we can avoid renaming arguments that shadow class variables, e.g.,
+`::swap_(x; int_): {m x <-> x}`.
 (C++ developers are encouraged to prefix class member variables with
 `m_` because C++ is too permissive here with name resolution.)
 Here is an example class.
