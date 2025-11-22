@@ -276,7 +276,7 @@ specified types.  Any errors are still compile-time errors, but you get to have 
 of duck typing without needing to specify your type constraints fully.
 
 ```
-my_generic_{of_}(a: ~of_, b: of_): of_
+my_generic_{of_:}(a: ~of_, b: of_): of_
      # this clearly requires `of_` to implement `*`
      # but we didn't need to specify `[of_: number_]` or similar in the generic template.
      a * b
@@ -285,7 +285,7 @@ print_(my_generic_(a: 3, b: 4))                 # OK
 print_(my_generic_(a: [1, 2, 3], b: [4, 5]))    # COMPILE ERROR: no definition for `array_{int_} * array_{int_}`
 ```
 
-Similarly, duck typing means that if you define an appropriate `::hash` function on your class,
+Similarly, duck typing means that if you define an appropriate `::hash_` function on your class,
 you don't need to mention that your class is `hashable`.  A check for `some_class is some_other_class`
 will not require strict descent from `some_other_class` but only that the same methods and fields
 are defined.

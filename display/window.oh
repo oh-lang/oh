@@ -10,8 +10,8 @@ WISHLIST
 #)#
 
 window_: []
-{    terminal_(): terminal_window_
-     graphics_(): graphics_window_
+{    terminal_: terminal_window_
+     graphics_: graphics_window_
 
      # returns the actual window size, i.e., the real-estate available for drawing.
      ::size_(): size2i_
