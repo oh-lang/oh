@@ -1,7 +1,39 @@
+usage:
+          +|usage:
+          +|   oh   # formats/compiles everything in the current directory and subdirectories.
+          +|        # if there is one `main_` function in the *current directory*, runs it,
+          +|        #    otherwise prints an error.
+          +|        # if there are unit tests in any affected files, runs them.
+          +|        # it is equivalent to `oh .`
+          +|   oh path/to/file.oh  # formats and compiles path/to/file.oh;
+          +|                       # runs any code in the global scope of the file.
+          +|                       # runs unit tests, if present in the file.
+          +|   oh path/to/dir/     # formats and compiles path/to/dir/ and subdirectories.
+          +|                       # if there is one `main_` function in path/to/dir/,
+          +|                       #    runs it, otherwise prints an error.
+          +|                       # if there are unit tests in any affected files, runs them.
+          +|   # |=options=[
+          +|   # |=actions=(
+          +|   # you can combine --format, --compile, --test, and --run to do only those;
+          +|   # the default acts in this order: format, compile, run, and test
+          +|   oh --compile [path] # compile path ?? everything
+          +|   oh --format [path]  # format path ?? everything
+          +|   oh --run [path]     # runs code in path ?? looks for a `main_` function
+          +|                       #    according to path rules (see dir/file.oh logic)
+          +|   oh --test [path]    # runs tests in path ?? everything
+          +|   # )=actions=|
+          +|   # |==modes==(
+          +|   # the default mode is --debug.
+          +|   oh --release [path] # handles path ?? everything in release mode
+          +|   oh --debug [path]   # handles path ?? everything in debug mode
+          +|   # )==modes==|
+          +|   # ]=options=|
+
 options_mode_: one_of_{release:, debug:}
 options_action_: any_of_{format:, compile:, run:, test:}
 
-options_:
+# TODO: make into a builder
+options_: @private
 [    mode?;
      action?;
      path?; valid_file_path_
@@ -38,7 +70,10 @@ options_:
                ok_()
 
      ;;path_(str.): hm_{ok_: null_, er_: str_}
-          valid_file_path. file_path_(str) resolve_() map_(${str_($er)}) assert_()
+          # TODO: i like the `orelse` logic of zig or v-lang, i think
+          # that's more readable than `map_(${str_($er)}) assert_()`
+          valid_file_path. file_path_(str) resolve_() or FILE_er.
+               return. er_(FILE_er)
           assert_(valid_file_path exists_(), er: "file ${valid_file_path} does not exist")
           if m path != null
                # currently unsupported.
@@ -51,6 +86,15 @@ options_:
           else
                m path = valid_file_path
                ok_()
+
+     ::action_(): action_
+          m action ?? _ format | _ compile | _ run | _ test
+
+     ::mode_(): mode_
+          m mode ?? _ debug
+
+     ::path_(): valid_file_path_
+          m path ?? os cwd_()
 
      mode_: options_mode_
      action_: options_action_

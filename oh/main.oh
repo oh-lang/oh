@@ -1,34 +1,3 @@
-usage:
-          +|usage:
-          +|   oh   # formats/compiles everything in the current directory and subdirectories.
-          +|        # if there is one `main_` function in the *current directory*, runs it,
-          +|        #    otherwise prints an error.
-          +|        # if there are unit tests in any files, runs them.
-          +|        # it is equivalent to `oh .`
-          +|   oh path/to/file.oh  # formats and compiles path/to/file.oh;
-          +|                       # runs any code in the global scope of the file.
-          +|                       # runs unit tests, if present in the file.
-          +|   oh path/to/dir/     # formats and compiles path/to/dir/ and subdirectories.
-          +|                       # if there is one `main_` function in path/to/dir/,
-          +|                       #    runs it, otherwise prints an error.
-          +|                       # if there are unit tests in any affected files, runs them.
-          +|   # |=options=[
-          +|   # |=actions=(
-          +|   # you can combine --format, --compile, --test, and --run to do only those;
-          +|   # the default acts in this order: format, compile, run, and test
-          +|   oh --compile [path] # compile path ?? everything
-          +|   oh --format [path]  # format path ?? everything
-          +|   oh --run [path]     # runs code in path ?? looks for a `main_` function
-          +|                       #    according to path rules (see dir/file.oh logic)
-          +|   oh --test [path]    # runs tests in path ?? everything
-          +|   # )=actions=|
-          +|   # |==modes==(
-          +|   # the default mode is --debug.
-          +|   oh --release [path] # handles path ?? everything in release mode
-          +|   oh --debug [path]   # handles path ?? everything in debug mode
-          +|   # )==modes==|
-          +|   # ]=options=|
-
 # see `usage`.
 main_(arguments{str_};): arch_ signed_
      options: _(arguments)
@@ -42,4 +11,4 @@ main_(arguments{str_};): arch_ signed_
      0
 
 # TODO: `_: \/options` if we like that syntax.
-[options_]: \/options
+[usage, options_]: \/options
