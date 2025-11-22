@@ -339,7 +339,7 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
 
 # general syntax
 
-* `print_(...)` to echo some values (in ...) to stdout, `print_(error: ...)` to echo to stderr
+* `print_(...)` to echo some values (in ...) to stdout, `print_(er: ...)` to echo to stderr
      * use string interpolation for printing dynamic values: `print_("hello, $(variable_1)")`
      * use `print_(no_newline: "keep going ")` to print without a newline
      * default overload is to print to null, but you can request the string that was printed
