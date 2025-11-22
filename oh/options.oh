@@ -1,0 +1,56 @@
+mode_: one_of_{release:, debug:}
+action_: any_of_{format:, compile:, run:, test:}
+
+options_:
+[    mode?;
+     action?;
+     path?; valid_file_path_
+]
+{    m_(arguments{str_};): hm_{ok_: m_, er_: str_}
+          options;
+          arguments each str.
+               hm: what str
+                    # abc{
+                    "--compile" {options action_(_ compile)}
+                    "--debug" {options mode_(_ debug)}
+                    "--format" {options action_(_ format)}
+                    "--release" {options mode_(_ release)}
+                    "--test" {options action_(_ test)}
+                    # }xyz
+                    # TODO: if `arg` starts with `--` or `-` then we should
+                    #         probably give a different error.
+                    arg. {options path_(arg)}
+               hm assert_()
+          ok_(options)
+
+     ;;mode_(mode.): hm_{ok_: null_, er_: str_}
+          if m mode != null
+               er_("already have set mode ${m mode}")
+          else
+               m mode = mode
+               ok_()
+
+     ;;action_(action.): hm_{ok_: null_, er_: str_}
+          if m action & action
+               er_("already have set action with ${action}, currently ${m action}")
+          else
+               m action |= action
+               ok_()
+
+     ;;path_(str.): hm_{ok_: null_, er_: str_}
+          valid_file_path. file_path_(str) resolve_() map_(${str_($er)}) assert_()
+          assert_(valid_file_path exists_(), er: "file ${valid_file_path} does not exist")
+          if m path != null
+               # currently unsupported.
+               # it's a bit confusing how we'd handle `--run` specifically;
+               # if there are multiple files do we run them all sequentially,
+               # then run their tests?  if the path is a directory, we look for
+               # a `main_` file, but if you also pass in a regular file path,
+               # do we look for a `main_` file and also run the regular file?
+               er_("we currently do not support passing in multiple paths")
+          else
+               m path = valid_file_path
+               ok_()
+}
+
+
