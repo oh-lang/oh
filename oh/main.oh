@@ -1,43 +1,71 @@
-#[#
 usage:
-     oh   # format/compile everything in the current directory (and recursive).
-          # if there are unit tests, run them.
-          # if there is a `main` function, run it.
-     oh path/to/file.oh  # format/compile path/to/file.oh
-                         # runs any code in the global scope of the file.
-                         # run unit tests, if present in the file.
-     oh --format [path]  # don't compile or run, just format
-     oh --compile [path] # don't format or run, just compile
-     oh --release [path] # format/compile path ?? everything in release mode
-     oh --debug [path]   # format/compile path ?? everything in debug mode
-#]#
+          +|usage:
+          +|   oh   # formats/compiles everything in the current directory and subdirectories.
+          +|        # if there is one `main_` function in the *current directory*, runs it,
+          +|        #    otherwise prints an error.
+          +|        # if there are unit tests in any files, runs them.
+          +|        # it is equivalent to `oh .`
+          +|   oh path/to/file.oh  # formats and compiles path/to/file.oh;
+          +|                       # runs any code in the global scope of the file.
+          +|                       # runs unit tests, if present in the file.
+          +|   oh path/to/dir/     # formats and compiles path/to/dir/ and subdirectories.
+          +|                       # if there is one `main_` function in path/to/dir/,
+          +|                       #    runs it, otherwise prints an error.
+          +|                       # if there are unit tests in any affected files, runs them.
+          +|   # |=options=[
+          +|   # |=actions=(
+          +|   # you can combine --format, --compile, --test, and --run to do only those;
+          +|   # the default acts in this order: format, compile, run, and test
+          +|   oh --compile [path] # compile path ?? everything
+          +|   oh --format [path]  # format path ?? everything
+          +|   oh --run [path]     # runs code in path ?? looks for a `main_` function
+          +|                       #    according to path rules (see dir/file.oh logic)
+          +|   oh --test [path]    # runs tests in path ?? everything
+          +|   # )=actions=|
+          +|   # |==modes==(
+          +|   # the default mode is --debug.
+          +|   oh --release [path] # handles path ?? everything in release mode
+          +|   oh --debug [path]   # handles path ?? everything in debug mode
+          +|   # )==modes==|
+          +|   # ]=options=|
+
+# see `usage`
 main_(arguments{str_};): arch_ signed_
      options:  parse_(arguments)
           ok. {ok}
-          er. {print_(error: er), return: 1}
+          er.
+          {    print_(error: usage)
+               print_(error: er)
+               return: 1
+          }
+     # TODO
      0
-
 
 parse_(arguments{str};): hm_{ok_: options_, er_: str_}
      options;
      arguments each str.
           assert_
           (    what str
-                    "--format" {options action_(_ format)}
+                    # abc{
                     "--compile" {options action_(_ compile)}
                     "--debug" {options mode_(_ debug)}
+                    "--format" {options action_(_ format)}
                     "--release" {options mode_(_ release)}
-                    arg. {options add_path_(arg)}
+                    "--test" {options action_(_ test)}
+                    # }xyz
+                    # TODO: if `arg` starts with `--` or `-` then we should probably
+                    #         give a different error.
+                    arg. {options path_(arg)}
           )
      options
 
 mode_: one_of_{release:, debug:}
-action_: one_of_{format:, compile:}
+action_: any_of_{format:, compile:, run:, test:}
 
 options_:
 [    mode?;
      action?;
-     paths: array_{valid_file_path_}
+     path?; valid_file_path_
 ]
 {    ;;mode_(mode.): hm_{ok_: null_, er_: str_}
           if m mode != null
@@ -47,14 +75,24 @@ options_:
                ok_()
 
      ;;action_(action.): hm_{ok_: null_, er_: str_}
-          if m action != null
-               er_("already have set action ${m action}")
+          if m action & action
+               er_("already have set action with ${action}, currently ${m action}")
           else
-               m action = action
+               m action |= action
                ok_()
 
-     ;;add_path_(str.): hm_{ok_: null_, er_: str_}
+     ;;path_(str.): hm_{ok_: null_, er_: str_}
           valid_file_path. file_path_(str) resolve_() map_(${str_($er)}) assert_()
           assert_(valid_file_path exists_(), er: "file ${valid_file_path} does not exist")
-          m paths append_(valid_file_path)
+          if m path != null
+               # currently unsupported.
+               # it's a bit confusing how we'd handle `--run` specifically;
+               # if there are multiple files do we run them all sequentially,
+               # then run their tests?  if the path is a directory, we look for
+               # a `main_` file, but if you also pass in a regular file path,
+               # do we look for a `main_` file and also run the regular file?
+               er_("we currently do not support passing in multiple paths")
+          else
+               m path = valid_file_path
+               ok_()
 }

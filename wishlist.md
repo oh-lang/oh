@@ -507,9 +507,9 @@ greeting: "hello, $(name)!"
 
 # declaring a multiline string with spaces added between lines
 long_text:
-        &|This is an example of a long sentence which
-        &|deserves to be split across "lines".  Spaces will be
-        &|added as necessary between lines.
+          &|This is an example of a long sentence which
+          &|deserves to be split across "lines".  Spaces will be
+          &|added as necessary between lines.
 # this is the same as:
 # `long_text: "This is an example of a long sentence which deserves to be split across \"lines\".  Spaces will be added as necessary between lines."
 
@@ -522,11 +522,11 @@ important_items:
 
 # a single-line ampersanded string can be used to avoid lots of escapes:
 avoid_escapes: &|This is not a 'line' "you know"
-# this is equivalent to `avoid_escapes: "This is not a 'line' \"you know\""
+# this is equivalent to `avoid_escapes: "This is not a 'line' \"you know\""`
 
 # a single-line plussed string will include a newline at the end.
 just_one_line: +|This is a 'line' "you know"
-# this is equivalent to `just_one_line: "This is a 'line' \"you know\"\n"
+# this is equivalent to `just_one_line: "This is a 'line' \"you know\"\n"`
 
 # declaring a multiline string with interpolation
 multiline_interpolation:
