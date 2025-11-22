@@ -5889,6 +5889,11 @@ vector2_oh: \/vector2   # .oh extension can be used but will be formatted off.
 vector2: vector2_oh vector2_(x. 3, y. 4)
 print_(vector2)
 # you can also destructure imports like this:
+[vector2_, ...]: \/vector2
+# TODO: can we use SFO to destructure like this?
+vector2_: \/vector2
+# TODO: this could probably be supported as well:
+_: \/vector2
 ```
 
 For concision, we can use `\/other_file/some_class _` to reference the class
@@ -5903,7 +5908,7 @@ print_(vector2)
 
 Note that we cannot import a function like this: `[my_function_]: \/other_file`;
 to oh-lang this looks like a type.  You either need to specify the overload
-that you're pulling in, e.g., `[my_function_(int): str_]: \/other_file`,
+that you're pulling in, e.g., `[my_function_(int.): str_]: \/other_file`,
 or request all overloads via `[my_function_(call;): null_]: \/other_file`.
 Or you can just import the file and use the function as needed:
 `other_file: \/other_file, other_file my_function_(123)`.

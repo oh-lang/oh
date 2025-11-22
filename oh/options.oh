@@ -1,5 +1,5 @@
-mode_: one_of_{release:, debug:}
-action_: any_of_{format:, compile:, run:, test:}
+options_mode_: one_of_{release:, debug:}
+options_action_: any_of_{format:, compile:, run:, test:}
 
 options_:
 [    mode?;
@@ -51,6 +51,7 @@ options_:
           else
                m path = valid_file_path
                ok_()
+
+     mode_: options_mode_
+     action_: options_action_
 }
-
-
