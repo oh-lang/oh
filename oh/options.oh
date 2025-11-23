@@ -29,9 +29,6 @@ usage:
           +|   # )==modes==|
           +|   # ]=options=|
 
-options_mode_: one_of_{release:, debug:}
-options_action_: any_of_{format:, compile:, run:, test:}
-
 options_:
 [    mode;
      action;
@@ -94,9 +91,12 @@ options_:
                m path = valid_file_path
                ok_()
 
-     mode_: options_mode_
-     action_: options_action_
+     mode_: mode_
+     action_: action_
      # it's a bit stronger than just `valid_file_path_` since we also verify
      # if this file already exists, at least at the time of resolution.
      path_: valid_file_path_
 }
+
+mode_: one_of_{release:, debug:}
+action_: any_of_{format:, compile:, run:, test:}

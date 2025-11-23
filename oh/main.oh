@@ -1,5 +1,5 @@
 # see `usage`.
-main_(arguments{str_};): arch_ signed_
+main_(arguments{str_};): pipeline_ result_
      options: _(arguments)
           ok. {ok}
           er.
@@ -7,8 +7,112 @@ main_(arguments{str_};): arch_ signed_
                print_(er)
                return: 1
           }
-     # TODO
-     0
+     result;
+     what options path
+          directory_path:
+               directory_path each recursive_regular_file_path:
+                    if recursive_regular_file_path ends_with_(".oh")
+                         result |= do_
+                         (    options action
+                              options mode
+                              recursive_regular_file_path
+                              execute_ only_main
+                         )
+          regular_file_path:
+               result |= do_
+               (    options action
+                    options mode
+                    regular_file_path
+                    execute_ this
+               )
+     result
 
-# TODO: `_: \/options` if we like that syntax.
-[usage, options_]: \/options
+do_(regular_file_path:, action., mode., execute.): result_
+     # TODO: remove this when formatting is supported
+     if action has_format_()
+          print_(er: "formatting currently not supported")
+          action &= ~_ format
+
+     # TODO: probably could stick `regular_file_path` into `pipeline`
+     pipeline;
+     if action has_format_()
+          format_(regular_file_path, pipeline)
+     else
+          parse_(regular_file_path, pipeline)
+
+     if action has_compile_() || action has_run_()
+          compile_(regular_file_path, pipeline)
+
+     if action has_run_()
+     pipeline result
+
+parse_(pipeline;, regular_file_path:): null_
+     read_(pipeline, regular_file_path)
+     if pipeline result cannot_continue_()
+          return
+     tokens: _(lines) when er.
+          pipeline result |= _ invalid_syntax
+          print_(er)
+          # `tokens_(lines)` updates `lines` to have the error, try
+          # writing to the file to guide what needs to be fixed.
+          write_(pipeline, regular_file_path)
+          return
+     pipeline lines = lines
+     pipeline tokens = tokens
+
+format_(pipeline;, regular_file_path:): null_
+     parse_(pipeline, regular_file_path)
+     if pipeline cannot_continue_()
+          return
+     # TODO: actually update `pipeline lines` based on `pipeline tokens`.
+
+     # now write the file with the formatted content
+     write_(pipeline, regular_file_path)
+     # not being able to write the file doesn't stop us from continuing
+     # the pipeline, but it does stop us from being able to use the
+     # formatted file lines as the source of truth; reparse.
+     if pipeline result & _ could_not_write_file
+          print_(er: "could not write file $(regular_file_path) when formatting, reparsing to have valid lines")
+          parse_(pipeline, regular_file_path)
+
+read_(pipeline;, regular_file_path:): null_
+     regular_file; regular_file_path open_(_ read_only) when er.
+          print_(er: "could not open file $(regular_file_path) for reading: $(er)")
+          pipeline result |= _ could_not_read_file
+          return
+     pipeline lines = regular_file read_() when er.
+          print_(er: "could not open file $(regular_file_path) for reading: $(er)")
+          pipeline result |= _ could_not_read_file
+          []
+
+write_(pipeline;, regular_file_path:): null_
+     regular_file; regular_file_path open_(_ truncate_write)
+     regular_file write_(pipeline lines) when er.
+          print_(er: "could not write file $(regular_file_path): $(er)")
+          pipeline result |= _ could_not_write_file
+
+result_: arch_ signed_
+{    could_not_read_file: m_ = -1
+     could_not_write_file: m_ = 1
+     invalid_syntax: m_ = 2
+}
+
+pipeline_: [lines;, tokens;, result;, has_main; bool_]
+{    ::cannot_continue_(): bool_
+          !m can_continue_()
+
+     ::can_continue_(): bool_
+          what m result
+               _ could_not_read_file
+               _ invalid_syntax
+                    false
+               else
+                    true
+}
+
+execute_: one_of_{this:, only_main:}
+lines_: array_{str_}
+
+[tokens_]: \/tokens
+# TODO: `[_, ...]: \/options` if we like that syntax to get `options_`.
+[options_, usage, action_, mode_]: \/options

@@ -61,7 +61,7 @@ regular_file_path_: file_path_
 {    # attempts to create a regular file with the specified `mode`.
      # TODO: it should be obvious that `mode` needs to be `@comptime` but we can make
      # it explicit for now.
-     ::mode_(@comptime mode.): hm_{regular_file_{mode}}
+     ::open_(@comptime mode.): hm_{regular_file_{mode_}}
 }
 
 [regular_file_, er_, hm_, mode_]: \/file

@@ -13,35 +13,37 @@ regular_file_{mode:}: [@private file_handle;]
      # if you just opened the file, this will read the entire file.
      # if you are at the end of a file, it will return an empty array.
      # this will keep newline character(s) in the result.
-     ::read_{require: mode is_readable_()}: hm_{array_{u8_}}
+     ;;read_{require: mode is_readable_()}: hm_{array_{u8_}}
 
      # reads a line from the file, stripping newline character(s).
      # if you are at the end of the file, will return a null line.
      # an empty line will be the empty string.
-     ::read_{require: mode is_readable_()}: hm_{[line?: str_]}
+     # this method mutates `m` because an in-memory implementation needs
+     # to update the file offset.
+     ;;read_{require: mode is_readable_()}: hm_{[line?: str_]}
 
      # reads all remaining lines from the file, stripping newline character(s)
      # and putting each line into a separate element in the array.  an empty
      # line will be an empty string.  if you are at the end of a file,
      # it will return an empty array.
-     ::read_{require: mode is_readable_()}: hm_{[lines: array_{str_}]}
+     ;;read_{require: mode is_readable_()}: hm_{[lines: array_{str_}]}
 
      # appends all lines to the file, and also adds newline character(s) between lines.
      # NOTE: `(string.)` is the same as `string`, so this includes overloads for
      # iterating over references to strings and iterating over string temporaries.
-     ::write_{require: mode is_writable_()}(lines: iterator_{(string:.)}): hm_{null_}
+     ;;write_{require: mode is_writable_()}(lines: iterator_{(string:.)}): hm_{null_}
           lines each line:.
                m write_(:line)
 
      # appends a line to the file, and also adds newline character(s).
-     ::write_{require: mode is_writable_()}(line: str_): hm_{null_}
+     ;;write_{require: mode is_writable_()}(line: str_): hm_{null_}
 
      # appends bytes to the file.
-     ::write_{require: mode is_writable_()}(iterator_{(u8:.)}): hm_{null_}
+     ;;write_{require: mode is_writable_()}(iterator_{(u8:.)}): hm_{null_}
 
      # appends a byte to the file.  prefer other `write_` operations which
      # can batch-write more bytes at a time.
-     ::write_}require: mode is_writable_()}(u8.): hm_{null_}
+     ;;write_{require: mode is_writable_()}(u8.): hm_{null_}
 }
 
 mode_: one_of_
