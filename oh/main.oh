@@ -19,30 +19,39 @@ main_(arguments{str_};): pipeline_ result_
                )
                result |= recurse result
                if recurse oh_file_count == 0
-                    print_(er: "did not find any .oh files in $(directory_path) or subdirectories")
+                    print_
+                    (    er: "did not find any .oh files in $(directory_path)"
+                              &    "or subdirectories"
+                    )
                     result |= no_oh_files
                elif options action has_run_()
+                    debug assert_(execute is_mains_())
                     if execute mains count_() == 0
                          print_(er: "did not find any main functions in $(directory_path)")
                          result |= _ no_main_function
                     elif execute mains count_() > 1
-                         print_(er: "found multiple main functions in $(directory_path), not running any!")
+                         print_
+                         (    er: "found multiple main functions in $(directory_path),"
+                                   &    "not running any!"
+                         )
                          result |= _ too_many_main_functions
                     else
                          result |= do_
                          (    execute mains remove_()
                               action_ run
                               options mode o_()
+                              execute_ this
                          )
           regular_file_path.
                result |= do_
-               (    options action
+               (    regular_file_path
+                    options action
                     options mode
-                    regular_file_path
                     execute_ this
                )
      result
 
+# TODO: do we want to define a `recurse_` type based on the default return value of `recurse_(...)`?
 recurse_(directory_path:, action., mode., execute;): [result:, oh_file_count:]
      result;
      oh_file_count;
@@ -70,7 +79,7 @@ recurse_(directory_path:, action., mode., execute;): [result:, oh_file_count:]
 
      [result, oh_file_count]
 
-do_(regular_file_path:, action., mode., execute;): result_
+do_(regular_file_path., action., mode., execute;): result_
      # TODO: remove this when formatting is supported
      if action has_format_()
           print_(er: "formatting currently not supported")
@@ -85,9 +94,15 @@ do_(regular_file_path:, action., mode., execute;): result_
      if action has_compile_() || action has_run_()
           compile_(pipeline)
 
-     # TODO: don't run if `execute` is `mains`, just add it to the list if it has a main function
      if action has_run_()
-          pass # TODO
+          what execute
+               _ none
+                    pass
+               _ mains;
+                    mains append_(regular_file_path)
+               _ this
+                    run_(pipeline)
+
      pipeline result
 
 parse_(pipeline;): null_
@@ -159,9 +174,12 @@ pipeline_: [regular_file_path:, lines;, tokens;, result;, has_main; bool_]
 }
 
 execute_: one_of_
-{    this:
-     # do not execute this file
+{    # do not execute this file
      none:
+     # execute the main function in this file, after
+     # executing any other code in the global/root scope.
+     # TODO: provide a list of arguments
+     this:
      # contains a list of paths that could be executed
      # since they have a main in them.
      mains: array_{regular_file_path_}

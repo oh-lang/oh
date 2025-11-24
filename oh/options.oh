@@ -28,6 +28,7 @@ usage:
           +|   oh --debug [path]   # handles path ?? everything in debug mode
           +|   # )==modes==|
           +|   # ]=options=|
+# TODO: `oh file.oh -- arg1 arg2` to pass `arg1` and `arg2` into file.oh's main function.
 
 options_:
 [    mode;
