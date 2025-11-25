@@ -123,8 +123,75 @@ modifiers_{of_:}:
 ]
 modifiers_: modifiers_{bool_}
 
-@referenceable_as(cpu_pixels_, gpu_pixels_)
-pixels_: all_of_
+# interface for pixels
+pixels_:
+{    ;;renew_(file_path:): m load_(file_path)
+
+     # saves the image.
+     ::save_(file_path:): null_
+
+     # loads an image from a file.
+     ;;load_(file_path:): hm_{null_}
+
+     # current size of the image.
+     ::size_(): size2i_
+
+     # tries to resize the image.  can fail if the new size is too large (OOM)
+     # or if the size is invalid (e.g., negative values).
+     ;;size_(size2i.): hm_{null_}
+
+     # color reference via coordinates.
+     # can fail if the coordinates are out of bounds (OOB).
+     # can be expensive if the pixels aren't up-to-date on the CPU.
+     ;;[coordinates2i.]: hm_{(color;)}
+
+     #[#
+     creates a mask or scissor area to constrain any drawing to.
+     usage:
+          ```
+          pixels within_
+          (    rectangle2i_(x: 10, y: 20, width: 20, height: 7)
+               $($within draw_(...))
+          )
+          ```
+     #]#
+     ;;within_(rectangle2i., wrap: false, fn_(within; pixels_): ~t): t_
+
+     # color setter (doesn't check the color first).
+     ;;draw_(coordinates2i., color.): hm_{null_}
+
+     # draws some text to these pixels.
+     ;;draw_(string:, caret;, font;, font_options. font_options_()): null_
+
+     # draws a rectangle of a solid color.
+     ;;draw_(rectangle2i., color.): null_
+
+     #[#
+     used to do depth testing when drawing to pixels, mostly for fragments.
+     usage:
+          ```
+          pixels with_depth_
+          (    $($with_depth draw_(...))
+          )
+          ```
+     #]#
+     ;;with_depth_(fn_(with_depth; pixels_): ~t_): t_
+
+     # draws some fragments (triangles) to these pixels, setting the GPU version
+     # of these pixels ahead of the CPU version (if present).
+     # WARNING: will also send `vertices` to the GPU if not already there.
+     # TODO: simplify with `shader shade_`, only one of these should be defined
+     ;;draw_
+     (    vertices{~vertex_data_};
+          fragments{~fragment_data_};
+          shading{vertex_data_, fragment_data_};
+     ): null_
+
+     # TODO: line-drawing API.  e.g., `;;draw_(line., color.): null_`
+     #       probably want a pixel-perfect one, plus a thickness based one.
+}
+
+cpu_gpu_pixels_: all_of_
 {    @private m:
      [    state; state_{pixels_id_} cpu_only
 
@@ -139,70 +206,14 @@ pixels_: all_of_
           # and `pixels size_() == m size_() height`.
           pixels; array_{array_{color_}}
      ]
+     pixels;
 }
-{    @hide_from(cpu_pixels_, gpu_pixels_)
-     ;;renew_(file_path:): m load_(file_path)
-
-     # saves the image.
-     ::save_(file_path:): null_
-
-     # loads an image from a file.
-     @hide_from(cpu_pixels_, gpu_pixels_)
-     ;;load_(file_path:): null_
-
-     # current size of the image.
-     ::size_(): size2i_
-
-     # tries to resize the image.  can fail if the new size is too large (OOM)
-     # or if the size is invalid (e.g., negative values).
-     @hide_from(gpu_pixels_)
-     ;;size_(size2i.): hm_{null_}
-
-     # color reference via coordinates.
-     # can fail if the coordinates are out of bounds (OOB).
-     # can be expensive if the pixels aren't up-to-date on the CPU.
-     @hide_from(gpu_pixels_)
-     ;;[coordinates2i.]: hm_{(color;)}
-
-     # color setter (doesn't check the color first).
-     ;;draw_(coordinates2i., color.): hm_{null_}
-
-     # draws some text to these pixels.
-     ;;draw_(string:, caret;, font;, font_options. font_options_()): null_
-
-     # TODO: `;;draw_(..., mask)` for scissor operations
-
-     # draws a rectangle of a solid color.
-     # if the rectangle is outside of the pixels coordinates, does nothing;
-     # only the overlap of the pixels' rectangle with `rectangle2` will matter.
-     ;;draw_(rectangle2., color.): null_
-
-     # draws a rectangle of a solid color.
-     # if any of the rectangle's area is outside the `wrap` rectangle,
-     # the rectangle will be split into pieces and wrapped before drawing.
-     ;;draw_(rectangle2., color., wrap. rectangle2_): null_
-
-     # draws some fragments (triangles) to these pixels, setting the GPU version
-     # of these pixels ahead of the CPU version (if present).
-     # WARNING: will also send `VERTEX_array` to the GPU if not already there.
-     @hide_from(cpu_pixels_)
-     ;;draw_
-     (    vertices{~vertex_data_};
-          FRAGMENT_array{~fragment_data_};
-          shading{vertex_data_, fragment_data_};
-     ): null_
-
-     # TODO: line-drawing API.  e.g., `;;draw_(line., color.): null_`
-     #       probably want a pixel-perfect one, plus a thickness based one.
-
-     # moves the data to the GPU, if it's not already there and up-to-date.
+{    # moves the data to the GPU, if it's not already there and up-to-date.
      # this can be expensive as we copy the entire image from CPU to GPU, if it has changed.
-     @hide_from(cpu_pixels_, gpu_pixels_)
      ;;send_to_gpu_(): null
 
      # moves the data from the GPU to the CPU, if the CPU is behind the GPU.
      # this can be expensive as we copy the entire image from GPU to CPU, if it has changed.
-     @hide_from(cpu_pixels_, gpu_pixels_)
      ;;send_to_cpu_(): null
 }
 
@@ -213,6 +224,7 @@ pixels_: all_of_
 # `draw_(from pixels; source_pixels_, from rectangle. rectangle_(...), ...)`
 draw_(from: (pixels;, rectangle.), to: (pixels;, rectangle.)): null_
 
+# TODO: can we just use `pixels within_(rectangle)` for this??
 # copies from one set of pixels to another, with wrapping.
 # e.g., if `from rectangle` is outside `from wrap_within`,
 # then the remainder will get wrapped around,
@@ -234,7 +246,7 @@ draw_
 
 vertices_{of_:}: all_of_
 {    @private m:
-     [    state; state_{vertices_id_} cpu_only
+     [    state; _{vertices_id_} cpu_only
           array{vertex_};
      ]
 }
@@ -291,6 +303,9 @@ state_{of_:}: one_of_
                _synced: {false}
 }
 
+# note `of_` is something like PhantomData for this set of triangles.
+fragments_{of_:}: array_{fragment_}
+
 fragment_:
 [    vertex_indices; vector_{3, u32_}
 ]
@@ -300,7 +315,7 @@ fragment_:
 shader_
 {    global_data: gpu_data_ = []
      vertex_data: gpu_data_ = []
-     fragment_data: gpu_data _= []
+     fragment_data: gpu_data_ = []
 }:
 [    # vertex shader, which returns the position of the vertex
      # plus any fragment data (for the fragment shader).
