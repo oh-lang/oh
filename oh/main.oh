@@ -25,23 +25,11 @@ main_(arguments{str_};): pipeline_ result_
                     )
                     result |= no_oh_files
                elif options action has_run_()
-                    debug assert_(execute is_mains_())
-                    if execute mains count_() == 0
-                         print_(er: "did not find any main functions in $(directory_path)")
-                         result |= _ no_main_function
-                    elif execute mains count_() > 1
-                         print_
-                         (    er: "found multiple main functions in $(directory_path),"
-                                   &    "not running any!"
-                         )
-                         result |= _ too_many_main_functions
-                    else
-                         result |= do_
-                         (    execute mains remove_()
-                              action_ run
-                              options mode o_()
-                              execute_ this
-                         )
+                    result |= run_
+                    (    execute mains!
+                         directory_path
+                         options mode o_()
+                    )
           regular_file_path.
                result |= do_
                (    regular_file_path
@@ -86,35 +74,61 @@ do_(regular_file_path., action., mode., execute;): result_
           action &= <>_ format
 
      pipeline; _(regular_file_path)
+
+     # format/parse
      if action has_format_()
           format_(pipeline)
      else
           parse_(pipeline)
 
-     if action has_compile_() || action has_run_()
-          compile_(pipeline)
+     # compile (as needed, also when running)
+     if action & (_ compile | _ run)
+          compile_(pipeline, mode o_())
 
+     # run
      if action has_run_()
           what execute
                _ none
                     pass
                _ mains;
-                    mains append_(regular_file_path)
+                    if pipeline has_main
+                         mains append_(regular_file_path)
                _ this
-                    run_(pipeline)
+                    run_(pipeline regular_file_path, mode o_())
 
      pipeline result
 
+run_(directory_path:, mains. array{regular_file_path_}, mode.): result_
+     if mains count_() == 1
+          run_
+          (    mains remove_()
+               mode
+          )
+     elif mains count_() == 0
+          print_(er: "did not find any main functions in $(directory_path)")
+          _ no_main_function
+     else
+          print_
+          (    er: "found multiple main functions in $(directory_path),"
+                    &    "not running any!"
+          )
+          _ too_many_main_functions
+
+# TODO: pass in arguments
+run_(regular_file_path:, mode.): result_
+     executable_file: _(regular_file_path, mode)
+     # TODO
+
 parse_(pipeline;): null_
      read_(pipeline)
-     if pipeline result cannot_continue_()
+     if pipeline cannot_continue_()
           return
      tokens: _(lines) when er.
           pipeline result |= _ invalid_syntax
           print_(er)
-          # `tokens_(lines)` updates `lines` to have the error, try
+          # `tokens_(lines)` updates `lines` to have error lines, try
           # writing to the file to guide what needs to be fixed.
-          write_(pipeline)
+          pipeline result |= write_(pipeline)
           return
      pipeline lines = lines
      pipeline tokens = tokens
@@ -127,6 +141,7 @@ format_(pipeline;): null_
 
      # now write the file with the formatted content
      write_(pipeline)
+
      # not being able to write the file doesn't stop us from continuing
      # the pipeline, but it does stop us from being able to use the
      # formatted file lines as the source of truth; reparse.
@@ -160,7 +175,13 @@ result_: arch_ signed_
      no_oh_files: m_ = 128
 }
 
-pipeline_: [regular_file_path:, lines;, tokens;, result;, has_main; bool_]
+pipeline_:
+[    regular_file_path:
+     lines;
+     tokens;
+     result;
+     has_main; bool_
+]
 {    ::cannot_continue_(): bool_
           !m can_continue_()
 
