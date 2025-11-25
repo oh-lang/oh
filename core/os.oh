@@ -1,8 +1,15 @@
 # singleton so that we don't have to export each method separately.
-# handles operating system tasks.
+# handles operating system specialization.
 os:
 {    # returns the current working directory
      ::cwd_(): directory_path_
+
+     ::executable_extension_(): str_
+          if m is_windows_()
+               "exe"
+          else
+               ""
+     ::is_windows_(): bool_
 
      @alias ::pwd_(): cwd_()
 }

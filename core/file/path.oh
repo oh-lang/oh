@@ -61,7 +61,55 @@ regular_file_path_: file_path_
 {    # attempts to create a regular file with the specified `mode`.
      # TODO: it should be obvious that `mode` needs to be `@comptime` but we can make
      # it explicit for now.
+     # TODO: on Windows, if the file begins with `.` make it hidden if we're creating it
      ::open_(@comptime mode.): hm_{regular_file_{mode_}}
+
+     # switches to the passed-in `str` for the extension, updates `str`
+     # to the previous extension, and returns the file path with the new extension.
+     # can fail if we run out of memory.
+     # if `str` is empty, we'll also remove the `.` from the file name.
+     ..extension_(str;): hm_{regular_file_path_}
+
+     # switches to the passed-in `str` for the extension, and updates `str`
+     # to the previous extension.  can fail if we run out of memory in `m`,
+     # i.e., only if `str` is larger than the current extension.
+     # if `str` is empty, we'll also remove the `.` from the file name.
+     ;;extension_(str;): hm_{null_}
+
+     # returns the string that corresponds to this file's extension.
+     # e.g., `/this/is/my/file.ok` will return "ok".
+     # can fail only if we run out of memory to represent the returned `str_`.
+     ::extension_(): hm_{str_}
+
+     # returns the string that corresponds to this file's base name.
+     # e.g., `/this/is/my/file.ok` will return "file".
+     # can fail only if we run out of memory to represent the returned `str_`.
+     ::base_name_(): hm_{str_}
+
+     # replaces the base name with the passed in `str`, swaps out
+     # the previous base name into `str`, and returns the new full path.
+     # can fail only if we run out of memory.
+     ..base_name_(str;): hm_{regular_file_path_}
+
+     # replaces the base name with the passed in `str`, and swaps out
+     # the previous base name into `str`.
+     # can fail only if we run out of memory to represent the returned `str_`.
+     ;;base_name_(str;): hm_{null_}
+
+     # returns the string that corresponds to this file's base name + extension.
+     # e.g., `/this/is/my/file.ok` will return "file.ok".
+     # can fail only if we run out of memory to represent the returned `str_`.
+     ::file_name_(): hm_{str_}
+
+     # replaces the file name with the passed in `str`, swaps out
+     # the previous file name into `str`, and returns the new full path.
+     # can fail only if we run out of memory to represent the returned path.
+     ..file_name_(str;): hm_{regular_file_path_}
+
+     # replaces the file name with the passed in `str`, and swaps out
+     # the previous file name into `str`.
+     # can fail only if we run out of memory to represent the path.
+     ;;file_name_(str;): hm_{null_}
 }
 
 [regular_file_, er_, hm_, mode_]: \/file

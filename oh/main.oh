@@ -116,22 +116,20 @@ run_(directory_path:, mains. array{regular_file_path_}, mode.): result_
 
 # TODO: pass in arguments
 run_(regular_file_path:, mode.): result_
-     executable_file: _(regular_file_path, mode)
+     executable_file_path: mode file_path_(regular_file_path)
      # TODO
 
 parse_(pipeline;): null_
      read_(pipeline)
      if pipeline cannot_continue_()
           return
-     tokens: _(lines) when er.
+     pipeline tokens = _(pipeline lines) when er.
           pipeline result |= _ invalid_syntax
           print_(er)
-          # `tokens_(lines)` updates `lines` to have error lines, try
-          # writing to the file to guide what needs to be fixed.
+          # `tokens_(lines)` updates `lines` to have error lines,
+          # try writing to the file to guide what needs to be fixed.
           pipeline result |= write_(pipeline)
-          return
-     pipeline lines = lines
-     pipeline tokens = tokens
+          []
 
 format_(pipeline;): null_
      parse_(pipeline)
@@ -205,6 +203,7 @@ execute_: one_of_
      # since they have a main in them.
      mains: array_{regular_file_path_}
 }
+
 lines_: array_{str_}
 
 oh_file_count_: arch_ count_(0)

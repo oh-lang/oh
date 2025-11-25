@@ -99,5 +99,52 @@ options_:
      path_: valid_file_path_
 }
 
+# TODO: i think `@distinct` should probably be the default;
+# if we create a typedef, then we should probably require explicit conversions.
+executable_file_path_: @distinct regular_file_path_
+header_file_path_: @distinct regular_file_path_
+source_file_path_: @distinct regular_file_path_
+object_file_path_: @distinct regular_file_path_
+
 mode_: one_of_{release:, debug:}
+{    ::file_path_(regular_file_path.): executable_file_path_
+     (    regular_file_path file_name_
+          (    regular_file_path base_name_() + m extension_(os executable_extension_())
+          )
+     )
+
+     ::file_path_(regular_file_path.): header_file_path_
+     (    m generated_(regular_file_path, "h")
+     )
+
+     ::file_path_(regular_file_path.): source_file_path_
+     (    m generated_(regular_file_path, "c")
+     )
+
+     ::file_path_(regular_file_path.): object_file_path_
+     (    m generated_(regular_file_path, "o")
+     )
+
+     @private
+     ::generated_(regular_file_path., str.): regular_file_path_
+          regular_file_path file_name_
+          (    "." + regular_file_path base_name_() + m extension_(str)
+          )
+
+     @private
+     # this includes a prefix "." if necessary, so making this private
+     ::extension_(str.): str_
+          what m
+               _ release
+                    if str
+                         ".$(str)"
+                    else
+                         ""
+               _ debug
+                    if str
+                         ".debug.$(str)"
+                    else
+                         ".debug"
+}
+
 action_: any_of_{format:, compile:, run:, test:}
