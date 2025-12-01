@@ -283,8 +283,11 @@ TODO:
           * {} doesn't quite feel right since it should create a hidden block
           * ${} feels like it should be a function but it's a lambda type
           * `child_class_: parent_class_ {...}` makes `...` look like a specification on parent
-          * cannot easily express an array of types, e.g., `array_{new_{}: ~y_}`
-               * maybe `types_: array_{any_}`, but that will look like a typedef
+               * we'll need a new syntax here
+          * `a {...}` and `a_ {...}` act differently despite looking very similar.
+          * there's not a natural way to indicate the return type of a function
+               with specific arguments, e.g., `fn_(x: int_): str_` via `fn_{x_: int_}` maybe,
+               but it looks weirder when `fn_` is generic itself.
 * option 2: old approach, use [] for generic specifications
      * `do_something_(): any_` to return an instance
      * `do_something_[]: any_` to return a type
@@ -307,10 +310,6 @@ TODO:
                * or would want to switch to using `{}` for containers.  but i like
                     extending [] to containers since it's natural for arrays.
                     `array: {1, 2, 3, 4}` doesn't feel quite right.
-          * cannot easily express an array of types, e.g., `array_[new_[]: ~y_]`
-               * maybe `types_: array_[any_]`, but that will look like a typedef
-               * maybe we could make `new_[any_]` be a constructor, or a thin wrapper
-                    like `new_[of_:]: [] { new_(...): of_(...)] }`
           * hard to type `new_[of_:]:` because of shift/unshift with `[]` `_` and `:`.
 * option 3: use () for function arguments and generic specifications;
      use trailing underscores on the function name to indicate returning a type or not.
@@ -318,15 +317,12 @@ TODO:
      * `do_something(x: int_): any_` to return an instance, e.g., `y: do_something(x: 5)`.
      * `c_: all_of_(a:, b:)` to indicate a type 
      * `all_of(a:, b:)` to instantiate an instance `c` with all the fields in `a` plus all the fields in `b`
-     * `all_of_(my_a: a_, my_b: b_)` to rename name the types
+     * `all_of_(my_a: a_, my_b: b_)` to rename the types
      * pros:
           * can easily pass types as reference if desired
           * can use `do_something(): any` to enscope `any` and modify it in the block
           * can use `do_something_(x_: int_)` to give the (default) return type of the function
                `do_something(x: int_)`.
-          * cannot easily express an array of types, e.g., `array_(new_(): ~y_)`
-               * maybe `types_: array_(any_)`, but that will look like a typedef
-               * maybe `types_: array(any_)` which instantiates an array with types `any_`.
           * could unify lambda functions and lambda types, {} could be neutral,
                () could create a reference return value and [] a non-reference object value.
                `${$x_}`, `$[$y_]`, `$($z_)` -- type-like.
@@ -338,9 +334,12 @@ TODO:
                * `my_fn(value_: number_, value_0:, value_1:): value_0 + value_1`
                     * `my_fn_(value_: int_, 123, 456)` at the call site
      * cons:
-          * generics are specified along with the arguments
-               * means the parentheses get a bit overloaded; the alternative
-                    `my_fn_[value_: int_](123, 456)` is a lot easier to read
+          * () becomes pretty overloaded; order of operations, function calling, generics
+               * the alternative `my_fn_[value_: int_](123, 456)` is a lot easier to read
+          * not obvious how to make arguments obviously comptime unless we introduce
+               a new operator like `my_fn(value_\` number_, value_0:, value_1:):`
+               * maybe comptime arguments should be "gradually" typed anyways;
+                    scripting languages won't care
           * is `array(x_)` an array initialized with one element, `x_`,
                or is it an array of elements of type `x_`?
                * can disambiguate based on return overloading, should default to latter.
