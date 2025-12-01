@@ -295,12 +295,18 @@ TODO:
                but not lots (`[]` is so overloaded)
           * type generics should not normally be specified with readonly/writable
                stuff, only temporaries (like `[]` passes)
+          * `my_type_[index_]` should give the return type of the `my_type[index:]` function,
+               but that does feel a bit weirdly overloaded.  it also doesn't extend and work for
+               `my_function_(whatever_)` giving the return type of `my_function_(whatever:)`
      * cons:
           * `do_something_[]` returning a type feels different than `m[]` which doesn't return a type
           * `[]` is overloaded for a lot of things (arrays, lots, objects, type specifications,
                subscript operator `m[2]`)
                * would potentially want to get rid of subscript operator and just use
                     `array at_(2)`
+               * or would want to switch to using `{}` for containers.  but i like
+                    extending [] to containers since it's natural for arrays.
+                    `array: {1, 2, 3, 4}` doesn't feel quite right.
           * cannot easily express an array of types, e.g., `array_[new_[]: ~y_]`
                * maybe `types_: array_[any_]`, but that will look like a typedef
                * maybe we could make `new_[any_]` be a constructor, or a thin wrapper
@@ -310,6 +316,9 @@ TODO:
      use trailing underscores on the function name to indicate returning a type or not.
      * `do_something_(): any_` to return a type, e.g., `x_: do_something_()` defines a type
      * `do_something(x: int_): any_` to return an instance, e.g., `y: do_something(x: 5)`.
+     * `c_: all_of_(a:, b:)` to indicate a type 
+     * `all_of(a:, b:)` to instantiate an instance `c` with all the fields in `a` plus all the fields in `b`
+     * `all_of_(my_a: a_, my_b: b_)` to rename name the types
      * pros:
           * can easily pass types as reference if desired
           * can use `do_something(): any` to enscope `any` and modify it in the block
@@ -317,13 +326,25 @@ TODO:
                `do_something(x: int_)`.
           * cannot easily express an array of types, e.g., `array_(new_(): ~y_)`
                * maybe `types_: array_(any_)`, but that will look like a typedef
+               * maybe `types_: array(any_)` which instantiates an array with types `any_`.
           * could unify lambda functions and lambda types, {} could be neutral,
                () could create a reference return value and [] a non-reference object value.
                `${$x_}`, `$[$y_]`, `$($z_)` -- type-like.
                `${$x}`, `$[$y]`, `$($z)` -- function-like.
                e.g., `[1, 2, 3] map_${ $int * 2 }` for `[2, 4, 6]`
                and `array_(int_) nest_${ um_($of_) }` for `array_(um_(int_))`,
+          * generics are specified along with the arguments
+               * means the grammar is easier to understand
+               * `my_fn(value_: number_, value_0:, value_1:): value_0 + value_1`
+                    * `my_fn_(value_: int_, 123, 456)` at the call site
      * cons:
+          * generics are specified along with the arguments
+               * means the parentheses get a bit overloaded; the alternative
+                    `my_fn_[value_: int_](123, 456)` is a lot easier to read
+          * is `array(x_)` an array initialized with one element, `x_`,
+               or is it an array of elements of type `x_`?
+               * can disambiguate based on return overloading, should default to latter.
+               * the former would require a `array_(new_(internal_), internal_: ~ancestor_(x_))` type.
           * type generics should not normally be specified with readonly/writable
                stuff, only temporaries (like `[]` passes)
           * this looks like shadowing between method names and instance variables, e.g.,
