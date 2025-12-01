@@ -267,8 +267,73 @@ In fact, we don't use keywords at all; to just add methods (or class functions/v
 we use this syntax, `wrapper_class_: parent_class_ { ::extra_methods_(): int_, ... }`,
 and to add instance variables to the child class we use this notation:
 `child_class_: all_of_{parent_class:, m: [child_x: int_, child_y: str_]} { ... methods }`.
+TODO: to make the grammar unambiguous, i think we need to revert the `[] -> {}` for generics
+bit. `parent_class_ {...}` will look like a generic specification of `parent_class_` otherwise.
+you could require `child_class_: all_of_{parent_class:} {...}` but that seems silly.
+say you have a list of types, do you do `types: array_{new_{}: ~y_}` and then `types[0] new_()`
+to create a new instance of the first type?  or `types_: array_{any_}` and then `types_[0]()`?
 
-oh-lang handles generics/templates in a way more similar to zig or python rather than C++ or Rust.
+TODO:
+* option 1: current approach, using {} for generic specifications
+     * `do_something_(): any_` to return an instance
+     * `do_something_{}: any_` to return a type
+     * pros:
+          * doesn't overload [] with quite so many things
+     * cons:
+          * {} doesn't quite feel right since it should create a hidden block
+          * ${} feels like it should be a function but it's a lambda type
+          * `child_class_: parent_class_ {...}` makes `...` look like a specification on parent
+          * cannot easily express an array of types, e.g., `array_{new_{}: ~y_}`
+               * maybe `types_: array_{any_}`, but that will look like a typedef
+* option 2: old approach, use [] for generic specifications
+     * `do_something_(): any_` to return an instance
+     * `do_something_[]: any_` to return a type
+     * pros:
+          * i like `$[$x]` for a lambda type and `$($x)` for a lambda function
+               e.g., `[1, 2, 3] map_$( $int * 2 )` for `[2, 4, 6]`
+               and `array_[int_] nest_$[ um_[$of_] ]` for `array_[um_[int_]]`,
+               but not lots (`[]` is so overloaded)
+          * type generics should not normally be specified with readonly/writable
+               stuff, only temporaries (like `[]` passes)
+     * cons:
+          * `do_something_[]` returning a type feels different than `m[]` which doesn't return a type
+          * `[]` is overloaded for a lot of things (arrays, lots, objects, type specifications,
+               subscript operator `m[2]`)
+               * would potentially want to get rid of subscript operator and just use
+                    `array at_(2)`
+          * cannot easily express an array of types, e.g., `array_[new_[]: ~y_]`
+               * maybe `types_: array_[any_]`, but that will look like a typedef
+               * maybe we could make `new_[any_]` be a constructor, or a thin wrapper
+                    like `new_[of_:]: [] { new_(...): of_(...)] }`
+          * hard to type `new_[of_:]:` because of shift/unshift with `[]` `_` and `:`.
+* option 3: use () for function arguments and generic specifications;
+     use trailing underscores on the function name to indicate returning a type or not.
+     * `do_something_(): any_` to return a type, e.g., `x_: do_something_()` defines a type
+     * `do_something(x: int_): any_` to return an instance, e.g., `y: do_something(x: 5)`.
+     * pros:
+          * can easily pass types as reference if desired
+          * can use `do_something(): any` to enscope `any` and modify it in the block
+          * can use `do_something_(x_: int_)` to give the (default) return type of the function
+               `do_something(x: int_)`.
+          * cannot easily express an array of types, e.g., `array_(new_(): ~y_)`
+               * maybe `types_: array_(any_)`, but that will look like a typedef
+          * could unify lambda functions and lambda types, {} could be neutral,
+               () could create a reference return value and [] a non-reference object value.
+               `${$x_}`, `$[$y_]`, `$($z_)` -- type-like.
+               `${$x}`, `$[$y]`, `$($z)` -- function-like.
+               e.g., `[1, 2, 3] map_${ $int * 2 }` for `[2, 4, 6]`
+               and `array_(int_) nest_${ um_($of_) }` for `array_(um_(int_))`,
+     * cons:
+          * type generics should not normally be specified with readonly/writable
+               stuff, only temporaries (like `[]` passes)
+          * this looks like shadowing between method names and instance variables, e.g.,
+               if you have `m x` and `m x(): int_`.  but i suppose this is a bit like overloading,
+               which oh-lang does allow/support/encourage.
+          * i like how `_()` guides the eye for arguments, and gives you a natural name
+               for returned arguments, e.g., `sin: sin_(123)` without being too close.
+          * `_` also gives you `sin: _(123)` for free, although `sin(123):` might work as well.
+
+oh-lang handles generics/templates similar to zig or python rather than C++ or Rust.
 When compiled without any usage, templates are only tested for syntax/grammar correctness.
 When templates are *used* in another piece of code, that's when the specification kicks in
 and all expressions within the generic are compiled to see if they are allowed with the
@@ -5515,23 +5580,26 @@ as long as there's no default concrete specification all other types, e.g.,
 
 TODO: not sure this works with {} for generics.  may need to modify.
 
-One can conceive of a tuple type like `{x_, y_, z_}` for nested types `x_`, `y_`, `z_`.
-They are grammatically equivalent to a `lot` of types (where usually order doesn't matter),
-and their use is make it easy to specify types for a generic class.  This must be done
-using the spread operator `...` in the following manner.
+One can conceive of a tuple type that encompasses multiple specifications that you want to
+pass into a generic.  They are defined using `{}` and used in a specification with `...`
+in the following manner.
 
 ```
-tuple_type_: {x_, y_, z_}
+tuple_type_: {x_: dbl_, y_: str_, count: 10}
+# you can refer to each type or field like this:
+x: tuple_type_ x_
+y: tuple_type_ _    # short for `tuple_type_ y_` since the variable is `y`.
+print_(tuple_type_ count)     # should print 10.
 
-# with some other definition `my_generic_{w_:, x_:, y_:, z_:}: [...]`:
-some_specification_: my_generic_{...tuple_type_, w_: int_}
+# with some other definition `my_generic_{x_:, y_:, z_:, count:}: [...]`:
+some_specification_: my_generic_{...tuple_type_, z_: int_}
 
 # you can even override one of your supplied `tuple_type_` values with your own.
 # make sure the override comes last.
-another_spec_{OVERRIDE_of_:}: my_generic_{...tuple_type_, w_: str_, x_: OVERRIDE_of_}
+another_spec_{OVERRIDE_of_:}: my_generic_{...tuple_type_, z_: str_, x_: OVERRIDE_of_}
 
 # Note that even if `tuple_type_` completely specifies a generic class
-# `some_generic_{x_:, y_:, z_:}: [...]`, we still need to use the spread operator
+# `some_generic_{x_:, y_:, count:}: [...]`, we still need to use the spread operator
 # because `some_generic_ tuple_type_` would be syntax for something else,
 # i.e., the nested class `tuple_type_` within `some_generic_`, which will
 # be a compiler error if not present.  Instead:
@@ -5541,12 +5609,8 @@ a_specification_: some_generic_{...tuple_type_}
 Here is an example of returning a tuple type.
 
 ```
-# TODO: this is probably a bad example because we shouldn't have randomness here
-tuple_{dbl:}: {precision_, vector2_: any_}
-     if abs_(dbl) < 128.0
-          {precision_: flt_, vector2_: [x: flt_, y: flt_]}
-     else
-          {precision_: dbl_, vector2_: [x: dbl_, y: dbl_]}
+tuple_{of_: select_{dbl_, flt_}}: {precision_: of_, vector2_: any_}
+     {precision_: of_, vector2_: [x: of_, y: of_]}
 
 my_tuples_: tuple_{random_() dbl * 256.0}
 my_number; my_tuples_ precision_(5.0)
