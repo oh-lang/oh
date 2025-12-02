@@ -323,6 +323,15 @@ TODO:
           * can use `do_something(): any` to enscope `any` and modify it in the block
           * can use `do_something_(x_: int_)` to give the (default) return type of the function
                `do_something(x: int_)`.
+          * could try to do stuff like this:
+               * `array(x)` - if `x_` in scope (a type), instantiate an array with elements instancing `x_`
+                    * if `x` is in scope, it looks ambiguous; compile error, recommend `[x]` instead ???
+                         but how would we get the instance types (the normal thing to do)?
+               * `array(x_)` - if `x_` in scope (a type), instantiate an array with elements of type `new_(x_)`
+               * `array_(x)` - if `x` in scope, declare an array type with elements instancing `x_`
+               * `array_(x_)` - if `x_` in scope (a type), declare an array type with elements of type `new_(x_)`.
+               * maybe avoid `array_(x)` logic because it's ambiguous, use `array_(x_)` for instancaes
+                    and `array_(new_(x_))` for constructors
           * could unify lambda functions and lambda types, {} could be neutral,
                () could create a reference return value and [] a non-reference object value.
                `${$x_}`, `$[$y_]`, `$($z_)` -- type-like.
@@ -332,7 +341,7 @@ TODO:
           * generics are specified along with the arguments
                * means the grammar is easier to understand
                * `my_fn(value_: number_, value_0:, value_1:): value_0 + value_1`
-                    * `my_fn_(value_: int_, 123, 456)` at the call site
+                    * `my_fn(value_: int_, 123, 456)` at the call site
      * cons:
           * () becomes pretty overloaded; order of operations, function calling, generics
                * the alternative `my_fn_[value_: int_](123, 456)` is a lot easier to read
@@ -340,10 +349,6 @@ TODO:
                a new operator like `my_fn(value_\` number_, value_0:, value_1:):`
                * maybe comptime arguments should be "gradually" typed anyways;
                     scripting languages won't care
-          * is `array(x_)` an array initialized with one element, `x_`,
-               or is it an array of elements of type `x_`?
-               * can disambiguate based on return overloading, should default to latter.
-               * the former would require a `array_(new_(internal_), internal_: ~ancestor_(x_))` type.
           * type generics should not normally be specified with readonly/writable
                stuff, only temporaries (like `[]` passes)
           * this looks like shadowing between method names and instance variables, e.g.,
