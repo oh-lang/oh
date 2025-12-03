@@ -283,14 +283,24 @@ TODO:
           * {} doesn't quite feel right since it should create a hidden block
           * ${} feels like it should be a function but it's a lambda type
           * `child_class_: parent_class_ {...}` makes `...` look like a specification on parent
-               * we'll need a new syntax here
+               * we'll need a new syntax here, maybe `extend_{parent_class_}`
           * `a {...}` and `a_ {...}` act differently despite looking very similar.
           * there's not a natural way to indicate the return type of a function
                with specific arguments, e.g., `fn_(x: int_): str_` via `fn_{x_: int_}` maybe,
                but it looks weirder when `fn_` is generic itself.
+          * `hm_{null_}` feels fine but the newlined version doesn't seem right, especially
+               in context as a function return
+```
+empty_hm_: hm_
+     null_
+function_(a: int_): hm_
+     null_
+```
 * option 2: old approach, use [] for generic specifications
      * `do_something_(): any_` to return an instance
      * `do_something_[]: any_` to return a type
+          * if `do_something_(x: int_): str_` is defined, then
+               `do_something_[x_: int_]` is the `str_` type
      * pros:
           * i like `$[$x]` for a lambda type and `$($x)` for a lambda function
                e.g., `[1, 2, 3] map_$( $int * 2 )` for `[2, 4, 6]`
@@ -345,6 +355,8 @@ TODO:
      * cons:
           * () becomes pretty overloaded; order of operations, function calling, generics
                * the alternative `my_fn_[value_: int_](123, 456)` is a lot easier to read
+          * `m()` looks like i should have the instance ready, but it really is
+               a static function
           * not obvious how to make arguments obviously comptime unless we introduce
                a new operator like `my_fn(value_\` number_, value_0:, value_1:):`
                * maybe comptime arguments should be "gradually" typed anyways;
@@ -357,6 +369,28 @@ TODO:
           * i like how `_()` guides the eye for arguments, and gives you a natural name
                for returned arguments, e.g., `sin: sin_(123)` without being too close.
           * `_` also gives you `sin: _(123)` for free, although `sin(123):` might work as well.
+          * `array: array(1, 2)` then `array[...]` should use the variable or the type
+               instantiator??
+               * this is a big con because oh-lang wants to make variable names
+                    easy based on the function
+               * but maybe we can mitigate because `[]` is only ever used for variables.
+* option 5: 2 + 3
+     * use trailing `_` to indicate a type (or a type function) but require generics
+          to use `[]` to specify their values
+          * `array[int_](1, 2, 3)` to instantiate an array
+          * `array[int_]` also instantiates an array (empty)
+          * `array_[int_]` to define an array type with elements of type `int_`.
+     * pros
+          * avoids issue with option 3 where `array(x)` could be easily typo'd for
+               `array(x_)` which do two very different things
+     * cons
+          * `array: array[x_](1, 2)` then `array[...]` should use the variable or the type
+               instantiator??
+               * this is a big con because we want to have natural names for variables
+                    based on function names
+               * we can mitigate because `array[...]` would need to have `()` following
+                    it to be the global instantiation for arrays.
+          * in a script, comptime in [] and non-comptime in () doesn't make sense
 
 oh-lang handles generics/templates similar to zig or python rather than C++ or Rust.
 When compiled without any usage, templates are only tested for syntax/grammar correctness.

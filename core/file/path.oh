@@ -1,51 +1,51 @@
 file_path_:
-{    @private m_:
+[    @private m:
      [    # this is the file path in WTF8.
           str;
           # as needed, the internal representation for other OSes.
-          array{u8_, require: arch_ windows_};
+          array(u8_, require: arch_ windows_);
      ]
 ]
 {    # some operating systems have different ways of representing file paths,
      # so convert from WTF8 to the OS representation here.
      # NOTE: this is purely a mechanical operation that does not rely on the file system.
-     # if you need to make sure the path is valid, use `..resolve_()`.
+     # if you need to make sure the path is valid, use `..resolve()`.
      # NOTE: if you want to create a directory path, use a trailing separator, e.g., `a/b/`.
      # NOTE: if you're not sure if `a/b` is a directory or a regular file, pass it in
-     # and call `..resolve_()`.
-     m_(str.): m_
+     # and call `..resolve()`.
+     m(str.): m_
 
      # verifies that the path is valid on the current OS, returning a regular file
      # or directory path.  this does not care if the path exists (e.g., see
-     # `::exists_()`), but it does care if the path would try to change
+     # `::exists()`), but it does care if the path would try to change
      # an existing regular file into a directory (or vice versa).  e.g., suppose
      # this path is `/a/b/c.txt` but `/a/b` is an existing regular file and
      # not a directory; in this case, then this method will return an error.
      # alternatively, if `/a/` exists but not `/a/b/`, we will return no error because
-     # we can still make the path `/a/b/c.txt` in a valid way (e.g., via `::make_()`).
+     # we can still make the path `/a/b/c.txt` in a valid way (e.g., via `::make()`).
      # NOTE: if the path doesn't exist after a point, `/a/b/c` will be considered
      # a regular file and `/a/b/c/` will be considered a directory.
-     ..resolve_(): hm_{valid_file_path_}
+     ..resolve(): hm_(valid_file_path_)
 
      # optimization for when you don't need to keep this instance around.
-     ..parent_(): directory_path_
+     ..parent(): directory_path_
 
      # if a regular file, returns the directory it's contained in (e.g., `x/file.txt` -> `x/`).
      # if a directory, returns the parent directory (e.g., `x/y/` -> `x/`)
      # if already root (i.e., `/`) or empty (i.e., ``), then returns self.
      # NOTE: this is purely a mechanical operation that does not rely on the file system.
-     # if you need to make sure the path is valid, use `..resolve_()` before calling this.
-     ::parent_(): directory_path_
+     # if you need to make sure the path is valid, use `..resolve()` before calling this.
+     ::parent(): directory_path_
 
-     ::str_(): (str:)
+     ::str(): (str:)
           m str
 
-     ..str_(): str_
+     ..str(): str_
           m str!
 }
 
-valid_file_path_: one_of_{regular_file_path:, directory_path:}
-{    ::exists_(): bool_
+valid_file_path_: one_of_(regular_file_path:, directory_path:)
+{    ::exists(): bool_
 }
 
 directory_path_: file_path_
@@ -54,7 +54,7 @@ directory_path_: file_path_
      # will make `/a/b/` and then `/a/b/c/` without touching/deleting any existing files.
      # it is an error if some subpath along the way is already a regular file; errors can
      # also come from the file system being full, etc.
-     ::make_(): hm_{null_}
+     ::make(): hm_(null_)
 }
 
 regular_file_path_: file_path_
@@ -62,54 +62,54 @@ regular_file_path_: file_path_
      # TODO: it should be obvious that `mode` needs to be `@comptime` but we can make
      # it explicit for now.
      # TODO: on Windows, if the file begins with `.` make it hidden if we're creating it
-     ::open_(@comptime mode.): hm_{regular_file_{mode_}}
+     ::open(@comptime mode.): hm_(regular_file_(mode_))
 
      # switches to the passed-in `str` for the extension, updates `str`
      # to the previous extension, and returns the file path with the new extension.
      # can fail if we run out of memory.
      # if `str` is empty, we'll also remove the `.` from the file name.
-     ..extension_(str;): hm_{regular_file_path_}
+     ..extension(str;): hm_(regular_file_path_)
 
      # switches to the passed-in `str` for the extension, and updates `str`
      # to the previous extension.  can fail if we run out of memory in `m`,
      # i.e., only if `str` is larger than the current extension.
      # if `str` is empty, we'll also remove the `.` from the file name.
-     ;;extension_(str;): hm_{null_}
+     ;;extension(str;): hm_(null_)
 
      # returns the string that corresponds to this file's extension.
      # e.g., `/this/is/my/file.ok` will return "ok".
      # can fail only if we run out of memory to represent the returned `str_`.
-     ::extension_(): hm_{str_}
+     ::extension(): hm_(str_)
 
      # returns the string that corresponds to this file's base name.
      # e.g., `/this/is/my/file.ok` will return "file".
      # can fail only if we run out of memory to represent the returned `str_`.
-     ::base_name_(): hm_{str_}
+     ::base_name(): hm_(str_)
 
      # replaces the base name with the passed in `str`, swaps out
      # the previous base name into `str`, and returns the new full path.
      # can fail only if we run out of memory.
-     ..base_name_(str;): hm_{regular_file_path_}
+     ..base_name(str;): hm_(regular_file_path_)
 
      # replaces the base name with the passed in `str`, and swaps out
      # the previous base name into `str`.
      # can fail only if we run out of memory to represent the returned `str_`.
-     ;;base_name_(str;): hm_{null_}
+     ;;base_name(str;): hm_(null_)
 
      # returns the string that corresponds to this file's base name + extension.
      # e.g., `/this/is/my/file.ok` will return "file.ok".
      # can fail only if we run out of memory to represent the returned `str_`.
-     ::file_name_(): hm_{str_}
+     ::file_name(): hm_(str_)
 
      # replaces the file name with the passed in `str`, swaps out
      # the previous file name into `str`, and returns the new full path.
      # can fail only if we run out of memory to represent the returned path.
-     ..file_name_(str;): hm_{regular_file_path_}
+     ..file_name(str;): hm_(regular_file_path_)
 
      # replaces the file name with the passed in `str`, and swaps out
      # the previous file name into `str`.
      # can fail only if we run out of memory to represent the path.
-     ;;file_name_(str;): hm_{null_}
+     ;;file_name(str;): hm_(null_)
 }
 
 [regular_file_, er_, hm_, mode_]: \/file
