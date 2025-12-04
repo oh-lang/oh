@@ -377,9 +377,30 @@ function_(a: int_): hm_
 * option 5: 2 + 3
      * use trailing `_` to indicate a type (or a type function) but require generics
           to use `[]` to specify their values
-          * `array[int_](1, 2, 3)` to instantiate an array
-          * `array[int_]` also instantiates an array (empty)
-          * `array_[int_]` to define an array type with elements of type `int_`.
+          * array types:
+               * `array[int_](1, 2):` as short for `array: array[int_](1, 2)`.
+               * `array[int_](1, 2, 3)` to instantiate an array
+               * `array[int_]` probably a compile-error.  needs `()` to instantiate an empty array
+                    or postfix `_` on `array` to make it a type annotation
+               * `array[int]` works if `array` and `int` are in scope, subscript operation
+               * `array[int]()` probably a compile error.  do `array[int] fn()` if `array_[fn_(): ~t_]`
+               * `array_[int_]` to define an array type with elements of type `int_`.
+               * `array_[int_]()` probably a compile-error.  remove `()` to make a type or remove `_`
+                    in `array_` to create an instance
+          * function types:
+               * `fn(): x_` function declaration, returns instance of `x_`
+               * `fn_(): x_` function type declaration, indicates this is a function type
+                    with void arguments and returning an instance of `x_`
+               * if `fn(x: int_, y: str_): z_`, then `fn_[x_: int_, y_: str_]` is the `z_` type.
+          * tuple types:
+               * use trailing `_` to indicate that you're defining a type(???).
+               * `tuple_: [count: 1, x_: int_, y_: str_]`
+               * but we can't realize use this as a type: `whatever: tuple_ = [x: ...]`, we're not defining `x_`.
+                    potentially we could have `tuple_: [x_: parent1_, y_: parent2_]` and then
+                    `tuple: [x_: child1_, y_: child2_]` but the original `tuple_` doesn't feel like a type.
+          * object types
+               * use trailing `_` to indicate that you're defining a type.
+               * `my_obj_: [x: int_, y: str_]`
      * pros
           * avoids issue with option 3 where `array(x)` could be easily typo'd for
                `array(x_)` which do two very different things

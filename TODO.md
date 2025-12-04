@@ -20,6 +20,10 @@ so we could ship the parts of it that we care about (e.g., not arm-gen.c).
 
 # if we transpile to c
 
+TODO: C++ might be nicer to work with, WITHOUT generics, because it already has
+the RAII semantics we want to incorporate.  leaving out C++ generics means we can
+reduce compile times (hopefully).  it also allows operator overloading.
+
 we're going to need forward declarations for all functions and structs.
 
 we'll need to resolve overloads at compile-time if possible, run-time if necessary.
