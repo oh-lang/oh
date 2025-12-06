@@ -389,6 +389,9 @@ function_(a: int_): hm_
                     in `array_` to create an instance
           * function types:
                * `fn(): x_` function declaration, returns instance of `x_`
+               * TODO: not sure i like this, `fn_()` should just be `x_` from above,
+                    should `(): x_` or `() => x_` be the type of `fn(): x_`?
+                    `fn: (): x_` looks too declarey
                * `fn_(): x_` function type declaration, indicates this is a function type
                     with void arguments and returning an instance of `x_`
                * if `fn(x: int_, y: str_): z_`, then `fn_[x_: int_, y_: str_]` is the `z_` type.
@@ -401,6 +404,10 @@ function_(a: int_): hm_
           * object types
                * use trailing `_` to indicate that you're defining a type.
                * `my_obj_: [x: int_, y: str_]`
+          * lambda types
+               * `$( $ok * 2 )` to create `( fn(ok): ok * 2 )`
+               * `$[ $ok * 2 ]` to create `[ fn(ok): ok * 2 ]`
+               * `${ $ok * 2 }` to create `{ fn(ok): ok * 2 }`
      * pros
           * avoids issue with option 3 where `array(x)` could be easily typo'd for
                `array(x_)` which do two very different things
