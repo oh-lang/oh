@@ -376,7 +376,8 @@ function_(a: int_): hm_
                * but maybe we can mitigate because `[]` is only ever used for variables.
 * option 5: 2 + 3
      * use trailing `_` to indicate a type (or a type function) but require generics
-          to use `[]` to specify their values
+          to use `[]` to specify comptime values (like type specifications and sizing)
+          functions that pass in comptime values should also use [] for them, like `memory_ size[int_]`.
           * array types:
                * `array[int_](1, 2):` as short for `array: array[int_](1, 2)`.
                * `array[int_](1, 2, 3)` to instantiate an array
@@ -411,6 +412,8 @@ function_(a: int_): hm_
      * pros
           * avoids issue with option 3 where `array(x)` could be easily typo'd for
                `array(x_)` which do two very different things
+          * clarifies when `[]` should be used for function arguments (i.e., when comptime)
+               vs. when it shouldn't (i.e., use `()` for runtime arguments).
      * cons
           * `array: array[x_](1, 2)` then `array[...]` should use the variable or the type
                instantiator??
@@ -418,7 +421,8 @@ function_(a: int_): hm_
                     based on function names
                * we can mitigate because `array[...]` would need to have `()` following
                     it to be the global instantiation for arrays.
-          * in a script, comptime in [] and non-comptime in () doesn't make sense
+          * [] for array indexing doesn't follow the "comptime" rule.
+               `array: array_[int_], array[1]` should be `array: array_[int_], array at(1)`
 
 oh-lang handles generics/templates similar to zig or python rather than C++ or Rust.
 When compiled without any usage, templates are only tested for syntax/grammar correctness.
