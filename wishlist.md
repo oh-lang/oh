@@ -306,6 +306,9 @@ function_(a: int_): hm_
                e.g., `[1, 2, 3] map_$( $int * 2 )` for `[2, 4, 6]`
                and `array_[int_] nest_$[ um_[$of_] ]` for `array_[um_[int_]]`,
                but not lots (`[]` is so overloaded)
+               * but theoretically you might want a function that returns an array,
+                    so `$[$value_0, $value_1]` should be `fn_(value_0:, value_1:): [value_0, value_1]`.
+               * maybe we can just look at the return type and determine if it should be a type.
           * type generics should not normally be specified with readonly/writable
                stuff, only temporaries (like `[]` passes)
           * `my_type_[index_]` should give the return type of the `my_type[index:]` function,
@@ -355,6 +358,7 @@ function_(a: int_): hm_
      * cons:
           * () becomes pretty overloaded; order of operations, function calling, generics
                * the alternative `my_fn_[value_: int_](123, 456)` is a lot easier to read
+                    compared to `my_fn(123, 456, value_: int_)`
           * `m()` looks like i should have the instance ready, but it really is
                a static function
           * not obvious how to make arguments obviously comptime unless we introduce
@@ -421,8 +425,19 @@ function_(a: int_): hm_
                     based on function names
                * we can mitigate because `array[...]` would need to have `()` following
                     it to be the global instantiation for arrays.
+          * we do lose `_` for instantiating things like this:
+               `array: _(1, 2, 3)` (because it's no longer a function)
+               but we can just do `array(1, 2, 3)`.
+               * we can keep `_` for enums like `value_: one_of_{a:, b:}`
+                    `if value == _ a`, because `_` remains a type.
           * [] for array indexing doesn't follow the "comptime" rule.
-               `array: array_[int_], array[1]` should be `array: array_[int_], array at(1)`
+               `array: array_[int_], array[1]` should be `array: array_[int_], array at(1)`,
+               but i don't like `at` when `at` should be the argument name; maybe instead
+               `array _(1) + array _(2)` vs. `array[1] + array[2]`
+               * but this breaks the `_` is not a function, it's a type rule.
+               * could mitigate by using `@[]` for generic specification, e.g.,
+                    * `my_array: array_@[int_]`
+                    * but this would be somewhat annoying to increase syntax requirements.
 
 oh-lang handles generics/templates similar to zig or python rather than C++ or Rust.
 When compiled without any usage, templates are only tested for syntax/grammar correctness.
