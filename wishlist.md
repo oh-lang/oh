@@ -394,26 +394,27 @@ function_(a: int_): hm_
      * use trailing `_` to indicate a type (or a type function) but require generics
           to use `[]` to specify comptime values (like type specifications and sizing)
           functions that pass in comptime values should also use [] for them, like `memory_ size[int_]`.
+          types are instantiated using `the_type_name_(type_args...)`.
           * array types:
-               * `array[int_](1, 2):` as short for `array: array[int_](1, 2)`.
-               * `array[int_](1, 2, 3)` to instantiate an array
-               * `array[int_]` probably a compile-error.  needs `()` to instantiate an empty array
-                    or postfix `_` on `array` to make it a type annotation
+               * `array[int_](1, 2):` as short for `array: array_[int_](1, 2)`.
+               * `array_[int_](1, 2, 3)` to instantiate an array with elements 1, 2, 3
+               * `array_[int_]()` to instantiate an empty array
+               * `array[int_]` a compile-error.  either `array_[int_]` for a typedef
+                    or `array[int]` for array access/subscripting
                * `array[int]` works if `array` and `int` are in scope, subscript operation
-               * `array[int]()` probably a compile error.  do `array[int] fn()` if `array_[fn_(): ~t_]`
+               * `array[int]()` a compile error.  do `array[int] fn()` if your array is filled with
+                    functions (e.g., is an instance of `array_[fn_(): ~t_]`) or `array_[int_]()` if
+                    you want to instantiate an `array_[int_]` class
                * `array_[int_]` to define an array type with elements of type `int_`.
-               * `array_[int_]()` probably a compile-error.  remove `()` to make a type or remove `_`
-                    in `array_` to create an instance
           * function types:
-               * `fn(): x_` function declaration, returns instance of `x_`
-               * TODO: not sure i like this, `fn_()` should just be `x_` from above,
-                    should `(): x_` or `() => x_` be the type of `fn(): x_`?
-                    `fn: (): x_` looks too declarey
-               * `fn_(): x_` function type declaration, indicates this is a function type
+               * `hello(y: dbl_): x_` function declaration, returns instance of `x_`
+                    if you pass in a `dbl_` named `y`.
+               * `fn_(y: dbl_): x_` function type declaration, indicates this is a function type
                     with void arguments and returning an instance of `x_`
+                    e.g., `hello(y: dbl_): x_` is the same as `hello: fn_(y: dbl_): x_`.
                * if `fn(x: int_, y: str_): z_`, then `fn_[x_: int_, y_: str_]` is the `z_` type.
           * tuple types:
-               * use trailing `_` to indicate that you're defining a type(???).
+               * use trailing `_` to indicate that you're defining a type.
                * `tuple_: [count: 1, x_: int_, y_: str_]`
                * but we can't realize use this as a type: `whatever: tuple_ = [x: ...]`, we're not defining `x_`.
                     potentially we could have `tuple_: [x_: parent1_, y_: parent2_]` and then
@@ -430,7 +431,16 @@ function_(a: int_): hm_
                `array(x_)` which do two very different things
           * clarifies when `[]` should be used for function arguments (i.e., when comptime)
                vs. when it shouldn't (i.e., use `()` for runtime arguments).
+          * i do like `fn_(x: dbl_): dbl_` for declaring a function type;
+               `my_fn_typedef_(x: dbl_): dbl_` could be short for
+               `my_fn_typedef_: fn_(x: dbl_): dbl_`.
      * cons
+          * function overloading doesn't look correct if you define functions like this:
+               * `my_fn: fn_(x: dbl_, y: dbl_): dbl_`
+               * `my_fn: fn_(z: dbl_): dbl_`
+               * `my_fn: dbl_` (not a function, but we do allow overloading the "zero-arg" function)
+          * generics for functions look a bit like array indexing (subscripting):
+               `fn[require: x_, value_:](value_0., value_1.): value_`
           * `array: array[x_](1, 2)` then `array[...]` should use the variable or the type
                instantiator??
                * this is a big con because we want to have natural names for variables
