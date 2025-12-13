@@ -302,28 +302,33 @@ function_(a: int_): hm_
           * if `do_something_(x: int_): str_` is defined, then
                `do_something_[x_: int_]` is the `str_` type
      * pros:
-          * i like `$[$x]` for a lambda type and `$($x)` for a lambda function
-               e.g., `[1, 2, 3] map_$( $int * 2 )` for `[2, 4, 6]`
-               and `array_[int_] nest_$[ um_[$of_] ]` for `array_[um_[int_]]`,
-               but not lots (`[]` is so overloaded)
+          * i like `$[$x_]` for a lambda type and `$($x)` for a lambda function, e.g.,
+               * `[1, 2, 3] map_$( $int * 2 )`, short for 
+                    `[1, 2, 3] map_(fn_(int.): int * 2)`, which gives `[2, 4, 6]`.
+               * `array_[int_] nest_$[ um_[$of_] ]`, short for
+                    `array_[int_] nest_[new_[of_:]: um_[of_]]`, which gives `array_[um_[int_]]`,
                * but theoretically you might want a function that returns an array,
                     so `$[$value_0, $value_1]` should be `fn_(value_0:, value_1:): [value_0, value_1]`.
                * maybe we can just look at the return type and determine if it should be a type.
-          * type generics should not normally be specified with readonly/writable
-               stuff, only temporaries (like `[]` passes)
-          * `my_type_[index_]` should give the return type of the `my_type[index:]` function,
-               but that does feel a bit weirdly overloaded.  it also doesn't extend and work for
-               `my_function_(whatever_)` giving the return type of `my_function_(whatever:)`
+          * type generics should not normally be specified with readonly/writable stuff,
+               only temporaries (which is what `[]` passes fields as)
      * cons:
+          * functions and types are not "first class objects" themselves;
+               * this has never been a priority of oh-lang: option 6 makes things more confusing anyway
+          * what is `${$x}`??  probably `fn_(x.): x`.  what about `${$x_}`?  maybe `new_[x_]: x_`?
           * `do_something_[]` returning a type feels different than `m[]` which doesn't return a type
+               * but we could use `array _(2)` if we want to avoid `array[2]` for subscripting
           * `[]` is overloaded for a lot of things (arrays, lots, objects, type specifications,
                subscript operator `m[2]`)
                * would potentially want to get rid of subscript operator and just use
-                    `array at_(2)`
+                    `array at_(2)` or `array _(2)`.
                * or would want to switch to using `{}` for containers.  but i like
                     extending [] to containers since it's natural for arrays.
                     `array: {1, 2, 3, 4}` doesn't feel quite right.
           * hard to type `new_[of_:]:` because of shift/unshift with `[]` `_` and `:`.
+          * `my_type_[index_]` should give the return type of the `my_type[index:]` function,
+               but that does feel a bit weirdly overloaded.  it also doesn't extend and work for
+               `my_function_(whatever_)` giving the return type of `my_function_(whatever:)`
 * option 3: use () for function arguments and generic specifications;
      use trailing underscores on the function name to indicate returning a type or not.
      * `do_something_(): any_` to return a type, e.g., `x_: do_something_()` defines a type
@@ -378,6 +383,13 @@ function_(a: int_): hm_
                * this is a big con because oh-lang wants to make variable names
                     easy based on the function
                * but maybe we can mitigate because `[]` is only ever used for variables.
+          * functions and types are very similar, and we'd like to allow types being used as functions
+               where possible (instead of doing `my_type_ new(arg1, ar2)`).
+* option 4
+     * use `<>` (or something else) for generics, e.g., `array_^[int_]`
+     * pros:
+     * cons:
+          * don't like not having matching parens/braces/brackets to navigate
 * option 5: 2 + 3
      * use trailing `_` to indicate a type (or a type function) but require generics
           to use `[]` to specify comptime values (like type specifications and sizing)
@@ -438,6 +450,19 @@ function_(a: int_): hm_
                * could mitigate by using `@[]` for generic specification, e.g.,
                     * `my_array: array_@[int_]`
                     * but this would be somewhat annoying to increase syntax requirements.
+* option 6: don't distinguish between types, functions, and variables by trailing `_`.
+     * distinguish between functions and variables by checking for a trailing `()`, e.g.,
+          * `array(1, 2)` is a function, whereas `array` without `()` is a variable.
+     * pros:
+          * makes functions and types first class.
+     * cons
+          * it's a bit confusing to distinguish types and variables;
+               * `what_is_this: my_type` is a bit confusing, are we creating an instance of
+                    `my_type` or are we creating a typedef?
+          * hard to distinguish between creating a singleton class (like in option 2,
+               `my_class: { ... class methods ... }`
+          * while we can distinguish between zero-arg and nonzero-arg identifiers,
+               it does take overloading to a whole new level.
 
 oh-lang handles generics/templates similar to zig or python rather than C++ or Rust.
 When compiled without any usage, templates are only tested for syntax/grammar correctness.
