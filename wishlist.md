@@ -280,7 +280,7 @@ TODO:
      * pros:
           * doesn't overload [] with quite so many things
      * cons:
-          * {} doesn't quite feel right since it should create a hidden block
+          * {} doesn't quite feel right since it should create a hidden scope
           * ${} feels like it should be a function but it's a lambda type
           * `child_class_: parent_class_ {...}` makes `...` look like a specification on parent
                * we'll need a new syntax here, maybe `extend_{parent_class_}`
@@ -296,11 +296,16 @@ empty_hm_: hm_
 function_(a: int_): hm_
      null_
 ```
-* option 2: old approach, use [] for generic specifications
-     * `do_something_(): any_` to return an instance
-     * `do_something_[]: any_` to return a type
-          * if `do_something_(x: int_): str_` is defined, then
+* option 2: old approach, use [] for generic specifications, trailing `_` for functions and types
+     * `do_something_(args...): any_` to declare a function that returns an instance
+          * if `do_something_(x: int_): str_` is defined (and the default overload), then
                `do_something_[x_: int_]` is the `str_` type
+     * `some_type_[args...]: other_type_` to return a type
+     * `c_: all_of_[a:, b:]` to make a typedef
+     * `c: all_of_[a:, b:]` to instantiate an instance
+          * `all_of_[a:, b:]()` also works (without a name)
+     * `all_of_[my_a: a_, my_b; b_]` to rename the types (mostly useful for classes)
+          * might prefer `is my_a: a_` and `is my_b; b_` inside the class body.
      * pros:
           * i like `$[$x_]` for a lambda type and `$($x)` for a lambda function, e.g.,
                * `[1, 2, 3] map_$( $int * 2 )`, short for 
@@ -315,6 +320,8 @@ function_(a: int_): hm_
      * cons:
           * functions and types are not "first class objects" themselves;
                * this has never been a priority of oh-lang: option 6 makes things more confusing anyway
+          * if types and functions are the same, then functions that return a function should
+               use the `[]` syntax, e.g., `my_generator_[args.]: fn_(x: int_): y_`
           * what is `${$x}`??  probably `fn_(x.): x`.  what about `${$x_}`?  maybe `new_[x_]: x_`?
           * `do_something_[]` returning a type feels different than `m[]` which doesn't return a type
                * but we could use `array _(2)` if we want to avoid `array[2]` for subscripting
@@ -333,14 +340,15 @@ function_(a: int_): hm_
      use trailing underscores on the function name to indicate returning a type or not.
      * `do_something_(): any_` to return a type, e.g., `x_: do_something_()` defines a type
      * `do_something(x: int_): any_` to return an instance, e.g., `y: do_something(x: 5)`.
-     * `c_: all_of_(a:, b:)` to indicate a type 
-     * `all_of(a:, b:)` to instantiate an instance `c` with all the fields in `a` plus all the fields in `b`
+     * `c_: all_of_(a:, b:)` to make a typedef
+     * `c: all_of(a:, b:)` to instantiate an instance `c` with all the fields in `a` plus all the fields in `b`
      * `all_of_(my_a: a_, my_b: b_)` to rename the types
+          * might prefer `is my_a: a_` and `is my_b; b_` inside the class body.
      * pros:
           * can easily pass types as reference if desired
           * can use `do_something(): any` to enscope `any` and modify it in the block
-          * can use `do_something_(x_: int_)` to give the (default) return type of the function
-               `do_something(x: int_)`.
+          * can use `do_something_(x_: int_)` to give the (default overload) return type
+               of the function `do_something(x: int_)`.
           * could try to do stuff like this:
                * `array(x)` - if `x_` in scope (a type), instantiate an array with elements instancing `x_`
                     * if `x` is in scope, it looks ambiguous; compile error, recommend `[x]` instead ???
@@ -393,7 +401,7 @@ function_(a: int_): hm_
 * option 5: 2 + 3
      * use trailing `_` to indicate a type (or a type function) but require generics
           to use `[]` to specify comptime values (like type specifications and sizing)
-          functions that pass in comptime values should also use [] for them, like `memory_ size[int_]`.
+          functions that pass in comptime values should also use [] for them, like `memory[int_]`.
           types are instantiated using `the_type_name_(type_args...)`.
           * array types:
                * `array[int_](1, 2):` as short for `array: array_[int_](1, 2)`.
@@ -409,8 +417,10 @@ function_(a: int_): hm_
           * function types:
                * `hello(y: dbl_): x_` function declaration, returns instance of `x_`
                     if you pass in a `dbl_` named `y`.
+                    * can use `hello(y: dbl_): x` if you want to enscope the return value as `x`
+                         and modify it in the function body.
                * `fn_(y: dbl_): x_` function type declaration, indicates this is a function type
-                    with void arguments and returning an instance of `x_`
+                    with one double `y` argument and returning an instance of `x_`
                     e.g., `hello(y: dbl_): x_` is the same as `hello: fn_(y: dbl_): x_`.
                * if `fn(x: int_, y: str_): z_`, then `fn_[x_: int_, y_: str_]` is the `z_` type.
           * tuple types:
