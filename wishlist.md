@@ -34,6 +34,8 @@ while functions alone have parentheses `()` with optional arguments inside.
 Because types can act as functions, we don't syntactically distinguish between `type_case_`
 and `function_case_` otherwise.
 
+TODO: consider switching to `:` is temporary, `;` is writable reference, and `.` is constant reference.
+
 Another change is that oh-lang uses `:`, `;`, and `.` for declarations and `=` for reassignment,
 so that declaring a variable and specifying a variable will work the same inside and outside
 function arguments.  For example, declaring a function that takes a readonly integer named `x`,
@@ -279,6 +281,8 @@ TODO:
      * `do_something_{}: any_` to return a type
      * pros:
           * doesn't overload [] with quite so many things
+          * `a_: one_of_{a:, b:}` does make a bit of sense because `one_of_[a:, b:]` looks
+               like both `a` and `b` would be defined.
      * cons:
           * {} doesn't quite feel right since it should create a hidden scope
           * ${} feels like it should be a function but it's a lambda type
@@ -306,6 +310,7 @@ function_(a: int_): hm_
           * `all_of_[a:, b:]()` also works (without a name)
      * `all_of_[my_a: a_, my_b; b_]` to rename the types (mostly useful for classes)
           * might prefer `is my_a: a_` and `is my_b; b_` inside the class body.
+     * define a string method like `my_class_: { ::str_(): str_ }` 
      * pros:
           * i like `$[$x_]` for a lambda type and `$($x)` for a lambda function, e.g.,
                * `[1, 2, 3] map_$( $int * 2 )`, short for 
@@ -317,9 +322,14 @@ function_(a: int_): hm_
                * maybe we can just look at the return type and determine if it should be a type.
           * type generics should not normally be specified with readonly/writable stuff,
                only temporaries (which is what `[]` passes fields as)
+          * array subscripting still feels natural as `array[2]`, which is a big bonus to concision.
+          * it's not confusing if you're supposed to use `str(my_class)` or `str_(my_class)`
      * cons:
           * functions and types are not "first class objects" themselves;
                * this has never been a priority of oh-lang: option 6 makes things more confusing anyway
+          * generics that return an instance don't feel super natural;
+               feels like we should use [] for `memory[of_:]: memory_`, but that doesn't return an instance;
+               probably needs to be `memory_(of_:): memory_`, which is fine.
           * if types and functions are the same, then functions that return a function should
                use the `[]` syntax, e.g., `my_generator_[args.]: fn_(x: int_): y_`
           * what is `${$x}`??  probably `fn_(x.): x`.  what about `${$x_}`?  maybe `new_[x_]: x_`?
@@ -345,25 +355,33 @@ function_(a: int_): hm_
      * `all_of_(my_a: a_, my_b: b_)` to rename the types
           * might prefer `is my_a: a_` and `is my_b; b_` inside the class body.
      * pros:
+          * TODO: actually i think we can use `[]` here too if we want on types, so we could
+               have the readability of `array_[int_]` if desired.  maybe the recommendation
+               is to use `[]` if you're dealing with non-references and `()` for references.
           * can easily pass types as reference if desired
           * can use `do_something(): any` to enscope `any` and modify it in the block
           * can use `do_something_(x_: int_)` to give the (default overload) return type
                of the function `do_something(x: int_)`.
           * could try to do stuff like this:
-               * `array(x)` - if `x_` in scope (a type), instantiate an array with elements instancing `x_`
-                    * if `x` is in scope, it looks ambiguous; compile error, recommend `[x]` instead ???
-                         but how would we get the instance types (the normal thing to do)?
-               * `array(x_)` - if `x_` in scope (a type), instantiate an array with elements of type `new_(x_)`
-               * `array_(x)` - if `x` in scope, declare an array type with elements instancing `x_`
+               * `array_ new(1, 2, 3)` - instantiate an array with three elements (1, 2, 3).
+                    * could abbreviate `new` to `o` if we really want.
                * `array_(x_)` - if `x_` in scope (a type), declare an array type with elements of type `new_(x_)`.
-               * maybe avoid `array_(x)` logic because it's ambiguous, use `array_(x_)` for instancaes
-                    and `array_(new_(x_))` for constructors
+               * `array(x)` - a compile error, unless `array` is in scope and `x` is in scope
+                    and you've defined an overload for `m(of: x_)` on the array class.
+               * `array(x_)` - a compile error, unless `array` is in scope and `x_` is in scope
+                    and you've defined an overload for `m(of_: x_)` on the array class.
+               * `array_(x)` - a compile error, unless `x` is in scope and you've defined
+                    a *type* overload `m_(of: x_): some_type_` that will return a type.
           * could unify lambda functions and lambda types, {} could be neutral,
                () could create a reference return value and [] a non-reference object value.
                `${$x_}`, `$[$y_]`, `$($z_)` -- type-like.
                `${$x}`, `$[$y]`, `$($z)` -- function-like.
-               e.g., `[1, 2, 3] map_${ $int * 2 }` for `[2, 4, 6]`
-               and `array_(int_) nest_${ um_($of_) }` for `array_(um_(int_))`,
+               * could also have `$($ok + 4)` literally become `(fn(ok:): ok + 4)`,
+                    so we can do things like this:
+                    `[1, 2, 3] map$( $int * 2 )` for `[2, 4, 6]`, and
+                    `array_(int_) nest_$( um_($of_) )` for `array_(um_(int_))`,
+                    * not sure how i feel about `$($ok + 1, $ok + 2, $x + 3, 4)`
+                         becoming `(fn(ok:, x:): (ok + 1, ok + 2, x + 3, 4))`
           * generics are specified along with the arguments
                * means the grammar is easier to understand
                * `my_fn(value_: number_, value_0:, value_1:): value_0 + value_1`
@@ -372,8 +390,8 @@ function_(a: int_): hm_
           * () becomes pretty overloaded; order of operations, function calling, generics
                * the alternative `my_fn_[value_: int_](123, 456)` is a lot easier to read
                     compared to `my_fn(123, 456, value_: int_)`
-          * `m()` looks like i should have the instance ready, but it really is
-               a static function
+          * need to use `new()` from a type to make sure you're getting an instance, e.g.,
+               `array_ new(123)`. 
           * not obvious how to make arguments obviously comptime unless we introduce
                a new operator like `my_fn(value_\` number_, value_0:, value_1:):`
                * maybe comptime arguments should be "gradually" typed anyways;
@@ -383,14 +401,13 @@ function_(a: int_): hm_
           * this looks like shadowing between method names and instance variables, e.g.,
                if you have `m x` and `m x(): int_`.  but i suppose this is a bit like overloading,
                which oh-lang does allow/support/encourage.
+               maybe we call it "super overloading".
           * i like how `_()` guides the eye for arguments, and gives you a natural name
                for returned arguments, e.g., `sin: sin_(123)` without being too close.
+               * however, since we allow super-overloading, you can just use `sin: sin(123)`.
           * `_` also gives you `sin: _(123)` for free, although `sin(123):` might work as well.
-          * `array: array(1, 2)` then `array[...]` should use the variable or the type
-               instantiator??
-               * this is a big con because oh-lang wants to make variable names
-                    easy based on the function
-               * but maybe we can mitigate because `[]` is only ever used for variables.
+               or you could still use `_` for the type inference,
+               `array: _ new(123)`
           * functions and types are very similar, and we'd like to allow types being used as functions
                where possible (instead of doing `my_type_ new(arg1, ar2)`).
 * option 4
@@ -399,10 +416,10 @@ function_(a: int_): hm_
      * cons:
           * don't like not having matching parens/braces/brackets to navigate
 * option 5: 2 + 3
-     * use trailing `_` to indicate a type (or a type function) but require generics
-          to use `[]` to specify comptime values (like type specifications and sizing)
-          functions that pass in comptime values should also use [] for them, like `memory[int_]`.
-          types are instantiated using `the_type_name_(type_args...)`.
+     * use trailing `_` to indicate a type (or a function that returns a type).
+     * require generics to use `[]` to specify comptime values (like type specifications and sizing)
+     * functions that pass in comptime values should also use [] for them, like `memory[int_]`.
+     * types are instantiated using `the_type_name_(type_args...)`.
           * array types:
                * `array[int_](1, 2):` as short for `array: array_[int_](1, 2)`.
                * `array_[int_](1, 2, 3)` to instantiate an array with elements 1, 2, 3
@@ -424,9 +441,9 @@ function_(a: int_): hm_
                     e.g., `hello(y: dbl_): x_` is the same as `hello: fn_(y: dbl_): x_`.
                * if `fn(x: int_, y: str_): z_`, then `fn_[x_: int_, y_: str_]` is the `z_` type.
           * tuple types:
-               * use trailing `_` to indicate that you're defining a type.
+               * use trailing `_` to indicate that you're defining a type or type specification.
                * `tuple_: [count: 1, x_: int_, y_: str_]`
-               * but we can't realize use this as a type: `whatever: tuple_ = [x: ...]`, we're not defining `x_`.
+               * but we can't really use this as a type: `whatever: tuple_ = [x: ...]`, we're not defining `x_`.
                     potentially we could have `tuple_: [x_: parent1_, y_: parent2_]` and then
                     `tuple: [x_: child1_, y_: child2_]` but the original `tuple_` doesn't feel like a type.
           * object types
@@ -445,27 +462,26 @@ function_(a: int_): hm_
                `my_fn_typedef_(x: dbl_): dbl_` could be short for
                `my_fn_typedef_: fn_(x: dbl_): dbl_`.
      * cons
+          * it's confusing if you're supposed to use `str(my_class)` or `str_(my_class)`
           * function overloading doesn't look correct if you define functions like this:
                * `my_fn: fn_(x: dbl_, y: dbl_): dbl_`
                * `my_fn: fn_(z: dbl_): dbl_`
-               * `my_fn: dbl_` (not a function, but we do allow overloading the "zero-arg" function)
+               * `my_fn: fn_(): dbl_`
+               * `my_fn: dbl_` (not a function, but we do allow overloading of function and variable names)
           * generics for functions look a bit like array indexing (subscripting):
                `fn[require: x_, value_:](value_0., value_1.): value_`
-          * `array: array[x_](1, 2)` then `array[...]` should use the variable or the type
-               instantiator??
-               * this is a big con because we want to have natural names for variables
-                    based on function names
-               * we can mitigate because `array[...]` would need to have `()` following
-                    it to be the global instantiation for arrays.
-          * we do lose `_` for instantiating things like this:
-               `array: _(1, 2, 3)` (because it's no longer a function)
-               but we can just do `array(1, 2, 3)`.
-               * we can keep `_` for enums like `value_: one_of_{a:, b:}`
+          * we lose `_` as a quick function type identifier, but we can still use it for types:
+               `array: _(1, 2, 3)` is ok, but we can also just do `array(1, 2, 3):`.
+               * we can keep `_` for enums like `value_: one_of_[a:, b:]`
                     `if value == _ a`, because `_` remains a type.
-          * [] for array indexing doesn't follow the "comptime" rule.
-               `array: array_[int_], array[1]` should be `array: array_[int_], array at(1)`,
-               but i don't like `at` when `at` should be the argument name; maybe instead
-               `array _(1) + array _(2)` vs. `array[1] + array[2]`
+          * comptime confusion.  [] is now blessed for comptime things, but we're still using it
+               for building runtime objects, arrays, lots, etc.
+               * [] wouldn't feel right for run-time defined objects because they're not "comptime."
+                    * would maybe need to switch to `{}` for arrays, sets, lots.
+               * [] for array indexing doesn't follow the "comptime" rule.
+                    `array: array_[int_], array[1]` should be `array: array_[int_], array at(1)`,
+                    but i don't like `at` when `at` should be the argument name; maybe instead
+                    `array _(1) + array _(2)` vs. `array[1] + array[2]`
                * but this breaks the `_` is not a function, it's a type rule.
                * could mitigate by using `@[]` for generic specification, e.g.,
                     * `my_array: array_@[int_]`
