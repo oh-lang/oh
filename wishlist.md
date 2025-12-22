@@ -283,7 +283,7 @@ PROBLEM STATEMENT:
      declarations, e.g., `;:.` currently.  we could probably remove one of them if we move
      "temporary" variables into a separate paren, like `my_fn_(references:)[non_references:]`.
      `my_fn_ (a: my_ref) + [b: my_tmp!]`??.  however, having a "temporary" method for
-     classes like `..im_being_deleted(): int_` makes a lot of sense.
+     classes like `..im_being_deleted(): int_` makes a lot of sense, and dueling parens are painful.
 3. i like ` ` for implicit member access.
      this means we can't use v-lang syntax like `x int_` to declare variables.
      (`int_` could be a typedef on the `x` instance.)
@@ -304,24 +304,38 @@ PROBLEM STATEMENT:
           we do disallow `()` being followed by `[]` for Horstmann indent reasons,
           so it's a bit odd that we can do the other way but not currently illegal.
 8. it would be nice to have a quick way to refer to a type, e.g., `value: _ my_enum1`
-     where `value_: one_of_[my_enum1:, my_enum2:]`, especially for switch-cases
+     where `value_: one_of_[my_enum1:, my_enum2:]`, especially for switch-cases.
+     `what value { _ my_enum1 {print("ok")}, _ my_enum2 {print("no")} }` vs.
+     `what value { #@ my_enum1 {print("ok")}, #@ my_enum2 {print("no")} }` isn't too bad.
+     if we give up on `#` for comments (maybe require `#!`), then we could do
+     `what value { # my_enum1 {print("ok")}, # my_enum2 {print("no")} }` but i don't
+     love getting rid of `#` for comments.  might also be able to do this:
+     `what value { ::my_enum1 {print("ok")}, ::my_enum2 {print("no")} }`.
 9. it *might* be nice to allow `()` on variables, e.g., `"asdf"("jkl;") == "asdf(jkl;)"`.
      this would automatically define an overload for e.g. `my_str: "asdf"`
      with `my_str(...): str_`, but would error-out on default names (e.g., `str: "asdf"`)
-     unless we can use a type as a function `str_(...)`.
+     if we can use a type as a function and it's the same identifier (e.g., `str` is the
+     type and also how you build a `str_` type), so we'd need `str_(...)`.
 10. it *might* be nice to allow overloading {} on an instance, `"asdf"{"jkl;"} == "asdf{jkl;}"`,
      but probably would break a whole lot of other things.  would probably need a
      specific "call operator" like `abc#{...}`.
+     * we could use the call operator in other contexts, e.g., `a: (x: 1, y: 2)`
+          then `my_fn # a` but i think `my_fn(...a)` is better so we don't have
+          people thinking you need to do `my_fn#(x: 1, y: 2)`.
+     * the issue is that we don't want `if abc { ... } else { ... }` to break
+          if `abc` has defined an overload for `{...}`.
 11. it might be nice to have `#123456` for colors.  since hex is allowed,
      we probably can't use `#` for types (is `#aaa` a type or a color??)
      unless we require hex to use uppercase A-F.  (e.g., `#AAA` is a color, `#aaa` is a type).
-     however that puts a lot of weird constraints on type names (e.g., no A-F
-     in the first 6 letters, unless some other letter a-zG-Z came first).
+     however that puts a lot of weird constraints on type names (e.g., 6-letter
+     types with A-F, unless some other letter a-zG-Z came first).
+          * we could introduce another symbol like `#|123456` or `\#123456` to define a color.
+               it might be nice to allow for quick searching for colors without a regex.
+               `6#123456`, `rrggbb#123456`, `rgb#123`, etc. could also work
 12. support Horstmann indenting
 
-issue [7] makes it hard to use `#` for types unless we give up `#` for comments, or
-reintroduce member access via some other symbol (typically `.` in other languages, so `.my_enum1`).
-we could try something like `:my_enum1`, but `#my_enum:my_enum1` is kinda annoying.
+`#` for types is very cute, and i think it looks really nice.
+
 
 * option 1: current approach, using {} for generic specifications
      * `do_something_(): any_` to return an instance
