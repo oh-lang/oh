@@ -286,22 +286,38 @@ PROBLEM STATEMENT:
      classes like `..im_being_deleted(): int_` makes a lot of sense.
 3. i like ` ` for implicit member access.
      this means we can't use v-lang syntax like `x int_` to declare variables.
-4. it would be nice to have "easy default names", e.g., `x: x_` or `y: #y`.
+     (`int_` could be a typedef on the `x` instance.)
+4. it would be nice to have "easy default names" for a type, e.g., `x: x_` or `y: #y`.
 5. it would be nice to use some sort of parentheses for generics (lean towards [])
 6. it would be nice to avoid `new` when instantiating a type, `x_(123)` or `#y(456)
      instead of `x_ new(123)` or `#y new(456)`.
 7. generics for types and functions should be distinguishable from the subscript operator
-     e.g., `m[offset:]: str_` to declare the subscript operator,
-     `some_class[123]` to use the subscript operator,
-     `fn[require: #of, #of: #any](of:): #int` to declare a generic function,
-     `fn[#of: #int](1234)` to call the generic function,
-     `#my_type[#of:]` to declare a type that generalizes over an inner type,
-     `#my_type[#int]` to use the type specialized to `#int`.
+     * `m[offset:]: str_` to declare the subscript operator,
+     * `some_class[123]` to use the subscript operator on an instance `some_class`,
+     * `fn[require: #of, #of: #any](of:): #int` to declare a generic function,
+     * `fn[#of: #int](1234)` to call the generic function,
+     * `#my_type[#of:]` to declare a type that generalizes over an inner type,
+     * `#my_type[#int]` to use the type specialized to `#int`.
+     * but why do we need to distinguish between `fn_[generics...]` and
+          `some_class[...]`?  can't `fn[generics...]` just be a way to create
+          a function that we can then call with `()`?  (we can memoize of course.)
+          we do disallow `()` being followed by `[]` for Horstmann indent reasons,
+          so it's a bit odd that we can do the other way but not currently illegal.
 8. it would be nice to have a quick way to refer to a type, e.g., `value: _ my_enum1`
      where `value_: one_of_[my_enum1:, my_enum2:]`, especially for switch-cases
 9. it *might* be nice to allow `()` on variables, e.g., `"asdf"("jkl;") == "asdf(jkl;)"`.
+     this would automatically define an overload for e.g. `my_str: "asdf"`
+     with `my_str(...): str_`, but would error-out on default names (e.g., `str: "asdf"`)
+     unless we can use a type as a function `str_(...)`.
 10. it *might* be nice to allow overloading {} on an instance, `"asdf"{"jkl;"} == "asdf{jkl;}"`,
-     but probably would break a whole lot of other things
+     but probably would break a whole lot of other things.  would probably need a
+     specific "call operator" like `abc#{...}`.
+11. it might be nice to have `#123456` for colors.  since hex is allowed,
+     we probably can't use `#` for types (is `#aaa` a type or a color??)
+     unless we require hex to use uppercase A-F.  (e.g., `#AAA` is a color, `#aaa` is a type).
+     however that puts a lot of weird constraints on type names (e.g., no A-F
+     in the first 6 letters, unless some other letter a-zG-Z came first).
+12. support Horstmann indenting
 
 issue [7] makes it hard to use `#` for types unless we give up `#` for comments, or
 reintroduce member access via some other symbol (typically `.` in other languages, so `.my_enum1`).
