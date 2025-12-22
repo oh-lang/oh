@@ -276,6 +276,37 @@ say you have a list of types, do you do `types: array_{new_{}: ~y_}` and then `t
 to create a new instance of the first type?  or `types_: array_{any_}` and then `types_[0]()`?
 
 TODO:
+PROBLEM STATEMENT: 
+
+1. we have three different possible identifiers: variables, functions, and types
+2. it would be nice to have three (one-character) symbols for writable/readable/temporary
+     declarations, e.g., `;:.` currently.  we could probably remove one of them if we move
+     "temporary" variables into a separate paren, like `my_fn_(references:)[non_references:]`.
+     `my_fn_ (a: my_ref) + [b: my_tmp!]`??.  however, having a "temporary" method for
+     classes like `..im_being_deleted(): int_` makes a lot of sense.
+3. i like ` ` for implicit member access.
+     this means we can't use v-lang syntax like `x int_` to declare variables.
+4. it would be nice to have "easy default names", e.g., `x: x_` or `y: #y`.
+5. it would be nice to use some sort of parentheses for generics (lean towards [])
+6. it would be nice to avoid `new` when instantiating a type, `x_(123)` or `#y(456)
+     instead of `x_ new(123)` or `#y new(456)`.
+7. generics for types and functions should be distinguishable from the subscript operator
+     e.g., `m[offset:]: str_` to declare the subscript operator,
+     `some_class[123]` to use the subscript operator,
+     `fn[require: #of, #of: #any](of:): #int` to declare a generic function,
+     `fn[#of: #int](1234)` to call the generic function,
+     `#my_type[#of:]` to declare a type that generalizes over an inner type,
+     `#my_type[#int]` to use the type specialized to `#int`.
+8. it would be nice to have a quick way to refer to a type, e.g., `value: _ my_enum1`
+     where `value_: one_of_[my_enum1:, my_enum2:]`, especially for switch-cases
+9. it *might* be nice to allow `()` on variables, e.g., `"asdf"("jkl;") == "asdf(jkl;)"`.
+10. it *might* be nice to allow overloading {} on an instance, `"asdf"{"jkl;"} == "asdf{jkl;}"`,
+     but probably would break a whole lot of other things
+
+issue [7] makes it hard to use `#` for types unless we give up `#` for comments, or
+reintroduce member access via some other symbol (typically `.` in other languages, so `.my_enum1`).
+we could try something like `:my_enum1`, but `#my_enum:my_enum1` is kinda annoying.
+
 * option 1: current approach, using {} for generic specifications
      * `do_something_(): any_` to return an instance
      * `do_something_{}: any_` to return a type
@@ -328,7 +359,7 @@ function_(a: int_): hm_
           * functions and types are not "first class objects" themselves;
                * this has never been a priority of oh-lang: option 6 makes things more confusing anyway
           * generics that return an instance don't feel super natural;
-               feels like we should use [] for `memory[of_:]: memory_`, but that doesn't return an instance;
+               feels like we should use [] for `memory_[of_:]: memory_`, but that doesn't return an instance;
                probably needs to be `memory_(of_:): memory_`, which is fine.
           * if types and functions are the same, then functions that return a function should
                use the `[]` syntax, e.g., `my_generator_[args.]: fn_(x: int_): y_`
@@ -346,7 +377,19 @@ function_(a: int_): hm_
           * `my_type_[index_]` should give the return type of the `my_type[index:]` function,
                but that does feel a bit weirdly overloaded.  it also doesn't extend and work for
                `my_function_(whatever_)` giving the return type of `my_function_(whatever:)`
-* option 3: use () for function arguments and generic specifications;
+* option 2.5:
+     * use a prefix `#` to indicate that something is a type or returns a type (if followed by `[]`)
+     * use () or [] as needed for non-type functions, based on ref or non-ref requirements
+     * use [] for type functions
+     * `do_something(): #any` returns an instance that could be any type.
+     * `#returns_type[]: #type_constraint` is a function that returns a type that will obey
+          `#type_constraint`, e.g., `#all_of[#number, #hashable]`.
+     * `#c: #one_of[a: #u64, b: #str]` to make a typedef
+     * `my_array: #array[#int]` to declare an array of integers
+     * `array[#int]:` to declare a default-named array of integers (`array: #array[#int]`)
+     * `my_type(123):` to declare a default-named type, initialized `my_type: #my_type(123)`.
+     * pros 
+* option 3: use () or [] for function arguments and generic specifications;
      use trailing underscores on the function name to indicate returning a type or not.
      * `do_something_(): any_` to return a type, e.g., `x_: do_something_()` defines a type
      * `do_something(x: int_): any_` to return an instance, e.g., `y: do_something(x: 5)`.
@@ -355,9 +398,7 @@ function_(a: int_): hm_
      * `all_of_(my_a: a_, my_b: b_)` to rename the types
           * might prefer `is my_a: a_` and `is my_b; b_` inside the class body.
      * pros:
-          * TODO: actually i think we can use `[]` here too if we want on types, so we could
-               have the readability of `array_[int_]` if desired.  maybe the recommendation
-               is to use `[]` if you're dealing with non-references and `()` for references.
+          * can use [] or () to make things more readable, as necessary.
           * can easily pass types as reference if desired
           * can use `do_something(): any` to enscope `any` and modify it in the block
           * can use `do_something_(x_: int_)` to give the (default overload) return type
@@ -478,6 +519,16 @@ function_(a: int_): hm_
                for building runtime objects, arrays, lots, etc.
                * [] wouldn't feel right for run-time defined objects because they're not "comptime."
                     * would maybe need to switch to `{}` for arrays, sets, lots.
+                    * `array[int_]: {1, 2, 3, 4}`
+```
+# this doesn't look quite right because {} should only return the last statement in the brace, so
+# `my_array` would be `4` (an int) in this case.
+my_array:
+     1
+     2
+     3
+     4
+```
                * [] for array indexing doesn't follow the "comptime" rule.
                     `array: array_[int_], array[1]` should be `array: array_[int_], array at(1)`,
                     but i don't like `at` when `at` should be the argument name; maybe instead
