@@ -65,6 +65,9 @@ syn match	ohNamespace	"\zs\<\u\+\ze[^A-Z_ ]"
 syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
 syn match	ohFunction	"\<_\>"
 syn match	ohFunction	"[^_ ()\[\]^`{|}!-@\\~][^ ()\[\]^`{|}!-/:-@\\~]*_\>" contains=ohNamespace
+syn match	ohType		"#[a-zA-Z][a-zA-Z0-9_]*"
+syn match	ohType		"#@" " not sure if i like this or #~ better, or just ~
+syn match	ohType		"#\~" " not sure if i like this or #@ better, or just ~
 
 syn region ohBraced matchgroup=ohBraces
       \ start=+{+ end="}"
@@ -77,8 +80,7 @@ syn region ohParened matchgroup=ohParens
       \ contains=ALL
 
 syn match   ohCompilerErrorComment	"#@!.*$"
-syn match   ohCompilerComment	"#@[^!].*$"
-syn match   ohEndOfLineComment	"#[^()[\]{}@].*$"
+syn match   ohEndOfLineComment	"# .*$"
       \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ oneline display
@@ -157,9 +159,9 @@ hi def link ohBuiltinVariable		Title
 hi def link ohBuiltinFunction		Question
 hi def link ohBuiltinType		Question
 hi def link ohFunction		Function
+hi def link ohType		Type
 hi def link ohUnused	Comment
 hi def link ohCompilerErrorComment		Error
-hi def link ohCompilerComment		PreProc
 hi def link ohEndOfLineComment		Comment
 hi def link ohMultilineComment	Comment
 hi def link ohMidlineComment	Comment

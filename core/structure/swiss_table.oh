@@ -1,495 +1,269 @@
 # low level data structure that is useful as a foundation for insertion-ordered
 # containers that are indexed by an `at`, e.g., insertion-ordered hash maps.
-# at a low level, it interleaves a doubly-linked list and a swiss table.
-linked_swiss_table_
-{    # key for the hash map
-     at_:
+# at a low level, it combines a doubly-linked list and a swiss table.
+#linked_swiss_table
+[    # key for the hash map
+     #at:
      # what's stored in a element at `at` in the table.
-     # can be null if we're a `set_`.
-     of_:
-     slots_per_bucket: count_ = 16
+     # can be null if we're a `#set`.
+     #of:
+     slots_per_bucket: #count = 16
      # type used for the capacity (e.g., max number) of elements in this table.
      # NOTE: this is also used for slot capacity, which reduces the
      # number of elements that we can hold via `expected_load_factor`.
      # TODO: consider using a different capacity for slots.  this would
-     # probably be most useful if we allowed bit-counts like `u10`.
-     # alternatively we just use `offset_` for slots, which is about 2x the `count_` max.
-     capacity_: select_count_ = arch_ count_
+     # probably be most useful if we allowed bit-counts like `#u10`.
+     # alternatively we just use `#offset` for slots, which is about 2x the `#count` max.
+     #capacity: #select_count = arch #count
      # if you really want to optimize the size of this struct, we can use
      # some indirection to put `count` in an allocated spot if `on_heap`.
-     # usage: `linked_swiss_table_{count_site_ on_heap, ...}`
-     count_site: _ local
+     # usage: `#linked_swiss_table[#count_site on_heap, ...]`
+     count_site: ~ local
      # these also optimize the size of the struct (if `on_heap`).
-     start_site: _ local
-     end_site: _ on_heap
-     first_tombstone_site: _ on_heap
+     dll_offsets_site: ~ local
      # maximum number of attempts to place a new element.
      # if more than this, will trigger growing the table (rehash).
-     max_attempts: count_ = 2 * slots_per_bucket
-     expected_load_factor: dbl_ = 0.87
-}:
-[    @private m:
-     [    # we don't use a stack for this because we want the `count` to be stored
-          # compactly (either later in this struct or in a header).
-          # we also allow some elements to get tombstoned, so some of the elements
-          # may be in an invalid state.
-          elements; elements_
-          # data for the doubly-linked list.  we don't use a normal DLL because
-          # we don't grow this like a stack, we index into it via hash truncation.
-          # INVARIANT: each `link_bucket metadata` is always initialized.
-          link_buckets; link_buckets_
-          # for optimal packing, we put all counts here at the end.
-          count{require: count_site is_local_()};
-          start{require: start_site is_local_()}; dll_offset_
-          end{require: end_site is_local_()}; dll_offset_
-          first_tombstone{require: first_tombstone_site is_local_()}; dll_offset_
-     ]
-]
-{    ::count_(): count_
-          @if count_site is_local_()
+     max_attempts: #count = 2 * slots_per_bucket
+     expected_load_factor: #dbl = 0.87
+]:
+{    @private
+     m elements;
+     m groups;
+     m count[require: count_site is_local()];
+
+     @public
+     ::count(): #count
+          @if count_site is_local()
                m count
           @else
                # TODO: this might be cleaner:
-               # `m elements header_() count ?? 0`
+               # `m elements header() count ?? 0`
                # but we'd have to do something like `vector3?;`, `vector3 x` being nullish,
-               # and the corresponding stuff for `hm_` as well.
-               m elements header_() map_({$ok count}, {$_er, 0})
+               # and the corresponding stuff for `#hm` as well.
+               m elements header() map({$ok count}, {$_er, 0})
 
-     # this is used specifically for the `elements` capacity, i.e., how large
-     # the stack of elements can get without requiring a reallocation.
-     ::capacity_(): capacity_
-          m elements capacity_()
+     ::capacity(): #capacity
+          # we'll approximate that we can fit about half as many elements
+          # in the table as we have slots.
+          m groups capacity() * (group_size // 2)
 
      #[#
      reserves capacity for the exact number of elements that we expect in this
      hash table.  if the capacity for the elements allocation is already greater
-     than the requested capacity, we'll defrag the table (see `;;defrag_`).  if
+     than the requested capacity, we'll defrag the table (see `;;defrag`).  if
      the requested capacity is larger than the current capacity, we'll increase
      the size of the table and perform a rehash.
-     prefer `;;capacity_(at_least.)` if the table is expected to grow over time.
+     prefer `;;capacity(at_least.)` if the table is expected to grow over time.
      #]#
-     ;;capacity_(capacity., update_slot_capacity: true): hm_{null_}
-          what is_bigger_(capacity, m capacity_())
-               _ left
-                    m rehash_(capacity) assert_()
-               _ right
-                    m defrag_(update_slot_capacity)
-               _ equal
-                    {}
+     ;;capacity(capacity.): #hm[#null]
+          m elements capacity(capacity)
+          # TODO: we need a name for this operation where you divide
+          # into something but make sure you over-supply if necessary.
+          old_groups_capacity: m groups capacity()
+          m groups capacity((capacity + group_size // 2 - 1) // (group_size // 2))
+          if old_groups_capacity != m groups capacity()
+               m rehash()
 
      # reserves capacity for `>= at_least` elements that in this hash table.
-     # we will use something like `max_(at_least, 2 * m capacity_())` to ensure
-     # we grow in an amortized way over time.
-     # this may cause a rehash of the hash table if `update_slot_capacity` is true. 
-     ;;capacity_(at_least. capacity_, update_slot_capacity: true): hm_{null_}
-          m rehash_(max_(at_least, 2 * m capacity_() ?? capacity_ max))
-
-     ::slot_count_(): capacity_
-          m link_buckets capacity_() * slots_per_bucket
-
-     ::open_slot_count_(): capacity_
-          m slot_count_() - m count_()
+     ;;capacity(at_least. #capacity): #hm[#null]
+          m elements capacity(at_least)
+          old_groups_capacity: m groups capacity()
+          m groups capacity(at_least // (group_size // 2))
+          if old_groups_capacity != m groups capacity()
+               m rehash()
 
      # returns an error if there's already an element inside the table
      # with the given `at`.  can also return an error if we are out of memory,
      # but will try to expand the table if possible.
-     # see also `replace_`.
-     ;;append_(at., of{require: of_ is !null_}.): hm_{null_}
-     {    if m remaining_capacity_() == 0
-               m grow_()
-          what m locate_(at)
-               element_offset.
-                    er_ at_already_present
-               _ no_room
-                    m grow_()
+     # see also `replace`.
+     ;;append(at., of[require: #of].): #hm[#null]
+     {    what m locate(at)
+               _located_here.
+                    #er at_already_present
+               ~ no_location_available
+                    m grow()
                     retry
-               tombstone_location.
-                    if tombstone_location attempts > max_attempts
-                         m grow_()
-                         retry
-                    m append_{was_tombstoned: true}(tombstone_location, at, of{require: of_ is !null_})
-               link_location.
-                    if link_location attempts > max_attempts
-                         m grow_()
-                         retry
-                    m append_{was_tombstoned: false}(link_location, at, of{require: of_ is !null_})
+               could_be_located_here.
+                    m append(could_be_located_here, at, of[require: #of])
      }
 
      @private
-     # TODO: we can just make `was_tombstoned` a regular argument, because of how `one_of_`s work we'd
-     # get overloads for `was_tombstoned: true` and `false` so there's no penalty for passing it in.
-     ;;append_{was_tombstoned: bool_}(link_location., at., of{require: of_ is !null_}.): hm_{null_}
-     {    dll_offset: link_location offset
-          (dll_element;) = m dll_element_(dll_offset)
-          debug assert_(!!m link_buckets)
-          if was_tombstoned
-               m first_tombstone_() = dll_element next
-          previous_last: m end_()
-          m end_() = dll_offset
-          dll_element previous = previous_last
-          dll_element next = dll_offset_ max
-          if !previous_last is_valid_index_()
-               m start_() = dll_offset
-
-          element_offset: @if was_tombstone
-               dll_element offset
-          @else
-               m count_()
-          ptr{element_}: m elements at_(element_offset)
-          # TODO: let's try to use `require: of_` and coerce `null_` to a falsy.
-          ptr initialize_([at, of{require: of_ is !null_}])
+     ;;append(could_be_located_here., at., of[require: #of].): #hm[#null]
+     {    (group;) = m groups[could_be_located_here group_offset]
+          debug assert(group metadata(could_be_located_here redirect_offset)) & ~ present == 0
+          element_offset: m elements append([at, of[require: #of]])
+          group redirect(could_be_located_here redirect_offset, element_offset)
      }
 
      # swaps the `of` that was at `at`, or an error if there wasn't
      # already an element inside the table with the given `at`.
-     # see also `append_` and `remove_`.
-     ;;swap_{require: of_ is !null_}(at:, of;): hm_{null_}
-          what m locate_(at)
-               element_offset.
-                    m elements at_(element_offset) swap_(of)
+     # see also `append` and `remove`.
+     ;;swap[require: #of](at:, of;): #hm[#null]
+          what m locate(at)
+               located_here.
+                    of <-> m elements[located_here element_offset] of
                else
-                    er_ no_such_at
+                    #er no_such_at
 
      # returns an error if there's not already an element inside the table
      # with the given `at`, otherwise the element's `of`.
-     ;;remove_(at:): hm_{of_}
-          what m locate_(at)
-               element_offset.
-                    m elements at_(element_offset) remove_()
+     ;;remove(at:): #hm[#of]
+          what m locate(at)
+               located_here.
+                    of. m elements remove(located_here element_offset)
+                    (group;) = m groups[located here group_offset]
+                    group metadata(located_here redirect_offset, ~ tombstone)
+                    of
                else
-                    er_ no_such_at
+                    #er no_such_at
 
      # returns the number of elements deleted, should be 0 or 1.
-     ;;delete_(at:): count_
-          what m locate_(at)
-               element_offset.
-                    m elements at_(element_offset) deinitialize_()
+     ;;delete(at:): #count
+          what m locate(at)
+               located_here.
+                    m elements delete(located_here element_offset)
+                    (group;) = m groups[located here group_offset]
+                    group metadata(located_here redirect_offset, ~ tombstone)
                     1
                else
                     0
 
-     # TODO: these `remove` operations should probably be given in
-     #    terms of an iterator that can delete.
-     # deletes any elements which match the given `all`.
-     # returns the number of elements deleted.
-     ;;remove_{require: of_ is !null_}(all: of_): count_
-
-     # returns the number of elements deleted, should be 0 or 1.
-     ;;remove_{require: of_ is !null_}(first: of_): count_
-
-     # returns the number of elements deleted, should be 0 or 1.
-     ;;remove_{require: of_ is !null_}(last: of_): count_
-
      # if readonly, returns an error if there's not already an element inside
      # the table with the given `at`.  if writable, returns an error if `at` is
-     # not in the table and either we ran out of memory or `of_` is not defaultable.
-     ;:at_{require: of_ is !null_}(at.): hm_{(of;:)}
+     # not in the table and either we ran out of memory or `#of` is not defaultable.
+     ;:[require: #of](at.): #hm[(of;:)]
 
-     # NOTE TO SELF: we can't do `;;at_(...): (of?;)` because we'll potentially
-     # swallow errors (e.g., `map at_(3) = null` should be fine from a memory standpoint,
-     # but `map at_(3) = 7` may throw due to running out of memory.
-     ::at_{require: of_ is !null_}(at.): hm_{(of?:)}
+     # NOTE TO SELF: we can't do `;;[...]: (of?;)` because we'll potentially
+     # swallow errors (e.g., `map[3] = null` should be fine from a memory standpoint,
+     # but `map[3] = 7` may throw due to running out of memory.
+     ::[require: #of](at.): (of?:)
 
-     # TODO: `;;` doesn't make sense when `of_` is `null_`.  we should split them out.
-     ;:each_(do_(at:, of{require: of_};:): loop_{~t_}:)?: t_
-          dll_offset; m start_()
-          while dll_offset is_valid_index_()
-               (dll_element;:) = m dll_element_(dll_offset)
-               (element;:) = m elements at_(dll_element offset)
-               # TODO: annotating nullable variables with `?` is a pain here:
-               # if `t_` is `null_` then `break` would be null.  should we free
-               # up `?` for other purposes, or not require it for variable declarations?
-               if do_(element at, element of{require: of_}) is break.
-                    return break
-               dll_offset = dll_element next
+     ;:each[require: #of](do(at:, of;:): #loop[~#t]:)?: #t
+          m elements each$(do($element at, $element of))
+
+     ::each[require: #of == #null](do(at:): #loop[~#t]:)?: #t
+          m elements each(do)
 
      @private
-     ::locate_(at:): one_of_
-     {    element_offset:
+     ::locate(at:): #one_of
+     [    # `at` is present in the table
+          located_here:
           # `at` is not present in the table, but should go here if you want to add it.
-          # it's a new location, i.e., on a cleared metadata.
-          link_location:
-          # `at` is not present in the table, but should go here if you want to add it.
-          # it's at a tombstoned metadata location.
-          tombstone_location:
-          no_room: null_
-     }
-     {    full_hash: fast_hash_(at)
-          [metadatum:, remaining_hash:] = metadatum_ extract_(full_hash)
-          partial_hash: remaining_hash truncate_()
+          # it's an empty or tombstoned location.
+          could_be_located_here:
+          no_location_available: #null
+     ]
+     {    full_hash: fast_hash(at)
+          # best empty/tombstone spot for `at`, if we don't find it in the table:
+          best_location; #return = ~ no_location_available
+          [at_metadatum: #metadatum, remaining_hash:] = #metadatum extract(full_hash)
 
-          best_tombstone?; tombstone_location_
-          slot_count each attempts: count_
-               offset_metadatum: m link_buckets metadatum_(offset)
+          group_count: m groups capacity()
+          group_offset; remaining_hash %% group_count
+
+          min(group_count, max_group_probe_count) each _attempt: #count
+          {    (group:) = m groups(group_offset)
                # TODO: this part can be sped up with SIMD, if available.
-               if offset_metadatum cleared_()
-                    if best_tombstone is tombstone_location:
-                         return [tombstone_location]
+               group_size each redirect_offset:
+                    slot_metadatum: group metadata(redirect_offset)
+                    if slot_metadatum & ~ present
+                         if slot_metadatum != at_metadatum
+                              continue
+                         element_offset: group redirects[redirect_offset]
+                         if likely(at == m elements[element_offset] at)
+                              return #located_here
+                              [    group_offset
+                                   element_offset
+                                   redirect_offset
+                              ]
                     else
-                         return [link_location: [offset, attempts]]
-               elif offset_metadatum filled_()
-                    if offset_metadatum == metadatum
-                         # there's a good chance we're already a hit.
-                         dll_element: m link_buckets dll_element_(offset)
-                         if dll_element partial_hash == partial_hash
-                              # there's a very good chance we're already a hit.
-                              element_offset: dll_element offset
-                              if m elements[element_offset] at == at
-                                   return [element_offset]
-               else
-                    debug assert_(offset_metadatum tombstoned_())
-                    if best_tombstone == null
-                         best_tombstone = [offset, attempts]
-               ++offset
-          _ no_room
+                         if best_location == ~ no_location_available
+                              best_location = #could_be_located_here
+                              [    group_offset
+                                   redirect_offset
+                              ]
+                         if slot_metadatum == ~ empty
+                              return best_location
+               group_offset = (group_offset + 1) %% group_count
+          }
+          best_location
      }
 
-     @private
-     add_(link_buckets;, at:): hm_{link_location_}
-     {    full_hash: fast_hash_(at)
-          [metadatum:, remaining_hash:] = metadatum_ extract_(full_hash)
-          partial_hash: remaining_hash truncate_()
-
-          bucket_count: link_buckets capacity_()
-          slot_count: slots_per_bucket * bucket_count
-          offset; full_hash % slot_count
-          slot_count each attempts: count_
-               offset_metadatum: m metadatum_(offset)
-               # TODO: this part can be sped up with SIMD, if available.
-               if !offset_metadatum filled_()
-                    debug assert_
-                    (    offset_metadatum cleared_()
-                         er. "we should have no tombstones here"
-                    )
-                    return [link_location: [offset, attempts]]
-               ++offset
-          er_ out_of_memory
-     }
-
-     @private
-     link_location_: [offset;, attempts: count_]
-     @private
-     tombstone_offset_: link_location_
-
-     # shuffles the iteration order of this table
-     ;;shuffle_(): null_
+     # shuffles the iteration order of this table.
+     # essentially performs a defrag on the new order as well.
+     ;;shuffle(): #null
 
      # optimizes this table so that all elements are laid out in order
      # and the linked list goes from left to right contiguously.
      # this is not really necessary to do unless elements have been deleted,
-     # or the table has been shuffled/sorted.  this performs a rehash
-     # if `update_slot_count` is true.
-     ;;defrag_(update_slot_count: true): null_
-          if update_slot_count
-               m rehash_()
+     # or the table has been shuffled/sorted.
+     ;;defrag(): #null
 
      @private
-     ;;rehash_(NEW_capacity.): hm_{null_}
-          debug assert_(m count_()) <= NEW_capacity
-          if NEW_capacity == 0
-               @unlikely
-               m renew_()
-               return
-
-          desired_slot_count: count_ closest_(dbl_ closest_(NEW_capacity) / expected_load_factor)
-
-          NEW_bucket_count; count_ = desired_slot_count // slots_per_bucket
-          if desired_slot_count %% slots_per_bucket and NEW_bucket_count < _ max
-               ++NEW_bucket_count
-
-          debug assert_(NEW_bucket_count) >= m link_buckets capacity_()
-          NEW_link_buckets; link_buckets_
-          NEW_link_buckets capacity_(NEW_bucket_count) assert_()
-          # we need to initialize metadata properly.
-          NEW_bucket_count each in_bounds. index_
-               NEW_link_buckets at_(in_bounds) metadata_field_() zero_()
-
-          if m first_tombstone_() is_valid_index_()
-               m rehash_with_tombstones_(NEW_capacity, .NEW_link_buckets)
-          else
-               m rehash_without_tombstones_(NEW_capacity, .NEW_link_buckets)
-
+     # TODO: `dll count_site` should be `managed_elsewhere` if
+     # `this count_site` is local.
+     #elements: #dll[#element, dll_offsets_site]
      @private
-     ;;rehash_with_tombstones_(NEW_capacity., NEW_link_buckets.): hm_{null_}
-          # if we have deleted some elements, it's nicer to renew the
-          # `elements` array than to iterate through the tombstones and add them back
-          # into the `link_buckets`.
-          # TODO: make this be an option, we certainly could do that, but there
-          # are some design choices...
-          NEW_elements; elements_
-
-          debug assert_(NEW_capacity) >= m elements capacity_()
-          NEW_elements capacity_(NEW_capacity) assert_()
-
-          dll_offset; m start_()
-          NEW_element_offset; 0
-          while true
-               dll_element: m dll_element_(dll_offset)
-               ptr{element_}: NEW_elements at_(NEW_element_offset)
-               ptr copy_(from. m elements at_(dll_element offset))
-               # we could do something like this but `m elements` is getting reset soon:
-               # `debug only_({ m elements at_(dll_element offset) zero_() })`
-
-               # TODO: there's a small chance that we put `at` in a bad spot,
-               # i.e., with `attempts > max_attempts`.  do we want to allow expanding
-               # `NEW_link_buckets` if so?  we'll have to rehash just the buckets and this
-               # method does a little of everything, i.e., updating elements and buckets.
-               # maybe we push through and organize everything (defrag) but then retry
-               # the buckets as enlarged.
-               NEW_dll_offset: add_(ptr resolve_() at, NEW_link_buckets)
-
-               if ++NEW_element_offset == 1
-                    # this was the first element.
-                    START_dll_offset = NEW_dll_offset
-
-               if dll_element next is_valid_index_()
-                    dll_offset = dll_element next
-               else
-                    END_dll_offset = NEW_dll_offset
-                    break
-
-          m elements = NEW_elements
-          m link_buckets = NEW_link_buckets
-          m start_() = START_dll_offset
-          m end_() = END_dll_offset
-          m first_tombstone_() = dll_offset_ max # no tombstoned elements
-
-     # we want to totally distinguish `dll_offset_` and `element_offset_`
+     #element: [at:, of[require: #of];]
+     # we want to totally distinguish `#group_offset` and `#element_offset`
      # to avoid using one for the other accidentally.
      @private
-     dll_offset_: @distinct count_ offset_
-     @private
-     element_offset_: @distinct count_ offset_
+     #element_offset: @distinct #count #offset
 
      @private
-     ;:start_{require: start_site is_local_()}(): (dll_offset_;:)
-          m start
+     #group_offset: @distinct #count #offset
      @private
-     ;:start_{require: start_site is_on_heap_()}(): (dll_offset_;:) where !!m link_buckets
-          m link_buckets header_() start
+     #groups: #allocation[#group]
      @private
-     ::start_{require: start_site is_on_heap_()}(): dll_offset_
-          if m link_buckets
-               m link_buckets header_() start
-          else
-               dll_offset_ max
-
-     @private
-     ;:end_{require: end_site is_local_()}(): (offset_;:)
-          m end
-     @private
-     ;:end_{require: end_site is_on_heap_()}(): (offset_;:) where !!m link_buckets
-          m link_buckets header_() end
-
-     @private
-     ;:first_tombstone_{require: first_tombstone_site is_local_()}(): (offset_;:)
-          m first_tombstone
-     @private
-     ;:first_tombstone_{require: first_tombstone_site is_on_heap_()}(): (offset_;:) where !!m link_buckets
-          m link_buckets header_() first_tombstone
-     @private
-     ::first_tombstone_{require: first_tombstone_site is_on_heap_()}(): dll_offset_
-          if m link_buckets
-               m link_buckets header_() first_tombstone
-          else
-               dll_offset_ max
-
-     @private elements_: size_optimized_allocation_{element_, header_: element_header_}
-     @private element_: [at:, of{require: of_ is !null_};]
-     @private
-     element_header_:
-     [    count{require: count_site is_on_heap_()};
+     #group:
+     [    metadata; #vector[2, #u64]
+          redirects; #buffer[group_size, #element_offset]
      ]
 
      @private
-     link_buckets_: size_optimized_allocation_{link_bucket_, header_: links_header_}
-     {    ::metadatum_(offset.): metadatum_
-               slot_count: m capacity_() * slots_per_bucket
-               if slot_count == 0
-                    @unlikely
-                    return metadatum_ present
-               offset %%= slot_count
-               bucket_inner_offset. offset %% slots_per_bucket
-               which_bucket. offset // slots_per_bucket
-               m at_(which_bucket) resolve_() metadata[bucket_inner_offset]
-
-          ::dll_element_(offset.): dll_element_
-               slot_count: m capacity_() * slots_per_bucket
-               debug assert_(slot_count > 0)
-               offset %%= slot_count
-               bucket_inner_offset. offset %% slots_per_bucket
-               which_bucket. offset // slots_per_bucket
-               m at_(which_bucket) resolve_() dll[bucket_inner_offset]
-     }
-     @private
-     link_buckets_header_:
-     [    start{require: start_site is_on_heap_()}; dll_offset_
-          end{require: end_site is_on_heap_()}; dll_offset_
-          # index into `dll` that is the first free in the list.
-          # essentially will be a SLL of the tombstoned elements.
-          first_tombstone{require: first_tombstone_site is_on_heap_()}; dll_offset_
+     #located_here:
+     [    group_offset:
+          element_offset:
+          redirect_offset: #u8
      ]
+
      @private
-     link_bucket_:
-     [    metadata; vector_{slots_per_bucket, metadatum_}
-          # the `dll_element`s can have links to other buckets.
-          dll; buffer_{slots_per_bucket, dll_element_}
+     #could_be_located_here:
+     [    group_offset:
+          redirect_offset: #u8
      ]
-     @private
-     dll_element_:
-     [    partial_hash;
-          # offsets are not based on buckets; to get the bucket index
-          # you use `offset // slots_per_bucket`, and the index within
-          # the bucket via `offset %% slots_per_bucket`.
-          # similarly for `next` and `previous`.
-          offset; element_offset_
-          next; dll_offset_
-          previous; dll_offset_
-     ]
-     @private
-     partial_hash_: count_ unsigned_
 
-     @private
-     size_optimized_allocation_{of_:, header_:}: allocation_
-     {    of_
-          count_
-          capacity_site_ on_heap
-          header_
-     }
+     #count: #capacity
 
-     count_: capacity_
-
-     count_site_: memory_ site_
-     start_site_: memory_ site_
-     end_site_: memory_ site_
-     first_tombstone_site_: memory_ site_
+     #count_site: #memory #site
+     #dll_offsets_site: #memory #site
 }
 
 @private
-metadatum_: u8_
-{    ;;renew_(): null_
+#metadatum: #u8
+{    ;;renew(): #null
           m u8 = 0
 
-     extract_(full_hash. u64_): [metadatum:, remaining_hash:]
+     extract(full_hash. #u64): [metadatum:, remaining_hash:]
           m;
-          remaining_hash: m fill_(full_hash)
+          remaining_hash: m fill(full_hash)
           [m, remaining_hash]
 
-     ::cleared_(): bool_
+     ::cleared(): #bool
           m u8 == 0
-     ::filled_(): bool_
+     ::filled(): #bool
           m u8 & present
-     ::tombstoned_(): bool_
+     ::tombstoned(): #bool
           m u8 == tombstone
 
-     ;;clear_(): null_
+     ;;clear(): #null
           m u8 = 0
-     ;;fill_(full_hash. u64_): [remaining_hash: u64_]
+     ;;fill(full_hash. #u64): [remaining_hash: #u64]
           m u8 = present | (full_hash & 127)
           remaining_hash: full_hash >> 7
-     ;;tombstone_(): null_
+     ;;tombstone(): #null
           m u8 = tombstone
 
-     present: u8_ = 128
-     tombstone: u8_ = 127
+     present: #u8 = 128
+     tombstone: #u8 = 127
 }

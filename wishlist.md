@@ -306,11 +306,8 @@ PROBLEM STATEMENT:
 8. it would be nice to have a quick way to refer to a type, e.g., `value: _ my_enum1`
      where `value_: one_of_[my_enum1:, my_enum2:]`, especially for switch-cases.
      `what value { _ my_enum1 {print("ok")}, _ my_enum2 {print("no")} }` vs.
-     `what value { #@ my_enum1 {print("ok")}, #@ my_enum2 {print("no")} }` isn't too bad.
-     if we give up on `#` for comments (maybe require `#!`), then we could do
-     `what value { # my_enum1 {print("ok")}, # my_enum2 {print("no")} }` but i don't
-     love getting rid of `#` for comments.  might also be able to do this:
-     `what value { ::my_enum1 {print("ok")}, ::my_enum2 {print("no")} }`.
+     or if we double down on `~` being infer, we can probably do:
+     `what value { ~ my_enum1 {print("ok")}, ~ my_enum2 {print("no")} }`.
 9. it *might* be nice to allow `()` on variables, e.g., `"asdf"("jkl;") == "asdf(jkl;)"`.
      this would automatically define an overload for e.g. `my_str: "asdf"`
      with `my_str(...): str_`, but would error-out on default names (e.g., `str: "asdf"`)
@@ -331,10 +328,7 @@ PROBLEM STATEMENT:
      types with A-F, unless some other letter a-zG-Z came first).
           * we could introduce another symbol like `#|123456` or `\#123456` to define a color.
                it might be nice to allow for quick searching for colors without a regex.
-               `6#123456`, `rrggbb#123456`, `rgb#123`, etc. could also work
 12. support Horstmann indenting
-
-`#` for types is very cute, and i think it looks really nice.
 
 
 * option 1: current approach, using {} for generic specifications
@@ -410,7 +404,7 @@ function_(a: int_): hm_
 * option 2.5:
      * use a prefix `#` to indicate that something is a type or returns a type (if followed by `[]`)
      * use () or [] as needed for non-type functions, based on ref or non-ref requirements
-     * use [] for type functions
+     * use [] for generics (type functions)
      * `do_something(): #any` returns an instance that could be any type.
      * `#returns_type[]: #type_constraint` is a function that returns a type that will obey
           `#type_constraint`, e.g., `#all_of[#number, #hashable]`.
@@ -418,7 +412,20 @@ function_(a: int_): hm_
      * `my_array: #array[#int]` to declare an array of integers
      * `array[#int]:` to declare a default-named array of integers (`array: #array[#int]`)
      * `my_type(123):` to declare a default-named type, initialized `my_type: #my_type(123)`.
-     * pros 
+     * TODO: do we need a prefix `#` on return type data structures?
+          e.g., `fn(theta: #flt): #[x: #flt, y: #flt]`
+     * pros:
+          * `#` for types is very cute, and i think it looks really nice.
+          * could use trailing `_` for protected/private.
+          * i like the idea that scripts could use types as comments
+               and add them in as they become statically inclined.
+     * cons:
+          * not having `_` for functions means that syntax highlighting can't
+               determine what is a function easily (without look ahead to ())
+               * we could add `_` back for functions, but then it's slightly
+                    confusing whether types should get them (when acting as
+                    functions), e.g., `#str_(123)` or `#str(123)`??
+               * this is kinda like `new` which i don't like.
 * option 3: use () or [] for function arguments and generic specifications;
      use trailing underscores on the function name to indicate returning a type or not.
      * `do_something_(): any_` to return a type, e.g., `x_: do_something_()` defines a type
