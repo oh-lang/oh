@@ -46,7 +46,7 @@
      ;;capacity(new. #capacity, old. #capacity): #hm[#null]
           # TODO: adjust for `#header data_alignment` and `#of data_alignment`.
           required_memory: #memory = assert
-          (    new * memory(#of) + memory(#combined_header)
+          (    new * #memory(#of) + #memory(#combined_header)
                #er out_of_memory
           )
           if old == 0
@@ -121,7 +121,7 @@
                m of_ptr = null
           else
                # TODO: adjust for data alignment
-               m of_ptr = ptr + memory(#combined_header)
+               m of_ptr = ptr + #memory(#combined_header)
                @if capacity_site is_on_heap()
                     m combined_header() capacity = capacity
 
@@ -129,7 +129,7 @@
      ::ptr(): #ptr[#u8] where !!m
           ptr[#u8]; m of_ptr  # TODO: casting??
           # TODO: adjust for data alignment
-          ptr -= memory(#combined_header)
+          ptr -= #memory(#combined_header)
           ptr
 
      @private

@@ -414,11 +414,12 @@ function_(a: int_): hm_
      * use () or [] as needed for non-type functions, based on ref or non-ref requirements
      * use [] for generics (type functions)
      * `another_thing[]: #whatever` returns an instance of `#whatever` type.
+          recommended only for generics and array indexing.
      * `do_something(): #any` returns an instance that could be any type.
      * `#returns_type[]: #type_constraint` is a function that returns a type that will obey
           `#type_constraint`, e.g., `#all_of[#number, #hashable]`.
-     * `#returns_type(): #whatever_constraint` - probably the same as `[]`, but can
-          pass in arguments as references.  (not recommended.)
+     * `#returns_instance(): #returns_instance` - this is a constructor for the 
+          `#returns_instance` type.
      * `#c: #one_of[a: #u64, b: #str]` to make a typedef
      * `my_array: #array[#int]` to declare an array of integers
      * `array[#int]:` to declare a default-named array of integers (`array: #array[#int]`)
