@@ -1,96 +1,76 @@
 @final
-allocation_
-{    of_:
+#allocation
+[    #of:
      # determines the maximum size of the allocation, and
      # makes indexing this allocation potentially more efficient.
-     # when using an `index_count_`, negative indices are used for "from the back";
-     # when using an `offset_count_`, negative indices are not permitted.
-     # the downside of `index_` is that the max capacity is `index_ max_count`,
-     # which is half the max capacity of `offset_ max_count`.
-     capacity_: select_count_
+     # when using an `#index_count`, negative indices are used for "from the back";
+     # when using an `#offset_count`, negative indices are not permitted, and
+     # `#offset max` (should be -1, wrapped) is reserved as an invalid offset.
+     # the downside of `#index` is that the max capacity is `#index max_count`,
+     # which is half the max capacity of `#offset max_count`.
+     #capacity: #select_count
      # if not null, we allocate just enough space for this extra data
-     # just before the buffer of `of_` values.  there can be multiple
+     # just before the buffer of `#of` values.  there can be multiple
      # `of` values, but only ever one instance of `header` is added.
-     # TODO: we probably can infer `header_: null_` implies `header_: any_ = null_`.
-     header_: any_ = null_
+     # TODO: we probably can infer `#header: #null` implies `#header: #any = #null`.
+     #header: #any = #null
      # whether to put capacity locally inside this allocation.
-     # if `on_heap`, it gets added to the `combined_header_`
-     capacity_site: _ local
-}:
+     # if `on_heap`, it gets added to the `#combined_header`
+     capacity_site: #~ local
+]:
 [    @private m:
      [    of_ptr;
-          maybe_capacity{require: capacity_site is_local_()};
+          capacity[require: capacity_site is_local()];
      ]
 ]
-{    ::capacity_(): capacity_
-          if capacity_site is_local_()
-               capacity_(m maybe_capacity, has_ptr. m of_ptr != null)
+{    ::capacity(): #capacity
+          if capacity_site is_local()
+               #capacity(m capacity)
           else
-               # TODO: add combined_header method
-               m combined_header_() map_
-               (    fn_(ok:) capacity_(ok maybe_capacity, has_ptr: true)
-                    fn_(_er:): 0
+               m combined_header() map
+               (    ${#capacity($ok capacity)}
+                    ${$_er, 0}
                )
 
-     # in case `capacity_` is an `index_count_`, we can use `capacity_ of_`
-     # directly as the capacity of this allocation.
-     # otherwise, if `capacity_` is an `offset_count_`, `capacity_ of_`
-     # is too small in one case, i.e., when at max capacity.
-     # in that case, `maybe_capacity = 0` but `of_ptr != null`,
-     # which we'll interpret as max capacity.
-     @private
-     maybe_capacity_: capacity_ of_
-
-     @private
-     capacity_(maybe_capacity., has_ptr. bool_): capacity_
-          if capacity_ indexable
-               debug assert_(capacity_(maybe_capacity))
-          else
-               if maybe_capacity
-                    _(maybe_capacity)
-               elif has_ptr
-                    _ max_()
-               else
-                    _ min_()
-
-     # this notation might be more concise and understandable: `!m: bool_`
-     ::!(): bool_
+     # this notation might be more concise and understandable: `!m: #bool`
+     ::!(): #bool
           m of_ptr == null
 
      # ensure you free any elements that were initialized
      # if the new capacity is smaller than the old capacity.
      # this data structure does not keep track of which elements are initialized.
-     ;;capacity_(capacity.): hm_{null_}
-          m capacity_(new. capacity, old. m capacity_())
+     ;;capacity(capacity.): #hm[#null]
+          m capacity(new. capacity, old. m capacity())
 
      @private
-     ;;capacity_(new. capacity_, old. capacity_): hm_{null_}
-          required_bytes: memory_ = assert_
-          (    new * of_ memory_() + combined_header_bytes
-               er_ out_of_memory
+     ;;capacity(new. #capacity, old. #capacity): #hm[#null]
+          # TODO: adjust for `#header data_alignment` and `#of data_alignment`.
+          required_memory: #memory = assert
+          (    new * memory(#of) + memory(#combined_header)
+               #er out_of_memory
           )
           if old == 0
-               ptr{u8_}. required_bytes allocate_() assert_(er_ out_of_memory)
-               m ptr_(ptr, new{require: capacity_site is_on_heap_()})
+               ptr[#u8]. required_memory allocate() assert(#er out_of_memory)
+               m ptr(ptr, new[require: capacity_site is_on_heap()])
           else
-               ptr{u8_}. m ptr_()
-               required_bytes reallocate_(;ptr) assert_(er_ out_of_memory)
-               m ptr_(ptr, new{require: capacity_site is_on_heap_()})
+               ptr[#u8]. m ptr()
+               required_memory reallocate(;ptr) assert(#er out_of_memory)
+               m ptr(ptr, new[require: capacity_site is_on_heap()])
 
-          if capacity_site is_local_()
-               m maybe_capacity = truncate_(new)
+          if capacity_site is_local()
+               m capacity = new
 
 
      # make sure that this element is already initialized;
      # this `allocation` does not keep track of which elements are initialized.
      # this will return an error if `offset` is out of bounds.
-     # TODO: the `hm` doesn't seem to be in the right spot since `offset` is lazily evaluated.
+     # TODO: the `#hm` doesn't seem to be in the right spot since `offset` is lazily evaluated.
      #[#
-     ;:at_(offset.): hm_{(of;:)}
-          refer_
+     ;:at(offset.): #hm[(of;:)]
+          refer
           (    m
                at. offset
-               {assert_($at < m capacity_()), to_($o of_ptr + $at)}
+               ${assert($at < m capacity()), $o of_ptr + $at}
           )
      #]#
 
@@ -98,98 +78,85 @@ allocation_
      # make sure that this element is already initialized;
      # this `allocation` does not keep track of which elements are initialized.
      # this will return an error if `offset` is out of bounds and we can't resize to encompass `offset`.
-     ;;at_(offset.): hm_{ptr_{of_}}
-          if offset >= m capacity_()
-               m capacity_(offset + 1) assert_()
-          if m of_ptr == null
-               null
-          else
-               m of_ptr + offset
+     ;;at(offset.): #hm[#ptr[#of]]
+          if offset >= m capacity()
+               m capacity(offset + 1) assert()
+          m of_ptr + offset
 
      # if doing things that require the pointer to be initialized,
      # make sure that this element is already initialized;
      # this `allocation` does not keep track of which elements are initialized.
      # this will return an error if `offset` is out of bounds.
-     ::at_(offset.): hm_{ptr_{of_}}
-          assert_(offset < m capacity_(), er_ out_of_bounds)
-          if m of_ptr == null
-               null
-          else
-               m of_ptr + offset
-
-     ;:at_(in_bounds. offset_): ptr_{of_}
-          debug assert_(in_bounds < m capacity_())
+     ::at(offset.): #hm[#ptr[#of]]
+          assert(offset < m capacity(), #er out_of_bounds)
           m of_ptr + offset
 
-     ::header_{require: header_}(): hm_{(header:)}
-          if m
-               ok_(m header_())
-          else
-               er_ unallocated
+     ;:at(in_bounds. #offset): #ptr[#of]
+          debug assert(in_bounds < m capacity())
+          m of_ptr + offset
 
-     ;;header_{require: header_}(): hm_{(header;)}
+     ::header[require: #header](): #hm[#(header:)]
+          if m
+               ok(m header())
+          else
+               #er unallocated
+
+     ;;header[require: #header](): #hm[#(header;)]
           if !m
-               m capacity_(small_capacity) assert_()
-          with !!m
-               ok_(m header_())
+               m capacity(small_capacity) assert()
+          debug assert(!!m)
+          ok(m header())
 
      # gets the header when `m` is truthy.
-     ;:header_{require: header_}(): (header;:) where !!m
-          (combined_header;:) = m ptr_() to_()
-          combined_header header
+     ;:header[require: #header](): #(header;:) where !!m
+          m combined_header() header
 
      @private
-     ;;ptr_(ptr{u8_}., capacity{require: capacity_site is_on_heap_()}.): null_
+     ;:combined_header[require: #header or capacity_site is_on_heap()]: (combined_header;:)
+          m ptr() to()
+
+     @private
+     ;;ptr(ptr[#u8]., capacity[require: capacity_site is_on_heap()].): #null
           if ptr == null
                m of_ptr = null
           else
-               m of_ptr = ptr + combined_header_bytes
-               @if capacity_site is_on_heap_()
-                    (combined_header;) = ptr to_()
-                    combined_header maybe_capacity = truncate_(capacity)
+               # TODO: adjust for data alignment
+               m of_ptr = ptr + memory(#combined_header)
+               @if capacity_site is_on_heap()
+                    m combined_header() capacity = capacity
 
      @private
-     ::ptr_(): ptr_{u8_} where !!m
-          ptr{u8_}; m of_ptr  # TODO: casting??
-          ptr -= combined_header_bytes  # if present, `combined_header_` starts before the `of_` buffer
+     ::ptr(): #ptr[#u8] where !!m
+          ptr[#u8]; m of_ptr  # TODO: casting??
+          # TODO: adjust for data alignment
+          ptr -= memory(#combined_header)
           ptr
 
      @private
-     ::ptr_(): ptr_{u8_} where !m
+     ::ptr(): #ptr[#u8] where !m
           null
-
-     @private
-     combined_header_bytes: memory_
-          if combined_header_
-               at_least_memory: memory_(combined_header_)
-               word_memory: memory_(arch_ word_)
-               # TODO: maybe just `ceil_(at_least_memory / word_memory) * word_memory`??
-               need_one_more_word: at_least_memory %% word_memory != 0
-               (at_least_memory // word_memory + need_one_more_word) * word_memory
-          else
-               0
 
      # TODO: update based on size of `of_`
      small_capacity: 4
 
      @private
-     combined_header_: if header_ or capacity_site is_on_heap_()
-          [    header{require: header_};
-               maybe_capacity{require: capacity_site is_on_heap_()};
+     #combined_header: @if header_ or capacity_site is_on_heap_()
+          #[   header[require: #header];
+               capacity[require: capacity_site is_on_heap()];
           ]
-     else
-          null_
+     @else
+          #null
 
-     er_: container_ er_
-     hm_{of_:}: hm_{ok_: of_, er_}
+     #er: #container #er
+     #hm[#of:]: #hm[#ok: #of, #er]
 
-     # use an alias so we can do, e.g., `allocation_{capacity_site_ on_heap}`
+     # use an alias so we can do, e.g., `#allocation[capacity_site on_heap]`
      # to specify `capacity_site`
-     capacity_site_: @distinct memory_ site_
+     #capacity_site: @distinct #memory #site
 
-     offset_: capacity_ offset_
-     index_{require: capacity_ indexable}: capacity_ index_
+     #offset: #capacity #offset
+     #index: #capacity #index
 
      @private
-     of_ptr_: ptr_{of_}
+     #of_ptr: #ptr[#of]
 }

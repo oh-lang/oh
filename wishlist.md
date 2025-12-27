@@ -291,12 +291,12 @@ PROBLEM STATEMENT:
 5. it would be nice to use some sort of parentheses for generics (lean towards [])
 6. it would be nice to avoid `new` when instantiating a type, `x_(123)` or `#y(456)
      instead of `x_ new(123)` or `#y new(456)`.
-7. generics for types and functions should be distinguishable from the subscript operator
+7. generics for types and functions should be distinguishable from the subscript operator(??)
      * `m[offset:]: str_` to declare the subscript operator,
      * `some_class[123]` to use the subscript operator on an instance `some_class`,
      * `fn[require: #of, #of: #any](of:): #int` to declare a generic function,
      * `fn[#of: #int](1234)` to call the generic function,
-     * `#my_type[#of:]` to declare a type that generalizes over an inner type,
+     * `#my_type[#of:]: ...` to declare a type that generalizes over an inner type,
      * `#my_type[#int]` to use the type specialized to `#int`.
      * but why do we need to distinguish between `fn_[generics...]` and
           `some_class[...]`?  can't `fn[generics...]` just be a way to create
@@ -308,11 +308,16 @@ PROBLEM STATEMENT:
      `what value { _ my_enum1 {print("ok")}, _ my_enum2 {print("no")} }` vs.
      or if we double down on `~` being infer, we can probably do:
      `what value { ~ my_enum1 {print("ok")}, ~ my_enum2 {print("no")} }`.
+     but if `~` is a prefix operator, then it might look the same as `~my_enum1` which
+     actually might be ok.  alternatively `#~` for inferring a type would be fine.
+     `what value { #~ my_enum1 {print("ok")}, #~ my_enum2 {print("no")} }`.
 9. it *might* be nice to allow `()` on variables, e.g., `"asdf"("jkl;") == "asdf(jkl;)"`.
      this would automatically define an overload for e.g. `my_str: "asdf"`
      with `my_str(...): str_`, but would error-out on default names (e.g., `str: "asdf"`)
      if we can use a type as a function and it's the same identifier (e.g., `str` is the
      type and also how you build a `str_` type), so we'd need `str_(...)`.
+     * this would probably make it undesirable to  distinguish between functions and variables,
+          at least for casing.
 10. it *might* be nice to allow overloading {} on an instance, `"asdf"{"jkl;"} == "asdf{jkl;}"`,
      but probably would break a whole lot of other things.  would probably need a
      specific "call operator" like `abc#{...}`.
@@ -332,6 +337,7 @@ PROBLEM STATEMENT:
 
 
 * option 1: current approach, using {} for generic specifications
+     * DO NOT LIKE because of the cons, specifically generics.
      * `do_something_(): any_` to return an instance
      * `do_something_{}: any_` to return a type
      * pros:
@@ -343,6 +349,7 @@ PROBLEM STATEMENT:
           * ${} feels like it should be a function but it's a lambda type
           * `child_class_: parent_class_ {...}` makes `...` look like a specification on parent
                * we'll need a new syntax here, maybe `extend_{parent_class_}`
+                    or `a_: { is parent;, ... }`.
           * `a {...}` and `a_ {...}` act differently despite looking very similar.
           * there's not a natural way to indicate the return type of a function
                with specific arguments, e.g., `fn_(x: int_): str_` via `fn_{x_: int_}` maybe,
@@ -402,18 +409,24 @@ function_(a: int_): hm_
                but that does feel a bit weirdly overloaded.  it also doesn't extend and work for
                `my_function_(whatever_)` giving the return type of `my_function_(whatever:)`
 * option 2.5:
+     * really liking this option.
      * use a prefix `#` to indicate that something is a type or returns a type (if followed by `[]`)
      * use () or [] as needed for non-type functions, based on ref or non-ref requirements
      * use [] for generics (type functions)
+     * `another_thing[]: #whatever` returns an instance of `#whatever` type.
      * `do_something(): #any` returns an instance that could be any type.
      * `#returns_type[]: #type_constraint` is a function that returns a type that will obey
           `#type_constraint`, e.g., `#all_of[#number, #hashable]`.
+     * `#returns_type(): #whatever_constraint` - probably the same as `[]`, but can
+          pass in arguments as references.  (not recommended.)
      * `#c: #one_of[a: #u64, b: #str]` to make a typedef
      * `my_array: #array[#int]` to declare an array of integers
      * `array[#int]:` to declare a default-named array of integers (`array: #array[#int]`)
      * `my_type(123):` to declare a default-named type, initialized `my_type: #my_type(123)`.
      * TODO: do we need a prefix `#` on return type data structures?
           e.g., `fn(theta: #flt): #[x: #flt, y: #flt]`
+          if so, this option makes it very natural to do so, but it might break
+          midline comments.  we might need to require a space after `#[` or `#(`.
      * pros:
           * `#` for types is very cute, and i think it looks really nice.
           * could use trailing `_` for protected/private.
@@ -669,7 +682,7 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
           return "Value is 12" (and print that) if you call `another_fn_(value: 12)`.
 * `type_case_`/`function_case_` identifiers like `x_` are function/type-like, see [identifiers](#identifiers)
 * `variable_case` identifiers like `x` are instance-like, see [identifiers](#identifiers)
-* use `#` for [comments](#comments)
+* use `#` for [comments](#comments), though there are a few reserved sequences
 * outside of arguments, use `:` for readonly declarations and `;` for writable declarations
 * for an argument, `:` is a readonly reference, `;` is a writable reference, and `.` is a temporary
      (i.e., passed by value), see [pass-by-reference or pass-by-value](#pass-by-reference-or-pass-by-value)
@@ -1664,9 +1677,8 @@ if some_condition
 ## comments
 
 Comments come in three types: (1) end of line (EOL) comments, (2) mid-line comments,
-and (3) multiline comments.  End of line comments are the hash `#` followed by any
-character that is not `(`.  All characters after an EOL comment are ignored; the
-compiler will start parsing on the next line.  A mid-line comment begins with `#(`
+and (3) multiline comments.  End of line comments are the hash `#` followed by a space;
+the compiler will resume parsing on the next line.  A mid-line comment begins with `#(`
 followed by any character that is not a `#`, and ends with `)#` *on the same line*.
 All characters within the parentheses are ignored by the compiler.  Multiline comments
 begin with `#(#` and end with the corresponding `#)#` *at the same tab indent*.
