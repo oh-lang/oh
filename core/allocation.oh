@@ -16,7 +16,7 @@
      #header: #any = #null
      # whether to put capacity locally inside this allocation.
      # if `on_heap`, it gets added to the `#combined_header`
-     capacity_site: #~ local
+     capacity_site: ~# local
 ]:
 [    @private m:
      [    of_ptr;
@@ -44,7 +44,7 @@
 
      @private
      ;;capacity(new. #capacity, old. #capacity): #hm[#null]
-          # TODO: adjust for `#header data_alignment` and `#of data_alignment`.
+          # TODO: adjust for `#header memory_alignment` and `#of memory_alignment`.
           required_memory: #memory = assert
           (    new * #memory(#of) + #memory(#combined_header)
                #er out_of_memory
@@ -155,6 +155,7 @@
      #capacity_site: @distinct #memory #site
 
      #offset: #capacity #offset
+     # NOTE: this can be null.
      #index: #capacity #index
 
      @private

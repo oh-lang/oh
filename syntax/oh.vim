@@ -24,28 +24,26 @@ set cpo&vim
 " TODO: let's see if we can make the vim syntax work for ending in a number;
 " i.e., it should become a namespace
 
-" Keep keywords in alphabetical order inside groups.
-"
+" NOTE: in a group, lower elements have higher priority.
 syn keyword ohBuiltinVariable	false true none null unspecified
 syn keyword ohBuiltinVariable	ctx debug m o require
-syn keyword ohBuiltinFunction	has_ is_ m_ o_ renew_
-syn keyword ohBuiltinFunction	count_ each_ test_ to_
-syn keyword ohBuiltinFunction	abs_ ceil_ floor_ max_ min_
-syn keyword ohBuiltinFunction	error_ print_
-syn keyword ohBuiltinType	never_ disallowed_
+syn keyword ohBuiltinFunction	has is renew
+syn keyword ohBuiltinFunction	count test to
+syn keyword ohBuiltinFunction	abs ceil floor max min
+syn keyword ohBuiltinFunction	error print
 syn keyword ohStatement		break continue fall_through
 syn keyword ohStatement		pass return
-syn keyword ohJump	assert_ exit_
+syn keyword ohJump	assert exit
 syn keyword ohConditional	elif else if
 syn keyword ohConditional	also what when where with
 syn keyword ohRepeat		each while
 syn keyword ohOperator		and has is not or xor
-syn keyword ohError		er er_
-syn keyword ohOk		ok ok_
-syn keyword ohResult		hm hm_
-syn keyword ohAsync		decide_ um um_
+syn keyword ohError		er
+syn keyword ohOk		ok
+syn keyword ohResult		hm
+syn keyword ohAsync		decide um #um
 syn keyword ohTodo		FIXME NOTE NOTES TODO XXX contained
-syn match	ohBuiltinType	"\~"
+syn match	ohInferred	"\~[A-Za-z_][a-zA-Z_0-9]*"
 syn match	ohReadonly	":"
 syn match	ohWritable	";"
 syn match	ohTemporary	"\."
@@ -65,9 +63,6 @@ syn match	ohNamespace	"\zs\<\u\+\ze[^A-Z_ ]"
 syn match	ohNamespace	"[^A-Z_ ]\zs\u\+\ze"
 syn match	ohFunction	"\<_\>"
 syn match	ohFunction	"[^_ ()\[\]^`{|}!-@\\~][^ ()\[\]^`{|}!-/:-@\\~]*_\>" contains=ohNamespace
-syn match	ohType		"#[a-zA-Z][a-zA-Z0-9_]*"
-syn match	ohType		"#@" " not sure if i like this or #~ better, or just ~
-syn match	ohType		"#\~" " not sure if i like this or #@ better, or just ~
 
 syn region ohBraced matchgroup=ohBraces
       \ start=+{+ end="}"
@@ -79,8 +74,19 @@ syn region ohParened matchgroup=ohParens
       \ start=+(+ end=")"
       \ contains=ALL
 
-syn match   ohCompilerErrorComment	"#@!.*$"
-syn match   ohEndOfLineComment	"# .*$"
+syn match ohType		"#[a-zA-Z][a-zA-Z0-9_]*"
+syn match ohBuiltInVariable	"#o\>"
+syn match ohBuiltInVariable	"#m\>"
+syn match ohBuiltinType	"#never"
+syn match ohBuiltinType "#disallowed"
+syn match ohBuiltinType "#null"
+syn match ohError	"#er"
+syn match ohOk		"#ok"
+syn match ohAsync	"#um"
+syn match ohInferred	"\~#[a-zA-Z_][a-zA-Z0-9]*"
+syn match ohBuiltinType		"\~#\s"
+syn match ohCompilerErrorComment	"#@!.*$"
+syn match ohEndOfLineComment		" # .*$"
       \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment
       \ oneline display
@@ -154,10 +160,11 @@ hi def link ohError		WarningMsg
 hi def link ohOk		CursorLine
 hi def link ohResult		Folded
 hi def link ohInclude		Include
+hi def link ohInferred		Pmenu
 hi def link ohAsync		Statement
 hi def link ohBuiltinVariable		Title
 hi def link ohBuiltinFunction		Question
-hi def link ohBuiltinType		Question
+hi def link ohBuiltinType		Removed
 hi def link ohFunction		Function
 hi def link ohType		Type
 hi def link ohUnused	Comment

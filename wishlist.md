@@ -309,8 +309,8 @@ PROBLEM STATEMENT:
      or if we double down on `~` being infer, we can probably do:
      `what value { ~ my_enum1 {print("ok")}, ~ my_enum2 {print("no")} }`.
      but if `~` is a prefix operator, then it might look the same as `~my_enum1` which
-     actually might be ok.  alternatively `#~` for inferring a type would be fine.
-     `what value { #~ my_enum1 {print("ok")}, #~ my_enum2 {print("no")} }`.
+     actually might be ok.  alternatively `~#` for inferring a type would be fine.
+     `what value { ~# my_enum1 {print("ok")}, ~# my_enum2 {print("no")} }`.
 9. it *might* be nice to allow `()` on variables, e.g., `"asdf"("jkl;") == "asdf(jkl;)"`.
      this would automatically define an overload for e.g. `my_str: "asdf"`
      with `my_str(...): str_`, but would error-out on default names (e.g., `str: "asdf"`)
@@ -1328,6 +1328,7 @@ There are a few reserved keywords, like `also`, `if`, `elif`, `else`, `with`, `r
 `is`, `has`,
 which are function-like but may consume the rest of the statement.
 `return` is a bit special in that it is used like a variable but will return
+(TODO: i don't know if i like `return:` for novelty budget...)
 from the enclosing function;  e.g., `return: x + 5` will return the value `x + 5`.
 The `type_case_` versions of these keywords are also all reserved;
 for example, `return_` can be used for the return type of the current function
