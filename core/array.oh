@@ -122,47 +122,52 @@
           ```
           array: ["abc", "de", "f", "ghij"]
           print(array sort((by:): by count()))    # prints ["f", "de", "abc", "ghij"]
-          print(array sort$($by count()))         # same, but via lambda arguments
+          print(array sort $($by count()))        # same, but via lambda arguments
           ```
      #]#
-     :;sort_{require: t_ is orderable_}
-     (    fn_(by: of_): ~t_
-     ):        respectively_{o_, null_}
+     :;sort[require: #t is #orderable]
+     (    fn(by: #of): ~#t
+     ):        #respectively[#o, #null]
 
      #[#
      sorts using a tabulated work array (with an additional cost of
-     `O(m count_() * memory_(t_))`).  should be used in case `fn_(by)`
+     `O(m count() * #memory(#t))`).  should be used in case `fn(by)`
      is expensive to compute.  example:
           ```
           array: ["abc", "de", "f", "ghij"]
           # should print ["f", "de", "abc", "ghij"]:
-          print_(array sort_({$tabulated_by count_()}))
+          print(array sort $($by_tabulated count())
           ```
      #]#
-     :;sort_{require: t_ is orderable_}
-     (    fn_(tabulated_by: of_): ~t_
-     ):        respectively_{o_, null_}
+     :;sort[require: #t is #orderable]
+     (    fn_(by_tabulated: #of): ~#t
+     ):        #respectively[#o, #null]
 
-     # sorts with a custom comparator that acts on two elements at a time.
-     # without certain transitive properties, the result's order may not make sense.
-     :;sort_(fn_(left: of_, right: of_): ordering_): respectively_{o_, null_}
 
-     ::hash_{require: of_ is hashable_}(~builder;): null_
+     #[#
+     sorts with a custom comparator that acts on two elements at a time.
+     without certain transitive properties, the result's order may not make sense.
+          ```
+          array: ["abc", "de", "f", "ghij"]
+          print
+          (    array sort
+               (    earlier(left: #str, right: #str): #ordering
+                         if $left count() <= $right count()
+                              ~# left
+                         else
+                              ~# right
+               )
+          )
+          ```
+     #]#
+     :;sort(earlier(left: #of, right: #of): #ordering): #respectively[#o, #null]
+
+     ::hash[require: #of is #hashable](~builder;): #null
           m each of:
-               builder hash_(of)
+               builder hash(of)
 
-     maybe_local_{local_bytes_}:
-               maybe_local_array_{of_, local_bytes_, locality_: count_}
-     non_local_: non_local_array_{of_, count_}
-
-     @alias heap_: non_local_
-     @alias heap_or_local_: maybe_local_
-
-     er_: CONTAINER_er_
-     count_: capacity_
+     #er: #CONTAINER_er
+     #count: #capacity
 }
 
-# for simplicity, rounds to multiples of 8 bytes.
-local_bytes_: select_{16, 24, 32, 40, 48, 56, 64}
-
-[hm_, CONTAINER_er_]: \/container
+[#hm, #CONTAINER_er]: \/container

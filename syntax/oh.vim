@@ -48,7 +48,8 @@ syn match	ohReadonly	":"
 syn match	ohWritable	";"
 syn match	ohTemporary	"\."
 syn match	ohNullSymbol	"?"
-syn match	ohLambdaStarter	"\$"
+syn match	ohSyntaxError	"\$[0-9]*"
+syn match	ohLambdaStarter	"\$[A-Za-z_][A-Za-z_0-9]*"
 " Namespace syntax errors
 " TODO: ASDF_D doesn't get captured for some reason.
 syn match	ohSyntaxError	"\<[A-Z_]\+\>"
@@ -180,7 +181,7 @@ hi def link ohNumber		Number
 hi def link ohSpaceError	Error
 hi def link ohMacro		Identifier
 hi def link ohJump		Identifier
-hi def link ohLambdaStarter		Identifier
+hi def link ohLambdaStarter	Removed
 hi def link ohNullSymbol		Identifier
 hi def link ohBrackets		Type
 hi def link ohBraces		NonText
