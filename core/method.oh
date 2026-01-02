@@ -1,1 +1,11 @@
-method_: [name: str_, arguments:, returns:]
+#method: [name: #str, arguments:, #return:]
+{    #readonly_arguments:
+     (    arguments @each argument:
+               @concat(argument name): argument #type
+     )
+
+     ::represent(...readonly_arguments:): #str
+          # TODO: it would be nicer if `method` was something like `==` to print
+          # transformation as `== 7` rather than `==(my_representation, 7)`
+          "${m name}$(...readonly_arguments)"
+}

@@ -1,23 +1,23 @@
-ordering_: one_of_
-{    equal:
+#ordering: #one_of
+[    equal:
      left:
      right:
-}
+]
 
-is_bigger_(~t_0, t_1): ordering_
+is_bigger(~t_0:, t_1:): #ordering
 {    if t_0 > t_1
-          _ left
+          ~# left
      elif t_1 > t_0
-          _ right
+          ~# right
      else
-          _ equal
+          ~# equal
 }
 
-is_smaller_(~t_0, t_1): ordering_
+is_smaller(~t_0:, t_1:): #ordering
 {    if t_0 < t_1
-          _ left
+          ~# left
      elif t_1 < t_0
-          _ right
+          ~# right
      else
-          _ equal
+          ~# equal
 }
