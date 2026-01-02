@@ -94,10 +94,10 @@ assert[require: #oh_info caller() can_panic()](~of?.)
                #g(returning, oh_info, transformation)
 }
 
-runtime_er_: one_of_
-{    unspecified:
+#runtime_er: #one_of
+[    unspecified:
      invalid_argument:
      broken_invariant:
-}
+]
 {   @alias invalid_arguments: invalid_argument
 }
