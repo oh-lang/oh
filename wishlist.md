@@ -252,6 +252,24 @@ hands-down the raddest indentation style.  Similarly, `variable_case`
 and `function_case_`/`type_case_` make for more readable long names, but they also
 look cooler than their `dromedaryCase` and `PascalCase` counterparts.
 
+TODO: putting the type first is actually kinda cool, but does it make sense with
+objects?  it also makes functions slightly less weird on formatting
+```
+my_fn
+(    arg1:, arg2;
+): #this_is_a_bit_off
+```
+becomes
+```
+#this_is_not_off
+my_fn
+(    #type1 arg1, #type2 arg2
+)
+```
+but we break a lot of nice features for oh-lang, including `;:.` for const distinguishing
+and objects being defined opposite of how they're declared
+(e.g., `[#type1 x, #type2 y]`, `[x = type1, y = type2]`).
+
 ## simplicity
 
 We don't require a different function name for each method to convert a result class
