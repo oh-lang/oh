@@ -1,9 +1,13 @@
 " Vim syntax file for oh-lang
-" Add to `vimXX/filetype.vim`: `au BufNewFile,BufRead *.oh	setf oh`
-" Add this file to the `vimXX/syntax/` directory.
+" Add to `vimXX/filetype.vim`: 
+"   `au BufNewFile,BufRead *.oh	setf oh`
+"   `au BufNewFile,BufRead *.oi	setf oi`
+" Add this file to the `vimXX/syntax/` directory and link
+"   `ln -s oh.vim oi.vim`
 " Language:	oh
-" Last Change:	2025 July 30
-" Credits:	Zvezdan Petkovic <zpetkovic@acm.org>
+" Last Change:	2026 January 3
+" Credits:	Lucas Wagner <hm@oh-lang.org>
+"		Zvezdan Petkovic <zpetkovic@acm.org>
 "		Neil Schemenauer <nas@python.ca>
 "		Dmitry Vasiliev
 
@@ -12,8 +16,14 @@ if exists("b:current_syntax")
   finish
 endif
 
-set tabstop=5
-set softtabstop=5
+if &filetype ==# 'oh'
+    set tabstop=5
+    set softtabstop=5
+else
+    " scripts use tabstop of 2
+    set tabstop=2
+    set softtabstop=2
+endif
 set shiftwidth=0
 
 " We need nocompatible mode in order to continue lines with backslashes.
