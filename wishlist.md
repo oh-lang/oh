@@ -252,16 +252,16 @@ Another way we aim to be concise is by using the `~#` as an [inferred type](#-ty
 **Coolness** is a fairly subjective measure, but we do use it to break ties.
 While there are a lot of good formatting options out there, 
 [Horstmann brace style](https://en.wikipedia.org/wiki/Indentation_style#Horstmann) is
-hands-down the raddest indentation style.  Similarly, `variable_case`
-and `function_case_`/`type_case_` make for more readable long names, but they also
+hands-down the raddest indentation style.  Similarly, `variable_case`,
+`function_case`, and `#type_case` make for more readable long names, but they also
 look cooler than their `dromedaryCase` and `PascalCase` counterparts.
 
 ## simplicity
 
 We don't require a different function name for each method to convert a result class
-into a new one, e.g., to transform the `ok_` result or the `er_` error.  In oh-lang, we
+into a new one, e.g., to transform the `#ok` result or the `#er` error.  In oh-lang, we
 allow overloading, so converting a result from one type to another, or extracting a
-default value for an error, all use an overloaded `map_` method, so there's no mental
+default value for an error, all use an overloaded `map` method, so there's no mental
 overhead here.  Since overloads are not possible in Rust, there is an abundance of methods, e.g.,
 [`Result::map_*` documentation](https://doc.rust-lang.org/std/result/enum.Result.html#method.map),
 which can require constantly poring over documentation just to find the right one.  
@@ -270,197 +270,18 @@ We also don't use a different concept for interfaces and inheritance.
 The equivalent of an interface in oh-lang is simply an abstract class.  This way
 we don't need two different keywords to `extend` or `implement` a class or interface.
 In fact, we don't use keywords at all; to just add methods (or class functions/variables),
-we use this syntax, `wrapper_class_: parent_class_ { ::extra_methods_(): int_, ... }`,
+we use this syntax, `#wrapper_class: #parent_class { ::extra_methods(): #int, ... }`,
 and to add instance variables to the child class we use this notation:
-`child_class_: all_of_{parent_class:, m: [child_x: int_, child_y: str_]} { ... methods }`.
-TODO: to make the grammar unambiguous, i think we need to revert the `[] -> {}` for generics
-bit. `parent_class_ {...}` will look like a generic specification of `parent_class_` otherwise.
-you could require `child_class_: all_of_{parent_class:} {...}` but that seems silly.
-say you have a list of types, do you do `types: array_{new_{}: ~y_}` and then `types[0] new_()`
-to create a new instance of the first type?  or `types_: array_{any_}` and then `types_[0]()`?
+`#child_class: #all_of[parent_class;, m; [child_x: #int, child_y: #str]] { ...methods }`.
 
-TODO:
-PROBLEM STATEMENT: 
+TODO: do we need a prefix `#` on return type data structures?
+e.g., `fn(theta: #flt): #[x: #flt, y: #flt]`.  if so, we can do it, but it might break
+midline comments.  we might need to require a space after `#[` or `#(`.
 
-1. we have three different possible identifiers: variables, functions, and types
-2. it would be nice to have three (one-character) symbols for writable/readable/temporary
-     declarations, e.g., `;:.` currently.  we could probably remove one of them if we move
-     "temporary" variables into a separate paren, like `my_fn_(references:)[non_references:]`.
-     `my_fn_ (a: my_ref) + [b: my_tmp!]`??.  however, having a "temporary" method for
-     classes like `..im_being_deleted(): int_` makes a lot of sense, and dueling parens are painful.
-3. i like ` ` for implicit member access.
-     this means we can't use v-lang syntax like `x int_` to declare variables.
-     (`int_` could be a typedef on the `x` instance.)
-4. it would be nice to have "easy default names" for a type, e.g., `x: x_` or `y: #y`.
-5. it would be nice to use some sort of parentheses for generics (lean towards [])
-6. it would be nice to avoid `new` when instantiating a type, `x_(123)` or `#y(456)
-     instead of `x_ new(123)` or `#y new(456)`.
-7. generics for types and functions should be distinguishable from the subscript operator
-     * `m[offset:]: str_` to declare the subscript operator,
-     * `some_class[123]` to use the subscript operator on an instance `some_class`,
-     * `fn[require: #of, #of: #any](of:): #int` to declare a generic function,
-     * `fn[#of: #int](1234)` to call the generic function,
-     * `#my_type[#of:]: ...` to declare a type that generalizes over an inner type,
-     * `#my_type[#int]` to use the type specialized to `#int`.
-     * but why do we need to distinguish between `fn_[generics...]` and
-          `some_class[...]`?  can't `fn[generics...]` just be a way to create
-          a function that we can then call with `()`?  (we can memoize of course.)
-          * this issue is that we allow variable and function overloading;
-               `x` can be a variable and `x` can be a function if followed by `()`.
-               if `x` followed by `[]` can also be a generic function, we get an
-               issue if `x` is a variable with subscript overloading.
-               we could avoid this if we disallow subscript overloading,
-               but then we need `array at(3)` and `lot at("hello")`, etc.
-          * `x[count:](): { array[#int];, count each offset: { array append(offset) }, array }`
-          * `x: #array[#fn(): #str]` is definitely an issue.
-          * `x: #array[#int]` is ok, or does it fail?
-8. it would be nice to have a quick way to refer to a type, e.g., `value: _ my_enum1`
-     where `value_: one_of_[my_enum1:, my_enum2:]`, especially for switch-cases.
-     `what value { _ my_enum1 {print("ok")}, _ my_enum2 {print("no")} }` vs.
-     or if we double down on `~` being infer, we can probably do:
-     `what value { ~ my_enum1 {print("ok")}, ~ my_enum2 {print("no")} }`.
-     but if `~` is a prefix operator, then it might look the same as `~my_enum1` which
-     actually might be ok.  alternatively `~#` for inferring a type would be fine.
-     `what value { ~# my_enum1 {print("ok")}, ~# my_enum2 {print("no")} }`.
-9. it *might* be nice to allow `()` on variables, e.g., `"asdf"("jkl;") == "asdf(jkl;)"`.
-     this would automatically define an overload for e.g. `my_str: "asdf"`
-     with `my_str(...): str_`, but would error-out on default names (e.g., `str: "asdf"`)
-     if we can use a type as a function and it's the same identifier (e.g., `str` is the
-     type and also how you build a `str_` type), so we'd need `str_(...)`.
-     * this would probably make it undesirable to  distinguish between functions and variables,
-          at least for casing.
-11. it might be nice to have `#123456` for colors.  since hex is allowed,
-     we probably can't use `#` for types (is `#aaa` a type or a color??)
-     unless we require hex to use uppercase A-F.  (e.g., `#AAA` is a color, `#aaa` is a type).
-     however that puts a lot of weird constraints on type names (e.g., 6-letter
-     types with A-F, unless some other letter a-zG-Z came first).
-          * we could introduce another symbol like `#|123456` or `\#123456` to define a color.
-               it might be nice to allow for quick searching for colors without a regex.
-12. support Horstmann indenting
-
-
-* option 1: current approach, using {} for generic specifications
-     * DO NOT LIKE because of the cons, specifically generics.
-     * `do_something_(): any_` to return an instance
-     * `do_something_{}: any_` to return a type
-     * pros:
-          * doesn't overload [] with quite so many things
-          * `a_: one_of_{a:, b:}` does make a bit of sense because `one_of_[a:, b:]` looks
-               like both `a` and `b` would be defined.
-     * cons:
-          * {} doesn't quite feel right since it should create a hidden scope
-          * ${} feels like it should be a function but it's a lambda type
-          * `child_class_: parent_class_ {...}` makes `...` look like a specification on parent
-               * we'll need a new syntax here, maybe `extend_{parent_class_}`
-                    or `a_: { is parent;, ... }`.
-          * `a {...}` and `a_ {...}` act differently despite looking very similar.
-          * there's not a natural way to indicate the return type of a function
-               with specific arguments, e.g., `fn_(x: int_): str_` via `fn_{x_: int_}` maybe,
-               but it looks weirder when `fn_` is generic itself.
-          * `hm_{null_}` feels fine but the newlined version doesn't seem right, especially
-               in context as a function return
-```
-empty_hm_: hm_
-     null_
-function_(a: int_): hm_
-     null_
-```
-* option 2: old approach, use [] for generic specifications, trailing `_` for functions and types
-     * `do_something_(args...): any_` to declare a function that returns an instance
-          * if `do_something_(x: int_): str_` is defined (and the default overload), then
-               `do_something_[x_: int_]` is the `str_` type
-     * `some_type_[args...]: other_type_` to return a type
-     * `c_: all_of_[a:, b:]` to make a typedef
-     * `c: all_of_[a:, b:]` to instantiate an instance
-          * `all_of_[a:, b:]()` also works (without a name)
-     * `all_of_[my_a: a_, my_b; b_]` to rename the types (mostly useful for classes)
-          * might prefer `is my_a: a_` and `is my_b; b_` inside the class body.
-     * define a string method like `my_class_: { ::str_(): str_ }` 
-     * pros:
-          * i like `$[$x_]` for a lambda type and `$($x)` for a lambda function, e.g.,
-               * `[1, 2, 3] map_$( $int * 2 )`, short for 
-                    `[1, 2, 3] map_(fn_(int.): int * 2)`, which gives `[2, 4, 6]`.
-               * `array_[int_] nest_$[ um_[$of_] ]`, short for
-                    `array_[int_] nest_[new_[of_:]: um_[of_]]`, which gives `array_[um_[int_]]`,
-               * but theoretically you might want a function that returns an array,
-                    so `$[$value_0, $value_1]` should be `fn_(value_0:, value_1:): [value_0, value_1]`.
-               * maybe we can just look at the return type and determine if it should be a type.
-          * type generics should not normally be specified with readonly/writable stuff,
-               only temporaries (which is what `[]` passes fields as)
-          * array subscripting still feels natural as `array[2]`, which is a big bonus to concision.
-          * it's not confusing if you're supposed to use `str(my_class)` or `str_(my_class)`
-     * cons:
-          * functions and types are not "first class objects" themselves;
-               * this has never been a priority of oh-lang: option 6 makes things more confusing anyway
-          * generics that return an instance don't feel super natural;
-               feels like we should use [] for `memory_[of_:]: memory_`, but that doesn't return an instance;
-               probably needs to be `memory_(of_:): memory_`, which is fine.
-          * if types and functions are the same, then functions that return a function should
-               use the `[]` syntax, e.g., `my_generator_[args.]: fn_(x: int_): y_`
-          * what is `${$x}`??  probably `fn_(x.): x`.  what about `${$x_}`?  maybe `new_[x_]: x_`?
-          * `do_something_[]` returning a type feels different than `m[]` which doesn't return a type
-               * but we could use `array _(2)` if we want to avoid `array[2]` for subscripting
-          * `[]` is overloaded for a lot of things (arrays, lots, objects, type specifications,
-               subscript operator `m[2]`)
-               * would potentially want to get rid of subscript operator and just use
-                    `array at_(2)` or `array _(2)`.
-               * or would want to switch to using `{}` for containers.  but i like
-                    extending [] to containers since it's natural for arrays.
-                    `array: {1, 2, 3, 4}` doesn't feel quite right.
-          * hard to type `new_[of_:]:` because of shift/unshift with `[]` `_` and `:`.
-          * `my_type_[index_]` should give the return type of the `my_type[index:]` function,
-               but that does feel a bit weirdly overloaded.  it also doesn't extend and work for
-               `my_function_(whatever_)` giving the return type of `my_function_(whatever:)`
-* option 2.5:
-     * really liking this option.
-     * use a prefix `#` to indicate that something is a type or returns a type (if followed by `[]`)
-     * use () or [] as needed for non-type functions, based on ref or non-ref requirements
-     * use [] for generics (type functions)
-     * `another_thing[]: #whatever` returns an instance of `#whatever` type.
-          recommended only for generics and array indexing.
-     * `do_something(): #any` returns an instance that could be any type.
-     * `#returns_type[]: #type_constraint` is a function that returns a type that will obey
-          `#type_constraint`, e.g., `#all_of[#number, #hashable]`.
-     * `#returns_instance(): #returns_instance` - this is a constructor for the 
-          `#returns_instance` type.
-     * `#c: #one_of[a: #u64, b: #str]` to make a typedef
-     * `my_array: #array[#int]` to declare an array of integers
-     * `array[#int]:` to declare a default-named array of integers (`array: #array[#int]`)
-     * `my_type(123):` to declare a default-named type, initialized `my_type: #my_type(123)`.
-     * TODO: do we need a prefix `#` on return type data structures?
-          e.g., `fn(theta: #flt): #[x: #flt, y: #flt]`
-          if so, this option makes it very natural to do so, but it might break
-          midline comments.  we might need to require a space after `#[` or `#(`.
-     * pros:
-          * `#` for types is very cute, and i think it looks really nice.
-          * could use trailing `_` for protected/private.
-          * i like the idea that scripts could use types as comments
-               and add them in as they become statically inclined.
-     * cons:
-          * not having `_` for functions means that syntax highlighting can't
-               determine what is a function easily (without look ahead to ())
-               * we could add `_` back for functions, but then it's slightly
-                    confusing whether types should get them (when acting as
-                    functions), e.g., `#str_(123)` or `#str(123)`??
-               * this is kinda like `new` which i don't like.
-          * subscripting needs more complicated compiler errors; we don't
-               want to overload a variable `x` that can have subscripts with
-               a generic function also called `x`.  but it's tempting to do this
-               for e.g., `#array[#of:]` generic type, defining a function like
-               `array[#of:](count:): { array[#of];, count each _offset: { array append(#of()) }, array }`.
-               * we could remove subscript overloading, but `array[1]`, `lot["hi"]` are nice
-                    compared to `array at(1)` and `lot at("hi")`.
-               * we could require generic functions to be defined with `#`
-                    `#log[#of:](str:, of:): { print("${str}: ${of}) }`
-                    * this works AFAICT but looks like types, which i don't want to confuse
-                         with functions.
-               * if we find that a variable that allows subscripting and a
-                    generic function are in scope at the same time, with the same name,
-                    we throw a compile error.
-                    * this seems a bit restrictive.
-               * or we only throw if the variable subscript argument would be indistinguishable
-                    from the generic function specification.
-                    * i think we can pick this one to be in line with "extreme overloading"
+TODO: move this into a proper section
+* we throw if the variable subscript argument would be indistinguishable
+from the generic function specification.
+* i think we can pick this one to be in line with "extreme overloading"
 ```
 # subscriptable variable
 something; #array[#fn(): #array[#dbl]]
@@ -479,189 +300,30 @@ something[count:](): #array[#int, count]
 # we need to give a good error message.
 something[1]()      # should this be the variable version or the generic function version?
 ```
-* option 3: use () or [] for function arguments and generic specifications;
-     use trailing underscores on the function name to indicate returning a type or not.
-     * `do_something_(): any_` to return a type, e.g., `x_: do_something_()` defines a type
-     * `do_something(x: int_): any_` to return an instance, e.g., `y: do_something(x: 5)`.
-     * `c_: all_of_(a:, b:)` to make a typedef
-     * `c: all_of(a:, b:)` to instantiate an instance `c` with all the fields in `a` plus all the fields in `b`
-     * `all_of_(my_a: a_, my_b: b_)` to rename the types
-          * might prefer `is my_a: a_` and `is my_b; b_` inside the class body.
-     * pros:
-          * can use [] or () to make things more readable, as necessary.
-          * can easily pass types as reference if desired
-          * can use `do_something(): any` to enscope `any` and modify it in the block
-          * can use `do_something_(x_: int_)` to give the (default overload) return type
-               of the function `do_something(x: int_)`.
-          * could try to do stuff like this:
-               * `array_ new(1, 2, 3)` - instantiate an array with three elements (1, 2, 3).
-                    * could abbreviate `new` to `o` if we really want.
-               * `array_(x_)` - if `x_` in scope (a type), declare an array type with elements of type `new_(x_)`.
-               * `array(x)` - a compile error, unless `array` is in scope and `x` is in scope
-                    and you've defined an overload for `m(of: x_)` on the array class.
-               * `array(x_)` - a compile error, unless `array` is in scope and `x_` is in scope
-                    and you've defined an overload for `m(of_: x_)` on the array class.
-               * `array_(x)` - a compile error, unless `x` is in scope and you've defined
-                    a *type* overload `m_(of: x_): some_type_` that will return a type.
-          * could unify lambda functions and lambda types, {} could be neutral,
-               () could create a reference return value and [] a non-reference object value.
-               `${$x_}`, `$[$y_]`, `$($z_)` -- type-like.
-               `${$x}`, `$[$y]`, `$($z)` -- function-like.
-               * could also have `$($ok + 4)` literally become `(fn(ok:): ok + 4)`,
-                    so we can do things like this:
-                    `[1, 2, 3] map$( $int * 2 )` for `[2, 4, 6]`, and
-                    `array_(int_) nest_$( um_($of_) )` for `array_(um_(int_))`,
-                    * not sure how i feel about `$($ok + 1, $ok + 2, $x + 3, 4)`
-                         becoming `(fn(ok:, x:): (ok + 1, ok + 2, x + 3, 4))`
-          * generics are specified along with the arguments
-               * means the grammar is easier to understand
-               * `my_fn(value_: number_, value_0:, value_1:): value_0 + value_1`
-                    * `my_fn(value_: int_, 123, 456)` at the call site
-     * cons:
-          * () becomes pretty overloaded; order of operations, function calling, generics
-               * the alternative `my_fn_[value_: int_](123, 456)` is a lot easier to read
-                    compared to `my_fn(123, 456, value_: int_)`
-          * need to use `new()` from a type to make sure you're getting an instance, e.g.,
-               `array_ new(123)`. 
-          * not obvious how to make arguments obviously comptime unless we introduce
-               a new operator like `my_fn(value_\` number_, value_0:, value_1:):`
-               * maybe comptime arguments should be "gradually" typed anyways;
-                    scripting languages won't care
-          * type generics should not normally be specified with readonly/writable
-               stuff, only temporaries (like `[]` passes)
-          * this looks like shadowing between method names and instance variables, e.g.,
-               if you have `m x` and `m x(): int_`.  but i suppose this is a bit like overloading,
-               which oh-lang does allow/support/encourage.
-               maybe we call it "super overloading".
-          * i like how `_()` guides the eye for arguments, and gives you a natural name
-               for returned arguments, e.g., `sin: sin_(123)` without being too close.
-               * however, since we allow super-overloading, you can just use `sin: sin(123)`.
-          * `_` also gives you `sin: _(123)` for free, although `sin(123):` might work as well.
-               or you could still use `_` for the type inference,
-               `array: _ new(123)`
-          * functions and types are very similar, and we'd like to allow types being used as functions
-               where possible (instead of doing `my_type_ new(arg1, ar2)`).
-* option 4
-     * use `<>` (or something else) for generics, e.g., `array_^[int_]`
-     * pros:
-     * cons:
-          * don't like not having matching parens/braces/brackets to navigate
-* option 5: 2 + 3
-     * use trailing `_` to indicate a type (or a function that returns a type).
-     * require generics to use `[]` to specify comptime values (like type specifications and sizing)
-     * functions that pass in comptime values should also use [] for them, like `memory[int_]`.
-     * types are instantiated using `the_type_name_(type_args...)`.
-          * array types:
-               * `array[int_](1, 2):` as short for `array: array_[int_](1, 2)`.
-               * `array_[int_](1, 2, 3)` to instantiate an array with elements 1, 2, 3
-               * `array_[int_]()` to instantiate an empty array
-               * `array[int_]` a compile-error.  either `array_[int_]` for a typedef
-                    or `array[int]` for array access/subscripting
-               * `array[int]` works if `array` and `int` are in scope, subscript operation
-               * `array[int]()` a compile error.  do `array[int] fn()` if your array is filled with
-                    functions (e.g., is an instance of `array_[fn_(): ~t_]`) or `array_[int_]()` if
-                    you want to instantiate an `array_[int_]` class
-               * `array_[int_]` to define an array type with elements of type `int_`.
-          * function types:
-               * `hello(y: dbl_): x_` function declaration, returns instance of `x_`
-                    if you pass in a `dbl_` named `y`.
-                    * can use `hello(y: dbl_): x` if you want to enscope the return value as `x`
-                         and modify it in the function body.
-               * `fn_(y: dbl_): x_` function type declaration, indicates this is a function type
-                    with one double `y` argument and returning an instance of `x_`
-                    e.g., `hello(y: dbl_): x_` is the same as `hello: fn_(y: dbl_): x_`.
-               * if `fn(x: int_, y: str_): z_`, then `fn_[x_: int_, y_: str_]` is the `z_` type.
-          * tuple types:
-               * use trailing `_` to indicate that you're defining a type or type specification.
-               * `tuple_: [count: 1, x_: int_, y_: str_]`
-               * but we can't really use this as a type: `whatever: tuple_ = [x: ...]`, we're not defining `x_`.
-                    potentially we could have `tuple_: [x_: parent1_, y_: parent2_]` and then
-                    `tuple: [x_: child1_, y_: child2_]` but the original `tuple_` doesn't feel like a type.
-          * object types
-               * use trailing `_` to indicate that you're defining a type.
-               * `my_obj_: [x: int_, y: str_]`
-          * lambda types
-               * `$( $ok * 2 )` to create `( fn(ok): ok * 2 )`
-               * `$[ $ok * 2 ]` to create `[ fn(ok): ok * 2 ]`
-               * `${ $ok * 2 }` to create `{ fn(ok): ok * 2 }`
-     * pros
-          * avoids issue with option 3 where `array(x)` could be easily typo'd for
-               `array(x_)` which do two very different things
-          * clarifies when `[]` should be used for function arguments (i.e., when comptime)
-               vs. when it shouldn't (i.e., use `()` for runtime arguments).
-          * i do like `fn_(x: dbl_): dbl_` for declaring a function type;
-               `my_fn_typedef_(x: dbl_): dbl_` could be short for
-               `my_fn_typedef_: fn_(x: dbl_): dbl_`.
-     * cons
-          * it's confusing if you're supposed to use `str(my_class)` or `str_(my_class)`
-          * function overloading doesn't look correct if you define functions like this:
-               * `my_fn: fn_(x: dbl_, y: dbl_): dbl_`
-               * `my_fn: fn_(z: dbl_): dbl_`
-               * `my_fn: fn_(): dbl_`
-               * `my_fn: dbl_` (not a function, but we do allow overloading of function and variable names)
-          * generics for functions look a bit like array indexing (subscripting):
-               `fn[require: x_, value_:](value_0., value_1.): value_`
-          * we lose `_` as a quick function type identifier, but we can still use it for types:
-               `array: _(1, 2, 3)` is ok, but we can also just do `array(1, 2, 3):`.
-               * we can keep `_` for enums like `value_: one_of_[a:, b:]`
-                    `if value == _ a`, because `_` remains a type.
-          * comptime confusion.  [] is now blessed for comptime things, but we're still using it
-               for building runtime objects, arrays, lots, etc.
-               * [] wouldn't feel right for run-time defined objects because they're not "comptime."
-                    * would maybe need to switch to `{}` for arrays, sets, lots.
-                    * `array[int_]: {1, 2, 3, 4}`
-```
-# this doesn't look quite right because {} should only return the last statement in the brace, so
-# `my_array` would be `4` (an int) in this case.
-my_array:
-     1
-     2
-     3
-     4
-```
-               * [] for array indexing doesn't follow the "comptime" rule.
-                    `array: array_[int_], array[1]` should be `array: array_[int_], array at(1)`,
-                    but i don't like `at` when `at` should be the argument name; maybe instead
-                    `array _(1) + array _(2)` vs. `array[1] + array[2]`
-               * but this breaks the `_` is not a function, it's a type rule.
-               * could mitigate by using `@[]` for generic specification, e.g.,
-                    * `my_array: array_@[int_]`
-                    * but this would be somewhat annoying to increase syntax requirements.
-* option 6: don't distinguish between types, functions, and variables by trailing `_`.
-     * distinguish between functions and variables by checking for a trailing `()`, e.g.,
-          * `array(1, 2)` is a function, whereas `array` without `()` is a variable.
-     * pros:
-          * makes functions and types first class.
-     * cons
-          * it's a bit confusing to distinguish types and variables;
-               * `what_is_this: my_type` is a bit confusing, are we creating an instance of
-                    `my_type` or are we creating a typedef?
-          * hard to distinguish between creating a singleton class (like in option 2,
-               `my_class: { ... class methods ... }`
-          * while we can distinguish between zero-arg and nonzero-arg identifiers,
-               it does take overloading to a whole new level.
 
 oh-lang handles generics/templates similar to zig or python rather than C++ or Rust.
 When compiled without any usage, templates are only tested for syntax/grammar correctness.
 When templates are *used* in another piece of code, that's when the specification kicks in
 and all expressions within the generic are compiled to see if they are allowed with the
 specified types.  Any errors are still compile-time errors, but you get to have the simplicity
-of duck typing without needing to specify your type constraints fully.
+of not having to specify your type constraints fully with duck typing.
 
 ```
-my_generic_{of_:}(a: ~of_, b: of_): of_
-     # this clearly requires `of_` to implement `*`
-     # but we didn't need to specify `[of_: number_]` or similar in the generic template.
+my_fn(a: ~#of, b: #of): #of
+     # this clearly requires `#of` to implement `*`
+     # but we didn't need to specify `[#of: #number]` or similar in the generic template.
      a * b
 
-print_(my_generic_(a: 3, b: 4))                 # OK
-print_(my_generic_(a: [1, 2, 3], b: [4, 5]))    # COMPILE ERROR: no definition for `array_{int_} * array_{int_}`
+print(my_fn(a: 3, b: 4))                # OK
+print(my_fn(a: [1, 2, 3], b: [4, 5]))   # COMPILE ERROR: no implementation
+                                        # for `#array[#int] * #array[#int]`
 ```
 
-Similarly, duck typing means that if you define an appropriate `::hash_` function on your class,
-you don't need to mention that your class is `hashable`.  A check for `some_class is some_other_class`
+Similarly, duck typing means that if you define an appropriate `::hash` function on your class,
+you don't need to mention that your class is `#hashable`.  A check for `some_class is some_other_class`
 will not require strict descent from `some_other_class` but only that the same methods and fields
-are defined.
+are defined.  In a large codebase, it may be desirable to be explicit about these so that all
+required methods/fields are correctly overridden.
 
 ## safety
 
@@ -670,31 +332,31 @@ memory or otherwise throw.  By default, `array[100] = 123` will increase the siz
 of the array if necessary, and this could potentially throw in a memory-constrained
 environment (or if the index was large).  If you need to check for these situations,
 there is a safe API, e.g., `hm: (array[100] = 123)` and the result `hm` can then
-be checked for `is_er_()`, etc.  In order to avoid another syntax for safe assignment,
+be checked for `is_er()`, etc.  In order to avoid another syntax for safe assignment,
 we use operator overloading (via return name).  Most of the time you don't want to
 hide errors from other developers, however, but if you do, you should make the
 program panic/terminate rather than continue.  Example code:
 
 ```
-custom_container_{of_:}: [@private vector{10, of_};]
-{    # make an overload for `m[ordinal]` where `ordinal_` is a 1-based indexing type.
-     :;[ordinal.]: hm_{ok_: (of:;), er_: str_}
+#custom_container[#of:]: [@private vector[10, #of];]
+{    # make an overload for `m[ordinal]` where `#ordinal` is a 1-based indexing type.
+     :;[ordinal.]: #hm[#ok: #(of:;), #er: #str]
           if ordinal > 10
-               er_("index too high")
+               #er("index too high")
           else
-               ok_((of:; m vector[ordinal]))
+               #ok((of:; m vector[#offset(ordinal)]))
 
      @can_panic
-     :;[ordinal.]: (of:;)
-          m[ordinal] hm assert_()
+     :;[ordinal.]: #(of:;)
+          m[ordinal] hm assert()
 
      # for short, you can use this `@hm_or_panic` macro, which will essentially
      # inline the logic into both methods but panic on errors.
-     :;[ordinal.]: @hm_or_panic_{ok_: (of:;), er_: str_}
+     :;[ordinal.]: @hm_or_panic[#ok: #(of:;), #er: #str]
           if ordinal > 10
-               er_("index too high")
+               #er("index too high")
           else
-               ok_((of:; vector[ordinal]))
+               #ok((of:; vector[#offset(ordinal)]))
 }
 ```
 
@@ -705,127 +367,136 @@ potentially OOM for `int`.)  If overflow/underflow is desired, use the overload
 which returns a variable named `wrap`, e.g., `x: (a + b) wrap` or `wrap: a + b`.
 Otherwise `a + b` will panic on overflow and terminate the program.  The alternative
 is to handle the error explicitly: `hm: a + b` then something like this:
-`what hm {ok: {print_(ok)}, er: {print_("got error: $(er)")}}`.
+`what hm {ok: {print(ok)}, er: {print("got error: $(er)")}}`.
 
-For primitive types (like `dbl_` and `i32_`), we don't throw on overflow or underflow.
-But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
+For primitive types (like `#dbl` and `#i32`), we don't throw on overflow or underflow.
+But we do for wrapper types like `#count`, `#index`, `#offset`, and `#ordinal`.
 
 # general syntax
 
-* `print_(...)` to echo some values (in ...) to stdout, `print_(er: ...)` to echo to stderr
-     * use string interpolation for printing dynamic values: `print_("hello, $(variable_1)")`
-     * use `print_(no_newline: "keep going ")` to print without a newline
+* `print(...)` to echo some values (in ...) to stdout, `print(er: ...)` to echo to stderr
+     * use string interpolation for printing dynamic values: `print("hello, ${variable_1}")`
+     * use `print("keep going ", end="")` to print without a newline
      * default overload is to print to null, but you can request the string that was printed
-          if you use the `print_(str.): str_` or `print_(error. str_): str_` overloads.
-          e.g., `another_fn_(value: int_): print_("Value is $(value)")` will return `null`,
-          whereas `another_fn_(value: int_): str_ {print_("Value is $(value)")}` will
-          return "Value is 12" (and print that) if you call `another_fn_(value: 12)`.
-* `type_case_`/`function_case_` identifiers like `x_` are function/type-like, see [identifiers](#identifiers)
-* `variable_case` identifiers like `x` are instance-like, see [identifiers](#identifiers)
+          if you use the `print(~of.): #str` or `print[#of:](er. ~#of): #str` overloads.
+          e.g., `another_fn(value: #int): print("Value is ${value}")` will return `null`,
+          whereas `another_fn(value: #int): #str {print("Value is $(value)")}` will
+          return "Value is 12" (and print that) if you call `another_fn(value: 12)`.
+* [identifiers](#identifiers):
+     * `#type_case` identifiers like `#x` are type-like
+     * `function_case` identifiers with a subsequent `()` are function-like
+     * `variable_case` identifiers like `x` are instance-like
 * use `#` for [comments](#comments), though there are a few reserved sequences
-* outside of arguments, use `:` for readonly declarations and `;` for writable declarations
+     * they are also used for types, which is rationalized as a way of commenting the code,
+          especially in an interpreted environment where types might be gradually added.
+* outside of arguments, use `:` for readonly declarations, `;` for writable declarations,
+     and `.` for "temporary" declarations (a variable you will only "use" once).
 * for an argument, `:` is a readonly reference, `;` is a writable reference, and `.` is a temporary
      (i.e., passed by value), see [pass-by-reference or pass-by-value](#pass-by-reference-or-pass-by-value)
-* use `:` to declare readonly things, `;` to declare writable things.
-     * use `a: x_` to declare `a` as an instance of type `x_`, see [variables](#variables),
+* how to declare variables, functions, and types:
+     * use `a: #x` to declare `a` as an instance of type `#x`, see [variables](#variables),
           with `a` any `variable_case` identifier.
-     * use `fn_(): x_` to declare `fn_` as a function returning an instance of type `x_`,
+     * use `fn(): #x` to declare `fn` as a function returning an instance of type `#x`,
           see [functions](#functions), with any arguments inside `()`.
-          `fn_` can be renamed to anything `function_case_`, but `fn_` is one of the defaults.
-     * use `::[]: x_` or `m[]: x_` to declare a class [index operator](#index-operator)
-          that returns an instance of `x_` with any arguments given inside `[]` and
+          `fn` can be renamed to anything `function_case`, but `fn` is one of the defaults.
+     * use `::[]: #x` or `m[]: #x` to declare a class [index operator](#index-operator)
+          that returns an instance of `#x` with any arguments given inside `[]` and
           that is called like `my_class[123, y: "a"]` depending on arguments.
           Due to how `[]` objects are constructed, arguments here will be passed by value, but
           you can annotate `:`, `;`, or `.` to have different effects within the function
-          definition (e.g., using `::[int:]: str_` to indicate that `int` will be readonly).
-     * use `new_{}: y_` to declare `new_` as a function returning *a type* `y_`, with any arguments inside `{}`.
-          `new_` can be renamed to anything `type_case_`, but `new_` is the default.
+          definition (e.g., using `::[int:]: #str` to indicate that `int` will be readonly).
+     * use `#new[]: #y` to declare `#new` as a function returning *a type* `#y`, with any arguments inside `[]`.
+          `#new` can be renamed to anything `#type_case`, but `#new` is the default.
           See [returning a type](#returning-a-type).
-     * use `a_: y_` to declare `a_` as a constructor that builds instances of type `y_`
-          with `a_` any `type_case_` identifier.  This is essentially a `typedef` and useful
-          when `y_` is something complicated like a [generic specification](#defining-generic-classes).
+     * use `#a: #y` to declare `#a` as a constructor that builds instances of type `#y`
+          with `#a` any `#type_case` identifier.  This is essentially a `typedef` and useful
+          when `#y` is something complicated like a [generic specification](#defining-generic-classes).
      * while declaring *and defining* something, you can avoid the type if you want the compiler to infer it,
-          e.g., `a: some_expression_()`
+          e.g., `a: some_expression()`
      * thus `:=` is usually equivalent to `:` (and similarly for `;=`), except in the case of defining
           a function via another function, i.e., function aliasing.  E.g.,
-          `fn_(x: int_): str_ = other_fn_` will alias `other_fn_(x: int_): str_` to `fn_`, while
-          `fn_(x: int_): return_type_` just declares a function that returns an instance of `return_type_`.
-          Note that `fn_(x: int_): str_ = generate_fn_()` is the way to define `fn_` based on the
-          function returned by calling `generate_fn_()` only once, which in this case should have
-          an overload `generate_fn_(): fn_(x: int_): str_`
+          `fn(x: #int): #str = other_fn` will alias `other_fn(x: #int): #str` to `fn`, while
+          `fn(x: #int): other_fn` would declare a function that returns `other_fn`.  Similarly,
+          note that `fn(x: #int): #str = generate_fn()` is the way to define `fn` based on the
+          function returned by calling `generate_fn()` only once, which in this case should have
+          an overload `generate_fn(): #fn(x: #int): #str`
 * when not declaring things, `:` is not used; e.g., `if` statements do not require a trailing `:` like python
 * commas `,` are equivalent to a line break at the current tab and vice versa
-     * `do_something_(), do_something_else_()` executes both functions sequentially 
+     * `do_something(), do_something_else()` executes both functions sequentially 
      * see [line continuations](#line-continuations) for how commas can be elided across newlines for e.g., array elements
 * `()` for reference objects, organization, and function calls/declarations
-     * `(w: str_ = "hello", x: dbl_, y; dbl_, z. dbl_)` to declare a reference object type, `w` is an optional field
+     * `(w: #str = "hello", x: #dbl, y; #dbl, z. #dbl)` to declare a reference object type, `w` is an optional field
           passed by readonly reference, `x` is a readonly reference, `y` is a writable reference,
           and `z` is passed by value.  See [reference objects](#reference-objects) for more details.
-     * `my_str: "hi", (x: str_) = my_str` to create a [reference](#references) to `my_str` in the variable `x`.
-     * `(some_instance x_(), some_instance Y;, w: "hi", z. 1.23)` to instantiate a reference object instance
-          with `x` and `w` as readonly references, `y` as mutable reference, and `z` as a temporary.
-     * `"Interpolate $(not_printed_(), x)"` to create the string "Interpolate 123" when `x` is 123;
-          note that `not_printed_()` is run but its results are not added to the string.
-     * `f_(a: 3, b: "hi")` to call a function, and `f_(a: int_, b: str_): null_` to declare a function.
-     * `a@ (x_(), y)` to call `a x_()` then `a y` with [sequence building](#sequence-building)
-          and return them in a reference object with fields `x` and `y`, i.e., `(x: a x_(), y: a y)`.
+     * `my_str: "hi", (x: #str) = my_str` to create a [reference](#references) to `my_str` in the variable `x`.
+     * `(some_instance x(), ;some_instance y, w: "hi", z. 1.23)` to instantiate a reference object instance
+          with `w` as readonly reference, `y` as mutable reference, `z` as a temporary, and `x`
+          as whatever `some_instance x()` defaults to (probably temporary).
+     * `"Interpolate $(not_printed(), x)"` to create the string "Interpolate 123" when `x` is 123;
+          note that `not_printed()` is run but its results are not added to the string.
+     * `f(a: 3, b: "hi")` to call a function, and `f(a: #int, b: #str): #null` to declare a function.
+     * `a@ (x(), y)` to call `a x()` then `a y` with [sequence building](#sequence-building)
+          and return them in a reference object with fields `x` and `y`, i.e., `(x: a x(), y: a y)`.
           This allows `x` and `y` to be references.  This can be useful e.g., when `a` is an expression
-          that you don't want to add a local variable for, e.g., `my_long_computation_()@ (x_(), Y)`.
+          that you don't want to add a local variable for, e.g., `my_long_computation()@ (x(), y)`.
 * `[]` are for types and containers (including objects, arrays, and lots)
-     * `[x: dbl_, y: dbl_]` to declare a plain-old-data class with two double-precision fields, `x` and `y`
+     * `[x: #dbl, y: #dbl]` to declare a plain-old-data class with two double-precision fields, `x` and `y`
      * `[x: 1.2, y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `x` and `y`
-     * `[greeting: str_, times: int_] = destructure_me_()` to do destructuring of a return value
+     * `[greeting: #str, times: #int] = destructure_me()` to do destructuring of a return value
           see [destructuring](#destructuring).
-     * `a@ [x_(), y]` to call `a x_()` then `a y` with [sequence building](#sequence-building)
-          and return them in an object with fields `x` and `y`, i.e., `[x: a x_(), y: a y]`.
+     * TODO: i don't think it would be awful to do `{}` for object types and `[]` just for array types,
+          but we might want `#{...}` for the type itself, in analogy to `#[]` and `#()`.
+     * `a@ [x(), y]` to call `a x()` then `a y` with [sequence building](#sequence-building)
+          and return them in an object with fields `x` and `y`, i.e., `[x: a x(), y: a y]`.
           You can also consider them as ordered, e.g.,
-          `results: a@ [x_(), y], print_("$(results[0]), $(results[1]))`.
+          `results: a@ [x(), y], print("$(results[0]), $(results[1]))`.
 * `{}` for blocks and generics
-     * `{...}` to effectively indent `...`, e.g., `if condition {do_thing_()} else {do_other_thing_(), 5}`
-          * Used for defining a multi-statement function inline, e.g., `fn_(): {do_this_(), do_that_()}`.
-               (Note that you can avoid `{}` if the block is one statement, like `fn_(): do_this_()`.)
+     * `{...}` to effectively indent `...`, e.g., `if condition {do_thing()} else {do_other_thing(), 5}`
+          * Used for defining a multi-statement function inline, e.g., `fn(): {do_this(), do_that()}`.
+               (Note that you can avoid `{}` if the block is one statement, like `fn(): do_this()`.)
           * Note that braces `{}` are optional if you actually go to the next line and indent,
                but they are recommended for long blocks.
-     * `some_class_{n: number_, of_:}: some_other_class_{count: n, at_: int_, of_}` to define a class type
-          `some_class` being related to `some_other_class_`, e.g., `some_class_{n: 3, str_}` would be
-          `some_other_class_{count: 3, at_: int, of_: str_}`.
-     * For generic/template classes, e.g., classes like `array_{count, of_}` for a fixed array of size
-          `count` with elements of type `of_`, or `lot_{int_, at_: str_}` to create a map/dictionary
+     * `#some_class[n: #number, #of:]: #some_other_class[count: n, #at: #int, #of]` to define a class type
+          `#some_class` being related to `#some_other_class`, e.g., `#some_class[n: 3, #str]` would be
+          `#some_other_class[count: 3, #at: #int, #of: #str]`.
+     * For generic/template classes, e.g., classes like `#array[count, #of]` for a fixed array of size
+          `count` with elements of type `#of`, or `#lot[#int, #at: #str]` to create a map/dictionary
           of strings mapped to integers.  See [generic/template classes](#generictemplate-classes).
-     * For generic/template functions with type constraints, e.g., `my_function_{of_: non_null_}(x: of_, y: int_): of_`
-          where `of_` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
-     * `a@ {x_(), y}` with [sequence building](#sequence-building), 
-          calling `a x_()` and `a y`, returning `a` if it's a temporary otherwise `a y`
+     * For generic/template functions with type constraints, e.g., `my_function[#of: #non_null](x: #of, y: #int): #of`
+          where `#of` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
+     * `a@ {x(), y}` with [sequence building](#sequence-building), 
+          calling `a x()` and `a y`, returning `a` if it's a temporary otherwise `a y`
 * `~` to infer or generalize a type
-     * `my_generic_function_(value: ~u_): u_` to declare a function that takes a generic type `u_`
+     * `my_generic_function(value: ~#u): #u` to declare a function that takes a generic type `#u`
           and returns an instance of that type.  For more details, see
           [generic/template functions](#generictemplate-functions).
-     * `my_result; array_{~} = do_stuff_()` is essentially equivalent to `my_result; do_stuff_() array`, i.e.,
-          asking for the first array return-type overload.  This infers an inner type via `{~}` but doesn't name it.
-     * `named_inner; array_{~infer_this_} = do_stuff_()` asks for the first array return-type overload,
+     * `my_result; #array[~] = do_stuff()` is essentially equivalent to `my_result; do_stuff() array`, i.e.,
+          asking for the first array return-type overload.  This infers an inner type via `[~]` but doesn't name it.
+     * `named_inner; array[~#infer_this] = do_stuff()` asks for the first array return-type overload,
           and defines the inner type so it can be used later in the same block, e.g.,
-          `first_value; infer_this_ = named_inner[0]`.
-          Any `type_case_` identifier can be used for `infer_this_`.
+          `first_value; #infer_this = named_inner[0]`.
+          Any `#type_case` identifier can be used for `#infer_this`.
+     * TODO: `~enum_value` discussion, otherwise `~# enum_value` if we need it that way.
 * `$` for inline block and lambda arguments
      * [inline blocks](#block-parentheses-and-commas) include:
-          * `$(...)` as shorthand for `fn_(): {(...)}`, i.e., defining a [lambda function](#lambda-functions)
+          * `$(...)` as shorthand for `(fn(): {(...)})`, i.e., defining a [lambda function](#lambda-functions)
                with `()` arguments specified by any lambda variables (see `$arg` logic).  E.g.,
-               `my_array map_$(2 * $int + 1)` is equivalent to
-               `my_array map_(fn_(int:): 2 * int + 1)`.
-          * `$[...]` as shorthand for `fn_(): {[...]}`, i.e., defining a lambda function with
+               `my_array map$(2 * $int + 1)` is equivalent to
+               `my_array map(fn(int:): 2 * int + 1)`.
+          * `$[...]` as shorthand for `[fn(): {[...]}]`, i.e., defining a lambda function with
                `()` arguments specified by any lambda variables (see `$arg` logic).
-          * `${...}` is shorthand for a `new_{}: {...}`, which can be used to create
-               lambda functions for types, or [lambda types](#lambda-types) for short,
-               with a similar function for lambda variables becoming arguments.
+               This can create lambda functions for types, or [lambda types](#lambda-types) for short,
+               if the return value is a type.
+          * `${...}` is shorthand for a `{fn(): {...}}`, a lambda function without any `()`, `[]` structure.
      * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
-          * `my_array map_$($int * 2 + 1)` will iterate over e.g., `my_array: [1, 2, 3, 4]`
+          * `my_array map$($int * 2 + 1)` will iterate over e.g., `my_array: [1, 2, 3, 4]`
                as `[3, 5, 7, 9]`.  The `$` variables attach to the enclosing `$()` as
                function arguments, variables with `$$` would attach to the enclosing `$$()`, etc. 
 * all arguments are specified by name so order doesn't matter, although you can have default-named arguments
-  for the given type which will grab an argument with that type (e.g., `int` for an `int_` type).
-     * `(x: dbl_, int:)` can be called with `(1234, x: 5.67)` or even `(y, x: 5.67)` if `y` is an `int_`
+  for the given type which will grab an argument with that type (e.g., `int` for an `#int` type).
+     * `(x: #dbl, int:)` can be called with `(1234, x: 5.67)` or even `(y, x: 5.67)` if `y` is an `#int`
 * variables that are already named after the correct argument can be used without `:`
-     * `(x: dbl_, y: int_)` can be called with `(x, y)` if `x` and `y` are already defined in the scope,
+     * `(x: #dbl, y: #int)` can be called with `(x, y)` if `x` and `y` are already defined in the scope,
           i.e., eliding duplicate entries like `(x: x, y: y)`.
 * [Horstmann indentation](https://en.wikipedia.org/wiki/Indentation_style#Horstmann) to guide
      the eye when navigating multiline braces/brackets/parentheses
@@ -838,7 +509,7 @@ But we do for wrapper types like `count_`, `index_`, `offset_`, and `ordinal_`.
 * see [operator overloading](#operator-overloading) for how to overload operators.
 
 TODO: we probably need a `@comptime` annotation for functions that can be called at compile time.
-or maybe we make them fully `UPPER_CASE_` to make it clear.  but i'm not as big of a fan of that...
+or maybe we make them fully `UPPER_CASE` to make it clear.  but i'm not as big of a fan of that...
 
 ## defining variables
 
