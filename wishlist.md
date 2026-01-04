@@ -35,57 +35,57 @@ practice we can distinguish `variable_case` and `function_case` based on whether
 there are subsequent parentheses.  Functions and types can have optional generics
 in brackets (e.g., `#my_generic[#value: #int]` and `log[level:](str:):`).
 
-TODO: keep updating to option 2.5
-
 Another change is that oh-lang uses `:`, `;`, and `.` for declarations and `=` for reassignment,
 so that declaring a variable and specifying a variable will work the same inside and outside
 function arguments.  For example, declaring a function that takes a readonly integer named `x`,
-`my_function_(x: int_): null_`, and declaring a constant integer variable named `x` uses the same
-syntax:  `x: int_`.  Similarly, calling a function with arguments specified as `my_function_(x: 5)`
+`my_function(x: #int): #null`, and declaring a constant integer variable named `x` uses the same
+syntax:  `x: #int`.  Similarly, calling a function with arguments specified as `my_function(x: 5)`
 and defining a variable works the same outside of a function: `x: 5`.  In function arguments, e.g.
-`(x: int_, y; str_, z. dbl_)`, we declare `x` as a readonly reference, `y` a writable reference,
-and `z` a temporary, whereas outside of function arguments, `[x: int_, y; str_, z. dbl_]` indicates
+`(x: #int, y; #str, z. #dbl)`, we declare `x` as a readonly reference, `y` a writable reference,
+and `z` a temporary, whereas outside of function arguments, `[x: #int, y; #str, z. #dbl]` indicates
 that `x` is readonly (though it can be written in constructors or first assignment), that `y` is
-writable, and `z` should be used next as a temporary (like most Rust variables).  I.e., it will be
+writable, and `z` should be used next as a temporary (like Rust variables).  I.e., it will be
 hidden from scope if passed into a function that takes a temporary, unless you pass in a clone
-(via `::_o()`).
+(via `::o()`).
 
 In some languages, e.g., JavaScript, objects are passed by reference and primitives
-are passed by value when calling a function with these arguments.  In oh-lang,
-variables are passed by reference by default, for consistency.  I.e., on the left
-hand side of an expression like `x = 5`, we know that we're using `x` as a reference,
-and we extend that to function calls like `do_something_(x)`.  It is of course possible
+are passed by value when calling a function with these arguments.  In oh-lang, variables
+are passed by reference by default, for consistency.  I.e., on the left-hand side of an
+expression like `x = 5`, we know that we're using `x` as a reference,
+and we extend that to function calls like `do_something(x)`.  It is of course possible
 to pass by value as well; see [passing by reference or by value](#pass-by-reference-or-pass-by-value). 
 See [passing by reference gotchas](#passing-by-reference-gotchas) for the edge cases.
 
 In oh-lang, determining the number of elements in a container uses the same
-method name for all container types; `count_(container)` or `container count_()`,
-which works for `array_`, `lot_` (map/dict), `set_`, etc.  In some languages, e.g., JavaScript,
+method name for all container types; `count(container)` or `container count()`,
+which works for `#array`, `#lot` (map/dict), `#set`, etc.  In some languages, e.g., JavaScript,
 arrays use a property (`array.length`) and maps use a different property (`map.size`).
 
 ## convenience
 
 oh-lang also prioritizes convenience; class methods can be called like a function with
-the instance as an argument or as a method on the instance, e.g., `the_method_(my_class)`
-or `class the_method_()`.  This extends to functions with definitions like
-`my_two_instance_function_(my_class_a:, my_class_b:, width: int_, height: int_)` which
+the instance as an argument or as a method on the instance, e.g., `the_method(class_instance)`
+or `class_instance the_method()`.  This extends to functions with definitions like
+`my_two_instance_function(my_class_a:, my_class_b:, width: int_, height: int_)` which
 can be called as `(my_class_a, my_class_b) my_two_instance_function_(width: 5, height: 10)`,
 or by calling it as a method on either one of the instances, e.g.,
 `my_class_a my_two_instance_function_(my_class_b, width: 5, height: 10)`, without needing to
-define, e.g., `my_class_b::my_two_instance_function_(my_class_a:, width: 5, height: 10)` as well.
+define, e.g., `my_class_b::my_two_instance_function(my_class_a:, width: 5, height: 10)` as well.
 
-For convenience, `array{3} = 5` will work even if `array` is not already at least size 4;
+For convenience, `array[3] = 5` will work even if `array` is not already at least size 4;
 oh-lang will resize the array if necessary, populating it with default values,
 until finally setting the fourth element to 5.  This is also to be consistent with
 other container types, e.g., lots (oh-lang's version of a map/dictionary), since `lot["At"] = 50`
-works in a similar fashion, e.g., resizing the `lot_` as necessary to add an element.
+works in a similar fashion, e.g., resizing the `lot` as necessary to add an element.
 In some standard libraries (e.g., C++), `array[3] = 5` is undefined behavior
 if the array is not already at least size 4.
 
 Similarly, when referencing `array[10]` or `lot["At"]`, a default will be provided
 if necessary, so that e.g. `++array[10]` and `++lot["At"]` don't need to be guarded
-as `array[10] = if count_(array) > 10 {array[10] + 1} else {array count_(11), 1}` or
+as `array[10] = if count(array) > 10 {array[10] + 1} else {array count(11), 1}` or
 `lot["At"] = if lot["At"] != null {lot["At"] + 1} else {1}`.
+
+TODO: continue migrating
 
 ## clarity
 
