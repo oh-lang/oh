@@ -448,12 +448,15 @@ function_(a: int_): hm_
                     compared to `array at(1)` and `lot at("hi")`.
                * we could require generic functions to be defined with `#`
                     `#log[#of:](str:, of:): { print("${str}: ${of}) }`
+                    * this works AFAICT but looks like types, which i don't want to confuse
+                         with functions.
                * if we find that a variable that allows subscripting and a
                     generic function are in scope at the same time, with the same name,
                     we throw a compile error.
+                    * this seems a bit restrictive.
                * or we only throw if the variable subscript argument would be indistinguishable
                     from the generic function specification.
-
+                    * i think we can pick this one to be in line with "extreme overloading"
 ```
 # subscriptable variable
 something; #array[#fn(): #array[#dbl]]
@@ -1494,7 +1497,7 @@ my_function_(int:): [x: int_, y: int_]
 
 # this indents `[x, y]` (i.e., to split into a multi-line array),
 # but note that we need `return` to avoid parsing as `do_something_(int)[x: ...]`,
-# which is a compile-time error.
+# which is a compile error unless `do_something` returns something subscriptable.
 my_function_(int): [x: int_, y: int_]
      do_something_(int)
      return:
@@ -2130,50 +2133,6 @@ some_function_(x: int_, y; dbl_, z. str_):
 
 curried_function_(z. str_): some_function_(x: 5, y; 2.4, z)
 ```
-
-### chained calls forbidden
-
-In oh-lang we forbid using parentheses `()` or brackets `[]` directly after
-calling a function like `do_()[1]` or `fn_()()`, even if the function
-has an array overload or returns a function.  This is because of the grammar's
-tab indenting logic, multiline arrays or parens may get attached to the
-previous line in a way in which compiler error messages would be confusing.
-
-```
-# example of returning `[x, y]` values from a function.
-# there's no issue here because we're not indenting in `[x, y]`:
-my_function_(int:): [x: int_, y: int_]
-     do_something_(int)
-     [x: 5 - int, y: 5 + int]
-
-# this indents `[x, y]` (i.e., to split into a multi-line array),
-# but note that we need `return` to avoid parsing as `do_something_(int)[x: ...]`,
-# which is a compile-time error.
-my_function_(int): [x: int_, y: int_]
-     do_something_(int)
-     return:
-     [    x: 5 - int
-          y: 5 + int
-     ]
-
-# alternatively, you could add a comma between the two statements
-# to ensure it doesn't parse as `do_something_(int)[x: ...]`:
-my_function_(int): [x: int, y: int]
-     do_something_(int),
-     [    x: 5 - int
-          y: 5 + int
-     ]
-```
-
-If you want to chain into brackets, you need to put in a return name
-like `do_something_() return_name[x: 1, y: 2]` where `do_something_` has
-an overload like `do_something_(): return_name_`
-or `do_something_(): [return_name: whatever_type_]`.
-
-If you want to chain with parentheses, i.e., to call a function that the
-function just returned, you should similarly chain like this:
-`do_something_(int) fn_(y, z)` to call the returned function with `(y, z)`
-if it is default named.
 
 ## macros
 
