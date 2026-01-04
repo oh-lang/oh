@@ -10,31 +10,32 @@ If you don't care about the why, you may be interested in [general syntax](#gene
 In most languages, primitive types have different casing than class types that are
 created by end-user developers.  This is usually an inconsistency by convention,
 e.g., `PascalCase` for class names and `snake_case` for primitive types in C++,
-but Rust requires this inconsistency by fiat.
-In oh-lang, functions and types are `trailing_underscore_lower_snake_case_`,
-like `my_function_` and `dbl_` or `str_` for types.
-All variables and identifiers are `lower_snake_case`, like `true`, `false`,
-or `my_var_x`.  oh-lang doesn't recommend distinguishing
+but Rust requires this inconsistency by fiat.  In oh-lang, types are hashtags
+like `#array[#str]` for an array of strings and `#dbl` or `#i32` for primitive types.
+Identifiers without hash tags are variables, keywords, or functions, like
+`true`, `false`, `my_var_x`, or `my_fn`.  oh-lang doesn't recommend distinguishing
 between constant identifiers and non-constant identifiers with casing.
 In fact, any capital letters in an identifier create a [namespace](#namespace)
 which can be used to disambiguate variables with the same name.
 
-Why snake case: long names are hard to parse with Pascal case, and we want to support descriptive
-names.  Code is read more than it is written, so we don't need to optimize underscores out
+oh-lang strongly recommends (but does not require) snake case for a few reasons.
+(1) Long names are hard to parse with Pascal case, and we want to support descriptive names.
+Code is read more than it is written, so we don't need to optimize underscores out
 (e.g., like in `PascalCase`) at the cost of making the code harder to read.
-The reason why we use similar casing for identifiers and functions is because it's too
-easy to refactor a type (or function) like `the_array_` into something like `special_array_`
-and miss the corresponding update for variables like `The_array` into `Special_array`.
-It also makes internationalization not dependent on unicode parsing; we can immediately
-determine whether something is a function or type if it has a trailing `_`.
-For the remainder of this document, we'll use `variable_case`,
-`type_case_`, and `function_case_`, although the latter two are indistinguishable without context.
-In context, functions and types are followed by optional generics (in `{}` braces),
-while functions alone have parentheses `()` with optional arguments inside.
-Because types can act as functions, we don't syntactically distinguish between `type_case_`
-and `function_case_` otherwise.
+(2) We want similar casing for types and variables so that refactors can easily
+search and replace the old names.  It's too easy to refactor a type like `#the_array`
+into something like `#better_name_array` and miss the corresponding update for variables
+like `The_array` into `Better_name_array`.  (3) Using hashtags instead of PascalCase 
+for types makes internationalization not dependent on unicode parsing; we can immediately
+determine whether something is a type if it has prefix `#`.
 
-TODO: consider switching to `:` is temporary, `;` is writable reference, and `.` is constant reference.
+For the remainder of this document, we'll use `variable_case`, `function_case`,
+and `#type_case`; without context, the former two are indistinguishable, but in
+practice we can distinguish `variable_case` and `function_case` based on whether
+there are subsequent parentheses.  Functions and types can have optional generics
+in brackets (e.g., `#my_generic[#value: #int]` and `log[level:](str:):`).
+
+TODO: keep updating to option 2.5
 
 Another change is that oh-lang uses `:`, `;`, and `.` for declarations and `=` for reassignment,
 so that declaring a variable and specifying a variable will work the same inside and outside
