@@ -87,6 +87,8 @@ syn match ohAsync	"#um"
 syn match ohInferred	"\~#[a-zA-Z_][a-zA-Z_0-9]*"
 syn match ohBuiltinType		"\~#\s"
 syn match ohCompilerErrorComment	"#@!.*$"
+syn match ohEndOfLineComment		"^# .*$"
+      \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn match ohEndOfLineComment		" # .*$"
       \ contains=ohEscape,ohTodo,ohTick,@Spell
 syn region  ohMidlineComment matchgroup=ohMidlineComment

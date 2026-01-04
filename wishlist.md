@@ -291,18 +291,6 @@ PROBLEM STATEMENT:
 5. it would be nice to use some sort of parentheses for generics (lean towards [])
 6. it would be nice to avoid `new` when instantiating a type, `x_(123)` or `#y(456)
      instead of `x_ new(123)` or `#y new(456)`.
-7. generics for types and functions should be distinguishable from the subscript operator(??)
-     * `m[offset:]: str_` to declare the subscript operator,
-     * `some_class[123]` to use the subscript operator on an instance `some_class`,
-     * `fn[require: #of, #of: #any](of:): #int` to declare a generic function,
-     * `fn[#of: #int](1234)` to call the generic function,
-     * `#my_type[#of:]: ...` to declare a type that generalizes over an inner type,
-     * `#my_type[#int]` to use the type specialized to `#int`.
-     * but why do we need to distinguish between `fn_[generics...]` and
-          `some_class[...]`?  can't `fn[generics...]` just be a way to create
-          a function that we can then call with `()`?  (we can memoize of course.)
-          we do disallow `()` being followed by `[]` for Horstmann indent reasons,
-          so it's a bit odd that we can do the other way but not currently illegal.
 8. it would be nice to have a quick way to refer to a type, e.g., `value: _ my_enum1`
      where `value_: one_of_[my_enum1:, my_enum2:]`, especially for switch-cases.
      `what value { _ my_enum1 {print("ok")}, _ my_enum2 {print("no")} }` vs.
@@ -318,14 +306,6 @@ PROBLEM STATEMENT:
      type and also how you build a `str_` type), so we'd need `str_(...)`.
      * this would probably make it undesirable to  distinguish between functions and variables,
           at least for casing.
-10. it *might* be nice to allow overloading {} on an instance, `"asdf"{"jkl;"} == "asdf{jkl;}"`,
-     but probably would break a whole lot of other things.  would probably need a
-     specific "call operator" like `abc#{...}`.
-     * we could use the call operator in other contexts, e.g., `a: (x: 1, y: 2)`
-          then `my_fn # a` but i think `my_fn(...a)` is better so we don't have
-          people thinking you need to do `my_fn#(x: 1, y: 2)`.
-     * the issue is that we don't want `if abc { ... } else { ... }` to break
-          if `abc` has defined an overload for `{...}`.
 11. it might be nice to have `#123456` for colors.  since hex is allowed,
      we probably can't use `#` for types (is `#aaa` a type or a color??)
      unless we require hex to use uppercase A-F.  (e.g., `#AAA` is a color, `#aaa` is a type).
