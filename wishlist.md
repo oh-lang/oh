@@ -291,6 +291,25 @@ PROBLEM STATEMENT:
 5. it would be nice to use some sort of parentheses for generics (lean towards [])
 6. it would be nice to avoid `new` when instantiating a type, `x_(123)` or `#y(456)
      instead of `x_ new(123)` or `#y new(456)`.
+7. generics for types and functions should be distinguishable from the subscript operator
+     * `m[offset:]: str_` to declare the subscript operator,
+     * `some_class[123]` to use the subscript operator on an instance `some_class`,
+     * `fn[require: #of, #of: #any](of:): #int` to declare a generic function,
+     * `fn[#of: #int](1234)` to call the generic function,
+     * `#my_type[#of:]: ...` to declare a type that generalizes over an inner type,
+     * `#my_type[#int]` to use the type specialized to `#int`.
+     * but why do we need to distinguish between `fn_[generics...]` and
+          `some_class[...]`?  can't `fn[generics...]` just be a way to create
+          a function that we can then call with `()`?  (we can memoize of course.)
+          * this issue is that we allow variable and function overloading;
+               `x` can be a variable and `x` can be a function if followed by `()`.
+               if `x` followed by `[]` can also be a generic function, we get an
+               issue if `x` is a variable with subscript overloading.
+               we could avoid this if we disallow subscript overloading,
+               but then we need `array at(3)` and `lot at("hello")`, etc.
+          * `x[count:](): { array[#int];, count each offset: { array append(offset) }, array }`
+          * `x: #array[#fn(): #str]` is definitely an issue.
+          * `x: #array[#int]` is ok, or does it fail?
 8. it would be nice to have a quick way to refer to a type, e.g., `value: _ my_enum1`
      where `value_: one_of_[my_enum1:, my_enum2:]`, especially for switch-cases.
      `what value { _ my_enum1 {print("ok")}, _ my_enum2 {print("no")} }` vs.
@@ -420,6 +439,39 @@ function_(a: int_): hm_
                     confusing whether types should get them (when acting as
                     functions), e.g., `#str_(123)` or `#str(123)`??
                * this is kinda like `new` which i don't like.
+          * subscripting needs more complicated compiler errors; we don't
+               want to overload a variable `x` that can have subscripts with
+               a generic function also called `x`.  but it's tempting to do this
+               for e.g., `#array[#of:]` generic type, defining a function like
+               `array[#of:](count:): { array[#of];, count each _offset: { array append(#of()) }, array }`.
+               * we could remove subscript overloading, but `array[1]`, `lot["hi"]` are nice
+                    compared to `array at(1)` and `lot at("hi")`.
+               * we could require generic functions to be defined with `#`
+                    `#log[#of:](str:, of:): { print("${str}: ${of}) }`
+               * if we find that a variable that allows subscripting and a
+                    generic function are in scope at the same time, with the same name,
+                    we throw a compile error.
+               * or we only throw if the variable subscript argument would be indistinguishable
+                    from the generic function specification.
+
+```
+# subscriptable variable
+something; #array[#fn(): #array[#dbl]]
+something[1] = fn(): [-1.0, +1.0]
+something at(1) = fn(): [-1.0, +1.0]
+print(something[1]())    # should print `[-1, 1]`.
+
+# generic function, `something[3]()` should return `[0, 1, 2]`.
+something[count:](): #array[#int, count]
+     result; #return
+     count each offset:
+          result[offset] = offset
+     result
+
+# at what point does defining both of these fail?  and how?
+# we need to give a good error message.
+something[1]()      # should this be the variable version or the generic function version?
+```
 * option 3: use () or [] for function arguments and generic specifications;
      use trailing underscores on the function name to indicate returning a type or not.
      * `do_something_(): any_` to return a type, e.g., `x_: do_something_()` defines a type
