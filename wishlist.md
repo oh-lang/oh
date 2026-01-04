@@ -66,10 +66,10 @@ arrays use a property (`array.length`) and maps use a different property (`map.s
 oh-lang also prioritizes convenience; class methods can be called like a function with
 the instance as an argument or as a method on the instance, e.g., `the_method(class_instance)`
 or `class_instance the_method()`.  This extends to functions with definitions like
-`my_two_instance_function(my_class_a:, my_class_b:, width: int_, height: int_)` which
-can be called as `(my_class_a, my_class_b) my_two_instance_function_(width: 5, height: 10)`,
+`my_two_instance_function(my_class_a:, my_class_b:, width: #int, height: #int)` which
+can be called as `(my_class_a, my_class_b) my_two_instance_function(width: 5, height: 10)`,
 or by calling it as a method on either one of the instances, e.g.,
-`my_class_a my_two_instance_function_(my_class_b, width: 5, height: 10)`, without needing to
+`my_class_a my_two_instance_function(my_class_b, width: 5, height: 10)`, without needing to
 define, e.g., `my_class_b::my_two_instance_function(my_class_a:, width: 5, height: 10)` as well.
 
 For convenience, `array[3] = 5` will work even if `array` is not already at least size 4;
@@ -85,85 +85,88 @@ if necessary, so that e.g. `++array[10]` and `++lot["At"]` don't need to be guar
 as `array[10] = if count(array) > 10 {array[10] + 1} else {array count(11), 1}` or
 `lot["At"] = if lot["At"] != null {lot["At"] + 1} else {1}`.
 
-TODO: continue migrating
-
 ## clarity
 
 Functions are called with named arguments always, although names can be omitted in
 certain circumstances [when calling a function](#calling-a-function).
 
 Nullable variables should always be annotated by `?`, both in a declaration
-`y?: some_possibly_null_returning_function_()` and also when used as a function
-argument, e.g., `call_with_nullable_(some_value?: y)`.  This is to avoid surprises
-with null, since `call_with_nullable_(some_value?: null)` is equivalent to
-`call_with_nullable_()`, which can be a different overload.
+`y?: some_possibly_null_returning_function()` and also when used as a function
+argument, e.g., `call_with_nullable(some_value?: y)`.  This is to avoid surprises
+with null, since `call_with_nullable(some_value?: null)` is equivalent to
+`call_with_nullable()`, which can be a different overload.
 
 ## concision
 
 When defining a function, variable arguments that use the default name for a type can
-elide the type name; e.g., `my_function_(int:): str_` will declare a function that takes 
-a readonly instance of `int_`, i.e., `int:` expands to `int: int_`.  See
+elide the type name; e.g., `my_function(int:): #str` will declare a function that takes 
+a readonly instance of `#int`, i.e., `int:` expands to `int: #int`.  See
 [default-named arguments](#default-name-arguments-in-functions).  This is also true if
-[namespaces](#namespaces) are used, e.g., `my_function_(MY_NAMESPACE_int:): str_`.
-We use `:` to create the readonly reference overload, e.g., `my_function_(int:): str_`
-to create a function which takes a readonly integer reference, or `my_function_(int;): str_`
-for a function that can mutate the passed-in integer reference or `my_function_(int.): str_`
-for a function which takes a temporary integer.
-This also works for generic classes like `my_generic_{of_:}` where `of_` is a template type;
-`my_function_(my_generic{int_};)` is short for `my_function_(my_generic; my_generic_{int_})`.
+[namespaces](#namespaces) are used, e.g., `my_function(MY_NAMESPACE_int:): #str`.
+We use `:` to create the readonly reference overload, e.g., `my_function(int:): #str`
+to create a function which takes a readonly integer reference, or `my_function(int;): #str`
+for a function that can mutate the passed-in integer reference or `my_function(int.): #str`
+for a function which takes a temporary integer.  This also works for generic classes,
+e.g., `#my_generic[#of:]` where `#of` is a template type and the default name for a type;
+`my_function(my_generic[#int];)` is short for `my_function(my_generic; #my_generic[#int])`.
 
-When calling a function, we don't need to use `my_function_(x: x)` if we have a local
+When calling a function, we don't need to use `my_function(x\` x)` if we have a local
 variable named `x` that shadows the function's argument named `x`.  We can just
-call `my_function_(:x)` to specify the readonly reference overload (`x: x`),
-`other_function_(;y)` to specify the writable reference overload (`y; y`), or
-`tmp_function_(.z)` to specify a temporary overload `z. @hide z!`, which also
-stops you from using `z` again in the rest of the block.  Using `tmp_function_(z!)`
-also calls the temporary overload and would allow `z` to still be used afterwards,
-but `z` will be [reset to the default](#prefix-and-postfix-exclamation-points).
-Alternatively, you can do `tmp_function_(z o_())` to make a deep copy, and
-this will also automatically call the temporary overload without specifying `.`.
-If no declaration operator is used when calling a function, e.g., `my_function_(x)`,
-then we'll infer `:` if `x` is readonly (i.e., defined with `:`)
-and `;` if `x` is writable (i.e., defined `;`), or `.` if `x` is a temporary.
-(In this last case, oh-lang acts like Rust and will disable `x` from being reused
-in the rest of the block, since it was "used up" in the temporary overload.)
+use `my_function(x)`, which will use the mutability of `x` to infer the overload.
+E.g., `my_function(x: x)` if `x` is readonly, `my_function(x; x)` if `x` is writable,
+and `my_function(x. x)` if `x` is temporary.   In this last case, oh-lang acts like Rust
+and will disable `x` from being used in the rest of the block, since it was "used up"
+as a temporary.
 If no temporary overload is present, the compiler will retry for a writable overload.
 If no writable overload is present, the compiler will retry for a readonly overload.
+
+If you need to call a different overload based on your variable mutability,
+you can use `my_function(:x)` to specify the readonly reference overload (`x: x`),
+`my_function(;y)` to specify the writable reference overload (`y; y`), or
+`my_function(.z)` to specify a temporary overload `z. @hide z!`, which also
+stops you from using `z` again in the rest of the block.  Using `my_function(z!)`
+also calls the temporary overload and would allow `z` to still be used afterwards,
+but `z` will be [reset to the default](#prefix-and-postfix-exclamation-points).
+Alternatively, you can do `my_function(z o())` to make a deep copy, and
+this will also automatically call the temporary overload without specifying `.`.
+The temporary overload is similarly called for any expression that returns a value
+lik`my_function(sin(0.5))` or `my_function(#make_this_type(x: 1, y: 2))`.
+
 Note the declaration operator (`.;:`) goes on the left when calling a function
 with an existing variable, and on the right when declaring a variable or argument.
-I.e., `;x` expands to `x; x`, while `x;` expands to `x; x_`.
+I.e., `;x` expands to `x; x`, while `x;` expands to `x; #x`.
 TODO: i'm forgetting to do this and don't always like it.  can we make due without it
 and always put declarers on the right?  i like the consistency though.
 but you'd need to do this in generics as well, in case you're asking for a `\`` generic.
-e.g., `my_class_{of_:}: [of\`]` would be `my_class_{;dbl_}` for a class that can
-modify the double and `my_class_{:dbl_}` for readonly.
+e.g., `my_class[#of\`]: [of\`]` would be `#my_class[;#dbl]` for a class that can
+modify the double and `#my_class[:#dbl]` for readonly.
 
 Class methods technically take an argument for `m` everywhere, which is somewhat
 equivalent to `this` in C++ or JavaScript or `self` in python, but instead of
-declaring `the_method_(m:, x: int_): str_`, we can use `::the_method_(x: int_): str_`.
+declaring `the_method(m:, x: #int): #str`, we can use `::the_method(x: #int): #str`.
 this parallels `my_class::the_method` in C++, but in oh-lang we can analogously use
-`;;a_mutating_method_` for a method that can mutate `m`, i.e.,
-`a_mutating_method_(m;, x: int_): str_` becomes `;;a_mutating_method_(x: int_): str_`,
-or `..one_temporary_method_()` for a method on a temporary `m`, i.e.,
-`one_temporary_method_(m.)`.  Inside an instance method definition, you can use `m`
-to refer to the class instance, regardless of how it was defined.  Inside methods,
+`;;a_mutating_method` for a method that can mutate `m`, i.e.,
+`a_mutating_method(m;, x: #int): #str` becomes `;;a_mutating_method(x: #int): #str`,
+or `..one_temporary_method()` for a method on a temporary `m`, i.e.,
+`one_temporary_method(m.)`.  Inside an instance method definition, you can use `m`
+to refer to the class instance even if it doesn't look like it's in scope.  Inside methods,
 you must use `m the_variable_name` to refer to a class field `the_variable_name`
-and `m my_method_name_()` to call another method; this helps with overload resolution
+and `m my_method_name()` to call another method; this helps with overload resolution
 (i.e., to distinguish static variables/functions from instance variables/methods)
 but also means we can avoid renaming arguments that shadow class variables, e.g.,
-`::swap_(x; int_): {m x <-> x}`.
+`::swap(x; #int): {m x <-> x}`.
 (C++ developers are encouraged to prefix class member variables with
 `m_` because C++ is too permissive here with name resolution.)
 Here is an example class.
 
 ```
-vector3_: [x: dbl_, y: dbl_, z: dbl_]
-{    ::length_(): dbl_
-          sqrt_(m x * m x + m y * m y + m z * m z)
+#vector3: [x: #dbl, y: #dbl, z: #dbl]
+{    ::length(): #dbl
+          sqrt(m x^2 + m y^2 + m z^2)
 }
 ```
 
-We support nested types without needing a `m_` prefix, and they are available anywhere
+We support nested types without needing `#m` specified, and they are available anywhere
 in the class body they are defined.  This is a minor inconsistency with instance fields
 and method calls (which always require `m`) but those make overloads much easier to
 reason about.  However, to prevent confusion, these nested types cannot shadow any global
@@ -172,77 +175,77 @@ to refer to another generic subtype if we already have the class.
 
 ```
 # NOTE: we can use type definitions from later in the class body when
-# declaring class member variables (e.g., `lot; lot_`):
-my_generic_{at_:, of_:}: [lot;]
-{    lot_: @only insertion_ordered_lot_{at_, of_}
+# declaring class member variables (e.g., `lot; #lot`):
+#my_generic[#at:, #of:]: [lot;]
+{    #lot: @only #insertion_ordered_lot[#at, #of]
      ...
 }
 
-# ERROR: `lot_` (without a `{}` spec) is shadowed inside of `my_generic_`:
-# we should rename this type or the type inside `my_generic_`.
-lot_: lot_{at_: int_, of_: str_}
+# ERROR: `#lot` (without a `[]` spec) is shadowed inside of `#my_generic`:
+# we should rename this type or the type inside `#my_generic`.
+#lot: #lot[#at: #int, #of: #str]
 ```
 
-After fixing the compile error in the example above, we can use `some_type: my_generic_{at_, of_} lot_`
-to refer to the nested type, but can we also use `some_type: lot_{m_: my_generic_{at_, of_}}`.
-We don't override `lot_{my_generic_{at_, of_}}` because a single type might be an override of `lot_{of_}`;
-this isn't the case for `lot_` specifically but for other types like `array_` there are definitely overloads.
+After fixing the compile error in the example above, we can use `#some_type: #my_generic[#at, #of] #lot`
+to refer to the nested type, but can we also use `#some_type: #lot[#m: #my_generic[#at, #of]]`.
+We don't override `#lot[#my_generic[#at, #of]]` because a single type might be an override of `#lot[#of]`;
+this isn't the case for `#lot` specifically but for other types like `#array` there are definitely overloads.
 See [type manipulation](#type-manipulation) for more details.
 
 Note this is actually ok, because we can distinguish overloads based on arguments.
 
 ```
-vector2_: [x: dbl_, y: dbl_]
-{    ::atan_(): dbl
-          atan_(m x, m y)      # also ok: `\\math atan_(m x, m y)` could avoid the import below.
+#vector2: [x: #dbl, y: #dbl]
+{    ::atan(): #dbl
+          atan(m x, m y)      # `\\math atan(m x, m y)` could avoid the import below.
 }
-[atan_(x: dbl_, y: dbl_): dbl_]: \\math
+[atan(x: #dbl, y: #dbl): #dbl]: \\math
 ```
 
 Also in the spirit of conciseness, `o` can be used for an *o*ther instance of the same type,
-and `g_` can be used for the current generic class (without the specification) while
-`m_` always refers to the current class type (including the specification if generic).
+and `#g` can be used for the current generic class (without the specification) while
+`#m` always refers to the current class type (including the specification if generic).
 
 ```
-vector3_{of_: number_}: [x; of_, y; of_, z; of_]
-{    # `g_` is used for this generic class without the current specification,
-     # in this case, `vector3_`.
-     g_(value_0. ~value, value_1., value_2.): g_{value_}
+#vector3[#of: #number]: [x; #of, y; #of, z; #of]
+{    # `#g` is used for this generic class without the current specification,
+     # in this case, `#vector3`.
+     #g(value_0. ~value, value_1., value_2.): #g[#value]
           [x: value_0, y: value_1, z: value_2]
 
-     ::dot_(o:): of_
+     ::dot(o:): #of
           m x * o x + m y * o y + m z * o z
 }
 
-dot_(vector3_(1, 2, 3), vector3_(-6, 5, 4)) == 1 * -6 + 2 * 5 + 3 * 4
+dot(#vector3(1, 2, 3), #vector3(-6, 5, 4)) == 1 * -6 + 2 * 5 + 3 * 4
 ```
 
-Class getters/setters *do not use* `::get_x_(): dbl_` or `;;set_x_(dbl.): null_`, but rather
-just `::x_(): dbl_` and `;;x_(dbl.): null_` for a private variable `x; dbl_`.  This is one
-of the benefits of using `function_case_` for functions/methods and `variable_case`
-for variables; we can easily distinguish intent without additional verbs.
-Of course, overloads are also required here to make this possible.
+TODO: this doesn't work if the type (`#dbl` in this case) were something that had
+a parenthetical overload for either `()` or `(#self_type:)`.  we may recommend setters/getters??
+Class getters/setters *do not use* `::get_x(): #dbl` or `;;set_x(dbl.): #null`, but rather
+just `::x(): #dbl` and `;;x(dbl.): #null` for a private variable `x; #dbl`.  This is because
+we allow overloading of both functions and variables in oh-lang.
 
 Because we use `::` for readonly methods and `;;` for writable methods, we can
 easily define "const template" methods via `:;` which work in either case `:` or `;`.
 This is mostly useful when you can call a few other methods internally that have specific
 `::` and `;;` overloads, since there's usually some distinct logic for readonly vs. writable.
-E.g., `;:the_method_(x;: str_): m check_(;:x)` where `check_` has distinct overloads for `::` and `;;`.
+E.g., `;:the_method(x;: #str): m check(;:x)` where `check` has distinct overloads for `::` and `;;`.
 See [const templates](#const-templates) for more details.
 
 oh-lang uses result-passing instead of exception-throwing in order to make it clear
-when errors can occur.  The `hm_{ok_, er_}` class handles this, with `ok_` being the
-type of a valid result, and `er_` being the type of an error result.  You can specify
-the types via `hm_{ok_: int_, er_: str_}` for `ok_` being `int_` and `er_` being a `str_`.
-If the `ok_` and `er_` types are distinct, you don't need to wrap a return value in
-`ok_(valid_result)` and `er_(error_result)`; you can just return `valid_result` or `error_result`.
+when errors can occur.  The `#hm[#ok:, #er:]` class handles this, with `#ok` being the
+type of a valid result, and `#er` being the type of an error result.  You can specify
+the types via `#hm[#ok: #int, #er: #str]` for `#ok` being `#int` and `#er` being a `#str`.
+If the `#ok` and `#er` types are distinct, you don't need to wrap a return value in
+`#ok(valid_result)` and `#er(error_result)`; you can just return `valid_result` or `error_result`.
 See [the `hm` section](#hm) for more details.  It is a compile error to not handle
 errors when they are returned (e.g., something like a `no-unused-result`), although
-often there are overloads (without an `hm_` result being returned) which just panic
+often there are overloads (without an `#hm` result being returned) which just panic
 at runtime in case of an error.  oh-lang does make it easy to chain results using
-[`assert_`](#assert), and we'll probably reserve an operator like `?!` to do this.
+[`assert`](#assert), and we'll probably reserve an operator like `?!` to do this.
 
-Another way we aim to be concise is by using the `_` as an [inferred type](#_-type).
+Another way we aim to be concise is by using the `~#` as an [inferred type](#-type).
 
 ## coolness
 
@@ -1402,7 +1405,7 @@ my_function_(_argument_which_we_will_need_later: int_): null_
 my_function_(argument_which_we_will_need_later: 3)
 ```
 
-### `_` type
+### `~#` type
 
 By itself, `_` means to infer the type, usually from the left-hand-side of
 an equation.  This is useful for [class imports](#modules), [enums](#enumerations),
