@@ -761,6 +761,33 @@ i guess the question is, should this be allowed? `a: #fn(): #int` to declare
 one of the nice things about the previous approach was that
 `array_: { ::count_(): ... }` didn't need to worry about whether `#count(array)`
 or `count_(array)` was correct; types and functions were the same case.
+we could make the constructor for a `#whatever` type be the `whatever` function case.
+but this runs afoul of invalid-overloads pretty quickly; `#array[#of:]` will have
+`array(1, 2, 3)` or `array[#int](1, 2, 3)` as the constructor and `array` as the
+default variable name; `array[3]` i guess can still be distinguished from `array[#of]`.
+what's the syntax here though?
+
+```
+#my_class: {
+     # constructor
+     m(...): #m
+
+     # parenthetical overload
+     ::(...): #whatever
+
+     # subscript overload
+     ;;[...]: #int
+}
+```
+or should we do `my_class: #{...}` or `#my_class: #{...}`?
+i like `my_class: #{...}` for a class definition to make it clear that you can
+multiply define `my_class; #my_class`, etc., like you can for functions.  however
+`my_typedef: other_type` doesn't look quite right; are we grabbing `other_type`
+as a variable or `other_type` as a function or `other_type` as a type?
+if `other_type` is in scope as a variable, then `whatever: other_type` would be
+a variable copy.  maybe use `#my_typedef: #other_type` for a typedef,
+`my_fn_alias: other_fn(args:): #return_type` for a function alias,
+and keep `#my_class: {...}` to be consistent with `#my_typedef: ...`.
 
 ```
 # case (A): defining a function that returns a lambda function
@@ -4542,15 +4569,16 @@ example_class_: all_of_
      ;;add_something_(int:): null_
           x += int    # equivalent to `m x += int`
 
-     # index operator usage: `example_class[10]` which would return "!!!!!!!!!!"
+     # subscript operator usage: `example_class[10]` which would return "!!!!!!!!!!"
      # NOTE: `int:` is declared readonly but is NOT passed as a reference;
-     # index operator arguments are always passed by value, but you can indicate
-     # the argument will be readonly inside the definition.
+     # subscript operator arguments are always passed by value, but you can indicate
+     # the argument will be readonly/writable/temporary inside the definition.
      ::[int:]: str_
           "!" * int
 
      # COMPILE ERROR: this is not an overload because `[]` arguments
-     # are always passed by value.
+     # are always passed by value; this definition conflicts with
+     # the earlier subscript operator definition.
      ::[int;]: str_
           "!" * int++
 
