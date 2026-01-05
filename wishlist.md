@@ -205,12 +205,13 @@ Note this is actually ok, because we can distinguish overloads based on argument
 Also in the spirit of conciseness, `o` can be used for an *o*ther instance of the same type,
 and `#g` can be used for the current generic class (without the specification) while
 `#m` always refers to the current class type (including the specification if generic).
+Similarly, `m(...)` and `g(...)` can be used to declare or use the constructors.
 
 ```
 #vector3[#of: #number]: [x; #of, y; #of, z; #of]
-{    # `#g` is used for this generic class without the current specification,
-     # in this case, `#vector3`.
-     #g(value_0. ~value, value_1., value_2.): #g[#value]
+{    # `g`/`#g` is used for this generic class without the current specification,
+     # in this case, `vector3`/`#vector3`.
+     g(value_0. ~#value, value_1., value_2.): #g[#value]
           [x: value_0, y: value_1, z: value_2]
 
      ::dot(o:): #of
@@ -853,21 +854,21 @@ hello_world(): print(do_something(you(): "world", greet(name: #str): "Hello, ${n
 
 ### defining generic functions
 
-There are two ways to define a generic function: (1) via type inference `~x`
-and (2) with an explicit generic specification `{types_...}` after the function name.
+There are two ways to define a generic function: (1) via type inference `~#x`
+and (2) with an explicit generic specification `[#types...]` after the function name.
 You can combine the two methods if you want to infer a type and specify a
-condition that the type should satisfy, e.g., `fn_{x_: number_}(~x.): x_`,
-where `~x.` expands to `x. ~x_`, meaning that `x_` is inferred, and the
-braces `{x_: number_}` require `x_` to be a number type.  Any types that are
-not inferred but are given in braces must be added at the callsite, e.g.,
-`fn_{x_: number_, y_:}(~x., after: y_): y_` should be called like
-`fn_{y_: int_}(123.4, after: 5)`.
+condition that the type should satisfy, e.g., `fn[#x: #number](~x.): #x`,
+where `~x.` expands to `x. ~#x`, meaning that `#x` is inferred, and the
+brackets `[#x: #number]` require `#x` to be a number type.  Any types that are
+not inferred but are given in brackets must be added at the callsite, e.g.,
+`fn[#x: #number, #y:](~x., after: #y): #y` should be called like
+`fn[#y: #int](123.4, after: 5)`.
 
-Note that default names apply to either case; `~x:` is shorthand for `x: ~x_`
-which would not need an argument name, and `fn_{value_:}(value.): null_` would
-require `value_` specified in the braces but not in the argument list,
-e.g., `fn_{value_: int_}(123)`.  In braces, the "default name" for a type is
-`of_`, so you can call a function like `fn_{of_:}(of.): null_` as `fn_{int_}(123)`.
+Note that default names apply to either case; `~x:` is shorthand for `x: ~#x`
+which would not need an argument name, and `fn[#value:](value.): #null` would
+require `#value` specified in the brackets but not in the argument list,
+e.g., `fn[#value: #int](123)`.  In brackets, the "default name" for a type is
+`#of`, so you can call a function like `fn[#of:](of.): #null` as `fn[#int](123)`.
 
 Some examples:
 
@@ -904,30 +905,8 @@ fn_{x_: str_}(value: "asdf")
 
 # explicit default-named generic, but argument is not default named:
 fn_{of_:}(value: of_): of_
-# call it like this; you can omit `of_: ...` in braces:
+# call it like this; you can omit `of_: ...` in brackets:
 fn_{int_}(value: 123)
-
-# because braces are equivalent to indented blocks, these are also equivalent:
-generic_fn_{of_: number_}(of.): of_
-     print_(of)
-     of *= 2
-     of
-# with blocks:
-generic_fn_
-     of_: number_
-(    of.
-): of_
-     print_(of)
-     of *= 2
-     of
-
-# calling with braces
-generic_fn_{int_}(123)
-# calling without braces, might be nice for a few specified generics but probably not one
-generic_fn_
-     int_
-(    123
-)
 ```
 
 See [generic/template functions](#generictemplate-functions) for more details.
@@ -1019,7 +998,7 @@ Generally it's recommended to add child fields last.
 
 ### defining generic classes
 
-With classes, generic types must be explicitly declared in braces.
+With classes, generic types must be explicitly declared in brackets.
 Any conditions on the types can be specified via `{the_type: the_condition, ...}`.
 
 ```
@@ -1048,23 +1027,6 @@ entry{at_: str_, int_}(at: "cookies", value: 123):
 my_entry; entry_(at: 123, value: 4.56)              # infers `at_: int_` and `of_: dbl_`.
 my_entry add_(1.23)
 my_entry value == 5.79
-
-# because braces are equivalent to indented blocks, these are also equivalent:
-generic_class_
-{    a_: some_constraint_
-     b_: another_constraint_
-}:   [a;, b;]
-{    ::do_something_(): one_of_{a:, b:}
-          m a || m b
-}
-# defining the generics without braces:
-generic_class_
-     a_: some_constraint_
-     b_: another_constraint_
-:    [a;, b;]
-{    ::do_something_(): one_of_{a:, b:}
-          m a || m b
-}
 ```
 
 See [generic/template classes](#generictemplate-classes) for more information.
@@ -1416,6 +1378,10 @@ if some_condition
 if some_condition { print_("toggling shutoff"), shutdown_() }
 ```
 
+WARNING! this means that `w, x = y, z` does NOT behave the same way in oh-lang
+as in e.g. Python.  In oh-lang, `w, x = y, z` executes these three statements
+consecutively: `w`, `x = y`, and `z`.
+
 If the block parentheses encapsulate content over multiple lines, note that
 the additional lines need to be tabbed to +1 indent to match the +1 indent given by `{`.
 Multiline block braces are useful if you want to clearly delineate where your blocks
@@ -1728,9 +1694,9 @@ unnest_{hm_{ok_: ~nested_, ~_er_:}}: _nested
 unnest_{~nested_?:}: nested_
 ```
 
-Note that if we have a function that returns a type, we must use braces, e.g.,
+Note that if we have a function that returns a type, we must use brackets, e.g.,
 `type_function_{...}: the_return_type_`, but we can use instances like booleans
-or numbers inside of the braces (e.g., `array_{3, int_}` for a fixed size array type).
+or numbers inside of the brackets (e.g., `array_{3, int_}` for a fixed size array type).
 Conversely, if we have a function that returns an instance, we must use parentheses,
 e.g., `the_function_(...): instance_type_`.  In either case, we can use a type as
 an argument, e.g., `nullable_(of_): bool_` or `array3_{of_:}: array_{3, of_}`.
@@ -3036,7 +3002,7 @@ detect_(greet_(int): {["hi", "hey", hello"][int % 3] + ", world!"}) # returns 2
 Lambda functions are good candidates for [functions as arguments](#functions-as-arguments),
 since they are very concise ways to define a function.  They utilize a parenthetical with a
 number of `$` like `$(...function-body...)` with function arguments defined inside using
-`$the_argument_name` (using the corresponding number of `$` as the brace).  There is no way
+`$the_argument_name` (using the corresponding number of `$` as the paren).  There is no way
 to specify the type of a lambda function argument, so the compiler must be able to infer it
 (e.g., via using the lambda function as an argument, or by using a default name like `$int`
 to define an integer).  Some examples:
@@ -3051,7 +3017,7 @@ run_asdf_$($k * $j + str_($l))     # prints "hayhayhayhayhay3.14"
 ```
 
 If you need a lambda function inside a lambda function, use more `$` to escape
-the arguments into the brace with the same number of `$`, e.g.,
+the arguments into the paren with the same number of `$`, e.g.,
 
 ```
 # with function signatures
@@ -3119,23 +3085,9 @@ We use a different syntax for functions that return types; namely `()` becomes `
 e.g., `type_fn_{args...}: the_type_`.  This is because we do not need to support
 functions that return instances *or* constructors, and it becomes clearer that we're
 dealing with a type if we use a different enclosure.  We can also pass in comptime
-constants into generics like `{count: count_}`.  Because braces are the gramatically
-equivalent to indented blocks, the following are equivalent:
+constants into generics like `{count: count_}`.
 
-```
-my_optional_{of_:}: one_of_{none:, some: of_}
-
-# TODO: not 100% sure the lexer will like this, but let's try to figure it out:
-my_optional_
-     of_:
-:    one_of_{none:, some: of_}
-
-my_optional_{of_:}: one_of_
-     none:
-     some: of_
-```
-
-The brace syntax is related to [template classes](#generictemplate-classes) and
+The bracket syntax is related to [template classes](#generictemplate-classes) and
 [overloading generic types](#overloading-generic-types).
 
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
@@ -4264,14 +4216,14 @@ result: copy_(value: vector3)   # prints "got vector3_(x: 0.0, y: 5.0, z: 0.0)".
 vector3 == result               # equals True
 ```
 
-You can also add the new types in braces just after the function name,
+You can also add the new types in brackets just after the function name,
 e.g., `copy_{t_: my_type_constraints_}(value: ~t_): t_`, which allows you to
 specify any type constraints (`my_type_constraints_` being optional).  Note
 that types prefixed with `~` anywhere in the expression are inferred and
-therefore can never be explicitly given inside of the braces, e.g.,
+therefore can never be explicitly given inside of the brackets, e.g.,
 `copy_{t_: int_}(value: 3)` is invalid here, but `copy_(value: 3)` is fine.
 
-If you want to require explicitly providing the type in braces, don't use `~` when
+If you want to require explicitly providing the type in brackets, don't use `~` when
 defining the function.
 
 ```
@@ -4280,7 +4232,7 @@ copy_{the_type_:}(value: the_type_): the_type_
      ...
      the_type_(value)
 
-# therefore we need to specify the generics in braces before calling the function.
+# therefore we need to specify the generics in brackets before calling the function.
 copy_{the_type_: int_}(value: 1234) # returns 1234
 ```
 
@@ -4296,7 +4248,7 @@ copy_{of_:}(value: of_): of_
      ...
      of_(value)
 
-# because the type is not inferred, you always need to specify it in braces.
+# because the type is not inferred, you always need to specify it in brackets.
 # you can use `of_: the_type_` but this is not idiomatic:
 copy_{of_: int_}(value: 3)    # will return the integer `3`
 
@@ -4390,7 +4342,7 @@ logger_(value. 3)   # returns the integer `3`
 And as in other contexts, you can avoid inferring the type by omitting `~`.
 
 ```
-# this generic needs to be specified in braces at the call site: 
+# this generic needs to be specified in brackets at the call site: 
 logger_{value_:}(NAMED_value.): value_
      ...
      NAMED_value
@@ -4484,7 +4436,7 @@ my_class_{of_:, n: count_, require: n > 0}:
 
 # classes
 
-A class is defined with a `type_case_` identifier, an object `[...]`
+A class is defined with a `#type_case` identifier, an object `[...]`
 defining instance variables and instance functions (i.e., variables and
 functions that are defined *per-instance* and take up memory), and an
 optional indented block (optionally in `{}`) that includes methods and functions that are

@@ -33,18 +33,18 @@ assert[require: #oh_info caller() can_panic()](~of?.)
      transformation; #str
      held_er[require: #held_er];
 ]
-{    #g(~t., ~GIVEN_RETURNED_er., oh_info. ~# caller(), transformation. ""):
+{    g(~t., ~GIVEN_RETURNED_er., oh_info. ~# caller(), transformation. ""):
                #g[#t, #RETURNED_er: #GIVEN_RETURNED_er]
           [t, held_er. GIVEN_RETURNED_er, oh_info, transformation]
 
      # TODO: something like this for nullable.
-     #g(hm[~#ok:, ~#er:]., oh_info. ~# caller(), transformation. ""):
-               g[#hm[#ok, #er], #RETURNED_er: #er, #held_er: #null]
+     g(hm[~#ok:, ~#er:]., oh_info. ~# caller(), transformation. ""):
+               #g[#hm[#ok, #er], #RETURNED_er: #er, #held_er: #null]
           # `held_er` doesn't need to be specified because we'll return
           # the error from `hm` if need be.
           [hm, oh_info, transformation]
 
-     #g(~t., oh_info. ~# caller(), transformation. ""): #g[#t]
+     g(~t., oh_info. ~# caller(), transformation. ""): #g[#t]
           [t, held_er. #runtime_er unspecified, oh_info, transformation]
 
      ;;descope
@@ -91,7 +91,7 @@ assert[require: #oh_info caller() can_panic()](~of?.)
                returning. @concat(method name)(...method arguments)
                # TODO: i think we need to plan for `m` to be descoped here.
                # TODO: maybe this method should be converted to `..` regardless of `m`.
-               #g(returning, oh_info, transformation)
+               g(returning, oh_info, transformation)
 }
 
 #runtime_er: #one_of
