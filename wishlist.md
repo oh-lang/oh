@@ -275,10 +275,13 @@ and to add instance variables to the child class we use this notation:
 `#child_class: #all_of[parent_class;, m; [child_x: #int, child_y: #str]] { ...methods }`.
 The second way to define a class uses the `is` keyword inside the class body:
 ```
-#child_class: {
-     # it's recommended to organize overloads
-     is parent_class1; {
-          override_parent1_class_variable: "whatever"
+#child_class:
+{    # it's recommended to organize overrides inside the `is` block
+     # where inheritance happens.  if the parent class stops having
+     # a field/method with this name, you'll get a compile error
+     # because you're not overriding anything.
+     is parent_class1;
+     {    override_parent1_class_variable: "whatever"
           ::override_parent1_method(): print("asdf")
      }
 
@@ -293,10 +296,13 @@ The second way to define a class uses the `is` keyword inside the class body:
      ;;override_parent2_method(): print("jkl;")
 
      # also can define child fields/methods here:
-     m child_field: #str
+     child_class_field: #int = 1234
+     m child_instance_field: #str
      ::child_method(): #null
 }
 ```
+We recommend choosing the first way if the child class has a short body
+and the second way otherwise.
 
 TODO: do we need a prefix `#` on return type data structures?
 e.g., `fn(theta: #flt): #[x: #flt, y: #flt]`.  if so, we can do it, but it might break
@@ -792,8 +798,8 @@ default variable name; `array[3]` i guess can still be distinguished from `array
 what's the syntax here though?
 
 ```
-#my_class: {
-     # constructor
+#my_class:
+{    # constructor
      m(...): #m
 
      # parenthetical overload
