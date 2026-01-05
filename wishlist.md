@@ -269,10 +269,34 @@ which can require constantly poring over documentation just to find the right on
 We also don't use a different concept for interfaces and inheritance.
 The equivalent of an interface in oh-lang is simply an abstract class.  This way
 we don't need two different keywords to `extend` or `implement` a class or interface.
-In fact, we don't use keywords at all; to just add methods (or class functions/variables),
-we use this syntax, `#wrapper_class: #parent_class { ::extra_methods(): #int, ... }`,
+There are two ways to define a class that uses inheritance.  The first way doesn't
+use keywords at all: `#wrapper_class: #parent_class { ::extra_methods(): #int, ... }`,
 and to add instance variables to the child class we use this notation:
 `#child_class: #all_of[parent_class;, m; [child_x: #int, child_y: #str]] { ...methods }`.
+The second way to define a class uses the `is` keyword inside the class body:
+```
+#child_class: {
+     # it's recommended to organize overloads
+     is parent_class1; {
+          override_parent1_class_variable: "whatever"
+          ::override_parent1_method(): print("asdf")
+     }
+
+     # braces are optional if you don't need to override anything;
+     # i.e., if `#parent_class2` is not an abstract class, or if
+     # you don't mind if `#child_class` becomes abstract if `#parent_class2` is.
+     is parent_class2;
+
+     # this is not recommended in case `override_parent2_method` stops being
+     # a method inside `parent_class2`, this will just become a child method
+     # without overriding anything.
+     ;;override_parent2_method(): print("jkl;")
+
+     # also can define child fields/methods here:
+     m child_field: #str
+     ::child_method(): #null
+}
+```
 
 TODO: do we need a prefix `#` on return type data structures?
 e.g., `fn(theta: #flt): #[x: #flt, y: #flt]`.  if so, we can do it, but it might break
