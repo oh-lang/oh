@@ -439,23 +439,11 @@ But we do for wrapper types like `#count`, `#index`, `#offset`, and `#ordinal`.
           and return them in a reference object with fields `x` and `y`, i.e., `(x: a x(), y: a y)`.
           This allows `x` and `y` to be references.  This can be useful e.g., when `a` is an expression
           that you don't want to add a local variable for, e.g., `my_long_computation()@ (x(), y)`.
-* `[]` are for types and containers (including objects, arrays, and lots)
+* `[]` are for types, containers (including objects, arrays, and lots), and generics
      * `[x: #dbl, y: #dbl]` to declare a plain-old-data class with two double-precision fields, `x` and `y`
      * `[x: 1.2, y: 3.4]` to instantiate a plain-old-data class with two double-precision fields, `x` and `y`
      * `[greeting: #str, times: #int] = destructure_me()` to do destructuring of a return value
           see [destructuring](#destructuring).
-     * TODO: i don't think it would be awful to do `{}` for object types and `[]` just for array types,
-          but we might want `#{...}` for the type itself, in analogy to `#[]` and `#()`.
-     * `a@ [x(), y]` to call `a x()` then `a y` with [sequence building](#sequence-building)
-          and return them in an object with fields `x` and `y`, i.e., `[x: a x(), y: a y]`.
-          You can also consider them as ordered, e.g.,
-          `results: a@ [x(), y], print("$(results[0]), $(results[1]))`.
-* `{}` for blocks and generics
-     * `{...}` to effectively indent `...`, e.g., `if condition {do_thing()} else {do_other_thing(), 5}`
-          * Used for defining a multi-statement function inline, e.g., `fn(): {do_this(), do_that()}`.
-               (Note that you can avoid `{}` if the block is one statement, like `fn(): do_this()`.)
-          * Note that braces `{}` are optional if you actually go to the next line and indent,
-               but they are recommended for long blocks.
      * `#some_class[n: #number, #of:]: #some_other_class[count: n, #at: #int, #of]` to define a class type
           `#some_class` being related to `#some_other_class`, e.g., `#some_class[n: 3, #str]` would be
           `#some_other_class[count: 3, #at: #int, #of: #str]`.
@@ -464,6 +452,18 @@ But we do for wrapper types like `#count`, `#index`, `#offset`, and `#ordinal`.
           of strings mapped to integers.  See [generic/template classes](#generictemplate-classes).
      * For generic/template functions with type constraints, e.g., `my_function[#of: #non_null](x: #of, y: #int): #of`
           where `#of` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
+     * TODO: i don't think it would be awful to do `{}` for object types and `[]` just for array types,
+          but we might want `#{...}` for the type itself, in analogy to `#[]` and `#()`.
+     * `a@ [x(), y]` to call `a x()` then `a y` with [sequence building](#sequence-building)
+          and return them in an object with fields `x` and `y`, i.e., `[x: a x(), y: a y]`.
+          You can also consider them as ordered, e.g.,
+          `results: a@ [x(), y], print("$(results[0]), $(results[1]))`.
+* `{}` for blocks
+     * `{...}` to effectively indent `...`, e.g., `if condition {do_thing()} else {do_other_thing(), 5}`
+          * Used for defining a multi-statement function inline, e.g., `fn(): {do_this(), do_that()}`.
+               (Note that you can avoid `{}` if the block is one statement, like `fn(): do_this()`.)
+          * Note that braces `{}` are optional if you actually go to the next line and indent,
+               but they are recommended for long blocks.
      * `a@ {x(), y}` with [sequence building](#sequence-building), 
           calling `a x()` and `a y`, returning `a` if it's a temporary otherwise `a y`
 * `~` to infer or generalize a type
@@ -516,15 +516,15 @@ or maybe we make them fully `UPPER_CASE` to make it clear.  but i'm not as big o
 See [variables](#variables) for a deeper dive.
 
 ```
-# declaring a variable:
-readonly_var: int_
-mutable_var; int_
+# declaring variabless:
+readonly_var: #int
+mutable_var; #str
 
 # declaring + defining a variable:
 mutable_var; 321
 
 # you can also give it an explicit type:
-readonly_var: int_(123)
+readonly_var: #int(123)
 
 # you can also define a variable using an indented block;
 # the last line will be used to initialize the variable.
@@ -532,11 +532,11 @@ readonly_var: int_(123)
 # `some_helper_value + 4` is.
 my_var:
      # this helper variable will be descoped after calculating `my_var`.
-     some_helper_value: some_computation_(3)
+     some_helper_value: some_computation(3)
      some_helper_value + 4
 
 # you can also give it an explicit type:
-other_var; explicit_type_
+other_var; #explicit_type
      "asdf" + "jkl;"
 ```
 
@@ -547,7 +547,7 @@ other_var; explicit_type_
 name: "Barnabus"
 
 # using interpolation in a string:
-greeting: "hello, $(name)!"
+greeting: "hello, ${name}!"
 
 # declaring a multiline string with spaces added between lines
 long_text:
@@ -574,30 +574,30 @@ just_one_line: +|This is a 'line' "you know"
 
 # declaring a multiline string with interpolation
 multiline_interpolation:
-          +|Special delivery for $(name):
-          +|You will receive $(important_items) and more.
+          +|Special delivery for ${name}:
+          +|You will receive ${important_items} and more.
 # becomes "Special delivery for Barnabus\nYou will receive Fridge\nPancakes and syrup\nCheese\n and more."
 
 # if you want to avoid string interpolation, e.g., because you need to include a literal
 # "${", "$[", or "$(" in your string, you only need to escape one of the two characters.
 # e.g., `$a` is never interpolated as the value of `a`.
-print_("ok \${we want this literally as} $\[whatever] $ok")
+print("ok \${we want this literally as} $\[whatever] $ok")
 # literally prints "ok ${we want this literally as} $[whatever] $ok"
 
 # interpolation over multiple file lines.
 # WARNING: this does not comply with Horstmann indenting,
 # and it's hard to know what the indent should be on the second line.
-evil_long_line: "this is going to be a long discussion, $(
-          name), can you confirm your availability?"
+evil_long_line: "this is going to be a long discussion, ${
+          name}, can you confirm your availability?"
 # INSTEAD, use string concatenation, which automatically adds a space if necessary:
 good_long_line: "this is going to be a long discussion,"
-     &   "$(name), can you confirm your availability?"
+     &   "${name}, can you confirm your availability?"
 best_long_line:
         &|this is going to be a long discussion,
-        &|$(name), can you confirm your availability?
+        &|${name}, can you confirm your availability?
 
 # you can also nest interpolation logic, although this isn't recommended:
-nested_interpolation: "hello, $(if condition {name} else {'World$("!" * 5)'})!"
+nested_interpolation: "hello, ${if condition {name} else {'World$("!" * 5)'}}!"
 ```
 
 Notice that the `&` operator works on strings to add a space (if necessary)
@@ -613,12 +613,12 @@ See [arrays](#arrays) for more information.
 
 ```
 # declaring a readonly array
-my_array: array_{element_type_}
+my_array: #array[#element_type]
 
 # defining a writable array:
-array_var; array_{int_}(1, 2, 3, 4)
+array_var; #array[#int](1, 2, 3, 4)
 # We can also infer types implicitly via one of the following:
-#   * `array_var; array_(1, 2, 3, 4)`
+#   * `array_var; #array(1, 2, 3, 4)`
 #   * `array_var; [1, 2, 3, 4]`
 array_var[5] = 5    # array_var == [1, 2, 3, 4, 0, 5]
 ++array_var[6]      # array_var == [1, 2, 3, 4, 0, 5, 1]
@@ -634,29 +634,11 @@ long_implicitly_typed:
 ]
 
 # declaring a long array with an explicit type:
-long_explicitly_typed: array_{i32_}
+long_explicitly_typed: #array[#i32]
 (    5   # commas aren't needed here.
      6
      7
 )
-
-# because {} is equivalent to an indented block, these are also valid definitions
-# equivalent definitions:
-array; array_{int_} = [1, 2, 3]
-array{int_}; [1, 2, 3]
-array
-     int_
-;    [1, 2, 3]
-# more equivalence:
-array; array_{int_}(1, 2, 3)
-array{int_}(1, 2, 3);
-# TODO: does this work with lexer??
-array
-     int_
-(    1
-     2
-     3
-);
 ```
 
 Note there are some special rules that allow line continuations for parentheses
@@ -669,12 +651,12 @@ See [lots](#lots) for more information.
 
 ```
 # declaring a readonly lot
-my_lot: lot_{at: id_type_, value_type_}
+my_lot: #lot[#at: #id_type, #value_type]
 
 # defining a writable lot:
-votes_lot; lot_{at_: str_, int_}("Cake": 5, "Donuts": 10, "Cupcakes": 3)
+votes_lot; #lot[#at: #str, #int]("Cake": 5, "Donuts": 10, "Cupcakes": 3)
 # We can also infer types implicitly via one of the following:
-#   * `votes_lot; lot_(["Cake": 5, ...])`
+#   * `votes_lot; #lot(["Cake": 5, ...])`
 #   * `votes_lot; ["Cake": 5, ...]`
 votes_lot["Cake"]        # 5
 ++votes_lot["Donuts"]    # 11
@@ -683,10 +665,10 @@ votes_lot["Cupcakes"]!   # resets "Cupcakes" to 0 and returns 3
 votes_lot::["Cupcakes"]  # 0
 votes_lot::["Bread"]     # null
 votes_lot["Bread"]       # creates default, returns 0
-votes_lot append_("Pop", 3)   # returns `true` because "Pop" wasn't in the lot yet
-votes_lot remove_("Cupcakes") # returns 0 because "Cupcakes" had value 0
-votes_lot remove_("Dirt")     # returns null because "Dirt" wasn't present
-votes_lot append_("Cupcakes", 5000")    # `false` because "Cupcakes" was already present
+votes_lot append("Pop", 3)    # returns `true` because "Pop" wasn't in the lot yet
+votes_lot remove("Cupcakes")  # returns 0 because "Cupcakes" had value 0
+votes_lot remove("Dirt")      # returns null because "Dirt" wasn't present
+votes_lot append("Cupcakes", 5000)      # `false` because "Cupcakes" was already present
                                         # NO UPDATE to `votes_lot`.
 # now `votes_lot == ["Cake": 5, "Donuts": 11, "Ice Cream": 1, "Bread": 0, "Pop": 3]`
 ```
