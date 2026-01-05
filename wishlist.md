@@ -679,19 +679,19 @@ See [sets](#sets) for more details.
 
 ```
 # declaring a readonly set
-my_set: set_{element_type_}
+my_set: #set[#element_type]
 
 # defining a writable set:
-some_set; set_{str_}("friends", "family", "fatigue")
+some_set; #set[#str]("friends", "family", "fatigue")
 # We can also infer types implicitly via the following:
-#   * `some_set; set_("friends", ...)`
-some_set has_("friends") # `true`
-some_set has_("enemies") # `false`
-some_set remove_("fatigue")   # removes "fatigue" and returns `true` since it was present
-                              # now `some_set == set_("friends", "family")`
-some_set append_("spools")    # adds "spools", returns `true` (because it was appended).
-                              # now `some_set == set_("friends", "family", "spools")`
-some_set append_("family")    # returns `false` because "family" was already present (not appended)
+#   * `some_set; #set("friends", ...)`
+some_set has("friends")  # `true`
+some_set has("enemies")  # `false`
+some_set remove("fatigue")    # removes "fatigue" and returns `true` since it was present
+                              # now `some_set == #set("friends", "family")`
+some_set append("spools")     # adds "spools", returns `true` (because it was appended).
+                              # now `some_set == #set("friends", "family", "spools")`
+some_set append("family")     # returns `false` because "family" was already present (not appended)
 ```
 
 ## defining functions
@@ -700,71 +700,77 @@ See [functions](#functions) for a deeper dive.
 
 ```
 # declaring a "void" function:
-do_something_(with: int_, x; int_, y; int_): null_
+do_something(times: #int, x; #int, y; #int): #null
 
 # defining a void function
 # braces {} are optional (as long as you go to the next line and indent)
 # but recommended for long functions.
-do_something_(with: int_, x; int_, y; int_): null
+do_something(times: #int, x; #int, y; #int): #null
      # because `x` and `y` are defined with `;`, they are writable
      # in this scope and their changes will persist back into the
      # caller's scope.
-     x = with + 4
-     y = with - 4
+     x += times
+     y -= times
 
 # calling a function with temporaries is allowed, even with references:
-do_something_(with: 5, x; 12, y; 340)
+do_something(times: 5, x; 12, y; 340)
 
 # calling a function with variables matching the argument names:
-with: 1000
+times: 1000
 x; 1
 y; 2
-# because `with`, `x`, and `y` are defined in the same way
+# because `times`, `x`, and `y` are defined in the same way
 # as the arguments, you can avoid specifying the `;` or `:`
-do_something_(with, x, y)
+do_something(times, x, y)
 # but you can also be explicit, which is recommended
 # if you want to ensure a specific overload is used.
-do_something_(:with, ;x, ;y)
+do_something(:times, ;x, ;y)
 
 # calling a function with argument renaming:
 mean: 1000
 mutated_x; 1
 mutated_y; 2
-do_something_(with: mean, x; mutated_x, y; mutated_y)
+do_something(times: mean, x; mutated_x, y; mutated_y)
 ```
 
 ```
 # declaring a function that returns other values:
-do_something_(x: int_, y: int_): [w: int_, z: int_]
+do_something(x: #int, y: #int): #[w: #int, z: #int]
 
 # defining a function that returns other values.
 # braces are optional as long as you go to the next line and indent.
-do_something_(x: int_, y: int_): [w: int_, z: dbl_]
-{    # NOTE! return fields `w` and `z` are in scope via `return`
-     # and can be assigned in option A:
-     # TODO: not sure i love this syntax
-     return z = \\math atan_(x, y)
-     return w = 123
-     # option B: can just return `w` and `z` in an object:
-     [z: \\math atan_(x, y), w: 123]
+do_something(x: #int, y: #int): #[w: #int, z: #dbl]
+{    [z: \\math atan(x, y), w: 123]
 }
 ```
 
 We don't require `{}` in function definitions because we can distinguish between
-(A) creating a function from the return value of another function, (B) passing a function
-as an argument, and (C) defining a function inline in the following ways.  (A) uses
-`my_fn_(args): return_type_ = fn_returning_a_fn_()` in order to get the correct type on `my_fn_`,
-(B) uses `outer_fn_(rename_to_this_(args): return_type = use_this_fn_)` and requires a single
-`function_case_` identifier on the RHS, while (C) uses `defining_fn_(args): do_this_(args)`
-and uses inference to get the return type (for the default `do_this_(args)` function).
+(A) creating a function from the return value of another function,
+(B) passing a function as an argument, and (C) defining a function inline
+in the following ways.  (A) uses `my_fn(args:): #return_type = fn_returning_a_fn()`
+in order to get the correct type on `my_fn`, (B) uses 
+`outer_fn(rename_to_this(args:): #return_type = use_this_fn)` and requires a single
+`function_case` identifier on the RHS, while (C) uses `defining_fn(args:): do_this(:args)`
+and uses inference to get the return type (for the default `do_this(args:)` function).
+TODO: i don't think B works well with variable/function case being the same.
+maybe we need `outer_fn(rename_to_this: use_this_fn(args:): #return_type)` instead.
+but that seems to have the same problem but for the earlier bit; this seems too verbose...
+`outer_fn(rename_to_this(args:): #return_type = use_this_fn(:args))`.
+i guess the question is, should this be allowed? `a: #fn(): #int` to declare
+`a(): #int` and then we also do `a: #dbl`...
+one of the nice things about the previous approach was that
+`array_: { ::count_(): ... }` didn't need to worry about whether `#count(array)`
+or `count_(array)` was correct; types and functions were the same case.
 
 ```
 # case (A): defining a function that returns a lambda function
-make_counter_(counter; int_): do_(): int_
-     do_(): ++counter
+make_counter(counter; #int): #do(): #int
+     do(): ++counter
 counter; 123
-counter_(): int = make_counter_(;counter)
-print_(counter_())    # 124
+# NOTE: there is no problem with `counter` and `counter()` being in scope
+# at the same time, unless the variable `counter` has a `()` overload.
+counter(): #int = make_counter(;counter)
+print(counter())    # 124
 # `counter` is also 124 now.
 ```
 
@@ -773,19 +779,19 @@ to specify the *whole* function [when passing it in as an argument](#functions-a
 
 ```
 # case (B): defining a function with some lambda functions as arguments
-do_something_(you_(): str_, greet_(name: str_): str_): str_
-     greet_(name: you_())
+do_something(you(): #str, greet(name: #str): #str): #str
+     greet(name: you())
 
 # calling a function with some functions as arguments:
-my_name_(): "World"
-do_something_
-(    you_(): str_ = my_name_
-     greet_(name: str_): str_
-          "Hello, $(name)"
+my_name(): "World"
+do_something
+(    you(): #str = my_name
+     greet(name: #str): #str
+          "Hello, ${name}"
 )
 
 # case (C): defining a few functions inline without `{}`
-hello_world_(): print_(do_something_(you_(): "world", greet_(name: str_): "Hello, $(name)"))
+hello_world(): print(do_something(you(): "world", greet(name: #str): "Hello, ${name}"))
 ```
 
 ### defining generic functions
@@ -2515,6 +2521,8 @@ do_something_(date: str_("2023-01-01")):
 ```
 
 # functions
+
+TODO: discuss function types, e.g., `x: #fn(): #int`.
 
 Functions are named using `function_case_` identifiers.  The syntax to declare
 a function is `function_case_name_(function_arguments...): return_type_`, but if
