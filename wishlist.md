@@ -874,39 +874,40 @@ Some examples:
 
 ```
 # this argument type is inferred, with a default name
-fn_(~x.): x_
+fn(~x.): #x
 # call it like this:
-fn_(512)
+fn(512)
 
+# TODO: don't love this...
 # this argument type is inferred but need to name it as `x: ...`
-fn_(~NAMED_x:): null_
+fn(~NAMED_x:): #null
 # call it like this:
-fn_(x: 512)
+fn(x: 512)
 
 # another way to infer an argument but require naming it as `x; ...`
-fn_(x; ~t_): t_
+fn(x; ~#t): #t
 # we call it like this:
-fn_(x; 512)
+fn(x; 512)
 
 # explicit generic with condition, not inferred:
-fn_{x_: condition_or_parent_type_}(x.): x_
-# call it like this, where `int_` should satisfy `condition_or_parent_type_`
-fn_{x_: int_}(5)
+fn[#x: #condition_or_parent_type](x.): #x
+# call it like this, where `#int` should satisfy `#condition_or_parent_type`
+fn[#x: #int](5)
 
 # explicit generic with condition, inferred:
-fn_{x_: condition_}(~x.): x_
-# call it like this, where `dbl_` should satisfy `condition_`
-fn_(3.14)
+fn[#x: #condition](~x.): #x
+# call it like this, where `#dbl` should satisfy `#condition`
+fn(3.14)
 
 # explicit generic without a default name:
-fn_{x_:}(value: x_): null_
+fn[#x:](value: #x): #null
 # call it like this:
-fn_{x_: str_}(value: "asdf")
+fn[#x: #str](value: "asdf")
 
 # explicit default-named generic, but argument is not default named:
-fn_{of_:}(value: of_): of_
-# call it like this; you can omit `of_: ...` in brackets:
-fn_{int_}(value: 123)
+fn[#of:](value: #of): #of
+# call it like this; you can omit `#of: ...` in brackets:
+fn[#int](value: 123)
 ```
 
 See [generic/template functions](#generictemplate-functions) for more details.
