@@ -1018,29 +1018,33 @@ Any conditions on the types can be specified via `{the_type: the_condition, ...}
 
 ```
 # default-named generic
-generic_{of_:}: [@private of;]
-{    # you can use inference in functions, so you can use `generic_(12)`
-     # to create an instance of `generic_` with `of_: int_` inferred.
+#generic[#of:]:
+{    # you can use inference in functions, so you can use `generic(12)`
+     # to create an instance of `#generic` with `#of: #int` inferred.
      # You don't need this definition if `m of` is public.
-     # NOTE: `g_` is like `m_` for generic classes but without the specification.
-     g_(~t.): g_{t_}
+     # NOTE: `g` is like `m` for generic classes but without the specification.
+     g(~t.): #g[#t]
           [of. t] 
+
+     @private
+     m of;
 }
 
-generic{int_}(1):           # shorthand for `generic: generic_{int_}(1)`.
-my_generic: generic_(1.23)  # infers `generic_{dbl_}` for this type.
-WOW_generic("hi");          # shorthand for `WOW_generic; generic_("hi")`, infers `generic_{str_}`
+generic[#int](1):             # shorthand for `generic: generic[#int](1)`.
+my_generic: generic(1.23)     # infers `#generic[#dbl]` for this type.
+WOW_generic("hi");            # shorthand for `WOW_generic; generic("hi")`
+                              # infers `#generic[#str]`
 
 # not default named:
-entry_{at_: hashable_, of_: number_}: [at:, value; of_]
-{    ;;add_(of): null_
+#entry[#at: #hashable, #of: #number]: [at:, value; #of]
+{    ;;add(of:): #null
           m value += of
 }
 
-# shorthand for `entry: entry_{at_: str_, of_: int_}(...)`:
-entry{at_: str_, int_}(at: "cookies", value: 123):
-my_entry; entry_(at: 123, value: 4.56)              # infers `at_: int_` and `of_: dbl_`.
-my_entry add_(1.23)
+# shorthand for `entry: #entry[#at: #str, #of: #int](...)`:
+entry[#at: #str, #int](at: "cookies", value: 123):
+my_entry; entry(at: 123, value: 4.56)   # infers `#at: #int` and `#of: #dbl`.
+my_entry add(1.23)
 my_entry value == 5.79
 ```
 
