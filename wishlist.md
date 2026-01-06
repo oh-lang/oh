@@ -949,8 +949,38 @@ class, especially if the classes are primarily data objects.
           m p2 += "!"
 }
 
+#child3: #all_of[parent1;, parent2;, m; [c3; #int]]
+{    # this passes `p1` to `parent1` and `c3` to `child3` implicitly,
+     # and `p2` to `parent2` explicitly.
+     ;;renew(parent1 p1. #str, p2. #str, m c3. #int): #null
+          # same as `parent2 renew(m;, p2)` or `parent2;;renew(p2)`:
+          parent2 renew(p2)
+
+     # implicit override of `parent1::do_p1`
+     ::do_p1(): #null
+          # this logic repeats `parent1 do_p1())` `m c3` times.
+          m c3 each _int:
+               # same as `#parent1 do_p1(m)` or `parent1::do_p1()`.
+               parent1 do_p1()
+     
+     # implicit override of `#parent1 some_class_variable`
+     some_class_variable: "hi"
+
+     # implicit override of `#parent2;;update_p2()`
+     ;;update_p2(): #null
+          parent2 p2 += "@#$!"
+}
+
+# same definition but avoiding the `#all_of` logic.
+# recommended in case inheritance or overrides are complicated.
 #child3:
-{    is parent1;
+{    # this passes `p1` to `parent1` and `c3` to `child3` implicitly,
+     # and `p2` to `parent2` explicitly.
+     ;;renew(parent1 p1. #str, p2. #str, m c3. #int): #null
+          # same as `parent2 renew(m;, p2)` or `parent2;;renew(p2)`:
+          parent2 renew(p2)
+
+     is parent1;
      {    # add any overrides here.  if `#parent1` got rid of `::do_p1()`,
           # adding this method would throw a compile error.
           ::do_p1(): #null
@@ -975,32 +1005,10 @@ class, especially if the classes are primarily data objects.
 
      # child instance fields are preferenced with an `m`.
      m c3: #int
-
-     # this passes `p1` to `parent1` and `c3` to `child3` implicitly,
-     # and `p2` to `parent2` explicitly.
-     ;;renew(parent1 p1. #str, p2. #str, m c3. #int): #null
-          # same as `parent2 renew(m;, p2)` or `parent2;;renew(p2)`:
-          parent2 renew(p2)
-}
-
-# same definition but using `#all_of`.
-#child3: #all_of[parent1;, parent2;, m; [c3; #int]]
-{    # implicit override of `parent1::do_p1`
-     ::do_p1(): #null
-          # this logic repeats `parent1 do_p1())` `m c3` times.
-          m c3 each _int:
-               # same as `#parent1 do_p1(m)` or `parent1::do_p1()`.
-               parent1 do_p1()
-
-     # this passes `p1` to `parent1` and `c3` to `child3` implicitly,
-     # and `p2` to `parent2` explicitly.
-     ;;renew(parent1 p1. #str, p2. #str, m c3. #int): #null
-          # same as `parent2 renew(m;, p2)` or `parent2;;renew(p2)`:
-          parent2 renew(p2)
 }
 ```
 
-We recommend choosing the first way if the child class has a short body
+We recommend choosing the first way if the child class has a short or simple body
 and the second way otherwise.
 
 For those aware of storage layout, order matters when defining fields,
