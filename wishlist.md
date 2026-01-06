@@ -1109,25 +1109,30 @@ my_function(argument_which_we_will_need_later: 3)
 ```
 
 TODO: i think we want postfix `_` for protected and `__` for private variables/functions.
-it avoids introducing compiler directives (`@protected`, `@private`).
+it avoids introducing compiler directives (`@protected`, `@private`), which is especially
+nice for scripts.
 
-### `~#` type
+### `~` type
 
-By itself, `_` means to infer the type, usually from the left-hand-side of
+`~` means to infer a type/value, and inference usually comes from the left-hand-side of
 an equation.  This is useful for [class imports](#modules), [enums](#enumerations),
 and [masks](#masks), among other things.  Some examples:
 
-For imports/modules we have, e.g., `\/my/implementation/vector2 _` being equivalent
-to `vector2_` (`_` is combined with the base file name `vector2` to get `vector2_`).
-For enums like `my_enum_: one_of_{cool:, neat:, sweet:}`, we can define them like
-this: `my_enum: _ cool`, where `_` infers the type of `my_enum` on the LHS.
-This works similarly for masks like `my_mask_: any_of_{world:, npc:, player:}`;
-`my_mask: _ world | _ npc` will set `my_mask` to `my_mask_ world | my_mask_ npc`.
+With imports/modules, we can use `#vector2: \/my_implementation/~` to infer
+the file name `\/my_implementation/vector2`.  You can grab additional exports
+from the file as long as the first destructure corresponds to the file name to infer, e.g., 
+`[#vector2, #inner_value, dot(vector2_0:, vector2_1:): #inner_value]: \/my_implementation/~`
+still grabs from `./my_implementation/vector2.oh`.
 
-We also can use `_` when defining default-named variables to refer to the variable's
-type, e.g., for static/class functions like `oh_info: _ caller_()` which is equivalent
-to `oh_info: oh_info_ caller_()` or `my_type: _(abc. 123)` to initialize `my_type`
-to `my_type(abc. 123)`.  
+For enums like `#my_enum: #one_of[cool:, neat:, sweet:]`, we can define them like
+this: `my_enum: ~cool`, where `~` infers the type from the variable name lmy_enum`
+on the LHS.  This also works for masks like `#my_mask: #any_of[world:, npc:, player:]`;
+`my_mask: ~world | ~npc` will set `my_mask` to `#my_mask world | #my_mask npc`.
+
+We also can use `~` when defining default-named variables to refer to the variable's
+type, e.g., for static/class functions like `oh_info: ~caller()` which is equivalent
+to `oh_info: #oh_info caller()` or `my_type: ~(abc. 123)` to initialize `my_type`
+to `my_type(abc. 123)`, although `my_type(abc. 123):` is more concise in this case.
 
 ## blocks
 
@@ -7688,45 +7693,52 @@ Note that if you are checking many values, a `what` statement may be more useful
 than testing each value against the various possibilities.  Also note that you don't need
 to explicitly set each enum value; they start at 0 and increment by default.
 But you do always need to include the declaration operator `:` because we
-are declaring new values in the enum.
+are declaring new values in the enum.  This example also showcases tagged values.
 
 ```
-option_: one_of_
-{    unselected:
-     not_a_good_option:
-     content_with_life:
+#how_bad: #str
+#how_content: #int
+#option: #one_of
+[    unselected:
+     not_a_good_option: #how_bad
+     content_with_life: #how_content
      better_options_out_there:
      best_option_still_coming:
      oops_you_missed_it:
      now_you_will_be_sad_forever:
-}
+]
 
-print_("number of options should be 7:  $(option_ count_())")
+print("number of options should be 7:  ${#option count()}")
 
-option1: option_ content_with_life
+option1: #option content_with_life(1000)
 
 # avoid doing this if you are checking many possibilities:
-if option1 is_not_a_good_option_()  # OK
-     print_("oh no")
-elif option1 == _ oops_you_missed_it  # also OK
-     print_("whoops")
+if option1 is not_a_good_option:
+     print("oh no: ${not_a_good_option}")
+elif option1 == ~now_you_will_be_sad_forever
+     print("that's very sad")
+elif option1 is_oops_you_missed_it()
+     print("whoops")
 ...
 
 # instead, consider doing this:
 what option1
-     _ not_a_good_option
-          print_("oh no")
-     _ best_option_still_coming
-          print_("was the best actually...")
-     _ unselected
+     # TODO: it kinda bugs me that we need `~` elsewhere but not here.
+     # but i think that's desired so we can create const cases elsewhere,
+     # e.g., `some_case: 1 | 2, what mask { some_case { ... }, ... }`
+     not_a_good_option:
+          print("oh no: ${not_a_good_option}")
+     ~best_option_still_coming
+          print("was the best actually...")
+     ~better_options_out_there
           fall_through
      else
-          print_("that was boring")
+          print("that was boring")
 ```
 
-Note that we don't have to do `option_ not_a_good_option` (and similarly for other options)
-along with the cases.  The compiler knows that since `option1` is of type `option_`,
-so we can use `_` to namespace correctly as `option_`.
+Note that we don't have to do `#option best_option_still_coming` for the cases;
+the compiler knows that since `option1` is of type `#option`,
+so we can use `~` to namespace correctly as `#option`.
 
 ### `one_of_` with data
 
