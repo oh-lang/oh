@@ -1060,38 +1060,36 @@ See [generic/template classes](#generictemplate-classes) for more information.
 
 ## identifiers
 
-Identifiers in oh-lang are very important.  The trailing underscore (or lack thereof)
-indicates whether the identifier is a function/type (or a variable), which gives some
-space to guide the eye with function calls like `my_function_(x: 3)`.  Similarly for
-type (or class) names, since types can work like functions (e.g., `int_(number_string)`).
-Variable names like `x` and `max_array_count` do not include a trailing underscore.
-Any capitalized letters belong to a [namespace](#namespaces).
+Identifiers in oh-lang can be types (prefixed with `#`) or variables
+that include type information.  E.g., any capitalized letters belong to a
+[namespace](#namespaces), so `BURGER_count; 3` would have an implicit type of `#count`.
 
 There are a few reserved keywords, like `also`, `if`, `elif`, `else`, `with`, `return`,
 `break`, `continue`, `what`, `in`, `each`, `for`, `while`, `pass`, `where`, `when`,
 `is`, `has`,
 which are function-like but may consume the rest of the statement.
 `return` is a bit special in that it is used like a variable but will return
-(TODO: i don't know if i like `return:` for novelty budget...)
 from the enclosing function;  e.g., `return: x + 5` will return the value `x + 5`.
-The `type_case_` versions of these keywords are also all reserved;
-for example, `return_` can be used for the return type of the current function
-or it can be used as a function to actually return a value, e.g., `return_(x + 5)`
-(i.e., but only if the value is not captured; `y: return_(x + 5)` would be a type cast).
+The `#type_case` and `function_case` versions of these keywords are also all reserved;
+for example, `#return` can be used for the return type of the current function,
+e.g., `result; #return`, or function case `return` can be used as a constructor
+for the `#return` type, e.g. `y: return(x + 5)`.  `return(...)` without being
+captured is a compile error.
+
+There are some reserved variable names: `g`, `m`, and `o`, along with their `#type_case`
+variants.  `g` can be used as the base name for a [generic class](#generictemplate-classes);
+`m` can be used for the full name of the current [class](#classes), and `o` is used for
+an *o*ther instance of the same type as the current class.
+`o` must be explicitly added as an argument, though, in contrast to `m` which can be implicit
+for methods defined like `::` or `;;`.  The corresponding types `#g`, `#m`, and `#o`
+are reserved as well, and the `::o()` method is reserved for a method to create a
+clone (deep copy) of the current instance.  If this cannot fail, the function signature
+is `::o(): #o`, otherwise it is `::o(): #hm[#ok: #o, #er: ...]` (e.g., due to OOM).
+
 There are some reserved namespaces with side effects like `NAMED_`, `AS_`,
 which should be used for their side effects.  Variables that end in numbers like
 `x_0` or `asdf_123` will also have the number considered as a namespace, which
 can be used for binary operations like `+` and `*`.  See [namespaces](#namespaces).
-
-There are some reserved variable names: `m` and `o`, along with their `type_case_`
-variants, and `_` which is reserved as an [inferred type](#_-type).  `m` can only
-be used as a reference to the current class instance, and `o` which
-can only be used as a reference to an *o*ther instance of the same type;
-`o` must be explicitly added as an argument, though, in contrast to `m` which can be implicit.
-The corresponding types `m_`, and `o_` are reserved, `m_` for class bodies
-(to indicate the current type) and `o_` as a method to *clone* (or copy)
-the current instance, with function signature `::o_(): m_` or
-`::o_(): hm_{ok_: m_, er: ...}` if cloning can fail (e.g., due to OOM).
 
 Most ASCII symbols are not allowed inside identifiers, e.g., `*`, `/`, `&`, etc., but
 underscores (`_`) have some special handling.  They are ignored in numbers,
@@ -1103,12 +1101,15 @@ non-trailing-underscored name.
 
 ```
 # when defining, we use a leading underscore to indicate the variable is unused.
-my_function_(_argument_which_we_will_need_later: int_): null_
-     print_("do something eventually with the arg")
+my_function(_argument_which_we_will_need_later: #int): #null
+     print("do something eventually with the arg")
 
 # when calling, omit the leading underscore:
-my_function_(argument_which_we_will_need_later: 3)
+my_function(argument_which_we_will_need_later: 3)
 ```
+
+TODO: i think we want postfix `_` for protected and `__` for private variables/functions.
+it avoids introducing compiler directives (`@protected`, `@private`).
 
 ### `~#` type
 
