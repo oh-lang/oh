@@ -1205,16 +1205,16 @@ If you *don't* want to pair a block with the previous line, use `pass` or `retur
 
 ```
 # example of returning `[x, y]` values from a function.
-# there's no issue here because we're not indenting in `[x, y]`:
-my_function_(int:): [x: int_, y: int_]
-     do_something_(int)
+# there's no issue here because we're not indenting before the final `[x, y]`:
+my_function(int:): #[x: #int, y: #int]
+     do_something(int)
      [x: 5 - int, y: 5 + int]
 
 # this indents `[x, y]` (i.e., to split into a multi-line array),
-# but note that we need `return` to avoid parsing as `do_something_(int)[x: ...]`,
+# but note that we need `return` to avoid parsing as `do_something(int)[x: ...]`,
 # which is a compile error unless `do_something` returns something subscriptable.
-my_function_(int): [x: int_, y: int_]
-     do_something_(int)
+my_function(int:): #[x: #int, y: #int]
+     do_something(int)
      return:
      [    x: 5 - int
           y: 5 + int
@@ -1223,28 +1223,27 @@ my_function_(int): [x: int_, y: int_]
 
 Because parentheses indicate [reference objects](#reference-objects),
 which can be returned like brackets, similar care must be taken with `()`.
-See [chained calls forbidden](#chained-calls-forbidden) for more details.
 
 When it comes to parentheses, you are welcome to use
 [one-true-brace style](https://en.wikipedia.org/wiki/Indentation_style#:~:text=One%20True%20Brace),
-which will be converted into Horstmann style.
+which will be converted into Horstmann style by the formatter.
 
 ```
-some_variable: some_very_long_function_name_because_it_is_good_to_be_specific_(10)
-     +   3               # indent at +2 ensures that 3 is added into Some_variable.
-     -   other_variable  # don't keep adding more indents, keep at +2 from original.
+some_variable: some_very_long_function_name_because_it_is_good_to_be_specific(10)
+     +    3              # indent at +2 ensures that 3 is added into `some_variable`.
+     -    other_variable # don't keep adding more indents, keep at +2 from original.
 
 array_variable:
-[    1    # we insert commas
+[    1    # the compiler will implicitly insert commas
      2    # between each newline
      3    # as long as the indent is the same.
-     other_array    # here we don't insert a comma after `Other_array`
-     [    3         # because the indent changes
+     other_array    # here we don't insert a comma after `other_array`
+     [    3         # because the indent changes here
      ]              # so we parse this as `other_array[3],`
-     5    # and this gets a comma before it.
+     5    # so this gets a comma before it.
 ]
 
-# this is inferred to be a `lot` with a string ID and a `one_of_{int:, str:}` value.
+# this is inferred to be a `lot` with a string ID and a `#one_of[int:, str:]` value.
 lot_variable;
 [    "Some_value": 100
      "Other_value": "hi"
@@ -1252,7 +1251,7 @@ lot_variable;
 lot_variable["Some_other_value"] = if condition {543} else {"hello"}
 
 # This is different than the `lot_variable` because it is an instance
-# of a `[some_value: int, other_value: str]` plain-old-data type,
+# of a `#[some_value: #int, other_value: #str]` plain-old-data type,
 # which cannot have new fields added, even if it was mutable.
 object_variable:
 [    some_value: 100
@@ -1281,34 +1280,34 @@ another_line_continuation_variable: can_optionally_start_up_here
 
 # note that the formatter will take care of converting indents like this:
 non_horstmann_indent: (
-     20 + some_function_(45)
+     20 + some_function(45)
 )
 # into this:
 non_horstmann_indent:   # FIXME: update name :)
-(    20 + some_function_(45)
+(    20 + some_function(45)
 )
 ```
 
 Note that line continuations must be at least +2 indent, but can be more if desired.
-Unless there are parentheses involved, all indents for subsequent line continuations
-should be the same.
+You can reduce back to +2 indent if you went more, but that should be used sparingly.
 
 ```
-example_plus_three_indent; some_type_
+example_plus_three_indent; #some_type
 ...
 example_plus_three_indent
      =         hello
-          +    world
-          -    continuing
+          *    world
+          /    continuing
+     +    can_reduce_as_long_as_plus_two_from_original
 ```
 
 Arguments supplied to functions are similar to arrays/lots and only require +1 indent
 if they are multiline.
 
 ```
-if some_function_call_
+if some_function_call
 (    x
-     y: 3 + sin_(x)      # default given for y, can be given in terms of other arguments.
+     y: 3 + sin(x)
      available_digits:
      [    1
           3
@@ -1317,55 +1316,55 @@ if some_function_call_
           9
      ]
 )
-     do_something_()
+     do_something()
 
-defining_a_function_with_multiline_arguments_
-(    times: int_
-     greeting: string_
-     name: string_("World")  # argument with a default
-):      string_             # indent here is optional/aesthetic
+defining_a_function_with_multiline_arguments
+(    times: #int
+     greeting: #string
+     name: string("World")    # argument with a default
+):        #string             # indent here is optional but aesthetic
      # "return" is optional for the last line of the block,
      # unless you're returning a multiline array/object.
-     "$(greeting), $(name)! " * times
+     "${greeting}, ${name}! " * times
 
-defining_a_function_with_multiline_return_values_
-(    argument0: int_
+defining_a_function_with_multiline_return_values
+(    argument0: #int
 ):
-[    value0: int_   # you may need to add comments because
-     value1: str_   # the formatter may 1-line these otherwise
+[    value0: #int   # you may need to add comments because
+     value1: #str   # the formatter may 1-line these otherwise
 ]
-     do_something_(argument0)
+     do_something(argument0)
      # here we can avoid the `return` since the internal
      # part of this object is not indented.
-     [value0: argument0 + 3, value1: str_(argument0)]
+     [value0: argument0 + 3, value1: str(argument0)]
 
 # ALTERNATIVE: multiline return statement
-defining_a_function_with_multiline_return_values_
-(    argument0: int_
-     argument1: str_
-): [value0: int_, value1: str_]
+defining_a_function_with_multiline_return_values
+(    argument0: #int
+     argument1: #str
+):        #[value0: #int, value1: #str]
      # this needs to `return` or `pass` since it looks like an indented block
      # otherwise, which would attach to the previous line like
-     # `do_something_(argument0)[value0: ...]`
+     # `do_something(argument0)[value0: ...]`
      # or you can add an end-of-line comment between the two lines.
-     do_something_(argument0)
+     do_something(argument0)
      return:
      [    value0: argument0 + 3
-          value1: argument1 + str_(argument0)
+          value1: argument1 + str(argument0)
      ]
      # if you are in a situation where you can't return -- e.g., inside
      # an if-block where you want to pass a value back without returning --
      # use `pass`.
 
-defining_another_function_that_returns_a_generic_
-(    argument0: str_
-     argument1: int_
-): some_generic_type_
-{    type0_: int_
-     type1_: str_
-}
-     do_something_(argument0)
-     print_("got arguments $(argument0), $(argument1)")
+defining_another_function_that_returns_a_generic
+(    argument0: #str
+     argument1: #int
+):        #some_generic_type
+          [    #type0: #int
+               #type1: #str
+          ]
+     do_something(argument0)
+     print("got arguments ${argument0}, ${argument1}")
      return: ...
 ```
 
@@ -1374,7 +1373,7 @@ Putting it all together in one big example:
 ```
 some_line_continuation_example_variable:
           optional_expression_explicitly_at_plus_two_indent
-     +    5 - some_function_
+     +    5 - some_function
           (    some_expression
                     +    next_variable
                     -    can_keep_going
@@ -7697,11 +7696,14 @@ are declaring new values in the enum.  This example also showcases tagged values
 
 ```
 #how_bad: #str
-#how_content: #int
+#content_with_life: #int
 #option: #one_of
 [    unselected:
+     # this is a tagged value because we're passing in a type.
      not_a_good_option: #how_bad
-     content_with_life: #how_content
+     # NOTE: this will *automatically* become a tagged value
+     # because `#content_with_life` is an existing type.
+     content_with_life:
      better_options_out_there:
      best_option_still_coming:
      oops_you_missed_it:
