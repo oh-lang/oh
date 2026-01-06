@@ -777,26 +777,14 @@ do_something(x: #int, y: #int): #[w: #int, z: #dbl]
 
 We don't require `{}` in function definitions because we can distinguish between
 (A) creating a function from the return value of another function,
-(B) passing a function as an argument, and (C) defining a function inline
-in the following ways.  (A) uses `my_fn(args:): #return_type = fn_returning_a_fn()`
-in order to get the correct type on `my_fn`, (B) uses 
-`outer_fn(rename_to_this(args:): #return_type = use_this_fn)` and requires a single
-`function_case` identifier on the RHS, while (C) uses `defining_fn(args:): do_this(:args)`
+(B) creating a function alias (e.g. for passing as an argument), and
+(C) defining a function inline in the following ways.
+(A) uses `my_fn(args:): #return_type = fn_returning_a_fn()` in order to get
+the correct type on `my_fn`, (B) uses `rename_to_this: use_this_fn(args:): #return_type`,
+while (C) uses `defining_fn(args:): do_this(:args)`
 and uses inference to get the return type (for the default `do_this(args:)` function).
-TODO: i don't think B works well with variable/function case being the same.
-maybe we need `outer_fn(rename_to_this: use_this_fn(args:): #return_type)` instead.
-but that seems to have the same problem but for the earlier bit; this seems too verbose...
-`outer_fn(rename_to_this(args:): #return_type = use_this_fn(:args))`.
-i guess the question is, should this be allowed? `a: #fn(): #int` to declare
-`a(): #int` and then we also do `a: #dbl`...
-one of the nice things about the previous approach was that
-`array_: { ::count_(): ... }` didn't need to worry about whether `#count(array)`
-or `count_(array)` was correct; types and functions were the same case.
-we could make the constructor for a `#whatever` type be the `whatever` function case.
-but this runs afoul of invalid-overloads pretty quickly; `#array[#of:]` will have
-`array(1, 2, 3)` or `array[#int](1, 2, 3)` as the constructor and `array` as the
-default variable name; `array[3]` i guess can still be distinguished from `array[#of]`.
-what's the syntax here though?
+TODO: i think (A) should maybe be `my_fn: #fn(args:): #return_type = fn_returning_a_fn()`.
+so that (C) can be `defining_fn(args:): #type = do_this(:args)`.
 
 ```
 #my_class:
@@ -819,6 +807,7 @@ if `other_type` is in scope as a variable, then `whatever: other_type` would be
 a variable copy.  maybe use `#my_typedef: #other_type` for a typedef,
 `my_fn_alias: other_fn(args:): #return_type` for a function alias,
 and keep `#my_class: {...}` to be consistent with `#my_typedef: ...`.
+it also looks better with horstmann indenting.
 
 ```
 # case (A): defining a function that returns a lambda function
@@ -919,83 +908,110 @@ See [classes](#classes) for more information on syntax.
 
 ```
 # declaring a simple class
-vector3_: [x: dbl_, y: dbl_, z: dbl_]
+#vector3: #[x: #dbl, y: #dbl, z: #dbl]
 
 # declaring a "complicated" class.  the braces `{}` are optional
 # but recommended due to the length of the class body.
-my_class_: [x; int_]
+#my_class: #[x; #int]
 {    # here's a class function that's a constructor
-     m_(x. int_): m_
+     # used like `my_class(x: 123)` to create a `#my_class` instance.
+     m(x. #int): #m
           ++count
           [x]
 
-     ;;descope_(): null_
+     ;;descope(): #null
           --count
 
      # here's a class variable (not defined per instance)
      @private
-     count; count_arch_ = 0
+     count; #count = 0
 
      # here's a class function (not defined per instance)
-     # which can be called via `my_class_ count_()` outside this class
-     # or `count_()` inside it.
-     count_(): count_arch_
+     # which can be called via `#my_class count()` outside this class
+     # or `count()` inside this class body.
+     count(): #count
           count
-     # for short, `count_(): count`
+     # for short, `count(): count`
 
      # methods which keep the class readonly use a `::` prefix
-     ::do_something_(y: int): int_
+     ::do_something(y: #int): #int
           m x * y
 
      # methods which mutate the class use a `;;` prefix
-     ;;update_(y: int_): null_
-          m x = m do_something_(y)
+     ;;update(y: #int): #null
+          m x = m do_something(y)
 }
 ```
 
 Inside a class body, we use `m` to scope instance variables/functions
-but we don't need to use `m_` to scope class variables/functions.
+but we don't need to use `#m` to scope class variables/functions.
 
 Inheritance of a concrete parent class and implementing an abstract class
-work the same way, by specifying the parent class/interface in an `all_of_`
+work the same way, by specifying the parent class/interface in an `#all_of`
 expression alongside any child instance variables, which should be tucked
-inside an `m` field.
+inside an `m` field, e.g.,
+`#child_class: #all_of[parent_class1;, parent_class2;, m; [child_x: #int]]`.
+When classes are this complex, however, it's recommended to use the `is`
+keyword inside the child class for each parent/interface.
 
 ```
-parent1_: [p1: str_]
-{    ::do_p1_(): null_
-          print_("doing p1 $(m p1)")
+#parent1: #[p1: #str]
+{    ::do_p1(): #null
+          print("doing p1 $(m p1)")
 }
 
-parent2_: [p2: str_]
-{    ::do_p2_(): null_
-          print_("doing p2 $(m p2)")
+#parent2: [p2: #str]
+{    ::do_p2(): #null
+          print("doing p2 $(m p2)")
 }
 
-# TODO: we probably can allow for immutable parent types by doing `parent1:`
-#    and mutable via `parent1;`; is there any point to doing that?
-child3_: all_of_{parent1:, parent2:, m: [c3: int_]}
-{    # this passes p1 to parent1 and c3 to child3 implicitly,
-     # and p2 to parent2 explicitly.
-     ;;renew_(parent1 p1. str_, p2. str_, m c3. int_): null_
-          # same as `parent2_ renew_(m;, p2)` or `parent2_;;renew_(p2)`:
-          parent2 renew_(p2)
+#child3:
+{    is parent1;
+     {    # add any overrides here.
+          ::do_p1(): #null
+               # this logic repeats `parent1 do_p1())` `m c3` times.
+               m c3 each _int:
+                    # same as `#parent1 do_p1(m)` or `parent1::do_p1()`.
+                    parent1 do_p1()
+     }
 
-     ::do_p1_(): null_
-          # this logic repeats `parent1 do_p1_())` `m c3` times.
+     # no overrides for parent2.
+     is parent2;
+
+     # child instance fields are preferenced with an `m`.
+     m c3: #int
+
+     # this passes `p1` to `parent1` and `c3` to `child3` implicitly,
+     # and `p2` to `parent2` explicitly.
+     ;;renew(parent1 p1. #str, p2. #str, m c3. #int): #null
+          # same as `parent2 renew(m;, p2)` or `parent2;;renew(p2)`:
+          parent2 renew(p2)
+}
+
+# same definition but using `#all_of`.
+#child3: #all_of[parent1;, parent2;, m; [c3; #int]]
+{    # implicit override of `parent1::do_p1`
+     ::do_p1(): #null
+          # this logic repeats `parent1 do_p1())` `m c3` times.
           m c3 each _int:
-               # same as `parent1_ do_p1_(m)` or `parent1_::do_p1_()`.
-               parent1 do_p1_()
-    
-     # do_p2_ will be used from parent2_ since it is not overridden here.
+               # same as `#parent1 do_p1(m)` or `parent1::do_p1()`.
+               parent1 do_p1()
+
+     # this passes `p1` to `parent1` and `c3` to `child3` implicitly,
+     # and `p2` to `parent2` explicitly.
+     ;;renew(parent1 p1. #str, p2. #str, m c3. #int): #null
+          # same as `parent2 renew(m;, p2)` or `parent2;;renew(p2)`:
+          parent2 renew(p2)
 }
 ```
 
-For those aware of storage layout, order matters when using `all_of_`;
-the struct will be started with fields in `a` for `all_of_{a:, b:, c:}`
+For those aware of storage layout, order matters when defining fields,
+whether in an `#all_of` or inside the class body (e.g., via `m c3: #int`);
+the struct will be started with fields in `a` for `#all_of[a:, b:, c:]`
 and finish with fields in `c`; the child fields do not need to be first
 (or last); they can be added as `a`, `b`, or `c`, of course as `m: [...]`.
-Generally it's recommended to add child fields last.
+Generally it's recommended to add child fields last, but other storage
+concerns may take priority.
 
 ### defining generic classes
 
