@@ -274,36 +274,9 @@ There are two ways to define a class that uses inheritance.  The first way doesn
 use keywords at all: `#wrapper_class: #parent_class { ::extra_methods(): #int, ... }`,
 and to add instance variables to the child class we use this notation:
 `#child_class: #all_of[parent_class;, m; [child_x: #int, child_y: #str]] { ...methods }`.
-The second way to define a class uses the `is` keyword inside the class body:
-```
-#child_class:
-{    # it's recommended to organize overrides inside the `is` block
-     # where inheritance happens.  if the parent class stops having
-     # a field/method with this name, you'll get a compile error
-     # because you're not overriding anything.
-     is parent_class1;
-     {    override_parent1_class_variable: "whatever"
-          ::override_parent1_method(): print("asdf")
-     }
-
-     # braces are optional if you don't need to override anything;
-     # i.e., if `#parent_class2` is not an abstract class, or if
-     # you don't mind if `#child_class` becomes abstract if `#parent_class2` is.
-     is parent_class2;
-
-     # this is not recommended in case `override_parent2_method` stops being
-     # a method inside `parent_class2`, this will just become a child method
-     # without overriding anything.
-     ;;override_parent2_method(): print("jkl;")
-
-     # also can define child fields/methods here:
-     child_class_field: #int = 1234
-     m child_instance_field: #str
-     ::child_method(): #null
-}
-```
-We recommend choosing the first way if the child class has a short body
-and the second way otherwise.
+The second way to define a class uses the `is` keyword inside the class body,
+e.g., `#child_class: { is parent_class;, m child_x: #int, m child_y: #str, ...methods }`.
+See [defining classes](#defining-classes) for more details.
 
 TODO: do we need a prefix `#` on return type data structures?
 e.g., `fn(theta: #flt): #[x: #flt, y: #flt]`.  if so, we can do it, but it might break
@@ -951,32 +924,54 @@ work the same way, by specifying the parent class/interface in an `#all_of`
 expression alongside any child instance variables, which should be tucked
 inside an `m` field, e.g.,
 `#child_class: #all_of[parent_class1;, parent_class2;, m; [child_x: #int]]`.
-When classes are this complex, however, it's recommended to use the `is`
-keyword inside the child class for each parent/interface.
+When classes are this complex with overrides, however, it's recommended
+to use the `is` keyword inside the child class for each parent/interface.
+Public variables are recommended to be placed into `[]` at the start of the
+class, especially if the classes are primarily data objects.
 
 ```
 #parent1: #[p1: #str]
 {    ::do_p1(): #null
           print("doing p1 $(m p1)")
+
+     some_class_variable: "hello"
 }
 
-#parent2: [p2: #str]
-{    ::do_p2(): #null
+#parent2:
+{    # can add fields here instead of in #[].  recommended
+     # really only if this field was protected/private.
+     m p2: #str
+
+     ::do_p2(): #null
           print("doing p2 $(m p2)")
+
+     ;;update_p2(): #null
+          m p2 += "!"
 }
 
 #child3:
 {    is parent1;
-     {    # add any overrides here.
+     {    # add any overrides here.  if `#parent1` got rid of `::do_p1()`,
+          # adding this method would throw a compile error.
           ::do_p1(): #null
                # this logic repeats `parent1 do_p1())` `m c3` times.
                m c3 each _int:
                     # same as `#parent1 do_p1(m)` or `parent1::do_p1()`.
                     parent1 do_p1()
+
+          # can override class variables as well, as long as they are
+          # the same type.  if `#parent1` got rid of `some_class_variable`,
+          # trying to add this here would throw a compile error.
+          some_class_variable: "hi"
      }
 
-     # no overrides for parent2.
+     # no explicit overrides for parent2.
      is parent2;
+
+     # you can add implicit overrides here, but they will not throw compile errors
+     # if they are removed from parent classes.
+     ;;update_p2(): #null
+          parent2 p2 += "@#$!"
 
      # child instance fields are preferenced with an `m`.
      m c3: #int
@@ -1004,6 +999,9 @@ keyword inside the child class for each parent/interface.
           parent2 renew(p2)
 }
 ```
+
+We recommend choosing the first way if the child class has a short body
+and the second way otherwise.
 
 For those aware of storage layout, order matters when defining fields,
 whether in an `#all_of` or inside the class body (e.g., via `m c3: #int`);
