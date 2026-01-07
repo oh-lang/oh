@@ -1525,87 +1525,92 @@ representable in the other type, the run-time will return an error.  Therefore y
 need to be explicit about rounding when casting floating point numbers to integers,
 unless you are sure that the floating point number is an integer.  Even if the float
 is an integer, the maximum floating point integer is larger than most fixed-width integer
-types (e.g., `u32_` or `i64_`), so errors can be returned in that case.  The big-integer type
-`int` will not have this latter issue, but may return errors depending on memory constraints.
+types (e.g., `#u32` or `#i64`), so errors can be returned in that case.  The big-integer type
+`#int` will not have this latter issue, but may return errors depending on memory constraints.
 Notice we use `assert` to shortcircuit function evaluation and return an error result
 (like throwing).  See [errors and asserts](#errors-and-asserts) for more details.
 
 ```
 # Going from a floating point number to an integer should be done carefully...
-x: dbl_(5.43)
-safe_cast: x int_()                 # Safe_cast is a result type (`hm_{ok_: int_, number_ er_}`)
-# also OK: `safe_cast: int_(x)`.
-q: x int_() assert_()               # panics since `x` is not representable as an integer
-y: x round_(down) int_() assert_()  # y = 5.  equivalent to `x floor_()`
-z: x round_(up) int_() assert_()    # z = 6.  equivalent to `x ceil_()`.
-r: x round_() int_() assert_()      # r = 5.  rounds to closest integer, breaking ties at half
-                                             #         to the integer larger in magnitude.
+x: dbl(5.43)
+# also OK: `safe_cast: int(x)`:
+safe_cast: x int()                 # `safe_cast` is a result type (`#hm[#ok: #int, #number #er]`)
+if safe_cast is ok:
+     print("got integer ${ok}")
+elif safe_cast is er:
+     print("got error ${er}")
+q: x int() assert()                # panics since `x` is not representable as an integer
+y: x round(~down) int() assert()   # y = 5.  equivalent to `x floor()`
+z: x round(~up) int() assert()     # z = 6.  equivalent to `x ceil()`.
+r: x round() int() assert()        # r = 5.  rounds to closest integer, breaking ties at half
+                                   #         to the integer larger in magnitude.
 
 # Note, representable issues arise for conversions even between different integer types.
-a: u32_(1234)
-q: a u8_() assert_()                # RUN-TIME ERROR, `a` is not representable as a `u8`.
-b: u8_(a & 255) assert_()           # OK, communicates intent and puts `a` into the correct range.
+a: u32(1234)
+q: a u8() assert()            # RUN-TIME ERROR, `a` is not representable as a `#u8`.
+b: u8(a & 255) assert()       # OK, communicates intent and puts `a` into the correct range.
+c: u8(truncate: a)            # also works, should be the same as `b`.
 ```
 
-Casting to a complex type, e.g., `one_of_{int:, str:}(some_value)` will pass through `some_value`
-if it is an `int_` or a `str_`, otherwise try `int_(some_value)` if that is allowed, and finally
-`str_(some_value)` if that is allowed.  If none of the above are allowed, the compiler will
+Casting to a complex type, e.g., `one_of[int:, str:](some_value)` will pass through `some_value`
+if it is an `#int` or a `#str`, otherwise try `int(some_value)` if that is allowed, and finally
+`str(some_value)` if that is allowed.  If none of the above are allowed, the compiler will
 throw an error.  Note that nullable types absorb errors in this way (and become null), so
-`result?: int_(some_safe_cast)` will be null if the cast was invalid, or an `int_` if the
+`result?: int(some_safe_cast)` will be null if the cast was invalid, or an `#int` if the
 cast was successful.
 
 To define a conversion from one class to another, you can define a global function
 or a class method, like this:
 
 ```
-scaled8_:
-[    # the actual value held by a `scaled8` is `Scaled_value / Scale`.
-     @private
-     scaled_value: u8
-]
+#scaled8:
 {    # static/class-level variable:
      @private
      scale: 32_u8
 
-     m_(flt): hm_{ok_: m_, er_: one_of_{negative:, too_big:}}
-          scaled_value: round_(flt * scale)
-          if scaled_value < 0
-               er_(negative)
-          elif scaled_value > u8 max_()
-               er_(too_big)
-          else
-               scaled8_(scaled_value u8_() ?? panic_())
-          # probably a preferred way to implement this is with less logic,
-          # and just return the `number_ er_` instead:
-          # `what u8_(scaled_value) { ok. {scaled8_(ok)}, er. {er} }`
+     # the actual value held by a `scaled8` is `m scaled_value / scale`.
+     @private
+     m scaled_value: #u8
+
+     m(flt.): #hm[#ok: #m, #er: #one_of[negative:, too_big:]]
+          scaled_value: #dbl = round(flt * scale)
+          hm: scaled_value u8()
+          if hm is ok:
+               # also ok: `ok(scaled8(ok))`; `ok` is a distinct variable
+               # compared to `ok(...)` so there's no confusion to the compiler.
+               scaled8(scaled_value: ok)
+          elif scaled_value < 0
+               er(~negative)
+          elif scaled_value > u8 max
+               er(~too_big)
 
      # if there are no representability issues, you can create
      # a direct method to convert to `flt`;
-     # this can be called like `flt_(scaled8)` or `scaled8 flt_()`.
-     ::to_(): flt_
-          # `u8_` types have a non-failing `flt_` method.
-          scaled_value flt_() / scale flt_()
+     # this can be called like `flt(scaled8)` or `scaled8 flt()`.
+     ::to(): #flt
+          # `#u8` types have a non-failing `#flt` method.
+          m scaled_value flt() / scale flt()
 
      # if you have representability issues, you can return a result instead.
-     ::to_(): hm_{ok_: int_, number_ er_}
+     ::to(): #hm[#ok: #int, #number #er]
           if scaled_value % scale != 0
-               er_(not_an_integer)
+               er(~not_an_integer)
           else
-               scaled_value // scale
+               m scaled_value // scale
 }
 
-# global function; can also be called like `scaled8 dbl_()`.
-dbl_(scaled8): dbl_
+# global function; can also be called like `scaled8 dbl()`.
+dbl(scaled8:): #dbl
      # note that we can access private variables of the class *in this file*
      # but if we weren't in the same file we wouldn't have this access.
-     scaled8 scaled_value dbl_() / scaled8 scale dbl_()
+     scaled8 scaled_value dbl() / #scaled8 scale dbl()
 
-# global function which returns a result, can be called like `scaled8 u16_()`
-u16_(scaled8): hm_{ok_: u16_, number_ er_}
-     if scaled8 scaled_value % scaled8 scale != 0
-          er_(not_an_integer)
+# global function which returns a result, can be called like `scaled8 u16()`
+u16(scaled8:): #hm[#ok: #u16, #number #er]
+     if scaled8 scaled_value % #scaled8 scale != 0
+          er(~not_an_integer)
      else
-          scaled8 scaled_value // scaled8 scale
+          scaled8 scaled_value // #scaled8 scale
 ```
 
 ## types of types
