@@ -1387,7 +1387,7 @@ some_line_continuation_example_variable:
 You can use `{` ... `}` to define a block inline.  The braces block is grammatically
 the same as a standard block, i.e., going to a new line and indenting to +1.
 Braces are useful for short `if` statements that you want to inline, e.g.,
-`if some_condition {do_something_()}`, or long blocks that you want to be able to
+`if some_condition {do_something()}`, or long blocks that you want to be able to
 navigate quickly in text editors.
 
 Similarly, note that commas are grammatically equivalent to a new line and tabbing to the
@@ -1397,17 +1397,17 @@ in any block, by using commas.  E.g.,
 ```
 # standard version:
 if some_condition
-     print_("toggling shutoff")
-     shutdown_()
+     print("toggling shutoff")
+     shutdown()
 
 # comma version:
 if some_condition
      # WARNING: NOT RECOMMENDED, since it's easy to accidentally skip reading
      # the statements that aren't first:
-     print_("toggling shutoff"), shutdown_()
+     print("toggling shutoff"), shutdown()
 
 # block parentheses version
-if some_condition { print_("toggling shutoff"), shutdown_() }
+if some_condition { print("toggling shutoff"), shutdown() }
 ```
 
 WARNING! this means that `w, x = y, z` does NOT behave the same way in oh-lang
@@ -1422,31 +1422,36 @@ begin and end, which helps some editors navigate more quickly to the beginning/e
 ```
 # multiline block braces via an optional `{`
 if some_condition
-{    print_("toggling shutdown")
-     print_("waiting one more tick")
-     print_("almost..."), print_("it's a bit weird to use comma statements here")
-     shutdown_()
+{    print("toggling shutdown")
+     print("waiting one more tick")
+     print("almost..."), print("it's a bit weird to use comma statements here")
+     shutdown()
 }
 ```
 
 ## comments
 
-Comments come in three types: (1) end of line (EOL) comments, (2) mid-line comments,
-and (3) multiline comments.  End of line comments are the hash `#` followed by a space;
-the compiler will resume parsing on the next line.  A mid-line comment begins with `#(`
-followed by any character that is not a `#`, and ends with `)#` *on the same line*.
-All characters within the parentheses are ignored by the compiler.  Multiline comments
-begin with `#(#` and end with the corresponding `#)#` *at the same tab indent*.
-This means you can have nested multiline comments, as long as
+We use `#` for a few things in oh-lang, including comments and types.  This is becauase
+we think of types as "commenting" the language, and such a view would allow a codebase
+to become gradually typed over time.  Because of this dual usage of `#`, we need to
+add a space after a `#` sequence to create a comment, so something like `#int` is a type
+while `# int` is a comment.
+
+Comments come in a few varieties: (1) end of line (EOL) comments, (2) mid-line comments,
+(3) multiline comments, and (4) compiler comments.  End of line comments (1) are the hash `#`
+followed by a space; the compiler will resume parsing on the next line.  A mid-line comment
+(2) begins with `#(` followed by a space, and ends with `)#` *on the same line*.  All
+characters within the parentheses are ignored by the compiler.  Multiline comments (3) begin
+with `#(#` (followed by a newline) and end with the corresponding `#)#` *at the same tab
+indent*.  This means you can have nested multiline comments, as long as
 the nested symbols are at a new tab stop, and they can even be broken (e.g., an unmatched
 closing operator `#)#` as long as it is indented from the symbols which started the
 multiline comment), although this is not recommended.  To qualify as a multiline comment
 (either to open or close the comment), nothing else is allowed on the line before or after
 (besides spaces), otherwise a compiler error is thrown.  All characters on all lines in between
 the multiline comment symbols (e.g., `#(#` to `#)#`) are ignored.
-
-Note that the prefix `#@` signifies an end-of-line comment from the compiler, so if you use
-them they may be deleted/updated in unexpected ways.
+Compiler comments (4) use the combination `#@` and act as end-of-line comments;
+these will get updated/removed as needed so do not add them yourself.
 
 With function documentation comments, it's recommended to declare the asymptotic run time.
 
