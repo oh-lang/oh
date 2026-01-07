@@ -1459,51 +1459,62 @@ With function documentation comments, it's recommended to declare the asymptotic
 
 Standard types whose instances can take up an arbitrary amount of memory:
 
-* `int_`: signed big-integer
-* `rtnl_`: rational number (e.g. an `int_` divided by a positive, non-zero `int_`)
-* `str_`: array/sequence of utf8 bytes, but note that `string` is preferred for
+* `#int`: signed big-integer
+* `#rtnl`: rational number (e.g. an `#int` divided by a positive, non-zero `#int`)
+* `#str`: array/sequence of utf8 bytes, but note that `string` is preferred for
      function arguments since it includes other containers which deterministically
      provide utf8 bytes.
 
 Other types which have a fixed amount of memory:
 
-* `null_`: should take up no memory, but can require an extra bit for an optional type.
-* `flt_`: single-precision floating-point number, AKA `f32_`
-* `dbl_`: double-precision floating-point number, AKA `f64_`
-* `bool_`: can hold a true or false value
-* `rune_`: a utf8 character, presumably held within an `i32`
-* `u8_`: unsigned byte (can hold values from 0 to 255, inclusive)
-* `u16_` : unsigned integer which can hold values from 0 to 65535, inclusive
-* `u32_` : unsigned integer which can hold values from 0 to `2^32 - 1`, inclusive
-* `u64_` : unsigned integer which can hold values from 0 to `2^64 - 1`, inclusive
-* `uXYZ_` : unsigned integer which can hold values from 0 to `2^XYZ - 1`, inclusive,
+* `#null`: should take up no memory, but can require an extra bit for an optional type.
+* `#flt`: single-precision floating-point number, AKA `#f32`
+* `#dbl`: double-precision floating-point number, AKA `#f64`
+* `#bool`: can hold a true or false value
+* `#rune`: a utf8 character, presumably held within an `i32`
+* `#u8`: unsigned byte (can hold values from 0 to 255, inclusive)
+* `#u16` : unsigned integer which can hold values from 0 to 65535, inclusive
+* `#u32` : unsigned integer which can hold values from 0 to `2^32 - 1`, inclusive
+* `#u64` : unsigned integer which can hold values from 0 to `2^64 - 1`, inclusive
+* `#uXYZ` : unsigned integer which can hold values from 0 to `2^XYZ - 1`, inclusive,
      where `XYZ` is 128 to 512 in steps of 64, and generically we can use
-     `unsigned_{bits: count_}: what bits {8 {u8_}, 16 {u16_}, 32 {u32_}, ..., else {disallowed_}}`
-* `count_` : `u64_` under the hood, intended to be <= `i64_ max_() + 1` to indicate the amount of something.
-* `index_` : signed integer, `i64_` under the hood.  for indexing arrays starting at 0, can be negative
+     `#unsigned[bits: #count]: what bits {8 {#u8}, 16 {#u16}, 32 {#u32}, ..., else {#disallowed}}`
+* `#count` : an unsigned word-size integer (e.g., `#u64`) under the hood,
+     will error on underflow/overflow, unlike primitive types which won't.
+     if the container is `#index`able, its valid max is `#i64 max + 1`;
+     otherwise its valid max is `#u64 max`.
+* `#offset` : an unsigned word-size integer (e.g., `#u64`) under the hood,
+     will error on underflow/overflow, unlike primitive types which won't.
+     used for indexing arrays starting at 0.
+     will error on underflow/overflow, unlike primitive types which won't.
+* `#index` : a signed word-size integer (e.g., `#i64`) under the hood.
+     for indexing arrays starting at 0, can be negative
      to indicate we're counting from the back of the array.
-* `ordinal_` : `u64_` under the hood.  for indexing arrays starting at 1.
+     will error on underflow/overflow, unlike primitive types which won't.
+* `#ordinal` : an unsigned word-size integer (e.g., `#u64`) under the hood.
+     for indexing arrays starting at 1.
+     will error on underflow/overflow, unlike primitive types which won't.
 
-and similarly for `i8_` to `i512_`, using two's complement.  For example,
-`i8_` runs from -128 to 127, inclusive, and `u8_(wrap: i8_(-1))` equals `255`.
-The corresponding generic is `signed_{bits: count_}`.  We also define the
-symmetric integers `s8_` to `s512_` using two's complement, but disallowing
-the lowest negative value of the corresponding `i8_` to `i512_`, e.g.,
--128 for `s8_`.  This allows you to fit in a null type with no extra storage,
-e.g., `s8_?` is exactly 8 bits, since it uses -128 for null.
+and similarly for `#i8` to `#i512`, using two's complement.  For example,
+`#i8` runs from -128 to 127, inclusive, and `u8(wrap: i8(-1))` equals `255`.
+The corresponding generic is `#signed[bits: #count]`.  We also define the
+symmetric integers `#s8` to `#s512` using two's complement, but disallowing
+the lowest negative value of the corresponding `#i8` to `#i512`, e.g.,
+-128 for `#s8`.  This allows you to fit in a null type with no extra storage,
+e.g., `#s8?` is exactly 8 bits, since it uses -128 for null.
 (See [nullable classes](#nullable-classes) for more information.)
 Symmetric integers are useful when you want to ensure that `-symmetric`
-is actually the opposite sign of `symmetric`; `-i8_(-128)` is still `i8_(-128)`.
-The corresponding generic for symmetric integers is `symmetric_{bits: count_}`.
+is actually the opposite sign of `symmetric`; `-i8(-128)` is still `i8(-128)`,
+while the lowest that `#s8` goes is -127 so `-s8(-127)` is correctly `s8(127)`.
+The corresponding generic for symmetric integers is `#symmetric[bits: #count]`.
 
-Note that the `ordinal_` type behaves exactly like a number but can be used
-to index arrays starting at 1.  E.g., `array[ordinal_(1)]` corresponds to `array[index_(0)]`
+Note that the `#ordinal` type behaves exactly like a number but can be used
+to index arrays starting at 1.  E.g., `array[ordinal(1)]` corresponds to `array[index(0)]`
 (which is equivalent to other numeric but non-index types, e.g., `array[0]`).
-There is an automatic delta by +-1 when converting from `index_` to `ordinal_`
-or vice versa, e.g., `ordinal_(index_(1)) == 2` and `index_(ordinal_(1)) == 0`.
+There is an automatic delta by +-1 when converting from `#index` to `#ordinal`
+or vice versa, e.g., `ordinal(index(1)) == 2` and `index(ordinal(1)) == 0`.
 Note however, that there's a bit of asymmetry here; non-index, numeric types
-like `u64_`, `count_`, or `i32_` will convert to `index_` or `ordinal_` without any delta.
-It's only when converting between `index_` and `ordinal_` that a delta occurs.
+like `#u64` or `#i32` will convert to `#index` or `#ordinal` without any delta.
 
 ## casting between types
 
