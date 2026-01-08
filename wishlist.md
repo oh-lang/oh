@@ -1729,35 +1729,37 @@ Here are some examples of unnesting fields on an object/future/result.
 
 ```
 # base case, needs specialization
-unnest{of_:}: disallowed_
+#unnest[#of:]: #disallowed
 
 # container specialization
-# e.g., `unnest_{array_{int_}} == int_`
-unnest_{container_{of_: ~nested_, ~_at_:}}: nested_
+# e.g., `#unnest[#array[#int]] == #int`
+#unnest[#container[#of: ~#nested, ~#_at:]]: #nested
 
-# `set` needs its own specialization because it has interesting
-# `container_` dynamics.  e.g., `unnest_{set_{str_}} == str_`.
-unnest_{set_{~nested_:}}: nested_
+# `#set` needs its own specialization because it has interesting
+# `#container` dynamics.  e.g., `#unnest[#set[#str]] == #str`.
+#unnest[#set[~#nested:]]: #nested
 
 # future specialization
-# e.g., `unnest_{um_{str_}} == str_`.
-unnest_{um_{~nested_:}}: nested_
+# e.g., `#unnest[#um[#str]] == #str`.
+#unnest[#um[~#nested:]]: #nested
 
 # result specialization
-# e.g., `unnest_{hm_{ok_: str_, er_: int_}} == str`.
-unnest_{hm_{ok_: ~nested_, ~_er_:}}: _nested
+# e.g., `#unnest[#hm[#ok: #str, #er: #int]] == #str`.
+#unnest[#hm[#ok: ~#nested, ~#_er:]]: #nested
 
-# null specialization
-# e.g., `unnest_{int_?:} == int`.
-unnest_{~nested_?:}: nested_
+# nullable specialization
+# e.g., `#unnest[#int?] == #int`.
+#unnest[~#nested?:}: #nested
 ```
 
-Note that if we have a function that returns a type, we must use brackets, e.g.,
-`type_function_{...}: the_return_type_`, but we can use instances like booleans
-or numbers inside of the brackets (e.g., `array_{3, int_}` for a fixed size array type).
-Conversely, if we have a function that returns an instance, we must use parentheses,
-e.g., `the_function_(...): instance_type_`.  In either case, we can use a type as
-an argument, e.g., `nullable_(of_): bool_` or `array3_{of_:}: array_{3, of_}`.
+Note that if we have a function that returns a type, we recommend using brackets, e.g.,
+`#type_function[...]: #the_return_type`, but we can use instances like booleans
+or numbers inside of the brackets (e.g., `#array[3, #int]` for a fixed size array type).
+Conversely, we recommend using parentheses for functions that return an instance,
+e.g., `the_function(...): #instance_type`.  (We technically determine whether it's
+a type function or an instance function based on whether it starts with `#`, so these
+rules are not strictly required.)  In either case, we can use a type as
+an argument, e.g., `nullable(#of:): #bool` or `#array3[#of:]: #array[3, #of]`.
 Type functions can be specialized in the manner shown above, but instance functions
 cannot be.  TODO: would we want to support that at some point??
 
@@ -1766,22 +1768,20 @@ Here is some nullable type manipulation:
 ```
 # the `null` type should not be considered nullable because there's
 # nothing that can be unnulled, so ensure there's something not-null in a nullable.
-#   nullable_(one_of_{dbl:, int:, str:}) == false
-#   nullable_(one_of_{dbl:, int:}?) == true
-#   nullable_(null_) == false
-nullable_(of_:): of_ contains_(not_{null_}, null_)
-# TODO: i think i like `!null_` for `not_{null_}`.
-nullable_(of_:): of_ contains_(!null_, null_)
+#   nullable(#one_of[dbl:, int:, str:]) == false
+#   nullable(#one_of[dbl:, int:]?) == true
+#   nullable(#null) == false
+nullable(#of:): #of contains(#not[#null], #null)
+# TODO: i think i like `!#null` for `#not[#null]`.
+nullable(#of:): #of contains(!#null, #null)
 
 # examples
-#   unnull_{int_} == int_
-#   unnull_{int_?} == int_
-#   unnull_{one_of_{array{int_}:, set{dbl_}:}?} == one_of_{array{int_}:, set{dbl_}:}
-unnull_{of_:}: if nullable_(of_) {unnest_{of_}} else {of_}
-
-# a definition without nullable, using template specialization:
-unnull_{of_:}: of_
-unnull_{~nested_?:}: nested_
+#   #unnull[#int] == #int
+#   #unnull[#int?] == #int
+#   #unnull[#one_of[array[#int]:, set[#dbl]:]?] == #one_of[array[#int]:, set[#dbl]:]
+#unnull[#of:]: if nullable(#of) { #unnest[#of] } else { #of }
+# TODO: do we like the above formatting or the below one?
+#unnull[#of:]: if nullable(#of) {#unnest[#of]} else {#of}
 ```
 
 # operators and precedence
