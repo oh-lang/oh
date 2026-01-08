@@ -1616,34 +1616,34 @@ u16(scaled8:): #hm[#ok: #u16, #number #er]
 ## types of types
 
 Every variable has a reflexive type which describes the object/primitive that is held
-in the variable, which can be accessed via the `type_case_` version of the
+in the variable, which can be accessed via the `#type_case` version of the
 `variable_case` variable name.  
 
 ```
-# implementation note: `int_` comes first so it gets tried first;
-# `dbl_` will eat up many values that are integers, including `4`.
-x; one_of_{int:, dbl:} = 4
-y; x_ = 4.56    # use the type of `x` to define a variable `y`.
+# implementation note: `#int` comes first so it gets tried first;
+# `#dbl` will eat up many values that are integers, including `4`.
+x; #one_of[int:, dbl:] = 4
+y; #x = 4.56   # use the type of `x` to define a variable `y`.
 ```
 
-Note that the `type_case_` version of the `variable_case` name does not have
-any information about the instance, so `x` is `one_of_{int:, dbl:}` in the above
-example and `y` is an instance of the same `one_of_{int:, dbl:}` type.  For other
-ways to handle different types within a `one_of_`, [go here](#one_of_-with-data).
+Note that the `#type_case` version of the `variable_case` name does not have
+any information about the instance, so `x` is `#one_of[int:, dbl:]` in the above
+example and `y` is an instance of the same `#one_of[int:, dbl:]` type.  For other
+ways to handle different types within a `#one_of`, [go here](#one_of-with-data).
 
 Some more examples:
 
 ```
-vector3_: [x; dbl_, y; dbl_, z; dbl_]
+#vector3: #[x; #dbl, y; #dbl, z; #dbl]
 
-my_vector3: vector3_(x: 1.2, y: -1.4, z: 1.6)
+my_vector3: vector3(x: 1.2, y: -1.4, z: 1.6)
 
-print(my_vector3_)              # prints `vector3`
-print(vector3_ == my_vector3_)  # this prints true
+print(#my_vector3)                 # prints `#vector3`
+print(#vector3 == #my_vector3)     # this prints true
 ```
 
 Variables that refer to types cannot be mutable, so something
-like `some_type; vector3` is not allowed.  This is to make it
+like `#some_type; #vector3` is not allowed.  This is to make it
 easier to reason about types.
 
 ## type overloads
@@ -7713,7 +7713,8 @@ Note that if you are checking many values, a `what` statement may be more useful
 than testing each value against the various possibilities.  Also note that you don't need
 to explicitly set each enum value; they start at 0 and increment by default.
 But you do always need to include the declaration operator `:` because we
-are declaring new values in the enum.  This example also showcases tagged values.
+are declaring new values in the enum.  This example also showcases tagged data
+which is explained more in the next section.
 
 ```
 #how_bad: #str
@@ -7763,7 +7764,7 @@ Note that we don't have to do `#option best_option_still_coming` for the cases;
 the compiler knows that since `option1` is of type `#option`,
 so we can use `~` to namespace correctly as `#option`.
 
-### `one_of_` with data
+### `#one_of` with data
 
 The `one_of_` type is a tagged union, which can easily mix simple enum values
 (with no accompanying data) with tagged data types.
