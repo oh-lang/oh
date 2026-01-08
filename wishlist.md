@@ -489,7 +489,7 @@ But we do for wrapper types like `#count`, `#index`, `#offset`, and `#ordinal`.
                `my_array map(fn(int:): 2 * int + 1)`.
           * `$[...]` as shorthand for `[fn(): {[...]}]`, i.e., defining a lambda function with
                `()` arguments specified by any lambda variables (see `$arg` logic).
-               This can create lambda functions for types, or [lambda types](#lambda-types) for short,
+               This can create lambda functions for types, or [type lambdas](#type-lambdas) for short,
                if the return value is a type.
           * `${...}` is shorthand for a `{fn(): {...}}`, a lambda function without any `()`, `[]` structure.
      * `$arg` as shorthand for defining an argument in a [lambda function](#lambda-functions)
@@ -1649,11 +1649,12 @@ easier to reason about types.
 ## type overloads
 
 Similar to defining a function overload, we can define type overloads for generic types.
-For example, the generic result class in oh-lang is `hm_{ok_, er_}`, which
-encapsulates an ok value (`ok_`) or a non-nullable error (`er_`).  For your custom class you
-may not want to specify `hm_{ok_: my_ok_type_, er_: my_class_er_}` all the time for your custom
-error type `my_class_er_`, so you can define `hm_{of_:}: hm_{ok_: of_, er_: my_class_er_}` and
-use e.g. `hm_{int_}` to return an integer or an error of type `my_class_er_`.  Shadowing variables is
+For example, the generic result class in oh-lang is `#hm[#ok:, #er:]`, which
+encapsulates an ok value (of type `#ok`) or a non-nullable error (of type `#er`).
+For your custom class, you may not want to write `#hm[#ok: #my_ok_type, #er: #my_class_er]`
+everywhere for your custom error type `#my_class_er`, so you can define 
+`#hm[#of:]: #hm[#ok: #of, #er: #my_class_er]` and use e.g. `#hm[#int]`
+to return an integer or an error of type `#my_class_er`.  Shadowing variables is
 invalid in oh-lang, but overloads are valid.  Note however that we disallow redefining
 an overload, as that would be the equivalent of shadowing.
 
@@ -1661,70 +1662,74 @@ an overload, as that would be the equivalent of shadowing.
 
 Plain-old-data objects can be thought of as merging all fields in this way:
 TODO: i think this needs to be separate from `tag`s, but see if we can combine
-`field` and `tag` ideas.  or maybe use `TAG_` to indicate this is a built-in.
+`field` and `tag` ideas.  or maybe use `#TAG` to indicate this is a built-in.
 
-Each type has reflection properties like `fields_()` which returns an array
-of all the `field_` types that are in an object.  E.g., `[a: int_, b: str_]`
-has fields `field_{name: "a", of_: int_}` and `field_{name: "b", of_: str_}`.
+Each type has reflection properties like `fields()` which returns an array
+of all the `#field` types that are in an object.  E.g., `#[a: #int, b: #str]`
+has fields `field(name: "a", #of: #int)` and `field(name: "b", #of: #str)`.
 TODO: we probably need a type-ID field.
 
-Using [lambda types](#lambda-types), we can practice type manipulation:
-
 ```
-# tautologies
-object_
-    ==  merge_{object_ fields_(), ${$field_}}
-    ==  merge_{object_ fields_(), ${field_($field_ name, $field_ of_)}}
+# basic tautology, an object is made out of its fields (merged):
+#[a: #int, b: #str]
+     ==   #merge
+     [    field(name: "a", #of: #int)
+          field(name: "b", #of: #str)
+     ]
+# or more generally:
+#my_object == #merge[#my_object fields()]
 ```
 
 There are some nice ways to manipulate object types, like converting all
-field values of an object into some other type:
+field values of an object into some other type, which we can use
+[type lambdas](#type-lambdas) for:
 
 ```
-object_ valued_{new_{of_:}: ~new_of_}
-    ==  merge_{object_ fields_(), ${field_{$field_ name, new_{$field_ of_}}}}
+#my_object #valued[#new[#of:]: ~#new_of]
+     ==   #merge
+     [    #my_object fields() map
+          $(   field($field name, #new[$field #of])
+          )
+     ]
 ```
 
-For example, `object_ valued_${um_{$of_}}` is a way to convert `object_`
-data into futures.
+For example, `#my_object #valued $[#um[$#of]]` is a way to convert `#my_object`
+data into futures, e.g., `#[a: #str]` would become `#[a: #um[#str]]`.
 
 Here are some examples of changing the nested fields on an object
 or a container, e.g., to convert an array or object to one containing futures.
 
 ```
 # base case, needs specialization.
-nest_{m_, new_{of_:}: ~n_}: disallowed_
+#nest[#m, #new[#of:]: ~#n}: #disallowed
 
 # container specialization.
-# e.g., `array_{int_} nest_${um_{$of_}} == array_{um_{int_}}`,
-# or you can do `nest_{m_: array_{int_}, ${um_{$of_}}}` for the same effect.
-nest_
-{    c_: container_
-     m_: ~c_{of_: ~nested_, ~at_:}
-     new_{of_:}: ~n_
-}: c_{of_: new_{nested_}, at_}
-# TODO: would this work as well?
-nest_
-{    c_: container_
-     m_: ~c_{of_: ~nesting_, ~at_:}
-     new_{of_: nesting_}: ~nested_
-}: c_{of_: nested_, at_}
+# e.g., `#array[#int] #nest $[#um[$#of]] == #array[#um[#int]]`,
+# or you can do `#nest[#m: #array[#int], ${#um[$#of]}]` for the same effect.
+#nest
+{    #c: #container
+     #m: ~#c[#of: ~#nested, ~#at:]
+     #new[#of:]: ~#n
+}:        #c[#of: #new[#nested], #at]
 
 # object specialization.
-# e.g., `[x: int_, y: str_] nest_${hm_{ok_: $of_, er_: some_er_}}`
-# to make `[x: hm_{ok_: int_, er_: some_er_}, y: hm_{ok_: str_, er_: some_er_}]`,
-# or you can do `nest_{{hm_{ok_: $of_, er_: some_er_}}, m_: [x: int_, y: str_]}` for the same effect.
-nest_{m_: object_, new_{of_:}: ~_n_}: merge_
-{    m_ fields_()
-     ${field_{$field_ name, new_{$field_ value_}}}
-}
+# e.g., `#[x: #int, y: #str] #nest $[#hm[#ok: $#of, #er: #some_er]]`
+# to make `#[x: #hm[#ok: #int, #er: #some_er], y: #hm[#ok: #str, #er: #some_er]]`,
+# or you can do `#nest[${#hm[#ok: $#of, #er: #some_er]}, #m: #[x: #int, y: #str]]`
+# for the same effect.
+#nest[#m: #object, #new[#of:]: ~#n]
+     :    #merge
+     [    #m fields() map
+          $(   field($field name, #new[$field #of])
+          )
+     ]
 ```
 
 Here are some examples of unnesting fields on an object/future/result.
 
 ```
 # base case, needs specialization
-unnest_{of_:}: disallowed_
+unnest{of_:}: disallowed_
 
 # container specialization
 # e.g., `unnest_{array_{int_}} == int_`
@@ -3154,9 +3159,10 @@ we're already doing this implicitly with enums, e.g., `abc_: one_of_{a:, b:, c:}
 we have something like `w_: one_of_{count:, ...}`.  we should also investigate how to
 overload `[]` for array indexing, because theoretically we can have `array[1, 2, 3]`.
 
-### lambda types
+### type lambdas
 
-TODO: discuss lambda functions for types, i.e., `${the_type_}`.
+TODO: discuss lambda functions for types, i.e., `${#the_type}`.
+TODO: do we need to do `$#{#um[$#of]}` to tell the compiler that it's a type lambda?
 
 ### unique argument names
 
