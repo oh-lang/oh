@@ -226,6 +226,9 @@ a parenthetical overload for either `()` or `(#self_type:)`.  we may recommend s
 Class getters/setters *do not use* `::get_x(): #dbl` or `;;set_x(dbl.): #null`, but rather
 just `::x(): #dbl` and `;;x(dbl.): #null` for a private variable `x; #dbl`.  This is because
 we allow overloading of both functions and variables in oh-lang.
+TODO: should we do `;;set(x: ...)` and `x: m::get()` instead???
+e.g., for something that has overloads for `()` it might get confusing.
+or even `m::to(): #x` for getter (i.e., `size: window` or `size: size(window)`.
 
 Because we use `::` for readonly methods and `;;` for writable methods, we can
 easily define "const template" methods via `:;` which work in either case `:` or `;`.
@@ -753,11 +756,17 @@ We don't require `{}` in function definitions because we can distinguish between
 (B) creating a function alias (e.g. for passing as an argument), and
 (C) defining a function inline in the following ways.
 (A) uses `my_fn(args:): #return_type = fn_returning_a_fn()` in order to get
-the correct type on `my_fn`, (B) uses `rename_to_this: use_this_fn(args:): #return_type`,
+the correct type on `my_fn`, (B) uses `use_this_fn as rename_to_this(args:): #return_type`,
 while (C) uses `defining_fn(args:): do_this(:args)`
 and uses inference to get the return type (for the default `do_this(args:)` function).
-TODO: i think (A) should maybe be `my_fn: #fn(args:): #return_type = fn_returning_a_fn()`.
-so that (C) can be `defining_fn(args:): #type = do_this(:args)`.
+In case of (B), if you are passing a function with the same name as the parameter,
+you can do `call_a_fn(my_fn(x: #int): #dbl)` where `my_fn(x: #int): #dbl` is already defined,
+or `call_this(ignore_result(): #null)` where `ignore_result(): #null` is already defined.
+The reason we specify the full function signature is because of overloads; even
+variables and functions can be overloaded.
+TODO: i don't love that we're adding a new keyword for (B).
+`yolo(whatever as arg1)` is the same as `yolo(arg1: whatever)`
+so `use_this_fn as rename_to_this` would be `rename_to_this: use_this_fn`
 
 ```
 #my_class:

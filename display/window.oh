@@ -9,15 +9,18 @@ WISHLIST
      well, we're using pixel coordinates, so maybe `i32`s are still ok.
 #)#
 
-window_: []
-{    terminal_: terminal_window_
-     graphics_: graphics_window_
+#window: []
+{    #terminal: #terminal_window
+     #graphics: #graphics_window
+     #size: #size2i
 
      # returns the actual window size, i.e., the real-estate available for drawing.
-     ::size_(): size2i_
+     ::size(): #size
      # sets the window size or returns an error.
-     ;;size_(size2i.): hm_{null_}
+     # TODO: should this be `;;set(size: #size)` ?
+     ;;size(size.): #hm[#null]
      # sets the minimum window size, i.e., for a resizable window.
+     # TODO: should this be `;;set(min_size: #size)` ?
      ;;size_(min. size2i_): hm_{null_}
      # sets the maximum window size, i.e., for a resizable window.
      ;;size_(max. size2i_): hm_{null_}
