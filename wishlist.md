@@ -767,6 +767,8 @@ variables and functions can be overloaded.
 TODO: i don't love that we're adding a new keyword for (B).
 `yolo(whatever as arg1)` is the same as `yolo(arg1: whatever)`
 so `use_this_fn as rename_to_this` would be `rename_to_this: use_this_fn`
+TODO: i think we can do `rename_to_this(args:): #return_type = use_this_fn(~)`
+and so passing without renaming is just `use_this_fn(~)`.
 
 ```
 #my_class:
@@ -2612,7 +2614,21 @@ do_something_(date: str_("2023-01-01")):
 
 # functions
 
-TODO: discuss function types, e.g., `x: #fn(): #int`.
+TODO: discuss function types, e.g., `#fn(): #int`.
+TODO: discuss how we can access a function parameter in another function parameter
+but ONLY if we use a namespace.  e.g.,
+```
+# NO WORK:
+the_fn_call
+(    arg1: 123 * complicated_value()
+     arg2: arg1 + 5 # NOT RIGHT
+)
+# WORKS:
+the_fn_call
+(    MY_arg1: 123 * complicated_value()
+     arg2: MY_arg1 + 5
+)
+```
 
 Functions are named using `function_case_` identifiers.  The syntax to declare
 a function is `function_case_name_(function_arguments...): return_type_`, but if
