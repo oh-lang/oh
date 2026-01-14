@@ -756,26 +756,31 @@ We don't require `{}` in function definitions because we can distinguish between
 (B) creating a function alias (e.g. for passing as an argument), and
 (C) defining a function inline in the following ways.
 (A) uses `my_fn(args:): #return_type = fn_returning_a_fn()` in order to get
-the correct type on `my_fn`, (B) uses `use_this_fn as rename_to_this(args:): #return_type`,
-while (C) uses `defining_fn(args:): do_this(:args)`
+the correct type on `my_fn`, (B) uses `rename_to_this(args:): #return_type = use_this_fn`
+if `use_this_fn` has a variable overload and `rename_to_this: use_this_fn` for conciseness
+otherwise, while (C) uses `defining_fn(args:): do_this(:args)`
 and uses inference to get the return type (for the default `do_this(args:)` function).
 In case of (B), if you are passing a function with the same name as the parameter,
 you can do `call_a_fn(my_fn(x: #int): #dbl)` where `my_fn(x: #int): #dbl` is already defined,
-or `call_this(ignore_result(): #null)` where `ignore_result(): #null` is already defined.
-The reason we specify the full function signature is because of overloads; even
-variables and functions can be overloaded.
-TODO: i don't love that we're adding a new keyword for (B).
-`yolo(whatever as arg1)` is the same as `yolo(arg1: whatever)`
-so `use_this_fn as rename_to_this` would be `rename_to_this: use_this_fn`
-TODO: i think we can do `rename_to_this(args:): #return_type = use_this_fn(~)`
-and so passing without renaming is just `use_this_fn(~)`.
+or `call_this(my_fn)` if you don't have a variable overload for `my_fn`.
+TODO: use `rename_to_this(args:): #return_type = use_this_fn(~)` if necessary
+to indicate the function overload.
 
 ```
 #my_class:
 {    # constructor
      m(...): #m
 
-     # parenthetical overload
+     # parenthetical overload.
+     # WARNING! if you have the same function signature as a constructor here,
+     # you will not be able to use default names for this class.
+     # e.g., `m(int.): #m` and `::(int.): #m`.
+     # TODO: i think we should throw a compile error in this case because
+     # default names are a big part of oh-lang.
+     # TODO: this is also potentially an issue if a function is named
+     # similar to an instance that has a parenthetical.
+     # TODO: do we want to just get rid of overloading `()` on classes?
+     # `[]` should be enough for anyone, right?
      ::(...): #whatever
 
      # subscript overload
@@ -1098,9 +1103,10 @@ clone (deep copy) of the current instance.  If this cannot fail, the function si
 is `::o(): #o`, otherwise it is `::o(): #hm[#ok: #o, #er: ...]` (e.g., due to OOM).
 
 There are some reserved namespaces with side effects like `NAMED_`, `AS_`,
-which should be used for their side effects.  Variables that end in numbers like
-`x_0` or `asdf_123` will also have the number considered as a namespace, which
-can be used for binary operations like `+` and `*`.  See [namespaces](#namespaces).
+which should be used for their side effects.  Variables that end in numbers
+*after an underscore* like `x_0` or `asdf_123` will also have the number
+considered as a namespace, which can be used for binary operations like `+` and `*`.
+See [namespaces](#namespaces).
 
 Most ASCII symbols are not allowed inside identifiers, e.g., `*`, `/`, `&`, etc., but
 underscores (`_`) have some special handling.  They are ignored in numbers,
@@ -1798,29 +1804,29 @@ nullable(#of:): #of contains(!#null, #null)
 # operators and precedence
 
 TODO: add : , ; ?? postfix/prefix ?
-TODO: add ... for dereferencing.  maybe we also allow it for spreading out an object into function arguments,
-e.g., `my_function_(a: 3, b: 2, ...my_object)` will call `my_function_(a: 3, b: 4, c: 5)` if `my_object == [b: 4, c: 5]`.
+TODO: add ... for destructuring and spreading out an object into function arguments,
+e.g., `my_function(a: 3, b: 2, ...my_object)` will call `my_function(a: 3, b: 4, c: 5)` if `my_object == [b: 4, c: 5]`.
 TODO: i think i would like a `|>` "inline-tab" operator for indenting the next line, e.g.,
 ```
 ["a", "bc", "def"] each str. |> what str
      "a"
-          print_("got a")
+          print("got a")
      "bc"
-          print_("got bc")
+          print("got bc")
      else
-          print_("got something else: $(str)")
+          print("got something else: $(str)")
 
 # equivalent to 
 ["a", "bc", "def"] each str.
      what str
           "a"
-               print_("got a")
+               print("got a")
           "bc"
-               print_("got bc")
+               print("got bc")
           else
-               print_("got something else: $(str)")
+               print("got something else: $(str)")
 ```
-TODO: or we could make it just a "pipe" like operator, so `each str. |> what` would not need `str` after it.
+however the second option i consider more readable, so let's nix this.
 
 | Precedence| Operator  | Name                      | Type/Usage        | Associativity |
 |:---------:|:---------:|:--------------------------|:-----------------:|:-------------:|
@@ -1829,7 +1835,7 @@ TODO: or we could make it just a "pipe" like operator, so `each str. |> what` wo
 |           |   `{}`    | parentheses               | grouping: `{a}`   |               |
 |           | `\\x/y/z` | library module import     | special: `\\a/b`  |               |
 |           | `\/x/y/z` | relative module import    | special: `\/a/b`  |               |
-|   2       |  ` ()`    | function call             | on fn: `a_(b)`    | LTR           |
+|   2       |  ` ()`    | function call             | on fn:  `a(b)`    | LTR           |
 |           |   `::`    | impure read scope         | binary: `a::b`    | LTR           |
 |           |   `;;`    | impure read/write scope   | binary: `a;;b`    |               |
 |           |   ` `     | implicit member access    | binary: `a b`     |               |
@@ -1841,7 +1847,7 @@ TODO: or we could make it just a "pipe" like operator, so `each str. |> what` wo
 |           |   `**`    | also superscript/power    | binary: `a**b`    |               |
 |           |   `--`    | unary decrement           | unary:  `--a`     |               |
 |           |   `++`    | unary increment           | unary:  `++a`     |               |
-|           |   `~`     | template/generic scope    | unary:  `~b_`     |               |
+|           |   `~`     | template/generic scope    | unary:  `~b`      |               |
 |   4       |   `<>`    | bitwise flip              | unary:  `<>a`     | RTL           |
 |           |   `-`     | unary minus               | unary:  `-a`      |               |
 |           |   `+`     | unary plus                | unary:  `+a`      |               |
@@ -1874,19 +1880,19 @@ TODO: discussion on `~`
 
 ## function calls
 
-Function calls are assumed whenever a `function_case_` identifier
-occurs before a parenthetical expression.  E.g., `print_(x)`
+Function calls are assumed whenever a `function_case` identifier
+occurs before a parenthetical expression.  E.g., `print(x)`
 where `x` is a variable name or other primitive constant (like `5`),
-or an expresion (like `any_function_name_(any + expression / here)`).
+or an expresion (like `any_function_name(any + expression / here)`).
 
 We don't allow for implicitly currying functions in oh-lang,
 but you can explicitly curry like this:
 
 ```
-some_function_(x: int_, y; dbl_, z. str_):
-     print_("something cool with $(x), $(y), and $(z)")
+some_function(x: #int, y; #dbl, z. #str):
+     print("something cool with ${x}, ${y}, and ${z}")
 
-curried_function_(z. str_): some_function_(x: 5, y; 2.4, z)
+curried_function(z. #str): some_function(x: 5, y; 2.4, z)
 ```
 
 ## macros
@@ -1910,26 +1916,26 @@ the same, i.e., for function convenience.  oh-lang doesn't support shadowing, so
 like this would break:
 
 ```
-my_function_(x: int_): int_
+my_function(x: #int): #int
      # define a nested function:
      # COMPILE ERROR
-     do_stuff_(x: int_): null_
-          # is this the `x` that's passed in from `my_function_`? or from `do_stuff_`?
-          # most languages will shadow so that `x` is now `do_stuff_`'s argument,
+     do_stuff(x: #int): #null
+          # is this the `x` that's passed in from `my_function`? or from `do_stuff`?
+          # most languages will shadow so that `x` is now `do_stuff`'s argument,
           # but oh-lang does not allow shadowing.
-          print_(x)
+          print(x)
      do_stuff(x)
      do_stuff(x: x // 2)
      do_stuff(x: x // 4)
      x // 8
 ```
 
-There are two ways to get around this; one is [hiding variables](#hiding-variables).
+There are two ways to get around this.  One is [hiding variables](#hiding-variables).
 In the above example, the best way is to use a namespace for one or both conflicts.
 Namespaced variables have capital letters inside them, which are ignored when matching
-function arguments, e.g., `my_function_(MY_NAMESPACE_my_variable_name: int): null_`
+function arguments, e.g., `my_function(MY_NAMESPACE_my_variable_name: #int): #null`
 where `MY_NAMESPACE_` is ignored when matching arguments, so you'd call with e.g.,
-`my_function_(my_variable_name: 3)` or even `my_function_(:ANOTHER_my_variable_name)`
+`my_function(my_variable_name: 3)` or even `my_function(ANOTHER_my_variable_name)`
 if that namespaced variable `ANOTHER_my_variable_name` is in scope.  In fact, capital
 letters will be removed from anywhere in the identifier when matching arguments, so
 `MY_variable_OTHER_x_OK` would match to `variable_x` in a function argument.
@@ -1938,15 +1944,15 @@ annotate any variable that you're declaring.  It is recommended to namespace
 the "outer" variable so you don't accidentally use it in the inner scope.
 
 ```
-my_function_(OUTER_x: int_): int_
+my_function(OUTER_x: #int): #int
      # nested function is OK due to namespace:
-     do_stuff_(x: int_): null
+     do_stuff(x: #int): #null
           # inner scope, any usage of `OUTER_x` would be clearly intentional.
           print(x)
      # NOTE: we don't need to rename `x: OUTER_x` because `OUTER_x` already resolves to `x`.
-     do_stuff_(OUTER_x)
-     do_stuff_(x: OUTER_x // 2)
-     do_stuff_(x: OUTER_x // 4)
+     do_stuff(OUTER_x)
+     do_stuff(x: OUTER_x // 2)
+     do_stuff(x: OUTER_x // 4)
      OUTER_x // 8
 ```
 
@@ -1955,18 +1961,18 @@ want to delta many lines), you can use `@hide` to ensure you don't use the
 other value accidentally.
 
 ```
-my_function_(x: int_): int_
+my_function(x: #int): #int
      # nested function is OK due to namespace:
-     do_stuff_(OTHER_x: int_): null_
+     do_stuff(OTHER_x: #int): #null
           # inner scope, usage of `x` might be accidental, so let's hide:
           @hide x
           ...
           print(OTHER_x)  # OK
           print(x)        # COMPILE ERROR, `x` was hidden from this scope.
           ...
-     do_stuff_(x)
-     do_stuff_(x: x // 2)
-     do_stuff_(x: x // 4)
+     do_stuff(x)
+     do_stuff(x: x // 2)
+     do_stuff(x: x // 4)
      x // 8
 ```
 
@@ -1974,11 +1980,11 @@ Similarly, you can define new variables with namespaces, in case you need a new 
 in the current space.  This might be useful in a class method like this:
 
 ```
-my_class_: [x; dbl_]
+#my_class: #[x; #dbl]
 {    # this is a situation where you might like to use namespaces.
-     ;;do_something_(NEW_x. dbl_): dbl_
+     ;;do_something(NEW_x. #dbl): #dbl
           # NOTE: if you just want to create a swapper, you should
-          # probably just use this idiom: `;;x_(dbl;): null_ {m x <-> dbl}`.
+          # probably just use this idiom: `;;x(dbl;): #null {m x <-> dbl}`.
           OLD_x: m x!
           m x = NEW_x
           OLD_x
@@ -1987,29 +1993,49 @@ my_class_: [x; dbl_]
 
 One of the most convenient uses for namespaces is the ability to elide argument
 names when calling functions.  E.g., if you have a function which takes a variable named `x`,
-but you already have a different one in scope, you can create a new variable with a namespace
-`EXAMPLE_NAMESPACE_x: my_new_x_value` and then pass it into the function as
-`my_function_(EXAMPLE_NAMESPACE_x)` instead of `my_function_(x: EXAMPLE_NAMESPACE_x)`.
-This also works with default-named variables, which is a primary use-case.
+but you happen to have a variable called `EXAMPLE_NAMESPACE_x`, you can do
+`my_function(EXAMPLE_NAMESPACE_x)` instead of `my_function(x: EXAMPLE_NAMESPACE_x)`.
+This is helpful also when declaring functions, and it also works with default-named
+variables, which is a primary use-case.
 
 ```
-some_function_(INPUT_index): null_
-     # `INPUT_index` is a default-named variable of type `index_`, but we refer to it
+some_function(INPUT_index.): #null
+     # `INPUT_index` is a default-named variable of type `#index`, but we refer to it
      # within this scope using `INPUT_index`.
-     even_(index): bool_
+     even(index.): #bool
           index % 2 == 0
      # you can define other namespaces inline as well:
      INPUT_index each ANOTHER_index:
-          if even_(ANOTHER_index)
-               print_(ANOTHER_index)
+          if even(ANOTHER_index)
+               print(ANOTHER_index)
         
-x: index_ = 100
-some_function_(x)   # note that we don't need to call as `some_function_(index: x)`
-                         # nor `some_function_(INPUT_index: x)` (definitely not idiomatic).
+x: #index = 100
+some_function(x)    # note that we don't need to call as `some_function(index: x)`
+                    # nor `some_function(INPUT_index: x)` (definitely not idiomatic).
 ```
 
 You can use the same namespace for multiple variables, e.g., `INPUT_rune` and `INPUT_string`,
-as long as the variable names don't overlap.
+as long as the full variable names don't overlap.
+
+A trailing number (after an underscore) also counts as a namespace, and in this case needs
+to specifically be used for distinguishing multiple default-named variables.
+
+```
+#vector3: #[x: #flt, y: #flt, z: #flt] {
+     # for doing `vector3(1, 2, 3)` without specifying `vector3(x: 1, y: 2, z: 3)`.
+     m(flt_0., flt_1., flt_2.): #m
+          [x: flt_0, y: flt_1, z: flt_2]
+}
+
+# use namespaces to pass in two `vector3`s:
+dot(vector3_0:, vector3_1:): #flt
+     0.0
+          +    vector3_0 x * vector3_1 x
+          +    vector3_0 y * vector3_1 y
+          +    vector3_0 z * vector3_1 z
+
+dot(vector3(1, 2, 3), vector3(5, 6, 7))
+```
 
 ### full list of reserved namespaces
 
