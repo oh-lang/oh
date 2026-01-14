@@ -2615,6 +2615,12 @@ do_something_(date: str_("2023-01-01")):
 # functions
 
 TODO: discuss function types, e.g., `#fn(): #int`.
+warning: can we distinguish `x: #fn(): #int` from `x: #str`?  maybe in any scope
+we allow overloading (to the max) but with function arguments we need to able
+to distinguish by name.  that way for a function parameter `rename_to_this`,
+we can do `rename_to_this: great` if `great` doesn't have a variable overload,
+and `rename_to_this: great(~)` or `rename_to_this: #fn(sig.): #nature = great`
+or `rename_to_this(sig.): #nature = great` if so.
 TODO: discuss how we can access a function parameter in another function parameter
 but ONLY if we use a namespace.  e.g.,
 ```
