@@ -154,7 +154,7 @@ you must use `m the_variable_name` to refer to a class field `the_variable_name`
 and `m my_method_name()` to call another method; this helps with overload resolution
 (i.e., to distinguish static variables/functions from instance variables/methods)
 but also means we can avoid renaming arguments that shadow class variables, e.g.,
-`::swap(x; #int): {m x <-> x}`.
+`;;swap(x; #int): {m x <-> x}`.
 (C++ developers are encouraged to prefix class member variables with
 `m_` because C++ is too permissive here with name resolution.)
 Here is an example class.
@@ -2057,54 +2057,53 @@ unary prefixes to indicate readonly/writable-instance class methods.  They are s
 readonly/writable `m` (self/this) as an argument.
 
 ```
-example_class_: [x: int_, y: dbl_]
-{    ;;renew_(m x: int_, m y: dbl_): null_
-          print_("x $(x) y $(y)")
+#example_class: #[x: #int, y: #dbl]
+{    ;;renew(m x: #int, m y: #dbl): #null
+          print("x ${x} y ${y}")
 
-     # this `::` prefix is shorthand for `multiply_(m:, ...): dbl_`:
-     ::multiply_(z: dbl_): dbl_
+     # this `::` prefix is shorthand for `multiply(m:, ...): #dbl`:
+     ::multiply(z: #dbl): #dbl
           m x * m y * z
 }
 ```
 
-
 ```
-some_class_: [x: dbl_, y: dbl_, a; array_{str_}]
-some_class; some_class_(x: 1, y: 2.3, a: ["hello", "world"])
-print_(some_class::a)       # prints ["hello", "world"] with a readonly reference overload
-print_(some_class::a[1])    # prints "world"
-print_(some_class a[1])     # also prints "world", using ` ` (member access)
-some_class;;a[4] = "love"   # the fifth element is love.
-some_class::a[7] = "oops"   # COMPILE ERROR, `::` means the array should be readonly.
+#some_class: #[x: #dbl, y: #dbl, a; #array[#str]]
+some_class(x: 1, y: 2.3, a: ["hello", "world"]);
+print(some_class::a)          # prints ["hello", "world"] with a readonly reference overload
+print(some_class::a[1])       # prints "world"
+print(some_class a[1])        # also prints "world", using ` ` (member access)
+some_class;;a[4] = "love"     # the fifth element is love.
+some_class::a[7] = "oops"     # COMPILE ERROR, `::` means the array should be readonly.
 some_class;;a[7] = "no problem"
 
-nested_class; array_{some_class_}
+nested_class; #array[#some_class]
 nested_class[1] x = 1.234     # creates a default [0] and [1], sets [1]'s x to 1.234
-nested_class[3] a[4] = "oops" # creates a default [2] and [3] and
-                              # sets [3]'s a to ["", "", "", "", "oops"]
+nested_class[3] a[4] = "yay"  # creates a default [2] and [3] and
+                              # sets [3]'s a to ["", "", "", "", "yay"]
 ```
 
 For class methods, `;;` (`::`) selects the overload with a writable (readonly) class
 instance, respectively.  For example, the `array` class has overloads for sorting, (1) which
-does not change the instance but returns a sorted copy of the array (`::sort(): m`), and
-(2) one which sorts in place (`;;sort(): null`).  The ` ` (member access) operator will use
+does not change the instance but returns a sorted copy of the array (`::sort(): #o`), and
+(2) one which sorts in place (`;;sort(): #null`).  The ` ` (member access) operator will use
 `a:` if the LHS is a readonly variable or `a;` if the LHS is writable.  Some examples in code:
 
 ```
-# there are better ways to get a median, but just to showcase member access:
-get_median_slow_(array{int_}:): hm_{ok_: int_, er_: string_}
-     if array count_() == 0
-          return: er_("no elements in array, can't get median.")
+# there are much better algorithms to get a median, but just to showcase member access:
+get_median_slow(array[#int]:): #hm[#ok: #int, #er: #string]
+     if array count() == 0
+          return er("no elements in array, can't get median.")
      # make a copy of the array, but no longer allow access to it (via `@hide`):
-     SORTED_array: @hide array sort_()   # same as `array::sort_()` since `array` is readonly.
-     ok(SORTED_array[SORTED_array count_() // 2])
+     SORTED_array: @hide array sort()   # same as `array::sort()` since `array` is readonly.
+     ok(SORTED_array[SORTED_array count() // 2])
 
 # sorts the array and returns the median.
-get_median_slow_(array{int_};): hm_{ok_: int_, er_: string_}
-     if array count_() == 0
-          return: er_("no elements in array, can't get median.")
-     array sort_()   # same as `array;;sort_()` since `array` is writable.
-     ok_(array[array count_() // 2])
+get_median_slow(array[#int];): #hm[#ok: #int, #er: #string]
+     if array count() == 0
+          return er("no elements in array, can't get median.")
+     array sort()   # same as `array;;sort()` since `array` is writable.
+     ok(array[array count() // 2])
 ```
 
 Note that if the LHS is readonly, you will not be able to use a `;;` method.
@@ -2116,29 +2115,26 @@ similar operations.  This allows for operations like `++a[3]` meaning `++(a[3])`
 `--a b c[3]` equivalent to `--(((a;;b);;c)[3])`.  Member access binds stronger than exponentation
 so that operations like `a b[c]^3` mean `((a::b)[c])^3`.
 
-Note that `something_() nested_field` becomes `(something_())::nested_field` due to
+Note that `something() nested_field` becomes `(something())::nested_field` due to
 the function call having higher precedence, and is often the idiomatic way to request a
-specific overload via the return type/name.  You can also use destructuring if you want
-to keep a variable for multiple uses: `[nested_field]: something_()`.
+specific overload via the return type/name.  You can also use [destructuring](#destructuring)
+if you want to keep a variable for multiple uses: `[nested_field:] = something()`.
 
 ## prefix and postfix question marks `?`
 
 Generally speaking, if we want a variable `x` to be nullable, we use the postfix `?`
-operator when declaring `x`, and bind it to the variable itself, e.g., `x?: int_`.
+operator when declaring `x`, and bind it to the variable itself, e.g., `x?: #int`.
 
-TODO: i think i prefer `do_something_(x: ?my_value_for_x)` so it's more obviously
-different than `do_something_(x?: my_value_for_x)` when `my_value_for_x` is nullable.
-then `do_something_(;?x)` also makes sense as `do_something_(x; ?x)`.
-
-Prefix `?` can be used to short-circuit function evaluation if an argument is null.
-For a function like `do_something_(x?: int_): null_`, we can use `do_something_(?x: my_value_for_x)`
-to indicate that we don't want to call `do_something_` if `my_value_for_x` is null;
-we'll simply return `null`.  E.g., `do_something_(?x: my_value_for_x)` is equivalent
-to `if my_value_for_x == null {null} else {do_something_(x: my_value_for_x)}`.
-In case `x` is already in scope, we elide the the variable name via `do_something_(?x)`.
+Prefix `?` can be used on an argument to short-circuit function evaluation it is null,
+but should be paired with a postfix `?` on the function to make the intent more obvious.
+For a function like `do_something(x?: #int): #null`, we can use `do_something?(?x: my_value_for_x)`
+to indicate that we don't want to call `do_something` if `my_value_for_x` is null;
+we'll simply return `null`.  I.e., `do_something?(?x: my_value_for_x)` is equivalent
+to `if my_value_for_x is x: {do_something(x)} else {null}`.
+In case `x` is already in scope, we elide the the variable name via `do_something?(?x)`.
 It works similarly for writable reference (or temporary) arguments:
-`do_something_(x?; int_): null_` could be called like `do_something_(?x; my_value_for_x)`
-or `do_something(?;x)` if `x` is in scope.
+`do_something(x?; #int): #null` could be called like `do_something?(?x; my_value_for_x)`
+or `do_something?(?;x)` if `x` is in scope.
 
 There's also an infix `??` type which is a nullish or.
 `x y ?? z` will choose `x y` if it is non-null, otherwise `z`.
@@ -2148,17 +2144,17 @@ There's also an infix `??` type which is a nullish or.
 The operator `!` is always unary (except when combined with equals for not equals,
 e.g., `!=`).  It can act as a prefix operator "not", e.g., `!a`, pronounced "not A",
 or a postfix operator on a variable, e.g., `z!`, pronounced "Z mooted" (or "moot Z").  In the first
-example, prefix `!` calls the `!(m:): bool_` (or `::!(): bool_`) method defined on `a_`, which creates a
+example, prefix `!` calls the `!(m:): #bool` (or `::!(): #bool`) method defined on `#a`, which creates a
 temporary value of the boolean opposite of `a` without modifying `a`.  In the second
 case, it calls a built-in method on `z`, which moves the current data out of `z` into
-a temporary instance of whatever type `z` is (i.e., `z_`), and resets `z` to a blank/default state.
-The method would look like `::()!: m_` or `(m:)!: m_`, but again this is defined for you.
+a temporary instance of whatever type `z` is (i.e., `#z`), and resets `z` to a blank/default state.
+The method would look like `::()!: #o` or `(m:)!: #o`, but again this is defined for you.
 This is a "move and reset" operation, or "moot" for short.  Overloads for prefix `!`
 should follow the rule that, after e.g., `z!`, checking whether `z` evaluates to false,
 i.e., by `!z`, should return true.
 
 Note, it's easier to think about positive boolean actions sometimes than negatives,
-so we allow defining either `!!(m:): bool_` (i.e., `::!!(): bool_`) or `!(m:): bool_` on a class,
+so we allow defining either `!!(m:): #bool` (i.e., `::!!(): #bool`) or `!(m:): #bool` on a class,
 the former allowing you to cast a value, e.g., `a`, to its positive boolean form `!!a`, pronounced
 "not not A."  Note, you cannot define both `!` and `!!` overloads for a class, since
 that would make things like `!!!` ambiguous.
@@ -2167,7 +2163,7 @@ that would make things like `!!!` ambiguous.
 
 Note that exponentiation -- `^` and `**` which are equivalent --
 binds less strongly than function calls and member access.  So something like
-`a[b]^2` is equivalent to `(a[b])^2`, `fn_(x)^b` is equivalent to `(fn_(x))^b`,
+`a[b]^2` is equivalent to `(a[b])^2`, `fn(x)^b` is equivalent to `(fn(x))^b`,
 and `a b^3` is equivalent to `(a::b)^3`.
 
 ## bitshifts `<<` and `>>`
@@ -2195,7 +2191,7 @@ Thus `2 << 3^2 == 2 << (3^2) == 1024` and not `(2 << 3)^2 == 256`, etc.
 ## division and remainder operators: `/` `//` `%` `%%`
 
 The standard division operator, `/`, will promote integer operands to a rational return value.
-E.g., `dbl_(3/4) == 0.75` or `6/4 == rtnl_(3)/rtnl_(2)`.
+E.g., `dbl(3/4) == 0.75` or `6/4 == rtnl(3)/rtnl(2)`.
 
 The integer division operator, `//`, will return an integer, rounded towards zero, e.g.,`3//4 == 0`
 and `-3//4 == 0`.  Also, `5//4 == 1` and `-5//4 == -1`, and `12 // 3 == 4` as expected.
@@ -2209,10 +2205,10 @@ Mathematically, we use the relation `a % b == a - b * floor(a/b)`.
 The remainder operator, `%%`, has the property that `a %% b == a - b * (a // b)`;
 i.e., it is the remainder after integer division, and corresponds to the C/C++
 `%` operator.  The remainder operator, `%%`, differs from the modulus, `%`,
-when the operands have opposing signs.  E.g., `-3 % 7 == -3` while
-`-3 %% 7 == 4`.  Here's a table of more examples:
+when the operands have opposing signs.  E.g., `-3 % 7 == 4` while
+`-3 %% 7 == -3`.  Here's a table of more examples:
 
-|  `a`  |  `b`  | `floor_(a/b)` |  `a % b`  | `a // b`  | `a %% b`  |
+|  `a`  |  `b`  | `floor(a/b)`  |  `a % b`  | `a // b`  | `a %% b`  |
 |:-----:|:-----:|:-------------:|:---------:|:---------:|:---------:|
 |   1   |   2   |      0        |     1     |     0     |     1     |
 |  -1   |   2   |     -1        |     1     |     0     |    -1     |
@@ -2251,35 +2247,35 @@ If you are looking for bitwise `AND`, `OR`, and `XOR`, they are `&`, `|`, and `>
 The operators `and` and `or` act the same as JavaScript `&&` and `||`, as long as the
 left hand side is not nullable.  `xor` is an "exclusive or" operator.
 
-The `or` operation `x or y` has type `one_of_{x:, y:}` (for `x: x_` and `y: y_`).
+The `or` operation `x or y` has type `#one_of[x:, y:]` (for `x: #x` and `y: #y`).
 If `x` evaluates to truthy (i.e., `!!x == true`), then the return value of `x or y` will be `x`.
 Otherwise, the return value will be `y`.  Note in a conditional, e.g., `if x or y`, we'll always
-cast to boolean implicitly (i.e., `if bool_(x or y)` explicitly).
+cast to boolean implicitly (i.e., `if bool(x or y)` explicitly).
 
-Similarly, the `and` operation `x and y` also has type `one_of_{x:, y:}`.  If `x` is falsey,
+Similarly, the `and` operation `x and y` also has type `#one_of[x:, y:]`.  If `x` is falsey,
 then the return value will be `x`.  If `x` is truthy, the return value will be `y`.
 Again, in a conditional, we'll cast `x and y` to a boolean.
 
 If the LHS of the expression can take a nullable, then there is a slight modification.
-`x or y` will be `one_of_{x:, y:}?` and `x and y` will be `y_?`.
+`x or y` will be `#one_of[x:, y:]?` and `x and y` will be `#y?`.
 The result will be `null` if both (either) operands are falsey for `or` (`and`).
 
 ```
 non_null_or: x or y         # non_null_or: if x {x} else {y}
 non_null_and: x and y       # non_null_and: if !x {x} else {y}
 nullable_or?: x or y        # nullable_or?: if x {x} elif y {y} else {null}
-nullable_and?: x and y      # nullable_and?: if !!x and !!y {null} else {y}
+nullable_and?: x and y      # nullable_and?: if !!x and !!y {y} else {null}
 ```
 
 This makes things similar to the `xor` operator, but `xor` always requires a nullable LHS.
-The exclusive-or operation `x xor y` has type `one_of_{x:, y:}?`, and will return `null`
+The exclusive-or operation `x xor y` has type `#one_of[x:, y:]?`, and will return `null`
 if both `x` and `y` are truthy or if they are both falsey.  If just one of the operands
 is truthy, the result will be the truthy operand.  An example implementation:
 
 ```
-xor_(~x, ~y)?: one_of_{x:, y:}
-     x_is_true: bool_(x)     # `x_is_true: !!x` is also ok.
-     y_is_true: bool_(y)
+xor(~x:, ~y:)?: #one_of[x:, y:]
+     x_is_true: bool(x)  # `x_is_true: !!x` is also ok.
+     y_is_true: bool(y)
      if x_is_true
           if y_is_true {null} else {x}
      elif y_is_true
@@ -2292,7 +2288,7 @@ Thus `xor` will thus return a nullable value, unless you do an assert.
 
 ```
 nullable_xor?: x xor y
-non_null_xor: x xor y assert_() # will shortcircuit this block if `x xor y` is null
+non_null_xor: x xor y assert()     # will shortcircuit this block if `x xor y` is null
 ```
 
 ## reassignment operators
@@ -2307,8 +2303,8 @@ include `x -= 5`, `y &= 0x12`, etc.
 Swapping two variables is accomplished by something like `a <-> b`.
 Swap uses `<->` since `<=>` is reserved for a future spaceship operator
 (encompassing `<`, `<=`, `==`, `=>` and `>` in one).  As a function, swap
-would require mutable variables, e.g., `;;x_(SWAP_x;): null_`.
-If you define `swap` in this way for your custom class, it will be available
+would require mutable variables, e.g., `;;x(x;): #null`.
+If you define a method in this way for your custom class, it will be available
 via the shorthand notation `some_class x <-> 1234`.
 
 ## ergo operator
