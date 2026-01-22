@@ -2716,17 +2716,17 @@ don't need to specify its name.  We'll discuss that more in the
 
 ```
 # definition:
-v_(x: dbl_, y: dbl_): null_
+v(x: #dbl, y: #dbl): #null
 
 # example calls:
-v_(x: 5.4, y: 3)
-v_(y: 3, y: 5.4)
+v(x: 5.4, y: 3)
+v(y: 3, y: 5.4)
 
-# if you already have variables X and Y, you don't need to re-specify their names:
+# if you already have variables x and y, you don't need to re-specify their names:
 x: 5.4
 y: 3
-v_(x, y)     # equivalent to `v(x: x, y: y)` but the redundancy is not idiomatic.
-v_(y, x)     # equivalent
+v(x, y)   # equivalent to `v(x: x, y: y)` but the redundancy is not idiomatic.
+v(y, x)   # equivalent
 ```
 
 ### references
@@ -2735,15 +2735,15 @@ We can create references using [reference objects](#reference-objects) in the fo
 Note that you can use all the same methods on a reference as the original type.
 
 ```
-my_value; int_(1234567890)
-(my_ref; int_) = my_value
-# equivalent: `my_ref; (int;) = my_value`
-(my_readonly_ref: int_) = my_value
-# equivalent: `my_readonly_ref: (int:) = my_value`
+my_value; #int = 1234567890
+(my_ref; #int) = my_value
+# equivalent: `my_ref; #(int;) = my_value`
+(my_readonly_ref: #int) = my_value
+# equivalent: `my_readonly_ref: #(int:) = my_value`
 
-# NOTE: `my_value` and the `my_ref` reference need to be writable for this to work.
+# NOTE: the reference and underlying variable need to be writable here:
 my_ref = 12345
-# my_readonly_ref = 123 # COMPILE ERROR!
+# `my_readonly_ref` = 123 # COMPILE ERROR!
 
 # This is true; `my_value` was updated via the reference `my_ref`
 my_value == 12345
@@ -2756,48 +2756,51 @@ print(my_readonly_ref * 23)
 
 Unlike in C++, there's also an easy way to change the reference to point to
 another instance.  This does require a bit more syntax if you are pointing
-to a readonly value like `(referent_type:)`, since you'll need to declare it
+to a readonly value like `#(referent_type:)`, since you'll need to declare it
 in a way that lets you modify the reference itself.
 
 ```
-my_value1: int_(1234)
-my_value2: int_(765)
+my_value1: #int = 1234
+my_value2: #int = 765
 # define `my_ref` as a mutable pointer to an immutable variable:
-my_ref; (int:) = my_value1
+my_ref; #(int:) = my_value1
 # that way we can update the pointer like this:
 (my_ref) = my_value2
 ```
 
-Note that by default, references like `(my_ref; int_) = some_reference_()`
-will be reassignable, i.e., defined like `my_ref; (int;) = some_reference_()`,
-and references like `(my_ref: int_) = some_reference_()` will not be reassignable,
-i.e., defined like `my_ref: (int:) = some_reference_()`.  If you want a readonly-
-referent reference to be reassignable, use `my_ref; (int:) = ...`.
+Note that by default, references like `(my_ref; #int) = some_reference()`
+will be reassignable, i.e., defined like `my_ref; #(int;) = some_reference()`,
+and references like `(my_ref: #int) = some_reference()` will not be reassignable,
+i.e., defined like `my_ref: #(int:) = some_reference()`.  If you want a readonly-
+referent reference to be reassignable, use `my_ref; #(int:) = ...` as seen above.
 
 You can grab a few references at a time using [destructuring](#destructuring)
 notation like this:
 
 ```
-ref3; (str:) = some_ref_()
+ref3; #(str:) = some_ref()
 # this declares+defines `ref1` and `ref2`, and reassigns `ref3`:
-(ref1;, ref2:, ref3) = some_function_that_returns_refs_()
+(ref1;, ref2:, ref3) = some_function_that_returns_refs()
 
 # e.g., with function signature:
-some_function_that_returns_refs_(): (ref2; int_, ref2: dbl_, ref3; str_)
+some_function_that_returns_refs(): #(ref1; #int, ref2: #dbl, ref3; #str)
 ```
 
 #### reference objects
 
-TODO: we probably need a borrow checker (like Rust):
+TODO: we probably need a borrow checker (like Rust).
+we're noting that `result` is borrowed immutably via `non_null`,
+so while `non_null` is in scope `result` should not be modified.
 
 ```
-result?; some_nullable_result_()
+result?; some_nullable_result()
 if result is non_null:
-     print_(non_null)
-     result = some_other_function_possibly_null_()
+     print(non_null)
+     result = some_other_function_possibly_null()
      # this could be undefined behavior if `non_null` is a reference to the
-     # nonnull part of `result` but `result` became null with `some_other_function_possibly_null_()`
-     print_(non_null)
+     # non-null part of `result` but `result` became null with
+     # `some_other_function_possibly_null()`
+     print(non_null)
 ```
 
 Alternatively, we pass around "full references" whenever we can't determine that
@@ -2809,27 +2812,27 @@ above example can be checked by the compiler, but if `result` was itself a refer
 path then we'd need to recheck any dereferences of `non_null`.
 
 In oh-lang, parentheses can be used to define reference objects, both as types
-and instances.  As a type, `(x: dbl_, y; int_, z. str_)` differs from the object
-type `[x: dbl_, y; int_, z. str_]`.  When instantiated, reference objects with
+and instances.  As a type, `#(x: #dbl, y; #int, z. #str)` differs from the object
+type `#[x: #dbl, y; #int, z. #str]`.  When instantiated, reference objects with
 `;` and `:` fields contain references to variables; objects get their own copies.
 
 Because they contain references, reference object instances cannot outlive the lifetime
 of the variables they contain.
 
 ```
-a_: (x: dbl_, y; int_, z. str_)
+#a: #(x: #dbl, y; #int, z. #str)
 
 # This is OK:
 x: 3.0
 y; 123
-a: (x, y, z. "hello")    # `Z` is passed by value, so it's not a reference.
+a: (x, y, z. "hello")    # `z` is passed by value, so it's not a reference.
 a y *= 37    # OK
 
 # This is not OK:
-return_a_(q: int_): a_
+return_a(q: #int): #a
      # x and y are defined locally here, and will be descoped at the
      # end of this function call.
-     x: (q dbl_() ?? nan) * 4.567
+     x: (q dbl() ?? nan) * 4.567
      y; q * 3
      # ERROR! we can't return x, y as references here.  z is fine.
      (x, y, z. "world")
@@ -2841,7 +2844,7 @@ For example:
 
 ```
 x: 4.56
-return_a_(q; int_): (x: dbl_, y; int_, z. str_)
+return_a(q; #int): #(x: #dbl, y; #int, z. #str)
      q *= 37
      # x has a lifetime that outlives this function.
      # y has the lifetime of the passed-in variable, which exceeds the return type.
@@ -2854,33 +2857,33 @@ references, but need nesting to be the most clear.  For example:
 
 ```
 # function declaration
-copy_(from: (pixels:, rectangle.), to: (pixels;, rectangle.): null_
+copy(from: #(pixels:, rectangle.), to: #(pixels;, rectangle.): #null
 
 # function usage
-SOURCE_pixels: pixels_() { #( build image )# }
-DESTINATION_pixels; pixels_()
-size: rectangle_(width: 10, height: 7)
+SOURCE_pixels: pixels()@ { #( build image )# }
+DESTINATION_pixels; #pixels
+size: rectangle(width: 10, height: 7)
 
-copy_
+copy
 (    from: 
      (    SOURCE_pixels
-          size + vector2_(x: 3, y: 4)
+          size + vector2(x: 3, y: 4)
      )
      to:
      (    DESTINATION_pixels
-          size + vector2_(x: 9, y: 8)
+          size + vector2(x: 9, y: 8)
      )
 )
 ```
 
 We can create deeply nested reference objects by adding valid identifiers with consecutive `:`/`;`/`.`.
 E.g., `(x: y: 3)` is the same as `(x: (y: 3))`.  This can be useful for a function signature
-like `run_(after: duration_, fn_(): ~t_): t_`.  `duration_` is a built-in type that can be built
+like `run(after: #duration, fn(): ~#t): #t`.  `#duration` is a built-in type that can be built
 out of units of time like `seconds`, `minutes`, `hours`, etc., so we can do something like
-`run_(after: seconds: 3, {print_("hello world!")})`, which will automatically pass
-`(seconds: 3)` into the `duration_` constructor.  Of course, if you need multiple units of time,
-you'd use `run_(after: (seconds: 6, minutes: 1), {print_("hello world!")})` or to be explicit
-you'd use `run_(after: duration_(seconds: 6, minutes: 1), {print_("hello world!")})`.
+`run(after: seconds: 3, {print("hello world!")})`, which will automatically pass
+`(seconds: 3)` into the `duration_` constructor.  Of course, if you need multiple units
+of time, you'd use `run(after: (seconds: 6, minutes: 1), {print("hello world!")})` or to be
+explicit you'd use `run(after: duration(seconds: 6, minutes: 1), {print("hello world!")})`.
 
 
 #### reference lifetimes
