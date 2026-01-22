@@ -2892,10 +2892,10 @@ References are not allowed to escape the block in which their referent is define
 For example, this is illegal:
 
 ```
-original_referent: int_ = 3
-my_reference: (int:) = original_referent
+original_referent: #int = 3
+my_reference: #(int:) = original_referent
 if some_condition
-{    nested_referent: int_ = 5
+{    nested_referent: #int = 5
      # COMPILE ERROR: `nested_referent` doesn't live as long as `my_reference`
      (my_reference) = nested_referent
 }
@@ -2905,15 +2905,15 @@ However, since function arguments can be references (e.g., if they are defined w
 `:` or `;`), references that use these function arguments can escape the function block.
 
 ```
-fifth_element_(array{int_};): (int;)
+fifth_element(array[#int];): #(int;)
      # this is OK because `array` is a mutable reference
      # to an array that already exists outside of this scope.
      # NOTE: this actually returns a pointer to the array with an offset (i.e., 4)
      #       in case the array reallocates, etc.
-     (;array[4])
+     array[4]
 
-my_array; array_{int_}(1, 2, 3, 4, 5, 6)
-(fifth;) = fifth_element_(;my_array)
+my_array; #array[#int](1, 2, 3, 4, 5, 6)
+(fifth;) = fifth_element(;my_array)
 fifth += 100
 my_array == [1, 2, 3, 4, 105, 6]    # should be true
 ```
@@ -2921,36 +2921,37 @@ my_array == [1, 2, 3, 4, 105, 6]    # should be true
 #### refer function
 
 If you need some special logic before returning a reference, e.g., to create a default,
-you can use the `refer_` function with the following signature: `refer_(~r;, fn_(r;): (~t;)`
+you can use the `refer` function with the following signature:
+`refer(~r;, fn(r;): #(~t;)): #(t;)`
 and similarly for a constant reference (swap `;` with `:` everywhere).  There's also a
 key-like interface (e.g., for arrays or lots):
 
 ```
 # if `at` is passed as a temporary, it should be easily copyable.
-refer_(~r;:, at` ~k_, fn_(r;:, k:): (~t;:)): (t;:)`
+refer(~r;:, at` ~#k, fn(r;:, at`): #(~t;:)): #(t;:)`
 ```
 
-You can also create a reference via getters and setters using the `refer_` function, which
-has the following signature: `refer_(~r;, GETTER_fn_(r:): ~t_, SETTER_fn_(r;, t.): null_): (t;)`.
-It extends a base reference to `r` to provide a reference to a `t_` instance.
+You can also create a reference via getters and setters using the `refer` function, which
+has the following signature: `refer(~r;, GETTER_fn(r:): ~#t, SETTER_fn(r;, t.): #null): #(t;)`.
+It extends a base reference to `r` to provide a reference to a `#t` instance.
 There's also a key-like interface (e.g., for arrays or lots):
 
 ```
 # if `at` is passed as a temporary, it should be easily copyable.
-refer_(~r;:, at` ~k_, GETTER_fn_(r:, k:): ~t_, SETTER_fn_(r;:, k:, t.): null_): (t;)`
+refer(~r;:, at` ~#k, GETTER_fn(r:, k:): ~#t, SETTER_fn(r;:, k:, t.): #null): #(t;)`
 ```
 
-When calling `refer_`, we want the getters and setters to be known at compile time,
+When calling `refer`, we want the getters and setters to be known at compile time,
 so that we can elide the reference object creation when possible.
 
 ```
 my_array; [1, 2, 3, 4]
 
-# here we can elide the `refer_` that is inside the method
-# `array_{int_};;[index]: (int;)`
+# here we can elide the `refer` that is inside the method
+# `#array[#int];;[index:]: #(int;)`
 my_array[0] = 0     # my_array == [0, 2, 3, 4]
 
-# here we cannot elide `refer_`
+# here we cannot elide `refer`
 (my_reference;) = my_array[2]
 my_reference += 3   # my_array == [0, 2, 6, 4]
 print(my_reference) # prints `6`
