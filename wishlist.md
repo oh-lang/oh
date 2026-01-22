@@ -2310,17 +2310,17 @@ via the shorthand notation `some_class x <-> 1234`.
 ## ergo operator
 
 `->` is called the "ergo operator" and is used in conditional logic for
-more fine-grained flow control to define a `then_` instance which can
-break out of loops in more interesting (possibly *less readable*) ways.
+more fine-grained flow control to define a `#then` instance which can
+break out of loops in more interesting (likely *less readable*) ways.
 Use sparingly.
 
 ```
 x: if some_condition -> then:
      if other_condition
-          then exit_(5)
-     then exit_(7)
+          then exit(5)
+     then exit(7)
 else -> then:
-     then exit_(10)
+     then exit(10)
 
 # the above is equivalent to the following:
 x: if some_condition { if other_condition {5} else {7} } else {10}
@@ -2339,11 +2339,11 @@ necessarily deeply constant.  That will be discussed more in
 
 ```
 # declaring and setting a non-reassignable variable that holds a big integer
-y: int_ = 5
-# also equivalent: `y: 5` or `y: int_(5)`, or `y: 5_int`
+y: #int = 5
+# also equivalent: `y: 5` or `y: int(5)`, or `y: 5_int`
 
 # using the variable:
-print_(y * 30)
+print(y * 30)
 
 y = 123     # COMPILER ERROR, y is readonly and thus non-reassignable.
 y += 3      # COMPILER ERROR, y is readonly and here deeply constant.
@@ -2354,7 +2354,7 @@ after their first initialization, but they must be declared with a `;` symbol.
 
 ```
 # declaring a reassignable variable that holds a big integer
-x; int_
+x; #int
 
 # X is default-initialized to 0 if not specified.
 x += 5      # now x == 5 is true.
@@ -2362,7 +2362,7 @@ x += 5      # now x == 5 is true.
 # you can also define the value inline as well:
 w; 7
 # also equivalent, if you want to be explicit about the type.
-w; int_ = 7
+w; #int = 7
 ```
 
 Note that we use `;` and `:` as if it were an annotation on the variable name (rather
@@ -2374,13 +2374,13 @@ come up with a more sane approach than C++ and JavaScript's `const`.
 ## nullable variable types
 
 To make it easy to indicate when a variable can be nullable, we reserve the question mark
-symbol, `?`, placed just after the variable name like `x?: int_`, and `?` is required
+symbol, `?`, placed just after the variable name like `x?: #int`, and `?` is required
 in order to give **null visibility** to any variable that could be nullable.  Even when
 defining a variable without a type, the `?` symbol is required if the variable could be
-nullable, e.g., `x?: nullable_result_(...)`, again for null visibility.  The default
-value for a nullable type is `null`.  For generics where `null_` might be a valid value
+nullable, e.g., `x?: nullable_result(...)`, again for null visibility.  The default
+value for a nullable type is `null`.  For generics where `#null` might be a valid value
 for a template type, make sure to only include your nullable variable if necessary, e.g.,
-`x{require: template_type_ is not_{null_}}: of_`.
+`x[require: #of]: #of`, which is short for `x[require: #of is #not[#null]]: #of`.
 
 One of the cool features of oh-lang is that we don't require the programmer to check for
 null on a nullable type before using it.  The executable will automatically check for null
@@ -2390,30 +2390,30 @@ will be returned instead (and the method will not be called).  But because of nu
 this will be clear to the programmer.
 
 ```
-# define a class with a method called `some_method_`:
-some_class_: []{ ::some_method_(): int }
+# define a class with a method called `some_method`:
+#some_class: { ::some_method(): #int {5} }
 
-nullable?; some_class_ = null
+nullable?; #some_class = null
 
-value?: nullable some_method_()    # `value` has type `int_?` now,
+value?: nullable some_method()     # `value` has type `#int?` now,
                                    # so it needs to be defined with `?`
 
 # use `is` coercion to determine if a class is not null.
 if nullable is some_class:
-     non_null_value: some_class some_method_()   # `non_null_value` here must be `int_`.
+     non_null_value: some_class some_method()     # `non_null_value` here must be `#int`.
 ```
 
 See the [`is` operator](#is-operator) for more details.
 
 It is not allowed to implicitly cast from a nullable type to a non-nullable type,
-e.g., `value: nullable some_method_()`.  The compiler will require that we define
+e.g., `value: nullable some_method()`.  The compiler will require that we define
 `value` with `?:`, or that we explicitly cast via whatever ending type we desire,
-e.g., `value: int_(nullable some_method_()?)`.  Note that `whatever_type_(null)` is
-the same as `whatever_type_()`, i.e., the default constructor, and number types
-(e.g., `int_()` or `flt_()`)  default to 0, but we still need to acknowledge as
+e.g., `value: int(nullable some_method()?)`.  Note that `whatever_type(null)` is
+the same as `whatever_type()`, i.e., the default constructor, and number types
+(e.g., `int()` or `flt()`)  default to 0, but we still need to acknowledge as
 the programmer that the argument could be null (for null visibility), so we either
-need `value: int_(from?: nullable some_method_()?)` or perhaps more idiomatically,
-`value: nullable some_method_() ?? 0`.
+need `value: int(nullable some_method()?)` or perhaps more idiomatically,
+`value: nullable some_method() ?? 0`.
 
 [Nullable functions](#nullable-functions)) do not exist per se, but can be constructed
 via a data wrapper.
@@ -2421,62 +2421,63 @@ via a data wrapper.
 ## nullable classes
 
 We will allow defining a nullable type by taking a type and specifying what value
-is null on it.  For example, the symmetric type `s8_` defines null as `-128` like this:
+is null on it.  For example, the symmetric type `#s8` defines null as `-128` like this:
 
 ```
-s8_?: s8_
+#s8?: #s8
 {    null: -128_i8
-     ::is_(null_): m == -128_i8
+     ::is(#null): #bool
+          m == -128_i8
 }
 ```
 
-Similarly, `f32_?` and `f64_?` indicate that `nan` is null via `{null: nan, ::is_(null_): is_nan_(m)}`,
-so that you can define e.g. a nullable `f32_` in exactly 32 bits.  To get this functionality,
-you must declare your variable as type `s8_?` or `f32_?`, so that the nullable checks
+Similarly, `#f32?` and `#f64?` indicate that `nan` is null via `{null: nan, ::is(#null): is_nan(m)}`,
+so that you can define e.g. a nullable `#f32` in exactly 32 bits.  To get this functionality,
+you must declare your variable as type `#s8?` or `#f32?`, so that the nullable checks
 kick in.  Note that while we offer a way to create a null via `f32?: null`, we always
-convert equality checks like `f32 == null` into `f32 is_(null_)` due to the fact that
-`::is_(null_)` can handle more edge cases (like `nan`, which is not equal to itself).
+convert equality checks like `f32 == null` into `f32 is(#null)` due to the fact that
+`::is(#null)` can handle more edge cases (like `nan`, which is not equal to itself).
 
 If you are defining a class and want to also declare the nullable at the same time, you
 can do one of the following:
 
 ```
-my_class_: [@private some_state: int_]
-{    ;;renew_(m some_state: int_): {}
+#my_class: [@private some_state: #int]
+{    ;;renew(m some_state: #int): {}
 
-     ::normal_method_(): int_
+     ::normal_method(): #int
           m some_state + 3
 
      # the nullable definition, inside a class:
-     ?: m_
-     {    null: [some_state: -1]
-          ::is_null_(): m some_state < 0
+     ?: #m
+     {    null: #m = [some_state: -1]
+          ::is_null(): m some_state < 0
 
-          ::additional_null_method_(): int_
-               if m is_null_() {0}
+          ::additional_null_method(): #int
+               if m is_null() {0}
                else {m some_state * 5}
      }
 }
 
 # nullable definition, outside a class (but same file).
 # both internal/external definitions aren't required of course.
-my_class_?: my_class_
-{    null: [some_state: -1]
+#my_class?: #my_class
+{    null: #m = [some_state: -1]
      ::is_null_(): m some_state < 0
-     ::additional_null_method_(): int_
-          if m is_null_() {0}
+     ::additional_null_method(): #int
+          if m is_null() {0}
           else {m some_state * 5}
 }
 ```
 
-Note that any `one_of_` that can be null gets nullable methods.  They are defined globally
+Note that any `#one_of` that can be null gets nullable methods.  They are defined globally
 since we don't want to make users extend from a base nullable class.
 
 ```
 # nullish or.
 # `nullable ?? x` to return `x` if `nullable` is null,
 # otherwise the non-null value in `nullable`.
-nullish_or_(~a_0?., a_1.): a_
+nullish_or(~a_0?., a_1.): #a
      what a_0
           non_null: {non_null}
           null {a_1}
@@ -2484,7 +2485,7 @@ nullish_or_(~a_0?., a_1.): a_
 # boolean or.
 # `nullable || x` to return `x` if `nullable` is null or falsey,
 # otherwise the non-null truthy value in `nullable`.
-or_(~a_0?., a_1.): a_
+or(~a_0?., a_1.): #a
      what a_0
           non_null:
                if non_null
@@ -2498,7 +2499,7 @@ We'll support more complicated pattern matching (like in Rust) using
 the `where` operator.  The shorter version of the above `what` statement is:
 
 ```
-or_(~a_0?., a_1.): a_
+or(~a_0?., a_1.): #a
      what a_0
           NON_NULL_a: where !!NON_NULL_a
                NON_NULL_a
