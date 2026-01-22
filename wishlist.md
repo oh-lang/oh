@@ -2516,7 +2516,7 @@ You can declare an object type inline with nested fields.  The nested fields def
 with `:` are readonly, and `;` are writable.
 
 ```
-vector; [x: dbl_, y: dbl_, z: dbl_] = [x: 4, y: 3, z: 1.5]
+vector; #[x: #dbl, y: #dbl, z: #dbl] = [x: 4, y: 3, z: 1.5]
 vector x += 4   # COMPILER ERROR, field `x` of object is readonly 
 
 # note however, as defined, vector is reassignable since it was defined with `;`:
@@ -2527,7 +2527,7 @@ vector z == 0   # should be true.
 # to make an object variable readonly, use : when defining:
 vector2: [x: 3.75, y: 3.25]
 # or you can use `:` with an explicit type specifier and then `=`:
-vector2: [x: dbl_, y: dbl_] = [x: 3.75, y: 3.25]
+vector2: #[x: #dbl, y: #dbl] = [x: 3.75, y: 3.25]
 # then these operations are invalid:
 vector2 x += 3          # COMPILER ERROR, variable is readonly, field cannot be modified
 vector2 = [x: 1, y: 2]  # COMPILER ERROR, variable is readonly, cannot be reassigned
@@ -2537,13 +2537,13 @@ You can define a type/interface for objects you use multiple times.
 
 ```
 # a plain-old-data class with 3 non-reassignable fields, x, y, z:
-vector3_: [x: dbl_, y: dbl_, z: dbl_]
+#vector3: #[x: #dbl, y: #dbl, z: #dbl]
 
-# you can use `vector3_` now like any other type, e.g.:
-vector3: vector3_(x: 5, y: 10)
+# you can use `#vector3` now like any other type, e.g.:
+vector3(x: 5, y: 10):    # equivalent to `vector3: vector3(x: 5, y: 10)`
 ```
 
-We also allow type definitions with writable fields, e.g. `[x; int_, y; dbl_]`.
+We also allow type definitions with writable fields, e.g. `[x; #int, y; #dbl]`.
 Depending on how the variable is defined, however, you may not be able to change
 the fields once they are set.  If you define the variable with `;`, then you
 can reassign the variable and thus modify the writable fields.  But if you define the
@@ -2554,21 +2554,21 @@ effectively change any internal readonly fields, but only in the constructor.
 
 ```
 # mix_match has one writable field and one readonly field:
-mix_match_: [wr; dbl_, ro: dbl_]
+#mix_match: #[wr; #dbl, ro: #dbl]
 
 # when defined with `;`, the object `mutable_mix` is writable: mutable and reassignable.
-mutable_mix; mix_match_ = [wr: 3, ro: 4]
-mutable_mix = mix_match_(wr: 6, ro: 3)  # OK, mutable_mix is writable and thus reassignable
-mutable_mix renew_(wr: 100, ro: 300)    # OK, will update `ro` to 300 and `wr` to 100
+mutable_mix; #mix_match = [wr: 3, ro: 4]
+mutable_mix = mix_match(wr: 6, ro: 3)   # OK, mutable_mix is writable and thus reassignable
+mutable_mix renew(wr: 100, ro: 300)     # OK, will update `ro` to 300 and `wr` to 100
 mutable_mix wr += 4                     # OK, mutable_mix is writable and this field is writable
 mutable_mix ro -= 1                     # COMPILE ERROR, mutable_mix is writable but this field is readonly.
-                                                  # if you want to modify the `ro` field, you need to reassign
-                                                  # the variable completely or call `renew_`.
+                                        #    if you want to modify the `ro` field, you need to reassign
+                                        #    the variable completely or call `renew`.
 
 # when defined with `:`, the object is readonly, so its fields cannot be changed:
-readonly_mix: mix_match_ = [wr: 5, ro: 3]
-readonly_mix = mix_match_(wr: 6, ro: 4) # COMPILE ERROR, readonly_mix is readonly, thus non-reassignable
-readonly_mix renew_(wr: 7, ro: 5)       # COMPILE ERROR, readonly_mix is readonly, thus non-renewable
+readonly_mix: #mix_match = [wr: 5, ro: 3]
+readonly_mix = mix_match(wr: 6, ro: 4)  # COMPILE ERROR, readonly_mix is readonly, thus non-reassignable
+readonly_mix renew(wr: 7, ro: 5)        # COMPILE ERROR, readonly_mix is readonly, thus non-renewable
 readonly_mix wr += 4                    # COMPILE ERROR, readonly_mix is readonly
 readonly_mix ro -= 1                    # COMPILE ERROR, readonly_mix is readonly
 ```
@@ -2579,7 +2579,7 @@ inside of classes.  In C++, using `const` on a field type bars reassignment of t
 In oh-lang, readonly variables are not always deeply constant.  And in the case of readonly class
 instance fields, readonly variables are set based on the constructor and shouldn't be modified
 afterwards by other methods... except for the constructor if it's called again (i.e., via
-`renew_`ing the instance or reassignment).
+`renew`ing the instance or reassignment).
 
 ### automatic deep nesting
 
