@@ -2594,18 +2594,18 @@ with the `@lock` annotation, if desired.  Also note that the variable may not be
 e.g., if lambdas are called which modify it, but you will not be able to explicitly modify it.
 
 ```
-x; int_ = 4 # defined as writable and reassignable
+x; #int = 4    # defined as writable and reassignable
 
 if some_condition
-     @lock x = 7 # locks x after assigning it to the value of 7.
-                    # For the remainder of this indented block, you can use x but not reassign it.
-                    # You also can't use writable, i.e., non-const, methods on x.
+     @lock x = 7    # locks x after assigning it to the value of 7.
+                    # for the remainder of this indented block, you can use x but not reassign it.
+                    # you also can't use writable, i.e., non-const, methods on x.
 else
-     @lock x # lock x to whatever value it was for this block.
-               # You can still use x but not reassign/mutate it.
+     @lock x   # lock x to whatever value it was for this block.
+               # you can still use x but not reassign/mutate it.
 
-print_(x)   # will either be 7 (if some_condition was true) or 4 (if !some_condition)
-x += 5      # can modify x back in this block; there are no constraints here.
+print(x)       # will either be 7 (if some_condition was true) or 4 (if !some_condition)
+x += 5         # can modify x back in this block; there are no constraints here.
 ```
 
 ## hiding variables
@@ -2616,23 +2616,24 @@ new statements/functions.  `@hide` has similar behavior to the `@lock` annotatio
 you can use the variable one last time with the annotation, if desired.
 
 ```
-date_string; str_("2023-01-01")
+date_string; #str = "2023-01-01"
 
 # after this line, `date_string` can't be accessed anymore.
-date: date_(@hide date_string)
+date(@hide date_string): # equivalent to `date: date(@hide date_string)`
 
 # note in some circumstances you may also want to include `!` to avoid copying the variable,
 # if the underlying class makes use of that same type variable internally, e.g.:
-date: date_(@hide date_string!)
+date(@hide date_string!):
 # see discussion on `moot` for more information.
 ```
 
-In fact, hiding variables make it possible to shadow identifiers; i.e.,
+In fact, hiding variables makes it possible to shadow identifiers; i.e.,
 for variable renaming.  See the following example:
 
 ```
-do_something_(date: str_("2023-01-01")):
-     date: date_(@hide date!)
+do_something(date: #str = "2023-01-01"):
+     date(@hide date!):
+     ... # do something with `date` which is now of the `#date` type.
 ```
 
 # functions
