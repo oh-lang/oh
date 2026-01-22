@@ -2660,44 +2660,48 @@ the_fn_call
 )
 ```
 
-Functions are named using `function_case_` identifiers.  The syntax to declare
-a function is `function_case_name_(function_arguments...): return_type_`, but if
-you are also defining the function the `return_type_` is optional (but generally
+Functions are named using `function_case` identifiers.  The syntax to declare
+a function is `function_case_name(function_arguments...): #return_type`, but if
+you are also defining the function the `#return_type` is optional (but generally
 recommended for multiline definitions).  Defining the function can occur inline
 with `:` or over multiple lines using an indented block.
 
 ```
 # declaring a function with no arguments that returns a big integer
-v_(): int_
+# (no implementation is specified.)
+v(): #int
 
 # setting/defining/initializing the function:
-v_(): int_
+v(): #int
      # `return` is optional for the last line in a block.
      # e.g., the following could have been `return 600`.
      600
 
 # inline definition
-v_(): 600
+v(): 600
 
 # inline, but with explicit type
-v_(): int_(600)
+v(): int(600)
 
-# function with X,Y double-precision float arguments that returns nothing
-v_(x: dbl_, y: dbl_): null_
-     print_("x = $(x), y = $(y), atan_(y, x) = $(\\math atan_(x, y))")
+# function with x,y double-precision float arguments that returns nothing
+v(x: #dbl, y: #dbl): #null
+     print("x = ${x}, y = ${y}, atan(y, x) = ${\\math atan(x, y)}")
+     # NOTE: this will print `(x: ..., y: ..., atan: ...)` which may be desired:
+     # `print("$(x, y, \\math atan(x, y))")`
 
 # Note that it is also ok to use parentheses around a function definition,
 # but you should use braces `{}`.
-excite_(times: int_): str_
+excite(times: #int): #str
 {    "hi!" * times
 }
 
 # You can define a multi-statement function in one line like this,
 # but this is not normally recommended.
-oh_(really; dbl_): dbl_ { really *= 2.5, return: 50 + really }
+oh(really; #dbl): #dbl { really *= 2.5, return 50 + really }
 ```
 
-Note that we disallow the inverted syntax of `function_name_: return_type_(...args)`
+TODO: maybe a discussion on `function_name: #fn(args.): #return_type` being ok.
+Note that we disallow the inverted syntax of `function_name: #return_type(...args)`
 because this looks like declaring a type (e.g., no parentheses on the left hand side)
 and the right hand side looks like how we call a function and get an instance (not a type).
 See [returning a type](#returning-a-type) for how we'd return a type from a function.
