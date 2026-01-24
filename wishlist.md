@@ -2463,7 +2463,7 @@ can do one of the following:
 # both internal/external definitions aren't required of course.
 #my_class?: #my_class
 {    null: #m = [some_state: -1]
-     ::is_null_(): m some_state < 0
+     ::is_null(): m some_state < 0
      ::additional_null_method(): #int
           if m is_null() {0}
           else {m some_state * 5}
@@ -2881,7 +2881,7 @@ E.g., `(x: y: 3)` is the same as `(x: (y: 3))`.  This can be useful for a functi
 like `run(after: #duration, fn(): ~#t): #t`.  `#duration` is a built-in type that can be built
 out of units of time like `seconds`, `minutes`, `hours`, etc., so we can do something like
 `run(after: seconds: 3, {print("hello world!")})`, which will automatically pass
-`(seconds: 3)` into the `duration_` constructor.  Of course, if you need multiple units
+`(seconds: 3)` into the `duration` constructor.  Of course, if you need multiple units
 of time, you'd use `run(after: (seconds: 6, minutes: 1), {print("hello world!")})` or to be
 explicit you'd use `run(after: duration(seconds: 6, minutes: 1), {print("hello world!")})`.
 
@@ -2961,64 +2961,63 @@ print(my_reference) # prints `6`
 
 For functions with one argument (per type) where the variable name doesn't matter,
 you can use default-named variables.  For standard ASCII identifiers, the default-name identifier
-is just the `variable_case` version of the `type_case_` type (i.e., remove the trailing `_`).
+is just the `variable_case` version of the `#type_case` type (i.e., remove the prefix `#`).
 
 ```
-# this function declaration is equivalent to `f_(int: int_): int_`:
-f_(int:): int_
-     int + 5
+# this function declaration is equivalent to `f(int: #int): #str`:
+f(int:): #str
+     str(int) * int
 
 z: 3
-f_(z)                   # ok
-f_(4.3 floor_() int_()) # ok
-f_(5)                   # ok
-f_(int: 7)              # ok but overly verbose
+f(z)           # ok
+f(4.3 floor()) # ok
+f(5)           # ok
+f(int: 7)      # ok but overly verbose
 ```
 
 If passing functions as an argument where the function name doesn't matter,
-there are actually a few options: `a_`, `an_`, `fn_`, and `do_`.
-We recommend `a_` and `an_` for `map`-like operations with a single argument,
-choosing `an_` if the argument name starts with a vowel sound (and `a_` otherwise),
-and `do_` for multi-argument functions.  We keep `fn_` around
-mostly to make it easy for developers new to the language.  Note that if
-any functions are defined, including default named functions, no variables
-can shadow their `variable_case` form.  And vice versa.
+there are actually a few options: `a`, `an`, `fn`, and `do`.
+We recommend `a` and `an` for `map`-like operations with a single argument,
+choosing `an` if the argument name starts with a vowel sound (and `a` otherwise),
+and `do` for multi-argument functions.  We keep `fn` around for familiarity.
 
 ```
 # declaring a function that takes a lambda, note the default name.
-q_(fn_(): bool_): null_
+q(fn(): #bool): #null
 
 # defining a function that takes a lambda.
-q_(fn_(): bool_): null_
-     if fn_()
-          print_("function returned true!")
+q(fn(): #bool): #null
+     if fn()
+          print("function returned true!")
      else
-          print_("function returned false!")
+          print("function returned false!")
 
-q_
-(    name_it_what_you_want_(): true
-)   # should print "function returned true!"
+q
+(    name_it_what_you_want(): true
+)    # should print "function returned true!"
 
 # or you can create a default-named function yourself:
-q_
-(    fn_(): bool_
-          random_() > 0.5
+q
+(    fn(): #bool
+          random() > 0.5
 )   # will print one of the above due to randomness.
-# equivalent to `q_(fn_(): random_() > 0.5)` or `q_({random_() > 0.5})`
+# equivalent to `q(fn(): random() > 0.5)` or `q(${random() > 0.5})`
 
 # defining a lambda usually requires a name, feel free to use a default:
-q_(do_(): true)
+q(do(): true)
 # or you can use this notation, without the name:
-q_({true})
+q(${true})
+# or even shorter:
+q$(true)
 
 # or you can do multiline:
-x; bool_
-q_
-(    fn_():
+x; #bool
+q
+(    fn():
           x
 )
-# equivalent to `q_(fn_(): {x})`
-# also equivalent to `q_({x})`
+# equivalent to `q(fn(): {x})`
+# also equivalent to `q(${x})`
 ```
 
 ### the name of a called function in a reference object
