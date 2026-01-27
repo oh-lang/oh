@@ -29,9 +29,9 @@ like `The_array` into `Better_name_array`.  (3) Using hashtags instead of Pascal
 for types makes internationalization not dependent on unicode parsing; we can immediately
 determine whether something is a type if it has prefix `#`.
 
-For the remainder of this document, we'll use `variable_case`, `function_case`,
+For the remainder of this document, we'll use `variable_case`, `function_case()`,
 and `#type_case`; without context, the former two are indistinguishable, but in
-practice we can distinguish `variable_case` and `function_case` based on whether
+practice we can distinguish `variable_case` and `function_case()` based on whether
 there are subsequent parentheses.  Functions and types can have optional generics
 in brackets (e.g., `#my_generic[#value: #int]` and `log[level:](str:):`).
 
@@ -257,7 +257,7 @@ Another way we aim to be concise is by using the `~#` as an [inferred type](#-ty
 While there are a lot of good formatting options out there, 
 [Horstmann brace style](https://en.wikipedia.org/wiki/Indentation_style#Horstmann) is
 hands-down the raddest indentation style.  Similarly, `variable_case`,
-`function_case`, and `#type_case` make for more readable long names, but they also
+`function_case()`, and `#type_case` make for more readable long names, but they also
 look cooler than their `dromedaryCase` and `PascalCase` counterparts.
 
 ## simplicity
@@ -391,7 +391,8 @@ But we do for wrapper types like `#count`, `#index`, `#offset`, and `#ordinal`.
           return "Value is 12" (and print that) if you call `another_fn(value: 12)`.
 * [identifiers](#identifiers):
      * `#type_case` identifiers like `#x` are type-like
-     * `function_case` identifiers with a subsequent `()` are function-like
+     * `function_case()` identifiers with a subsequent optional `[]` and required `()`
+          are function-like
      * `variable_case` identifiers like `x` are instance-like
 * use `#` for [comments](#comments), though there are a few reserved sequences
      * they are also used for types, which is rationalized as a way of commenting the code,
@@ -405,7 +406,7 @@ But we do for wrapper types like `#count`, `#index`, `#offset`, and `#ordinal`.
           with `a` any `variable_case` identifier.
      * use `fn(): #x` to declare `fn` as a function returning an instance of type `#x`,
           see [functions](#functions), with any arguments inside `()`.
-          `fn` can be renamed to anything `function_case`, but `fn` is one of the defaults.
+          `fn()` can be renamed to anything `function_case()`, but `fn()` is one of the defaults.
      * use `::[]: #x` or `m[]: #x` to declare a class [index operator](#index-operator)
           that returns an instance of `#x` with any arguments given inside `[]` and
           that is called like `my_class[123, y: "a"]` depending on arguments.
@@ -1086,7 +1087,7 @@ There are a few reserved keywords, like `also`, `if`, `elif`, `else`, `with`, `r
 which are function-like but may consume the rest of the statement.
 `return` is a bit special in that it is used like a variable but will return
 from the enclosing function;  e.g., `return: x + 5` will return the value `x + 5`.
-The `#type_case` and `function_case` versions of these keywords are also all reserved;
+The `#type_case` and `function_case()` versions of these keywords are also all reserved;
 for example, `#return` can be used for the return type of the current function,
 e.g., `result; #return`, or function case `return` can be used as a constructor
 for the `#return` type, e.g. `y: return(x + 5)`.  `return(...)` without being
@@ -1884,6 +1885,7 @@ Function calls are assumed whenever a `function_case` identifier
 occurs before a parenthetical expression.  E.g., `print(x)`
 where `x` is a variable name or other primitive constant (like `5`),
 or an expresion (like `any_function_name(any + expression / here)`).
+To create [generics](#generictemplate_functions), you add `[]` before the `()`.
 
 We don't allow for implicitly currying functions in oh-lang,
 but you can explicitly curry like this:
@@ -2660,11 +2662,12 @@ the_fn_call
 )
 ```
 
-Functions are named using `function_case` identifiers.  The syntax to declare
+Functions are named using `function_case()` identifiers.  The syntax to declare
 a function is `function_case_name(function_arguments...): #return_type`, but if
 you are also defining the function the `#return_type` is optional (but generally
 recommended for multiline definitions).  Defining the function can occur inline
 with `:` or over multiple lines using an indented block.
+To create [generics](#generictemplate_functions), you add `[]` before the `()`.
 
 ```
 # declaring a function with no arguments that returns a big integer
@@ -3024,12 +3027,12 @@ q
 
 Calling a function with one argument being defined by a nested function will use
 the nested function's name as the variable name.  E.g., if a function is called
-`value_`, then executing `what_is_this_(value_())` will try to call the `what_is_this_(value)`
-overload.  If there is no such overload, it will fall back on `what_is_this_(type)` where
-`type` is the return value of the `value_()` function.
+`value()`, then executing `what_is_this(value())` will try to call the `what_is_this(value)`
+overload.  If there is no such overload, it will fall back on `what_is_this(type)` where
+`type` is the return value of the `value()` function.
 
-The only exception is the `::o_()` method, which is the copy method; this passes through
-the name of whatever `variable_case` (or `function_case_` truncated to `variable_case`)
+The only exception is the `::o()` method, which is the copy method; this passes through
+the name of whatever `variable_case` (or `function_case()` truncated to `variable_case`)
 that was before it, e.g., `x o_()` is still named `x` and `y_() o_()` is named `y`.
 TODO: if we want to allow `o` as a field on objects, we could use `m_` instead of `o_`.
 but i think we want both `m` and `o` ways to refer to a class instance anyways so efficiency
@@ -3076,13 +3079,9 @@ it in that case.  This is usually a good use-case for lambda functions, which de
 an inline function to pass into the other function.  Because we support
 [function overloading](#function-overloads), any externally defined functions need to be
 fully specified.  (E.g., this is not allowed: `greet_(int): "hello" + "!" * int, do_greet_(greet_)`.)
-This is also because we allow passing in types as function arguments, so anything that is
-`function_case_` without a subsequent parenthesized argument list `(args...)` will be considered
-`type_case_` instead.
-TODO: is there a meaningful distinction here?  since types are functions.  although
-functions can return multiple different types, types will return only a single type.
-(although they can return a result type for a constructor.)  i bet we could use
-the default overload for a function that we pass in as `greet_`.
+This is because we want to be able to distinguish between `function_case()` arguments
+and `variable_case` arguments, allowing overloads for functions and variables that
+are named the same..
 
 ```
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
@@ -3418,8 +3417,9 @@ TODO: we may want to do it as a compile error because it's a conversion not a ty
 
 One downside of overloads is that we must specify the whole function
 [when passing it in as an argument](#functions-as-arguments).  But we also need to specify
-the whole function because we want to be able to distinguish `type_case_` from `function_case_`
-(where some parenthesized arguments `(args...)` follow).
+the whole function because we want to be able to distinguish `variable_case` from `function_case()`.
+However, we can use `argument_name(~): my_fn(~)` to select the default overload.
+TODO: should it be `argument_name(...): my_fn(...)`?  `~` does mean to infer and is shorter.
 
 TODO: default output arguments.  e.g., `fn_(x: int_): [y: 3]`
 
@@ -3961,7 +3961,7 @@ to define `ref1` as a readonly reference, `ref2` as a writeable reference, and
 `(ref1, ref2); do_stuff_()` works to define them as writable references, and
 `(ref1, ref2). do_stuff_()` works to define them as unique, writable instances.
 Notice that the only distinction between destructuring references and defining a function
-is that the function requires a `function_case_` identifier before the parentheses
+is that the function requires a `function_case()` identifier before the parentheses
 (e.g., `fn_(): ...` or `do_stuff_(ref1, ref2); ...`).
 TODO: let's support the earlier syntax first `(ref1:, ref2;, not_a_ref.) = ...`,
 and wait to add `(ref1, ref2): ...` support until later.  Same for `[...] = ...`.
@@ -4386,7 +4386,7 @@ or need to use `NAMED_` on some of them.
 maybe we see if there's an issue when compiling the generics and then complain at compile time.
 
 Similar to the non-generic case, if the `variable_case` identifier
-matches the `type_case_` type of a generic, then it's a default-named argument.
+matches the `#type_case` type of a generic, then it's a default-named argument.
 For example, `my_type; ~my_type_` or `t: ~t_`.  There is a shorthand for this
 which is more idiomatic: `~my_type;` or `~t:`.  Here is a complete example:
 
@@ -4434,7 +4434,7 @@ logger_(~NAMED_of.): of_
 logger_(of. 3)  # returns the integer `3`
 ```
 
-If we have a named generic type, just name the `type_case_` type the
+If we have a named generic type, just name the `#type_case` type the
 same as the `variable_case` variable name (just add a trailing `_`)
 so default names can apply.
 
@@ -4959,7 +4959,7 @@ Note that all variables defined on a class are given methods to access/set
 them, but this is done with syntactical sugar.  That is,
 *all uses of a class instance variable are done through getter/setter methods*,
 even when accessed/modified within the class.  The getters/setters are methods
-named the `function_case_` version of the `variable_case` variable,
+named the `function_case()` version of the `variable_case` variable,
 with various arguments to determine the desired action.
 TODO: at some point we need to have a "base case" so that we don't infinitely recurse;
 should a parent class not call the child class accessors?  or should we only
@@ -5189,7 +5189,7 @@ cat_: all_of_{animal:, m: [fur_balls: int_]}
      # become hidden to users of this child class:
      ;;renew_(): null
           # can refer to parent methods using the `variable_case`
-          # version of the `type_case_` class name:
+          # version of the `#type_case` class name:
           animal renew_(Name: "Cat-don't-care-what-you-name-it")
           m fur_balls = 0
 
@@ -5747,7 +5747,7 @@ awesome_service: all_of_
 }
 ```
 
-Using `@singleton type_case_` on the LHS defines an abstract singleton.
+Using `@singleton #type_case` on the LHS defines an abstract singleton.
 These are useful when you want to be able to grab an instance of the concrete
 child-class but only through the parent class reference.  Errors will be
 thrown if multiple children implement the parent and instantiate.
@@ -8445,8 +8445,11 @@ Note on terminology:
 
 * `identifier`: starts with a non-numeric character, can have numerical characters after that.
 
-* `function_case_`/`type_case_`: Identifier which ends with a trailing underscore.
-     A leading underscore is allowed to indicate an unused function/type.
+* `#type_case` has a leading `#`, without a space to avoid turning `type_case` into a comment. 
+     A leading underscore is allowed to indicate an unused function.
+
+* `function_case()` has a subsequent parentheses.
+     A leading underscore is allowed to indicate an unused function.
 
 * `variable_case`: Identifier which does *not* end with a trailing underscore.
      A leading underscore is allowed to indicate an unused variable.
