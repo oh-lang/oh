@@ -223,12 +223,11 @@ dot(#vector3(1, 2, 3), #vector3(-6, 5, 4)) == 1 * -6 + 2 * 5 + 3 * 4
 
 TODO: this doesn't work if the type (`#dbl` in this case) were something that had
 a parenthetical overload for either `()` or `(#self_type:)`.  we may recommend setters/getters??
+TODO: maybe we should disallow parenthetical overloads to avoid this confusion;
+it's an indirect compiler effect.
 Class getters/setters *do not use* `::get_x(): #dbl` or `;;set_x(dbl.): #null`, but rather
 just `::x(): #dbl` and `;;x(dbl.): #null` for a private variable `x; #dbl`.  This is because
 we allow overloading of both functions and variables in oh-lang.
-TODO: should we do `;;set(x: ...)` and `x: m::get()` instead???
-e.g., for something that has overloads for `()` it might get confusing.
-or even `m::to(): #x` for getter (i.e., `size: window` or `size: size(window)`.
 
 Because we use `::` for readonly methods and `;;` for writable methods, we can
 easily define "const template" methods via `:;` which work in either case `:` or `;`.
@@ -3033,44 +3032,40 @@ overload.  If there is no such overload, it will fall back on `what_is_this(type
 
 The only exception is the `::o()` method, which is the copy method; this passes through
 the name of whatever `variable_case` (or `function_case()` truncated to `variable_case`)
-that was before it, e.g., `x o_()` is still named `x` and `y_() o_()` is named `y`.
-TODO: if we want to allow `o` as a field on objects, we could use `m_` instead of `o_`.
-but i think we want both `m` and `o` ways to refer to a class instance anyways so efficiency
-isn't a big concern here.  probably could use either, but `o_` will be more idiomatic because
-you're creating an*o*ther instance.
+that was before it, e.g., `x o()` is still named `x` and `y() o()` is named `y`.
 
 ```
-value_(): int_
-     return: 1234 + 5
+value(): #int
+     return 1234 + 5
 
-what_is_this_(value: int_): null_
-     print_(value)
+what_is_this(value: #int): #null
+     print(value)
 
-what_is_this_(value: 10)    # prints 10
-what_is_this_(value_())     # prints 1239
+what_is_this(value: 10)  # prints 10
+what_is_this(value())    # prints 1239
 ```
 
-You can still use `value_()` as an argument for a default-named `int_` argument,
+You can still use `value()` as an argument for a default-named `#int` argument,
 or some other named argument by renaming.
 
 ```
-takes_default_(int): string_
-     string_(int)
+takes_default(int:): #string
+     string(int)
 
-takes_default_(value_())    # OK.  we try `value: value_()`
-                            # and then the type of `value_()` next
+takes_default(value())   # OK.  we try `value: value()`
+                         # and then the type of `value()` next
 
-other_function_(not_value: int_): string_
-     return: "!" * not_value
+other_function(not_value: #int): #string
+     return "!" * not_value
 
-other_function_(value_())               # ERROR! no overload for `value` or for `int`.
-other_function_(not_value: value_())    # OK
+other_function(value())            # ERROR! no overload for `value` or for `int`.
+other_function(not_value: value()) # OK
 ```
 
-This works the same for plain-old-data objects, e.g., `[value_()]` corresponds to
-`[value: value_()]`.  In case class methods are being called, the class name
-and the class instance variable name are ignored, e.g., `[my_class_instance my_function_()]`
-is short-hand for `[my_function: my_class_instance my_function_()]`.
+This works the same for plain-old-data objects, e.g., `[value(...)]` corresponds to
+`[value: value(...)]`.  In case class methods are being called, the class name
+and the class instance variable name are ignored, e.g., `[my_class_instance my_function()]`
+is short-hand for `[my_function: my_class_instance my_function()]`.
 
 ### functions as arguments
 
