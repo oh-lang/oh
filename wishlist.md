@@ -3073,42 +3073,46 @@ A function can have a function as an argument, and there are a few different way
 it in that case.  This is usually a good use-case for lambda functions, which define
 an inline function to pass into the other function.  Because we support
 [function overloading](#function-overloads), any externally defined functions need to be
-fully specified.  (E.g., this is not allowed: `greet_(int): "hello" + "!" * int, do_greet_(greet_)`.)
+fully specified.  (E.g., this is not allowed: `greet(int): "hello" + "!" * int, do_greet(greet)`.)
 This is because we want to be able to distinguish between `function_case()` arguments
 and `variable_case` arguments, allowing overloads for functions and variables that
-are named the same..
+are named the same.
 
 ```
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
 # if it can't find it.
-detect_(greet_(int): string_): int_
+detect(greet(int:): #string): #int
      100 each CHECK_int:
-          if greet_(CHECK_int) == "hello, world!"
-               return: CHECK_int
+          if greet(CHECK_int) == "hello, world!"
+               return CHECK_int
      return -1
 
 # if your function is named the same as the function argument...
-greet_(int): string_
-     return "hay"
-# you can use it directly, although you still need to specify which overload you're using,
-detect_(greet_(int): string_)   # returns -1
-# also ok, but a bit verbose:
-detect_(greet_(int): greet_(int) string)
+greet(int:): #string
+     "hay"
+# you can use it directly, although you still need to specify which overload you're using:
+detect(greet(int:): #string)  # returns -1
+# TODO: is this better?
+detect(greet(int:) string)    # returns -1
+# recommended, this will use the default overload:
+detect(greet(~))              # returns -1
 
 # if your function is not named the same, you can do argument renaming;
 # internally this does not create a new function:
-say_hi_(int): string_
-     return: "hello, world" + "!" * int
-detect_(greet_(int): string_ = say_hi_) # returns 1
+say_hi(int:): #string
+     "hello, world" + "!" * int
+detect(greet(int:): #string = say_hi)   # returns 1
+# recommended, this will use the default overload:
+detect(greet(~): say_hi(~))   # returns 1
 
 # you can also create a function named correctly inline -- the function
 # will not be available outside, after this call (it's scoped to the function arguments).
-detect_
-(    greet_(int): string_
-          "hello, world!!!!" substring_(length: int)
+detect
+(    greet(int:): #string
+          "hello, world!!!!" substring(length: int)
 )   # returns 13
 
-detect_(greet_(int): {["hi", "hey", hello"][int % 3] + ", world!"}) # returns 2
+detect(greet(int): {["hi", "hey", hello"][int % 3] + ", world!"})     # returns 2
 ```
 
 ### lambda functions
