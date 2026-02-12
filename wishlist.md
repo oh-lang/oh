@@ -32,8 +32,10 @@ determine whether something is a type if it has prefix `#`.
 For the remainder of this document, we'll use `variable_case`, `function_case()`,
 and `#type_case`; without context, the former two are indistinguishable, but in
 practice we can distinguish `variable_case` and `function_case()` based on whether
-there are subsequent parentheses.  Functions and types can have optional generics
-in brackets (e.g., `#my_generic[#value: #int]` and `log[level:](str:):`).
+there are subsequent parentheses.  See [functions as arguments](#functions-as-arguments)
+for some of the fallout for this choice.  Functions and types can have optional generics
+in brackets (e.g., `#my_generic[#value: #int]` and `log[level:](str:):`); see
+[generic functions](#generic-functions) and [generic classes](#generic-classes).
 
 Another change is that oh-lang uses `:`, `;`, and `.` for declarations and `=` for reassignment,
 so that declaring a variable and specifying a variable will work the same inside and outside
@@ -107,8 +109,9 @@ We use `:` to create the readonly reference overload, e.g., `my_function(int:): 
 to create a function which takes a readonly integer reference, or `my_function(int;): #str`
 for a function that can mutate the passed-in integer reference or `my_function(int.): #str`
 for a function which takes a temporary integer.  This also works for generic classes,
-e.g., `#my_generic[#of:]` where `#of` is a template type and the default name for a type;
-`my_function(my_generic[#int];)` is short for `my_function(my_generic; #my_generic[#int])`.
+e.g., `#my_generic[#of:]` where `#of` is a generic (or template) type and the default name
+for a type; `my_function(my_generic[#int];)` is short for
+`my_function(my_generic; #my_generic[#int])`.
 
 When calling a function, we don't need to use `my_function(x\` x)` if we have a local
 variable named `x` that shadows the function's argument named `x`.  We can just
@@ -307,9 +310,9 @@ something[count:](): #array[#int, count]
 something[1]()      # should this be the variable version or the generic function version?
 ```
 
-oh-lang handles generics/templates similar to zig or python rather than C++ or Rust.
-When compiled without any usage, templates are only tested for syntax/grammar correctness.
-When templates are *used* in another piece of code, that's when the specification kicks in
+oh-lang handles generics similar to zig or python rather than C++ or Rust.
+When compiled without any usage, generics are only tested for syntax/grammar correctness.
+When generics are *used* in another piece of code, that's when the specification kicks in
 and all expressions within the generic are compiled to see if they are allowed with the
 specified types.  Any errors are still compile-time errors, but you get to have the simplicity
 of not having to specify your type constraints fully with duck typing.
@@ -317,7 +320,7 @@ of not having to specify your type constraints fully with duck typing.
 ```
 my_fn(a: ~#of, b: #of): #of
      # this clearly requires `#of` to implement `*`
-     # but we didn't need to specify `[#of: #number]` or similar in the generic template.
+     # but we didn't need to specify `[#of: #number]` or similar in brackets.
      a * b
 
 print(my_fn(a: 3, b: 4))                # OK
@@ -454,11 +457,11 @@ But we do for wrapper types like `#count`, `#index`, `#offset`, and `#ordinal`.
      * `#some_class[n: #number, #of:]: #some_other_class[count: n, #at: #int, #of]` to define a class type
           `#some_class` being related to `#some_other_class`, e.g., `#some_class[n: 3, #str]` would be
           `#some_other_class[count: 3, #at: #int, #of: #str]`.
-     * For generic/template classes, e.g., classes like `#array[count, #of]` for a fixed array of size
+     * For generic classes, e.g., classes like `#array[count, #of]` for a fixed array of size
           `count` with elements of type `#of`, or `#lot[#int, #at: #str]` to create a map/dictionary
-          of strings mapped to integers.  See [generic/template classes](#generictemplate-classes).
-     * For generic/template functions with type constraints, e.g., `my_function[#of: #non_null](x: #of, y: #int): #of`
-          where `#of` is the generic type.  See [generic/template functions](#generictemplate-functions) for more.
+          of strings mapped to integers.  See [generic classes](#generic-classes).
+     * For generic functions with type constraints, e.g., `my_function[#of: #non_null](x: #of, y: #int): #of`
+          where `#of` is the generic type.  See [generic functions](#generic-functions) for more.
      * TODO: i don't think it would be awful to do `{}` for object types and `[]` just for array types,
           but we might want `#{...}` for the type itself, in analogy to `#[]` and `#()`.
      * `a@ [x(), y]` to call `a x()` then `a y` with [sequence building](#sequence-building)
@@ -476,7 +479,7 @@ But we do for wrapper types like `#count`, `#index`, `#offset`, and `#ordinal`.
 * `~` to infer or generalize a type
      * `my_generic_function(value: ~#u): #u` to declare a function that takes a generic type `#u`
           and returns an instance of that type.  For more details, see
-          [generic/template functions](#generictemplate-functions).
+          [generic functions](#generic-functions).
      * `my_result; #array[~] = do_stuff()` is essentially equivalent to `my_result; do_stuff() array`, i.e.,
           asking for the first array return-type overload.  This infers an inner type via `[~]` but doesn't name it.
      * `named_inner; array[~#infer_this] = do_stuff()` asks for the first array return-type overload,
@@ -888,7 +891,7 @@ fn[#of:](value: #of): #of
 fn[#int](value: 123)
 ```
 
-See [generic/template functions](#generictemplate-functions) for more details.
+See [generic functions](#generic-functions) for more details.
 
 
 ## defining classes
@@ -1072,7 +1075,7 @@ my_entry add(1.23)
 my_entry value == 5.79
 ```
 
-See [generic/template classes](#generictemplate-classes) for more information.
+See [generic classes](#generic-classes) for more information.
 
 ## identifiers
 
@@ -1093,7 +1096,7 @@ for the `#return` type, e.g. `y: return(x + 5)`.  `return(...)` without being
 captured is a compile error.
 
 There are some reserved variable names: `g`, `m`, and `o`, along with their `#type_case`
-variants.  `g` can be used as the base name for a [generic class](#generictemplate-classes);
+variants.  `g` can be used as the base name for a [generic class](#generic-classes);
 `m` can be used for the full name of the current [class](#classes), and `o` is used for
 an *o*ther instance of the same type as the current class.
 `o` must be explicitly added as an argument, though, in contrast to `m` which can be implicit
@@ -1115,6 +1118,11 @@ To indicate a variable (or function) is unused in a block, use a prefix undersco
 such as `_unused_variable`.  If used when defining a function
 argument, it will not affect how callers call the function; they'll use the
 non-trailing-underscored name.
+TODO: i think we can make `_` optional *within* regular identifiers as well.
+i.e., we can alias all `whateverthisshouldbe` to `whatever_this_should_be` if
+the latter is the definition.  similarly for any private/protected logic we may
+use, we could always do at the declare-site `::my_protected_method_(): #int` and
+then at the call-site we can alias to `m my_protected_method()`.
 
 ```
 # when defining, we use a leading underscore to indicate the variable is unused.
@@ -1847,7 +1855,7 @@ however the second option i consider more readable, so let's nix this.
 |           |   `**`    | also superscript/power    | binary: `a**b`    |               |
 |           |   `--`    | unary decrement           | unary:  `--a`     |               |
 |           |   `++`    | unary increment           | unary:  `++a`     |               |
-|           |   `~`     | template/generic scope    | unary:  `~b`      |               |
+|           |   `~`     | infer                     | unary:  `~b`      |               |
 |   4       |   `<>`    | bitwise flip              | unary:  `<>a`     | RTL           |
 |           |   `-`     | unary minus               | unary:  `-a`      |               |
 |           |   `+`     | unary plus                | unary:  `+a`      |               |
@@ -1884,7 +1892,7 @@ Function calls are assumed whenever a `function_case` identifier
 occurs before a parenthetical expression.  E.g., `print(x)`
 where `x` is a variable name or other primitive constant (like `5`),
 or an expresion (like `any_function_name(any + expression / here)`).
-To create [generics](#generictemplate_functions), you add `[]` before the `()`.
+To create [generic functions](#generic-functions), you add `[]` before the `()`.
 
 We don't allow for implicitly currying functions in oh-lang,
 but you can explicitly curry like this:
@@ -1893,8 +1901,13 @@ but you can explicitly curry like this:
 some_function(x: #int, y; #dbl, z. #str):
      print("something cool with ${x}, ${y}, and ${z}")
 
-curried_function(z. #str): some_function(x: 5, y; 2.4, z)
+curried_function(str.): some_function(x: 5, y; 2.4, z. str)
 ```
+
+[Lambda functions](#lambda-functions) would also get you close to currying,
+e.g., if you need to pass a function as an argument, you could do:
+`do_something(${some_function(x: 5, y; 2.4, z. $str)})`,
+where `$str` is the curried argument.
 
 ## macros
 
@@ -3071,30 +3084,27 @@ is short-hand for `[my_function: my_class_instance my_function()]`.
 
 A function can have a function as an argument, and there are a few different ways to call
 it in that case.  This is usually a good use-case for lambda functions, which define
-an inline function to pass into the other function.  Because we support
-[function overloading](#function-overloads), any externally defined functions need to be
-fully specified.  (E.g., this is not allowed: `greet(int): "hello" + "!" * int, do_greet(greet)`.)
-This is because we want to be able to distinguish between `function_case()` arguments
-and `variable_case` arguments, allowing overloads for functions and variables that
-are named the same.
+an inline function to pass into the other function.  Because we support overloading
+between `function_case()` and `variable_case`, e.g., `hello: #int` and `hello(): #int`,
+we need to specify functions explicitly.
 
 ```
 # finds the integer input that produces "hello, world!" from the passed-in function, or -1
-# if it can't find it.
+# if it can't find it after 100 tries.
 detect(greet(int:): #string): #int
      100 each CHECK_int:
           if greet(CHECK_int) == "hello, world!"
                return CHECK_int
-     return -1
+     -1
 
 # if your function is named the same as the function argument...
 greet(int:): #string
      "hay"
-# you can use it directly, although you still need to specify which overload you're using:
+# you can use it directly, although you still need to explicitly show it as a function:
 detect(greet(int:): #string)  # returns -1
 # TODO: is this better?
 detect(greet(int:) string)    # returns -1
-# recommended, this will use the default overload:
+# recommended, this will use the default overload for `greet`:
 detect(greet(~))              # returns -1
 
 # if your function is not named the same, you can do argument renaming;
@@ -3173,7 +3183,7 @@ do_something_(~x): x_
 do_something_(123)    # returns 246
 do_something_(0.75)   # returns 1.5
 ```
-See [generic/template functions](#generictemplate-functions) for more details
+See [generic/template functions](#generic-functions) for more details
 on the syntax.
 
 However, there are use cases where we might actually want to pass in
@@ -3205,7 +3215,7 @@ functions that return instances *or* constructors, and it becomes clearer that w
 dealing with a type if we use a different enclosure.  We can also pass in comptime
 constants into generics like `{count: count_}`.
 
-The bracket syntax is related to [template classes](#generictemplate-classes) and
+The bracket syntax is related to [template classes](#generic-classes) and
 [overloading generic types](#overloading-generic-types).
 
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
@@ -4313,14 +4323,14 @@ my_class_: [escape_handler?;, ...]
 }
 ```
 
-## generic/template functions
+## generic functions
 
 We can have arguments with generic types, but we can also have arguments
 with generic names.
 
 ### argument type generics
 
-For functions that accept multiple types as input/output, we define template types
+For functions that accept multiple types as input/output, we define generic types
 inline, e.g., `copy(value: ~#t): #t`, using `~` for where the compiler should infer
 what the type is.  You can use any unused identifier for the new type, e.g.,
 `~#q` or `~#sandwich_type`.
@@ -4529,8 +4539,8 @@ TODO: do we even need a `require` keyword or can we just do
 that would force people who have a lot of things, e.g., `lot_{bool_, at_: str_}`
 would look like a `require` statement possibly.
 i also don't want to make it look like we're redefining the generic type,
-e.g., `;;some_method_{template_type_: some_constraint_}`, so having
-`;;some_method_{require: template_type_ is some_constraint_}` is better.
+e.g., `;;some_method_{generic_type_: some_constraint_}`, so having
+`;;some_method_{require: generic_type_ is some_constraint_}` is better.
 
 ```
 my_class_{of_:, n: count_, require: n > 0}:
@@ -5351,7 +5361,7 @@ other_cat <-> cat           # OK.  both variables are `@only cat`.
 One final note: abstract classes cannot be `@only` types for a variable, since they
 are not functional without child classes overriding their abstract methods.
 
-## template methods
+## generic methods
 
 You can define methods on your class that work for a variety of types.
 
@@ -5376,7 +5386,7 @@ to_string: string_ = some_example to_()
 unspecified: some_example to_()     # COMPILER ERROR, specify a type for `unspecified`
 ```
 
-## generic/template classes
+## generic classes
 
 TODO: discuss how `null_` can be used as a type in most places.
 But note that if you have a generic function defined like this,
@@ -5387,12 +5397,12 @@ my_generic_{of_:}(y: of_, z: of_): of_
      x
 ```
 If `of_` was nullable, then `x` would potentially be nullable, and should
-be defined via `x?: y * z`.  But because oh-lang does template specialization
+be defined via `x?: y * z`.  But because oh-lang does generic specialization
 only after you supply the specific type you want, this can be caught at
 compile time and only if you're requesting an invalid type.
 
 To create a generic class, you put the expression `{type1_:, ...}` after the
-class identifier, or we recommend `{of_:}` for a single template type, where
+class identifier, or we recommend `{of_:}` for a single generic type, where
 `of_` is the [default name for a generic type](#default-named-generic-types).
 For example, we use `my_single_generic_class_{of_:}: [...]` for a single generic
 or `my_multi_generic_class_{type1_:, type2_:}: [...]` for multiple generics.
@@ -5406,7 +5416,7 @@ like this: `my_single_generic_class_{int_} my_class_function_(...)` or
 ```
 generic_class_{id_:, value_:}: [id;, value;]
 {    # this gives a method to construct the instance and infer types.
-     # `g_` is like `m_` but without the template specialization, so
+     # `g_` is like `m_` but without the generic specialization, so
      # `g_` is `generic_class_` in this class body.
      g_(id. ~t_, value. ~u_): g_{id_: t_, value_: u_}
           [id, value]
@@ -5416,7 +5426,7 @@ generic_class_{id_:, value_:}: [id;, value;]
 # `id_` will be an `int_` and `value_` will be a `str_`.
 class_instance: generic_class_(id. 5, value. "hello")
  
-# creating an instance with template/generic types specified:
+# creating an instance with generic types specified:
 other_instance: generic_class_{id_: dbl_, value_: string_}(id. 3, value. "4")
 ```
 
