@@ -3136,28 +3136,29 @@ to specify the type of a lambda function argument, so the compiler must be able 
 to define an integer).  Some examples:
 
 ```
-run_asdf_(do_(j: int_, k: str_, l: dbl_): null_): null_
-     print_(do_(j: 5, k: "hay", l: 3.14))
+run_asdf(do(j: #int, k: #str, l: #dbl): #null): #null
+     print(do(j: 5, k: "hay", l: 3.14))
 
 # Note that `$k`, `$j`, and `$l` attach to the same lambda based on looking
 # for the matching `$()`.  `$()` also automatically gets a wrapping `()`.
-run_asdf_$($k * $j + str_($l))     # prints "hayhayhayhayhay3.14"
+run_asdf$($k * $j + str($l))     # prints "hayhayhayhayhay3.14"
 ```
 
-If you need a lambda function inside a lambda function, use more `$` to escape
+While it is not particularly readable, and thus not recommended generally,
+if you need a lambda function inside a lambda function, use more `$` to escape
 the arguments into the paren with the same number of `$`, e.g.,
 
 ```
 # with function signatures
-# `run_(fn_(x: any_): any_): any_` and
-# `run_nested_(fn_(y: any_): any_): any_`
-run_$($x + run_nested_$$($$y + $x))
+# `run(fn(x: #any): #any): #any` and
+# `run_nested(fn(y: #any): #any): #any`
+run$($x + run_nested$$($$y + $x))
 
 # which is equivalent to the arguably the more readable:
-run_
-(    OUTER_fn_(x: any_):
-          x + run_nested_
-          (    INNER_fn_(y: any_):
+run
+(    OUTER_fn(x: #any):
+          x + run_nested
+          (    INNER_fn(y: #any):
                     y + x
           )
 )
@@ -3167,8 +3168,8 @@ Again, it is likely more readable to just define the functions normally in this 
 rather than nest `$$()`.
 
 There is currently no good way to define the name of a lambda function; we may use
-`@named(whatever_name_) {$x + $y}`, but it's probably more readable to just define
-the function inline as `whatever_name_(x:, y:): x + y`.
+`$whatever_name${$x + $y}`, but it's probably more readable to just define
+the function inline as `whatever_name(x:, y:): x + y`.
 
 ### types as arguments
 
