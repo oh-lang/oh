@@ -244,7 +244,7 @@ when errors can occur.  The `#hm[#ok:, #er:]` class handles this, with `#ok` bei
 type of a valid result, and `#er` being the type of an error result.  You can specify
 the types via `#hm[#ok: #int, #er: #str]` for `#ok` being `#int` and `#er` being a `#str`.
 If the `#ok` and `#er` types are distinct, you don't need to wrap a return value in
-`#ok(valid_result)` and `#er(error_result)`; you can just return `valid_result` or `error_result`.
+`ok(valid_result)` and `er(error_result)`; you can just return `valid_result` or `error_result`.
 See [the `hm` section](#hm) for more details.  It is a compile error to not handle
 errors when they are returned (e.g., something like a `no-unused-result`), although
 often there are overloads (without an `#hm` result being returned) which just panic
@@ -3173,62 +3173,50 @@ the function inline as `whatever_name(x:, y:): x + y`.
 
 ### types as arguments
 
-Generally speaking you can use generic/template programming for this case,
+Generally speaking you can use generic programming for this case,
 which infers the types based on instances of the type.
 
 ```
-# generic function taking an instance of `x_` and returning one.
-do_something_(~x): x_
-     return: x * 2
+# generic function taking an instance of `#x` and returning one.
+# the type `#x` is inferred via `~x:` which expands to `x: ~#x`.
+do_something(~x:): #x
+     x * 2
 
-do_something_(123)    # returns 246
-do_something_(0.75)   # returns 1.5
+do_something(123)   # returns 246
+do_something(0.75)  # returns 1.5
 ```
-See [generic/template functions](#generic-functions) for more details
-on the syntax.
+See [generic functions](#generic-functions) for more details on the syntax.
 
 However, there are use cases where we might actually want to pass in
-the type of something.  We can use `of_` as a type name to get default naming.
+the type of something.  We can use `#of` as a type name to get default naming.
 ```
-# `whatever_constraints_` can be something like `number_`,
+# `#whatever_constraints` can be something like `#number`,
 # or you can elide it if you want no constraints.
-do_something_(of_: whatever_constraints_): of_
-     return: of_(123)
+do_something(#of: #whatever_constraints): #of
+     of(123)
 
-print_(do_something_(dbl_)) # returns 123.0
-print_(do_something_(u8_))  # returns u8_(123)
-```
-
-Or we could do this as a a generic type, like this:
-```
-do_something_(~x_): x_
-     return: x_(123)
-
-print_(do_something_(dbl_)) # returns 123.0
-print_(do_something_(u8_))  # returns u8(123)
+print(do_something(#dbl))   # returns 123.0
+print(do_something(#u8))    # returns u8(123)
 ```
 
 ### returning a type
 
-We use a different syntax for functions that return types; namely `()` becomes `{}`,
-e.g., `type_fn_{args...}: the_type_`.  This is because we do not need to support
-functions that return instances *or* constructors, and it becomes clearer that we're
-dealing with a type if we use a different enclosure.  We can also pass in comptime
-constants into generics like `{count: count_}`.
+We use a different syntax for functions that return types; namely `()` becomes `[]`,
+and we use a leading `#` to indicate that it is a type, e.g., `#type_fn[args...]: #the_type`.
+This is because we do not need to support functions that return instances *or* constructors,
+and it becomes clearer that we're dealing with a type if we use a different enclosure.
+We can also pass in comptime constants into generics like `[count: #count]`.
 
 The bracket syntax is related to [template classes](#generic-classes) and
 [overloading generic types](#overloading-generic-types).
 
 To return multiple types, you can use the [type tuple syntax](#type-tuples).
 
-TODO: 
-it seems like we should be able to overload `fn_` for a `[]` argument list or a `()` argument list,
-and that we should be able to return a type or a non-type either way.  but we should have a way
-of indicating when a function is compile-time constant, so we can do `object_ fields_()`.
-we're already doing this implicitly with enums, e.g., `abc_: one_of_{a:, b:, c:}`, then
-`abc_ count_()`.  but again we'll need to do some built-in like `COUNT_(abc_)` in case
-we have something like `w_: one_of_{count:, ...}`.  we should also investigate how to
-overload `[]` for array indexing, because theoretically we can have `array[1, 2, 3]`.
+TODO: we should have a way
+of indicating when a function is compile-time constant, so we can do `#object fields()`.
+we're already doing this implicitly with enums, e.g., `#abc: #one_of[a:, b:, c:]`, then
+`#abc count()`.  but again we'll need to do some built-in like `COUNT(#abc)` in case
+we have something like `#abc: #one_of[count:, ...]`.
 
 ### type lambdas
 
